@@ -118,7 +118,7 @@ def validateOptionalFloat(
             raise TypeError(f'{name} must be an int, float or None')
 
         if min is not None and max is not None and (value < min or value > max):
-            raise ValueError(f'{name} must be in the range {min} to {max}')
+            raise ValueError(f'{name} must be in the range {min} to {max} or None')
         elif min is not None and value < min:
             raise ValueError(f'{name} must be >= {min} or None')
         elif max is not None and value > max:

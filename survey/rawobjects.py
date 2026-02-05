@@ -1,9 +1,6 @@
 
 import typing
 
-# TODO: I don't like the naming of all these RawObjects. It probably
-# makes sense for them to be Fs* (for filesystem) rather than Raw*
-
 class RawWorld(object):
     def __init__(
             self,

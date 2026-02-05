@@ -13,9 +13,10 @@ class DbObject(object):
             self,
             id: typing.Optional[str] = None, # None means allocate an id
             ) -> None:
+        super().__init__()
+
         common.validateOptionalStr(name='id', value=id, allowEmpty=False)
 
-        super().__init__()
         self._id = id if id is not None else str(uuid.uuid4())
 
     def id(self) -> str:
@@ -27,16 +28,34 @@ class DbUniverseObject(DbObject):
             id: typing.Optional[str] = None, # None means allocate an id
             universeId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id)
+
         common.validateOptionalStr(name='universeId', value=universeId, allowEmpty=False)
 
-        super().__init__(id=id)
         self._universeId = universeId
 
     def universeId(self) -> None:
         return self._universeId
 
+    # NOTE: Setting the id back to None is intentionally disallowed as the only
+    # reason to do so would be to remove an object from its parent and it's not
+    # safe to do that as the object may hold references to other objects owned
+    # by the parent. If the object was removed from the parent and attached to
+    # another object, it would still refer to objects owned by its old parent.
+    # An example of this would be sophont populations. They're attached to a
+    # system but hold references to the sophont which is owned by the sector. If
+    # the system was removed from one sector and added to another, it would still
+    # reference the sophont from its old sector which would result in horrible
+    # bugs and the mangled data being written back to the database.
     def setUniverseId(self, universeId: str) -> None:
-        common.validateOptionalStr(name='universeId', value=universeId, allowEmpty=False)
+        common.validateMandatoryStr(name='universeId', value=universeId, allowEmpty=False)
+
+        if universeId == self._universeId:
+            return # Nothing to do
+
+        if self._universeId is not None:
+            raise RuntimeError(f'Object {self._id} of type {type(self)} is already attached to a universe')
+
         self._universeId = universeId
 
 class DbSectorObject(DbObject):
@@ -45,16 +64,34 @@ class DbSectorObject(DbObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id)
+
         common.validateOptionalStr(name='sectorId', value=sectorId, allowEmpty=False)
 
-        super().__init__(id=id)
         self._sectorId = sectorId
 
     def sectorId(self) -> None:
         return self._sectorId
 
+    # NOTE: Setting the id back to None is intentionally disallowed as the only
+    # reason to do so would be to remove an object from its parent and it's not
+    # safe to do that as the object may hold references to other objects owned
+    # by the parent. If the object was removed from the parent and attached to
+    # another object, it would still refer to objects owned by its old parent.
+    # An example of this would be sophont populations. They're attached to a
+    # system but hold references to the sophont which is owned by the sector. If
+    # the system was removed from one sector and added to another, it would still
+    # reference the sophont from its old sector which would result in horrible
+    # bugs and the mangled data being written back to the database.
     def setSectorId(self, sectorId: str) -> None:
-        common.validateOptionalStr(name='sectorId', value=sectorId, allowEmpty=False)
+        common.validateMandatoryStr(name='sectorId', value=sectorId, allowEmpty=False)
+
+        if sectorId == self._sectorId:
+            return # Nothing to do
+
+        if self._sectorId is not None:
+            raise RuntimeError(f'Object {self._id} of type {type(self)} is already attached to a sector')
+
         self._sectorId = sectorId
 
 class DbSystemObject(DbObject):
@@ -63,16 +100,34 @@ class DbSystemObject(DbObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id)
+
         common.validateOptionalStr(name='systemId', value=systemId, allowEmpty=False)
 
-        super().__init__(id=id)
         self._systemId = systemId
 
     def systemId(self) -> None:
         return self._systemId
 
+    # NOTE: Setting the id back to None is intentionally disallowed as the only
+    # reason to do so would be to remove an object from its parent and it's not
+    # safe to do that as the object may hold references to other objects owned
+    # by the parent. If the object was removed from the parent and attached to
+    # another object, it would still refer to objects owned by its old parent.
+    # An example of this would be sophont populations. They're attached to a
+    # system but hold references to the sophont which is owned by the sector. If
+    # the system was removed from one sector and added to another, it would still
+    # reference the sophont from its old sector which would result in horrible
+    # bugs and the mangled data being written back to the database.
     def setSystemId(self, systemId: str) -> None:
-        common.validateOptionalStr(name='systemId', value=systemId, allowEmpty=False)
+        common.validateMandatoryStr(name='systemId', value=systemId, allowEmpty=False)
+
+        if systemId == self._systemId:
+            return # Nothing to do
+
+        if self._systemId is not None:
+            raise RuntimeError(f'Object {self._id} of type {type(self)} is already attached to a system')
+
         self._systemId = systemId
 
 class DbNobility(DbSystemObject):
@@ -82,9 +137,10 @@ class DbNobility(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, systemId=systemId)
+
         survey.validateMandatoryNobility(name='code', value=code)
 
-        super().__init__(id=id, systemId=systemId)
         self._code = code
 
     def code(self) -> typing.Optional[str]:
@@ -97,9 +153,10 @@ class DbTradeCode(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, systemId=systemId)
+
         survey.validateMandatoryTradeCode(name='code', value=code)
 
-        super().__init__(id=id, systemId=systemId)
         self._code = code
 
     def code(self) -> typing.Optional[str]:
@@ -120,6 +177,8 @@ class DbAllegiance(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, sectorId=sectorId)
+
         common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
         common.validateOptionalStr(name='legacy', value=legacy, allowEmpty=False)
@@ -129,8 +188,6 @@ class DbAllegiance(DbSectorObject):
         common.validateOptionalFloat(name='routeWidth', value=routeWidth, min=0)
         common.validateOptionalHtmlColour(name='borderColour', value=borderColour)
         common.validateOptionalStr(name='borderStyle', value=borderStyle, allowed=_ValidLineStyles)
-
-        super().__init__(id=id, sectorId=sectorId)
 
         self._code = code
         self._name = name
@@ -176,9 +233,10 @@ class DbRulingAllegiance(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, systemId=systemId)
+
         common.validateMandatoryObject(name='allegiance', value=allegiance, type=DbAllegiance)
 
-        super().__init__(id=id, systemId=systemId)
         self._allegiance = allegiance
 
     def allegiance(self) -> DbAllegiance:
@@ -193,11 +251,11 @@ class DbSophont(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, sectorId=sectorId)
+
         common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
         common.validateMandatoryBool(name='isMajor', value=isMajor)
-
-        super().__init__(id=id, sectorId=sectorId)
 
         self._code = code
         self._name = name
@@ -222,12 +280,12 @@ class DbSophontPopulation(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, systemId=systemId)
+
         common.validateMandatoryObject(name='sophont', value=sophont, type=DbSophont)
         common.validateOptionalInt(name='percentage', value=percentage, min=0, max=100)
         common.validateMandatoryBool(name='isHomeWorld', value=isHomeWorld)
         common.validateMandatoryBool(name='isDieBack', value=isDieBack)
-
-        super().__init__(id=id, systemId=systemId)
 
         self._sophont = sophont
         self._percentage = percentage
@@ -255,11 +313,11 @@ class DbOwningSystem(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ):
+        super().__init__(id=id, systemId=systemId)
+
         common.validateMandatoryInt(name='hexX', value=hexX)
         common.validateMandatoryInt(name='hexY', value=hexY)
         common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
-
-        super().__init__(id=id, systemId=systemId)
 
         self._hexX = hexX
         self._hexY = hexY
@@ -283,11 +341,11 @@ class DbColonySystem(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ):
+        super().__init__(id=id, systemId=systemId)
+
         common.validateMandatoryInt(name='hexX', value=hexX)
         common.validateMandatoryInt(name='hexY', value=hexY)
         common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
-
-        super().__init__(id=id, systemId=systemId)
 
         self._hexX = hexX
         self._hexY = hexY
@@ -309,9 +367,10 @@ class DbCustomRemark(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ):
+        super().__init__(id=id, systemId=systemId)
+
         common.validateMandatoryStr(name='remark', value=remark, allowEmpty=False)
 
-        super().__init__(id=id, systemId=systemId)
         self._remark = remark
 
     def remark(self) -> str:
@@ -324,9 +383,10 @@ class DbBase(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, systemId=systemId)
+
         survey.validateMandatoryBase(name='code', value=code)
 
-        super().__init__(id=id, systemId=systemId)
         self._code = code
 
     def code(self) -> str:
@@ -339,9 +399,10 @@ class DbResearchStation(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, systemId=systemId)
+
         survey.validateMandatoryResearchStation(name='code', value=code)
 
-        super().__init__(id=id, systemId=systemId)
         self._code = code
 
     def code(self) -> str:
@@ -356,11 +417,11 @@ class DbStar(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, systemId=systemId)
+
         survey.validateMandatoryLuminosityClass(name='luminosityClass', value=luminosityClass)
         survey.validateOptionalSpectralClass(name='spectralClass', value=spectralClass)
         survey.validateOptionalSpectralScale(name='spectralScale', value=spectralScale)
-
-        super().__init__(id=id, systemId=systemId)
 
         self._luminosityClass = luminosityClass
         self._spectralClass = spectralClass
@@ -426,6 +487,8 @@ class DbSystem(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, sectorId=sectorId)
+
         common.validateMandatoryInt(name='hexX', value=hexX)
         common.validateMandatoryInt(name='hexY', value=hexY)
         common.validateOptionalStr(name='name', value=name, allowEmpty=False)
@@ -450,20 +513,18 @@ class DbSystem(DbSectorObject):
         survey.validateOptionalGasGiants(name='gasGiants', value=gasGiants)
         survey.validateOptionalZone(name='zone', value=zone)
         common.validateOptionalInt(name='systemWorlds', value=systemWorlds, min=0)
-        common.validateOptionalObject(name='allegiance', value=allegiance, type=DbAllegiance)
-        DbSystem._validateNobilities(name='nobilities', value=nobilities)
-        DbSystem._validateTradeCodes(name='tradeCodes', value=tradeCodes)
-        DbSystem._validateSophontPopulations(name='sophontPopulations', value=sophontPopulations)
-        DbSystem._validateRulingAllegiances(name='rulingAllegiances', value=rulingAllegiances)
-        DbSystem._validateOwningSystems(name='owningSystems', value=owningSystems)
-        DbSystem._validateColonySystems(name='colonySystems', value=colonySystems)
-        DbSystem._validateResearchStations(name='researchStations', value=researchStations)
-        DbSystem._validateBases(name='bases', value=bases)
-        common.validateOptionalCollection(name='stars', value=stars, type=DbStar)
-        common.validateOptionalCollection(name='customRemarks', value=customRemarks, type=DbCustomRemark)
+        DbSystem._validateAllegiance(name='allegiance', value=allegiance, sectorId=sectorId)
+        DbSystem._validateNobilities(name='nobilities', value=nobilities, systemId=id)
+        DbSystem._validateTradeCodes(name='tradeCodes', value=tradeCodes, systemId=id)
+        DbSystem._validateSophontPopulations(name='sophontPopulations', value=sophontPopulations, systemId=id, sectorId=sectorId)
+        DbSystem._validateRulingAllegiances(name='rulingAllegiances', value=rulingAllegiances, systemId=id, sectorId=sectorId)
+        DbSystem._validateOwningSystems(name='owningSystems', value=owningSystems, systemId=id)
+        DbSystem._validateColonySystems(name='colonySystems', value=colonySystems, systemId=id)
+        DbSystem._validateResearchStations(name='researchStations', value=researchStations, systemId=id)
+        DbSystem._validateBases(name='bases', value=bases, systemId=id)
+        DbSystem._validateStars(name='stars', value=stars, systemId=id)
+        DbSystem._validateCustomRemarks(name='customRemarks', value=customRemarks, systemId=id)
         common.validateOptionalStr(name='notes', value=notes)
-
-        super().__init__(id=id, sectorId=sectorId)
 
         self._hexX = hexX
         self._hexY = hexY
@@ -631,9 +692,26 @@ class DbSystem(DbSectorObject):
             obj.setSystemId(systemId=self._id)
 
     @staticmethod
+    def _validateAllegiance(
+            name: str,
+            value: typing.Optional[DbAllegiance],
+            sectorId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalObject(name=name, value=value, type=DbAllegiance)
+        if not value:
+            return
+
+        if sectorId is not None and sectorId != value.sectorId():
+            raise ValueError('{name} references an allegiance from another sector')
+
+    @staticmethod
     def _validateNobilities(
             name: str,
-            value: typing.Optional[typing.Collection[DbNobility]]
+            value: typing.Optional[typing.Collection[DbNobility]],
+            systemId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -644,6 +722,10 @@ class DbSystem(DbSectorObject):
 
         seen = set()
         for nobility in value:
+            currentSystemId = nobility.systemId()
+            if currentSystemId is not None and currentSystemId != systemId:
+                raise ValueError('{name} contains nobilities that are already attached to a system')
+
             code = nobility.code()
             if code in seen:
                 raise ValueError('{name} contains multiple instances of the same nobility')
@@ -652,7 +734,8 @@ class DbSystem(DbSectorObject):
     @staticmethod
     def _validateTradeCodes(
             name: str,
-            value: typing.Optional[typing.Collection[DbTradeCode]]
+            value: typing.Optional[typing.Collection[DbTradeCode]],
+            systemId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -663,6 +746,10 @@ class DbSystem(DbSectorObject):
 
         seen = set()
         for tradeCode in value:
+            currentSystemId = tradeCode.systemId()
+            if currentSystemId is not None and currentSystemId != systemId:
+                raise ValueError('{name} contains trade codes that are already attached to a system')
+
             code = tradeCode.code()
             if code in seen:
                 raise ValueError('{name} contains multiple instances of the same trade code')
@@ -671,7 +758,9 @@ class DbSystem(DbSectorObject):
     @staticmethod
     def _validateSophontPopulations(
             name: str,
-            value: typing.Optional[typing.Collection[DbSophontPopulation]]
+            value: typing.Optional[typing.Collection[DbSophontPopulation]],
+            systemId: typing.Optional[str],
+            sectorId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -682,7 +771,14 @@ class DbSystem(DbSectorObject):
 
         seen = set()
         for population in value:
+            currentSystemId = population.systemId()
+            if currentSystemId is not None and currentSystemId != systemId:
+                raise ValueError('{name} contains populations that are already attached to a system')
+
             sophont = population.sophont()
+            if sectorId is not None and sectorId != sophont.sectorId():
+                raise ValueError('{name} contains populations that references a sophont from another sector')
+
             if sophont in seen:
                 raise ValueError('{name} contains multiple populations for the same sophont')
             seen.add(sophont)
@@ -690,7 +786,9 @@ class DbSystem(DbSectorObject):
     @staticmethod
     def _validateRulingAllegiances(
             name: str,
-            value: typing.Optional[typing.Collection[DbRulingAllegiance]]
+            value: typing.Optional[typing.Collection[DbRulingAllegiance]],
+            systemId: typing.Optional[str],
+            sectorId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -701,7 +799,14 @@ class DbSystem(DbSectorObject):
 
         seen = set()
         for ruler in value:
+            currentSystemId = ruler.systemId()
+            if currentSystemId is not None and currentSystemId != systemId:
+                raise ValueError('{name} contains ruling allegiances that are already attached to a system')
+
             allegiance = ruler.allegiance()
+            if sectorId is not None and sectorId != allegiance.sectorId():
+                raise ValueError('{name} contains ruling allegiances that references an allegiance from another sector')
+
             if allegiance in seen:
                 raise ValueError('{name} contains multiple ruling allegiances for the same allegiance')
             seen.add(allegiance)
@@ -709,7 +814,8 @@ class DbSystem(DbSectorObject):
     @staticmethod
     def _validateOwningSystems(
             name: str,
-            value: typing.Optional[typing.Collection[DbOwningSystem]]
+            value: typing.Optional[typing.Collection[DbOwningSystem]],
+            systemId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -720,6 +826,10 @@ class DbSystem(DbSectorObject):
 
         seen = set()
         for owner in value:
+            currentSystemId = owner.systemId()
+            if currentSystemId is not None and currentSystemId != systemId:
+                raise ValueError('{name} contains owning systems that are already attached to a system')
+
             key = (owner.hexX(), owner.hexY(), owner.sectorAbbreviation())
             if key in seen:
                 raise ValueError('{name} contains multiple instances of the same owning system')
@@ -728,7 +838,8 @@ class DbSystem(DbSectorObject):
     @staticmethod
     def _validateColonySystems(
             name: str,
-            value: typing.Optional[typing.Collection[DbColonySystem]]
+            value: typing.Optional[typing.Collection[DbColonySystem]],
+            systemId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -739,6 +850,10 @@ class DbSystem(DbSectorObject):
 
         seen = set()
         for colony in value:
+            currentSystemId = colony.systemId()
+            if currentSystemId is not None and currentSystemId != systemId:
+                raise ValueError('{name} contains colony systems that are already attached to a system')
+
             key = (colony.hexX(), colony.hexY(), colony.sectorAbbreviation())
             if key in seen:
                 raise ValueError('{name} contains multiple instances of the same colony system')
@@ -747,7 +862,8 @@ class DbSystem(DbSectorObject):
     @staticmethod
     def _validateResearchStations(
             name: str,
-            value: typing.Optional[typing.Collection[DbResearchStation]]
+            value: typing.Optional[typing.Collection[DbResearchStation]],
+            systemId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -758,6 +874,10 @@ class DbSystem(DbSectorObject):
 
         seen = set()
         for station in value:
+            currentSystemId = station.systemId()
+            if currentSystemId is not None and currentSystemId != systemId:
+                raise ValueError('{name} contains research stations that are already attached to a system')
+
             code = station.code()
             if code in seen:
                 raise ValueError('{name} contains multiple instances of the same research station')
@@ -766,7 +886,8 @@ class DbSystem(DbSectorObject):
     @staticmethod
     def _validateBases(
             name: str,
-            value: typing.Optional[typing.Collection[DbBase]]
+            value: typing.Optional[typing.Collection[DbBase]],
+            systemId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -777,10 +898,50 @@ class DbSystem(DbSectorObject):
 
         seen = set()
         for base in value:
+            currentSystemId = base.systemId()
+            if currentSystemId is not None and currentSystemId != systemId:
+                raise ValueError('{name} contains bases that are already attached to a system')
+
             code = base.code()
             if code in seen:
                 raise ValueError('{name} contains multiple instances of the same base code')
             seen.add(code)
+
+    @staticmethod
+    def _validateStars(
+            name: str,
+            value: typing.Optional[typing.Collection[DbStar]],
+            systemId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbStar)
+        if not value:
+            return
+
+        for base in value:
+            currentSystemId = base.systemId()
+            if currentSystemId is not None and currentSystemId != systemId:
+                raise ValueError('{name} contains stars that are already attached to a system')
+
+    @staticmethod
+    def _validateCustomRemarks(
+            name: str,
+            value: typing.Optional[typing.Collection[DbCustomRemark]],
+            systemId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbCustomRemark)
+        if not value:
+            return
+
+        for base in value:
+            currentSystemId = base.systemId()
+            if currentSystemId is not None and currentSystemId != systemId:
+                raise ValueError('{name} contains custom remarks that are already attached to a system')
 
 class DbAlternateName(DbSectorObject):
     def __init__(
@@ -790,10 +951,10 @@ class DbAlternateName(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, sectorId=sectorId)
+
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
         common.validateOptionalStr(name='language', value=language, allowEmpty=False)
-
-        super().__init__(id=id, sectorId=sectorId)
 
         self._name = name
         self._language = language
@@ -812,10 +973,10 @@ class DbSubsectorName(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, sectorId=sectorId)
+
         common.validateMandatoryStr(name='code', value=code, allowed=_ValidSubsectorCodes)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-
-        super().__init__(id=id, sectorId=sectorId)
 
         self._code = code
         self._name = name
@@ -848,6 +1009,8 @@ class DbRoute(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, sectorId=sectorId)
+
         common.validateMandatoryInt(name='startHexX', value=startHexX)
         common.validateMandatoryInt(name='startHexY', value=startHexY)
         common.validateMandatoryInt(name='endHexX', value=endHexX)
@@ -861,8 +1024,6 @@ class DbRoute(DbSectorObject):
         common.validateOptionalHtmlColour(name='colour', value=colour)
         common.validateOptionalFloat(name='width', value=width, min=0)
         common.validateOptionalObject(name='allegiance', value=allegiance, type=DbAllegiance)
-
-        super().__init__(id=id, sectorId=sectorId)
 
         self._startHexX = startHexX
         self._startHexY = startHexY
@@ -932,6 +1093,8 @@ class DbBorder(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, sectorId=sectorId)
+
         common.validateMandatoryCollection(name='hexes', value=hexes, allowEmpty=False, validationFn=DbBorder._hexTupleValidator)
         common.validateOptionalObject(name='allegiance', value=allegiance, type=DbAllegiance)
         common.validateOptionalStr(name='style', value=style, allowed=_ValidLineStyles)
@@ -941,8 +1104,6 @@ class DbBorder(DbSectorObject):
         common.validateOptionalFloat(name='labelWorldY', value=labelWorldY)
         common.validateMandatoryBool(name='showLabel', value=showLabel)
         common.validateMandatoryBool(name='wrapLabel', value=wrapLabel)
-
-        super().__init__(id=id, sectorId=sectorId)
 
         self._hexes = list(hexes)
         self._allegiance = allegiance
@@ -1002,6 +1163,8 @@ class DbRegion(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, sectorId=sectorId)
+
         common.validateMandatoryCollection(name='hexes', value=hexes, allowEmpty=False, validationFn=DbBorder._hexTupleValidator)
         common.validateOptionalHtmlColour(name='colour', value=colour)
         common.validateOptionalStr(name='label', value=label, allowEmpty=False)
@@ -1009,8 +1172,6 @@ class DbRegion(DbSectorObject):
         common.validateOptionalFloat(name='labelWorldY', value=labelWorldY)
         common.validateMandatoryBool(name='showLabel', value=showLabel)
         common.validateMandatoryBool(name='wrapLabel', value=wrapLabel)
-
-        super().__init__(id=id, sectorId=sectorId)
 
         self._hexes = list(hexes)
         self._colour = colour
@@ -1060,14 +1221,14 @@ class DbLabel(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, sectorId=sectorId)
+
         common.validateMandatoryStr(name='text', value=text)
         common.validateMandatoryFloat(name='worldX', value=worldX)
         common.validateMandatoryFloat(name='worldY', value=worldY)
         common.validateOptionalHtmlColour(name='colour', value=colour)
         common.validateOptionalStr(name='size', value=size, allowed=_ValidLabelSizes)
         common.validateMandatoryBool(name='wrap', value=wrap)
-
-        super().__init__(id=id, sectorId=sectorId)
 
         self._text = text
         self._worldX = worldX
@@ -1104,12 +1265,12 @@ class DbProduct(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, sectorId=sectorId)
+
         common.validateOptionalStr(name='publication', value=publication, allowEmpty=False)
         common.validateOptionalStr(name='author', value=author, allowEmpty=False)
         common.validateOptionalStr(name='publisher', value=publisher, allowEmpty=False)
         common.validateOptionalStr(name='reference', value=reference, allowEmpty=False)
-
-        super().__init__(id=id, sectorId=sectorId)
 
         self._publication = publication
         self._author = author
@@ -1135,9 +1296,10 @@ class DbTag(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, sectorId=sectorId)
+
         common.validateMandatoryStr(name='tag', value=tag, allowEmpty=False)
 
-        super().__init__(id=id, sectorId=sectorId)
         self._string = tag
 
     def tag(self) -> str:
@@ -1175,6 +1337,8 @@ class DbSector(DbUniverseObject):
             id: typing.Optional[str] = None, # None means allocate an id
             universeId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id, universeId=universeId)
+
         common.validateMandatoryBool(name='isCustom', value=isCustom)
         common.validateMandatoryStr(name='milieu', value=milieu, allowed=_ValidMilieu)
         common.validateMandatoryInt(name='sectorX', value=sectorX)
@@ -1184,25 +1348,23 @@ class DbSector(DbUniverseObject):
         common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
         common.validateOptionalStr(name='sectorLabel', value=sectorLabel, allowEmpty=False)
         common.validateMandatoryBool(name='selected', value=selected)
-        common.validateOptionalCollection(name='alternateNames', value=alternateNames, type=DbAlternateName)
-        DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames)
-        DbSector._validateAllegiances(name='allegiances', value=allegiances)
-        DbSector._validateSophonts(name='sophonts', value=sophonts)
-        DbSector._validateSystems(name='systems', value=systems)
-        common.validateOptionalCollection(name='routes', value=routes, type=DbRoute)
-        common.validateOptionalCollection(name='borders', value=borders, type=DbBorder)
-        common.validateOptionalCollection(name='regions', value=regions, type=DbRegion)
-        common.validateOptionalCollection(name='labels', value=labels, type=DbLabel)
-        common.validateOptionalCollection(name='tags', value=tags, type=DbTag)
+        DbSector._validateAlternateNames(name='alternateNames', value=alternateNames, sectorId=id)
+        DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames, sectorId=id)
+        DbSector._validateAllegiances(name='allegiances', value=allegiances, sectorId=id)
+        DbSector._validateSophonts(name='sophonts', value=sophonts, sectorId=id)
+        DbSector._validateSystems(name='systems', value=systems, sectorId=id)
+        DbSector._validateRoutes(name='routes', value=routes, sectorId=id)
+        DbSector._validateBorders(name='borders', value=borders, sectorId=id)
+        DbSector._validateRegions(name='regions', value=regions, sectorId=id)
+        DbSector._validateLabels(name='labels', value=labels, sectorId=id)
+        DbSector._validateTags(name='tags', value=tags, sectorId=id)
         common.validateOptionalStr(name='credits', value=credits, allowEmpty=False)
         common.validateOptionalStr(name='publication', value=publication, allowEmpty=False)
         common.validateOptionalStr(name='author', value=author, allowEmpty=False)
         common.validateOptionalStr(name='publisher', value=publisher, allowEmpty=False)
         common.validateOptionalStr(name='reference', value=reference, allowEmpty=False)
-        common.validateOptionalCollection(name='products', value=products, type=DbProduct)
+        DbSector._validateProducts(name='products', value=products, sectorId=id)
         common.validateOptionalStr(name='notes', value=notes)
-
-        super().__init__(id=id, universeId=universeId)
 
         self._isCustom = isCustom
         self._milieu = milieu
@@ -1331,9 +1493,26 @@ class DbSector(DbUniverseObject):
             obj.setSectorId(sectorId=self._id)
 
     @staticmethod
+    def _validateAlternateNames(
+            name: str,
+            value: typing.Optional[typing.Collection[DbAlternateName]],
+            sectorId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbAlternateName)
+
+        for alternateName in value:
+            currentSectorId = alternateName.sectorId()
+            if currentSectorId is not None and currentSectorId != sectorId:
+                raise ValueError('{name} contains alternate names that are already attached to a sector')
+
+    @staticmethod
     def _validateSubsectorNames(
             name: str,
-            value: typing.Optional[typing.Collection[DbSubsectorName]]
+            value: typing.Optional[typing.Collection[DbSubsectorName]],
+            sectorId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -1342,6 +1521,10 @@ class DbSector(DbUniverseObject):
 
         seen = set()
         for subsectorName in value:
+            currentSectorId = subsectorName.sectorId()
+            if currentSectorId is not None and currentSectorId != sectorId:
+                raise ValueError('{name} contains subsector names that are already attached to a sector')
+
             code = subsectorName.code()
             if code in seen:
                 raise ValueError('{name} contains multiple names for the same subsector')
@@ -1350,7 +1533,8 @@ class DbSector(DbUniverseObject):
     @staticmethod
     def _validateAllegiances(
             name: str,
-            value: typing.Optional[typing.Collection[DbAllegiance]]
+            value: typing.Optional[typing.Collection[DbAllegiance]],
+            sectorId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -1359,6 +1543,10 @@ class DbSector(DbUniverseObject):
 
         seen = set()
         for allegiance in value:
+            currentSectorId = allegiance.sectorId()
+            if currentSectorId is not None and currentSectorId != sectorId:
+                raise ValueError('{name} contains allegiances that are already attached to a sector')
+
             code = allegiance.code()
             if code in seen:
                 raise ValueError('{name} contains multiple allegiances with the same code')
@@ -1367,7 +1555,8 @@ class DbSector(DbUniverseObject):
     @staticmethod
     def _validateSophonts(
             name: str,
-            value: typing.Optional[typing.Collection[DbSophont]]
+            value: typing.Optional[typing.Collection[DbSophont]],
+            sectorId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -1377,6 +1566,10 @@ class DbSector(DbUniverseObject):
         seenCodes = set()
         seenNames = set()
         for sophont in value:
+            currentSectorId = sophont.sectorId()
+            if currentSectorId is not None and currentSectorId != sectorId:
+                raise ValueError('{name} contains sophonts that are already attached to a sector')
+
             code = sophont.code()
             if code in seenCodes:
                 raise ValueError('{name} contains multiple sophonts with the same code')
@@ -1390,7 +1583,8 @@ class DbSector(DbUniverseObject):
     @staticmethod
     def _validateSystems(
             name: str,
-            value: typing.Optional[typing.Collection[DbSystem]]
+            value: typing.Optional[typing.Collection[DbSystem]],
+            sectorId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
@@ -1399,10 +1593,110 @@ class DbSector(DbUniverseObject):
 
         seen = set()
         for system in value:
+            currentSectorId = system.sectorId()
+            if currentSectorId is not None and currentSectorId != sectorId:
+                raise ValueError('{name} contains systems that are already attached to a sector')
+
             key = (system.hexX(), system.hexY())
             if key in seen:
                 raise ValueError('{name} contains multiple systems with the same location')
             seen.add(key)
+
+    @staticmethod
+    def _validateRoutes(
+            name: str,
+            value: typing.Optional[typing.Collection[DbRoute]],
+            sectorId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbRoute)
+
+        for route in value:
+            currentSectorId = route.sectorId()
+            if currentSectorId is not None and currentSectorId != sectorId:
+                raise ValueError('{name} contains routes that are already attached to a sector')
+
+    @staticmethod
+    def _validateBorders(
+            name: str,
+            value: typing.Optional[typing.Collection[DbBorder]],
+            sectorId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbBorder)
+
+        for border in value:
+            currentSectorId = border.sectorId()
+            if currentSectorId is not None and currentSectorId != sectorId:
+                raise ValueError('{name} contains borders that are already attached to a sector')
+
+    @staticmethod
+    def _validateRegions(
+            name: str,
+            value: typing.Optional[typing.Collection[DbRegion]],
+            sectorId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbRegion)
+
+        for region in value:
+            currentSectorId = region.sectorId()
+            if currentSectorId is not None and currentSectorId != sectorId:
+                raise ValueError('{name} contains regions that are already attached to a sector')
+
+    @staticmethod
+    def _validateLabels(
+            name: str,
+            value: typing.Optional[typing.Collection[DbLabel]],
+            sectorId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbLabel)
+
+        for label in value:
+            currentSectorId = label.sectorId()
+            if currentSectorId is not None and currentSectorId != sectorId:
+                raise ValueError('{name} contains labels that are already attached to a sector')
+
+    @staticmethod
+    def _validateTags(
+            name: str,
+            value: typing.Optional[typing.Collection[DbTag]],
+            sectorId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbTag)
+
+        for tag in value:
+            currentSectorId = tag.sectorId()
+            if currentSectorId is not None and currentSectorId != sectorId:
+                raise ValueError('{name} contains tags that are already attached to a sector')
+
+    @staticmethod
+    def _validateProducts(
+            name: str,
+            value: typing.Optional[typing.Collection[DbProduct]],
+            sectorId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbProduct)
+
+        for tag in value:
+            currentSectorId = tag.sectorId()
+            if currentSectorId is not None and currentSectorId != sectorId:
+                raise ValueError('{name} contains products that are already attached to a sector')
 
 # TODO: This needs updated to be immutable like the other db objects
 class DbUniverse(DbObject):
@@ -1414,14 +1708,12 @@ class DbUniverse(DbObject):
             notes: typing.Optional[str] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             ) -> None:
+        super().__init__(id=id)
+
         common.validateMandatoryStr(name='name', value=name)
         common.validateOptionalStr(name='description', value=description)
-        # TODO: Check there aren't multiple selectors at the same position/milieu
-        # TODO: Check sector names are unique?? Depends on if they're unique in the DB
-        common.validateOptionalCollection(name='sectors', value=sectors, type=DbSector)
+        DbUniverse._validateSectors(name='sectors', value=sectors, universeId=id)
         common.validateOptionalStr(name='notes', value=notes)
-
-        super().__init__(id=id)
 
         self._sectorByMilieuPosition: typing.Dict[typing.Tuple[str, int, int], DbSector] = {}
 
@@ -1492,3 +1784,25 @@ class DbUniverse(DbObject):
                 del self._sectorByMilieuPosition[(sector.milieu(), sector.sectorX(), sector.sectorY())]
                 del self._sectors[i]
                 return
+
+    @staticmethod
+    def _validateSectors(
+            name: str,
+            value: typing.Optional[typing.Collection[DbSector]],
+            universeId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbSector)
+
+        seen = set()
+        for sector in value:
+            currentSectorId = sector.universeId()
+            if currentSectorId is not None and currentSectorId != universeId:
+                raise ValueError('{name} contains sectors that are already attached to a universe')
+
+            key = (sector.sectorX(), sector.sectorY(), sector.milieu())
+            if key in seen:
+                raise ValueError('{name} contains multiple systems with the same location and milieu')
+            seen.add(key)
