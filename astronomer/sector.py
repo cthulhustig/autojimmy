@@ -70,6 +70,7 @@ class Sector(object):
             # Subsectors should be ordered in subsector order (i.e. A-P)
             subsectors: typing.Iterable[Subsector],
             allegiances: typing.Iterable[astronomer.Allegiance],
+            sophonts: typing.Iterable[astronomer.Sophont],
             routes: typing.Iterable[astronomer.Route],
             borders: typing.Iterable[astronomer.Border],
             regions: typing.Iterable[astronomer.Region],
@@ -86,6 +87,7 @@ class Sector(object):
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
         self._allegiances = list(allegiances)
+        self._sophonts = list(sophonts)
         self._routes = list(routes)
         self._borders = list(borders)
         self._regions = list(regions)

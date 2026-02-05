@@ -212,6 +212,10 @@ def _hexToSectorWorldOffset(
 
         return (worldX, worldY)
 
+# TODO: For some reason I'm ending up with allegiances that have
+# a code of ?? and name of Unknown in the database. This looks
+# like it's meant to mean there is no allegiance but I'm not sure
+# where they're coming from
 def _findUsedAllegianceCodes(
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld]
@@ -1120,7 +1124,7 @@ def _createDbSophontPopulations(
 
         try:
             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophont=dbSophont,
+                sophontCode=dbSophont.code(),
                 percentage=rawPopulation,
                 isHomeWorld=True,
                 isDieBack=False))
@@ -1149,7 +1153,7 @@ def _createDbSophontPopulations(
 
         try:
             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophont=dbSophont,
+                sophontCode=dbSophont.code(),
                 percentage=rawPopulation,
                 isHomeWorld=True,
                 isDieBack=False))
@@ -1178,7 +1182,7 @@ def _createDbSophontPopulations(
 
         try:
             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophont=dbSophont,
+                sophontCode=dbSophont.code(),
                 percentage=rawPopulation,
                 isHomeWorld=False,
                 isDieBack=False))
@@ -1207,7 +1211,7 @@ def _createDbSophontPopulations(
 
         try:
             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophont=dbSophont,
+                sophontCode=dbSophont.code(),
                 percentage=None,
                 isHomeWorld=False,
                 isDieBack=True))
@@ -1338,7 +1342,7 @@ def _createDbRulingAllegiances(
             raise RuntimeError(f'Military rule trade code (Mr) in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
 
         try:
-            dbRulingAllegiances.append(multiverse.DbRulingAllegiance(allegiance=dbAllegiance))
+            dbRulingAllegiances.append(multiverse.DbRulingAllegiance(allegianceCode=dbAllegiance.code()))
         except Exception as ex:
             logging.error('Converter failed to construct ruling allegiance on world {world} in {sector} at {milieu}'.format(
                     world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
@@ -1645,7 +1649,7 @@ def _createDbSystems(
                 gasGiants=dbGasGiants,
                 zone=dbZone,
                 systemWorlds=dbSystemWorlds,
-                allegiance=dbAllegiance,
+                allegianceCode=dbAllegiance.code() if dbAllegiance else None,
                 nobilities=dbNobilities,
                 tradeCodes=dbTradeCodes,
                 sophontPopulations=dbSophontPopulations,
@@ -1746,7 +1750,7 @@ def _createDbRoutes(
                 style=dbStyle,
                 colour=dbColour,
                 width=dbWidth,
-                allegiance=dbAllegiance))
+                allegianceCode=dbAllegiance.code() if dbAllegiance else None))
 
     return dbRoutes
 
@@ -1834,7 +1838,7 @@ def _createDbBorders(
 
             dbBorders.append(multiverse.DbBorder(
                 hexes=dbHexes,
-                allegiance=dbAllegiance,
+                allegianceCode=dbAllegiance.code() if dbAllegiance else None,
                 style=dbStyle,
                 colour=dbColour,
                 label=dbLabel,

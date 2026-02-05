@@ -229,17 +229,17 @@ class DbAllegiance(DbSectorObject):
 class DbRulingAllegiance(DbSystemObject):
     def __init__(
             self,
-            allegiance: DbAllegiance,
+            allegianceCode: str,
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
         super().__init__(id=id, systemId=systemId)
 
-        common.validateMandatoryObject(name='allegiance', value=allegiance, type=DbAllegiance)
+        common.validateMandatoryStr(name='allegianceCode', value=allegianceCode, allowEmpty=False)
 
-        self._allegiance = allegiance
+        self._allegiance = allegianceCode
 
-    def allegiance(self) -> DbAllegiance:
+    def allegianceCode(self) -> str:
         return self._allegiance
 
 class DbSophont(DbSectorObject):
@@ -273,7 +273,7 @@ class DbSophont(DbSectorObject):
 class DbSophontPopulation(DbSystemObject):
     def __init__(
             self,
-            sophont: DbSophont,
+            sophontCode: str,
             percentage: typing.Optional[int], # None means it's a die back sophont
             isHomeWorld: bool,
             isDieBack: bool,
@@ -282,18 +282,18 @@ class DbSophontPopulation(DbSystemObject):
             ) -> None:
         super().__init__(id=id, systemId=systemId)
 
-        common.validateMandatoryObject(name='sophont', value=sophont, type=DbSophont)
+        common.validateMandatoryStr(name='sophontCode', value=sophontCode, allowEmpty=False)
         common.validateOptionalInt(name='percentage', value=percentage, min=0, max=100)
         common.validateMandatoryBool(name='isHomeWorld', value=isHomeWorld)
         common.validateMandatoryBool(name='isDieBack', value=isDieBack)
 
-        self._sophont = sophont
+        self._sophontCode = sophontCode
         self._percentage = percentage
         self._isHomeWorld = isHomeWorld
         self._isDieBack = isDieBack
 
-    def sophont(self) -> DbSophont:
-        return self._sophont
+    def sophontCode(self) -> str:
+        return self._sophontCode
 
     def percentage(self) -> typing.Optional[int]:
         return self._percentage
@@ -472,7 +472,7 @@ class DbSystem(DbSectorObject):
             # the same? I'm not sure if it's stored as ehex in the file. If it's
             # not, should I convert it to ehex for consistency (what range does it need?)
             systemWorlds: typing.Optional[int] = None,
-            allegiance: typing.Optional[DbAllegiance] = None,
+            allegianceCode: typing.Optional[str] = None,
             nobilities: typing.Optional[typing.Collection[DbNobility]] = None,
             tradeCodes: typing.Optional[typing.Collection[DbTradeCode]] = None,
             sophontPopulations: typing.Optional[typing.Collection[DbSophontPopulation]] = None,
@@ -513,7 +513,7 @@ class DbSystem(DbSectorObject):
         survey.validateOptionalGasGiants(name='gasGiants', value=gasGiants)
         survey.validateOptionalZone(name='zone', value=zone)
         common.validateOptionalInt(name='systemWorlds', value=systemWorlds, min=0)
-        DbSystem._validateAllegiance(name='allegiance', value=allegiance, sectorId=sectorId)
+        common.validateOptionalStr(name='allegianceCode', value=allegianceCode, allowEmpty=False)
         DbSystem._validateNobilities(name='nobilities', value=nobilities, systemId=id)
         DbSystem._validateTradeCodes(name='tradeCodes', value=tradeCodes, systemId=id)
         DbSystem._validateSophontPopulations(name='sophontPopulations', value=sophontPopulations, systemId=id, sectorId=sectorId)
@@ -550,7 +550,7 @@ class DbSystem(DbSectorObject):
         self._gasGiants = gasGiants
         self._zone = zone
         self._systemWorlds = systemWorlds
-        self._allegiance = allegiance
+        self._allegianceCode = allegianceCode
         self._notes = notes
 
         self._nobilities = list(nobilities) if nobilities else None
@@ -646,8 +646,8 @@ class DbSystem(DbSectorObject):
     def systemWorlds(self) -> typing.Optional[int]:
         return self._systemWorlds
 
-    def allegiance(self) -> typing.Optional[DbAllegiance]:
-        return self._allegiance
+    def allegianceCode(self) -> typing.Optional[str]:
+        return self._allegianceCode
 
     def nobilities(self) -> typing.Optional[typing.Collection[DbNobility]]:
         return self._nobilities
@@ -690,22 +690,6 @@ class DbSystem(DbSectorObject):
             return
         for obj in objects:
             obj.setSystemId(systemId=self._id)
-
-    @staticmethod
-    def _validateAllegiance(
-            name: str,
-            value: typing.Optional[DbAllegiance],
-            sectorId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateOptionalObject(name=name, value=value, type=DbAllegiance)
-        if not value:
-            return
-
-        if sectorId is not None and sectorId != value.sectorId():
-            raise ValueError('{name} references an allegiance from another sector')
 
     @staticmethod
     def _validateNobilities(
@@ -775,7 +759,7 @@ class DbSystem(DbSectorObject):
             if currentSystemId is not None and currentSystemId != systemId:
                 raise ValueError('{name} contains populations that are already attached to a system')
 
-            sophont = population.sophont()
+            sophont = population.sophontCode()
             if sectorId is not None and sectorId != sophont.sectorId():
                 raise ValueError('{name} contains populations that references a sophont from another sector')
 
@@ -803,7 +787,7 @@ class DbSystem(DbSectorObject):
             if currentSystemId is not None and currentSystemId != systemId:
                 raise ValueError('{name} contains ruling allegiances that are already attached to a system')
 
-            allegiance = ruler.allegiance()
+            allegiance = ruler.allegianceCode()
             if sectorId is not None and sectorId != allegiance.sectorId():
                 raise ValueError('{name} contains ruling allegiances that references an allegiance from another sector')
 
@@ -1005,7 +989,7 @@ class DbRoute(DbSectorObject):
             style: typing.Optional[str] = None,
             colour: typing.Optional[str] = None,
             width: typing.Optional[float] = None,
-            allegiance: typing.Optional[DbAllegiance] = None,
+            allegianceCode: typing.Optional[str] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
@@ -1023,7 +1007,7 @@ class DbRoute(DbSectorObject):
         common.validateOptionalStr(name='style', value=style, allowed=_ValidLineStyles)
         common.validateOptionalHtmlColour(name='colour', value=colour)
         common.validateOptionalFloat(name='width', value=width, min=0)
-        common.validateOptionalObject(name='allegiance', value=allegiance, type=DbAllegiance)
+        common.validateOptionalStr(name='allegianceCode', value=allegianceCode, allowEmpty=False)
 
         self._startHexX = startHexX
         self._startHexY = startHexY
@@ -1037,7 +1021,7 @@ class DbRoute(DbSectorObject):
         self._style = style
         self._colour = colour
         self._width = width
-        self._allegiance = allegiance
+        self._allegianceCode = allegianceCode
 
     def startHexX(self) -> int:
         return self._startHexX
@@ -1075,14 +1059,14 @@ class DbRoute(DbSectorObject):
     def width(self) -> typing.Optional[float]:
         return self._width
 
-    def allegiance(self) -> typing.Optional[DbAllegiance]:
-        return self._allegiance
+    def allegianceCode(self) -> typing.Optional[str]:
+        return self._allegianceCode
 
 class DbBorder(DbSectorObject):
     def __init__(
             self,
             hexes: typing.Sequence[typing.Tuple[int, int]],
-            allegiance: typing.Optional[DbAllegiance] = None,
+            allegianceCode: typing.Optional[str] = None,
             style: typing.Optional[str] = None,
             colour: typing.Optional[str] = None,
             label: typing.Optional[str] = None,
@@ -1096,7 +1080,7 @@ class DbBorder(DbSectorObject):
         super().__init__(id=id, sectorId=sectorId)
 
         common.validateMandatoryCollection(name='hexes', value=hexes, allowEmpty=False, validationFn=DbBorder._hexTupleValidator)
-        common.validateOptionalObject(name='allegiance', value=allegiance, type=DbAllegiance)
+        common.validateOptionalStr(name='allegianceCode', value=allegianceCode, allowEmpty=False)
         common.validateOptionalStr(name='style', value=style, allowed=_ValidLineStyles)
         common.validateOptionalHtmlColour(name='colour', value=colour)
         common.validateOptionalStr(name='label', value=label, allowEmpty=False)
@@ -1106,7 +1090,7 @@ class DbBorder(DbSectorObject):
         common.validateMandatoryBool(name='wrapLabel', value=wrapLabel)
 
         self._hexes = list(hexes)
-        self._allegiance = allegiance
+        self._allegianceCode = allegianceCode
         self._style = style
         self._colour = colour
         self._label = label
@@ -1118,8 +1102,8 @@ class DbBorder(DbSectorObject):
     def hexes(self) -> typing.Sequence[typing.Tuple[int, int]]:
         return self._hexes
 
-    def allegiance(self) -> typing.Optional[DbAllegiance]:
-        return self._allegiance
+    def allegianceCode(self) -> typing.Optional[str]:
+        return self._allegianceCode
 
     def style(self) -> typing.Optional[str]:
         return self._style

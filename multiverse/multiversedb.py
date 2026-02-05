@@ -1044,9 +1044,7 @@ class MultiverseDb(object):
                     ColumnDef(columnName='gas_giants', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='zone', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='system_worlds', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
-                    ColumnDef(columnName='allegiance_id', columnType=ColumnDef.ColumnType.Text, isNullable=True,
-                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.SetNull),
+                    ColumnDef(columnName='allegiance_code', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='notes', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
                     UniqueConstraintDef(columnNames=['sector_id', 'hex_x', 'hex_y'])])
@@ -1086,14 +1084,12 @@ class MultiverseDb(object):
                     ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    ColumnDef(columnName='sophont_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SophontsTableName, foreignColumnName='id',
-                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='sophont_code', columnType=ColumnDef.ColumnType.Text, isNullable=False),
                     ColumnDef(columnName='percentage', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
                     ColumnDef(columnName='is_home_world', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
                     ColumnDef(columnName='is_die_back', columnType=ColumnDef.ColumnType.Boolean, isNullable=False)],
                 uniqueConstraints=[
-                    UniqueConstraintDef(columnNames=['system_id', 'sophont_id'])])
+                    UniqueConstraintDef(columnNames=['system_id', 'sophont_code'])])
 
             self._internalCreateTable(
                 cursor=cursor,
@@ -1104,11 +1100,9 @@ class MultiverseDb(object):
                     ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    ColumnDef(columnName='allegiance_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade)],
+                    ColumnDef(columnName='allegiance_code', columnType=ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
-                    UniqueConstraintDef(columnNames=['system_id', 'allegiance_id'])])
+                    UniqueConstraintDef(columnNames=['system_id', 'allegiance_code'])])
 
             self._internalCreateTable(
                 cursor=cursor,
@@ -1221,9 +1215,7 @@ class MultiverseDb(object):
                     ColumnDef(columnName='style', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='width', columnType=ColumnDef.ColumnType.Real, isNullable=True),
-                    ColumnDef(columnName='allegiance_id', columnType=ColumnDef.ColumnType.Text, isNullable=True,
-                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.SetNull)])
+                    ColumnDef(columnName='allegiance_code', columnType=ColumnDef.ColumnType.Text, isNullable=True)])
 
             self._internalCreateTable(
                 cursor=cursor,
@@ -1234,9 +1226,7 @@ class MultiverseDb(object):
                     ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    ColumnDef(columnName='allegiance_id', columnType=ColumnDef.ColumnType.Text, isNullable=True,
-                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.SetNull),
+                    ColumnDef(columnName='allegiance_code', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='style', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='label', columnType=ColumnDef.ColumnType.Text, isNullable=True),
@@ -1964,7 +1954,6 @@ class MultiverseDb(object):
             baseRows = []
             starRows = []
             for system in sector.systems():
-                allegiance = system.allegiance()
                 systemRows.append({
                     'id': system.id(),
                     'sector_id': system.sectorId(),
@@ -1992,7 +1981,7 @@ class MultiverseDb(object):
                     'gas_giants': system.gasGiants(),
                     'zone': system.zone(),
                     'system_worlds': system.systemWorlds(),
-                    'allegiance_id': allegiance.id() if allegiance else None,
+                    'allegiance_code': system.allegianceCode(),
                     'notes': system.notes()})
 
                 if system.nobilities():
@@ -2014,7 +2003,7 @@ class MultiverseDb(object):
                         sophontPopulationRows.append({
                             'id': sophont.id(),
                             'system_id': sophont.systemId(),
-                            'sophont_id': sophont.sophont().id(),
+                            'sophont_code': sophont.sophontCode(),
                             'percentage': sophont.percentage(),
                             'is_home_world': 1 if sophont.isHomeWorld() else 0,
                             'is_die_back': 1 if sophont.isDieBack() else 0})
@@ -2024,7 +2013,7 @@ class MultiverseDb(object):
                         rulingAllegianceRows.append({
                             'id': rulingAllegiance.id(),
                             'system_id': rulingAllegiance.systemId(),
-                            'allegiance_id': rulingAllegiance.allegiance().id()})
+                            'allegiance_code': rulingAllegiance.allegianceCode()})
 
                 if system.owningSystems():
                     for owningSystem in system.owningSystems():
@@ -2081,13 +2070,13 @@ class MultiverseDb(object):
                         resources, labour, infrastructure, efficiency,
                         heterogeneity, acceptance, strangeness, symbols,
                         population_multiplier, planetoid_belts, gas_giants,
-                        zone, system_worlds, allegiance_id, notes)
+                        zone, system_worlds, allegiance_code, notes)
                     VALUES (:id, :sector_id, :hex_x, :hex_y, :name,
                         :starport, :world_size, :atmosphere, :hydrographics, :population, :government, :law_level, :tech_level,
                         :resources, :labour, :infrastructure, :efficiency,
                         :heterogeneity, :acceptance, :strangeness, :symbols,
                         :population_multiplier, :planetoid_belts, :gas_giants,
-                        :zone, :system_worlds, :allegiance_id, :notes);
+                        :zone, :system_worlds, :allegiance_code, :notes);
                     """.format(table=MultiverseDb._SystemsTableName)
                 cursor.executemany(sql, systemRows)
             if nobilitiesRows:
@@ -2104,14 +2093,14 @@ class MultiverseDb(object):
                 cursor.executemany(sql, tradeCodeRows)
             if sophontPopulationRows:
                 sql = """
-                    INSERT INTO {table} (id, system_id, sophont_id, percentage, is_home_world, is_die_back)
-                    VALUES (:id, :system_id, :sophont_id, :percentage, :is_home_world, :is_die_back)
+                    INSERT INTO {table} (id, system_id, sophont_code, percentage, is_home_world, is_die_back)
+                    VALUES (:id, :system_id, :sophont_code, :percentage, :is_home_world, :is_die_back)
                     """.format(table=MultiverseDb._SophontPopulationsTableName)
                 cursor.executemany(sql, sophontPopulationRows)
             if rulingAllegianceRows:
                 sql = """
-                    INSERT INTO {table} (id, system_id, allegiance_id)
-                    VALUES (:id, :system_id, :allegiance_id)
+                    INSERT INTO {table} (id, system_id, allegiance_code)
+                    VALUES (:id, :system_id, :allegiance_code)
                     """.format(table=MultiverseDb._RulingAllegiancesTableName)
                 cursor.executemany(sql, rulingAllegianceRows)
             if owningSystemRows:
@@ -2155,14 +2144,13 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, sector_id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
                     start_offset_x, start_offset_y, end_offset_x, end_offset_y, type, style,
-                    colour, width, allegiance_id)
+                    colour, width, allegiance_code)
                 VALUES (:id, :sector_id, :start_hex_x, :start_hex_y, :end_hex_x, :end_hex_y,
                     :start_offset_x, :start_offset_y, :end_offset_x, :end_offset_y, :type, :style,
-                    :colour, :width, :allegiance_id);
+                    :colour, :width, :allegiance_code);
                 """.format(table=MultiverseDb._RoutesTableName)
             rows = []
             for route in sector.routes():
-                allegiance = route.allegiance()
                 rows.append({
                     'id': route.id(),
                     'sector_id': route.sectorId(),
@@ -2178,14 +2166,14 @@ class MultiverseDb(object):
                     'style': route.style(),
                     'colour': route.colour(),
                     'width': route.width(),
-                    'allegiance_id': allegiance.id() if allegiance else None})
+                    'allegiance_code': route.allegianceCode()})
             cursor.executemany(sql, rows)
 
         if sector.borders():
             bordersSql = """
-                INSERT INTO {table} (id, sector_id, allegiance_id, style, colour,
+                INSERT INTO {table} (id, sector_id, allegiance_code, style, colour,
                     label, label_x, label_y, show_label, wrap_label)
-                VALUES (:id, :sector_id, :allegiance_id, :style, :colour,
+                VALUES (:id, :sector_id, :allegiance_code, :style, :colour,
                     :label, :label_x, :label_y, :show_label, :wrap_label);
                 """.format(table=MultiverseDb._BordersTableName)
             hexesSql =  """
@@ -2195,11 +2183,10 @@ class MultiverseDb(object):
             borderRows = []
             hexRows = []
             for border in sector.borders():
-                allegiance = border.allegiance()
                 borderRows.append({
                     'id': border.id(),
                     'sector_id': border.sectorId(),
-                    'allegiance_id': allegiance.id() if allegiance else None,
+                    'allegiance_code': border.allegianceCode(),
                     'style': border.style(),
                     'colour': border.colour(),
                     'label': border.label(),
@@ -2316,17 +2303,13 @@ class MultiverseDb(object):
             sectorId=sectorId)
         systems = self._internalReadSectorSystems(
             cursor=cursor,
-            sectorId=sectorId,
-            allegiances=allegiances,
-            sophonts=sophonts)
+            sectorId=sectorId)
         routes = self._internalReadSectorRoutes(
             cursor=cursor,
-            sectorId=sectorId,
-            allegiances=allegiances)
+            sectorId=sectorId)
         borders = self._internalReadSectorBorders(
             cursor=cursor,
-            sectorId=sectorId,
-            allegiances=allegiances)
+            sectorId=sectorId)
         regions = self._internalReadSectorRegions(
             cursor=cursor,
             sectorId=sectorId)
@@ -2495,13 +2478,8 @@ class MultiverseDb(object):
     def _internalReadSectorSystems(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str,
-            allegiances: typing.Iterable[multiverse.DbAllegiance],
-            sophonts: typing.Iterable[multiverse.DbSophont]
+            sectorId: str
             ) -> typing.List[multiverse.DbSystem]:
-        idToAllegianceMap = {allegiance.id(): allegiance for allegiance in allegiances}
-        idToSophontMap = {sophont.id(): sophont for sophont in sophonts}
-
         sql = """
             SELECT t.id, t.system_id, t.code
             FROM {nobilitiesTable} AS t
@@ -2555,7 +2533,7 @@ class MultiverseDb(object):
                 logging.error(f'MultiverseDb failed to construct trade code {tradeCodeId}', exc_info=ex)
 
         sql = """
-            SELECT t.id, t.system_id, t.sophont_id, t.percentage, t.is_home_world, t.is_die_back
+            SELECT t.id, t.system_id, t.sophont_code, t.percentage, t.is_home_world, t.is_die_back
             FROM {populationsTable} AS t
             JOIN {systemsTable} AS s
             ON s.id = t.system_id
@@ -2576,7 +2554,7 @@ class MultiverseDb(object):
             try:
                 populations.append(multiverse.DbSophontPopulation(
                     id=populationId,
-                    sophont=idToSophontMap[row[2]],
+                    sophontCode=row[2],
                     percentage=row[3],
                     isHomeWorld=True if row[4] else False,
                     isDieBack=True if row[5] else False))
@@ -2584,7 +2562,7 @@ class MultiverseDb(object):
                 logging.error(f'MultiverseDb failed to construct sophont population {populationId}', exc_info=ex)
 
         sql = """
-            SELECT t.id, t.system_id, t.allegiance_id
+            SELECT t.id, t.system_id, t.allegiance_code
             FROM {rulingTable} AS t
             JOIN {systemsTable} AS s
             ON s.id = t.system_id
@@ -2605,7 +2583,7 @@ class MultiverseDb(object):
             try:
                 rulers.append(multiverse.DbRulingAllegiance(
                     id=rulerId,
-                    allegiance=idToAllegianceMap[row[2]]))
+                    allegianceCode=row[2]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct ruling allegiance {rulerId}', exc_info=ex)
 
@@ -2777,7 +2755,7 @@ class MultiverseDb(object):
                 resources, labour, infrastructure, efficiency,
                 heterogeneity, acceptance, strangeness, symbols,
                 population_multiplier, planetoid_belts, gas_giants,
-                zone, system_worlds, allegiance_id, notes
+                zone, system_worlds, allegiance_code, notes
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SystemsTableName)
@@ -2812,7 +2790,7 @@ class MultiverseDb(object):
                     gasGiants=row[22],
                     zone=row[23],
                     systemWorlds=row[24],
-                    allegiance=idToAllegianceMap.get(row[25]),
+                    allegianceCode=row[25],
                     notes=row[26],
                     nobilities=systemNobilitiesMap.get(systemId),
                     tradeCodes=systemTradeCodesMap.get(systemId),
@@ -2833,14 +2811,11 @@ class MultiverseDb(object):
             self,
             cursor: sqlite3.Cursor,
             sectorId: str,
-            allegiances: typing.Iterable[multiverse.DbAllegiance],
             ) -> typing.List[multiverse.DbRoute]:
-        idToAllegianceMap = {allegiance.id(): allegiance for allegiance in allegiances}
-
         sql = """
             SELECT id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
                 start_offset_x, start_offset_y, end_offset_x, end_offset_y,
-                type, style, colour, width, allegiance_id
+                type, style, colour, width, allegiance_code
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._RoutesTableName)
@@ -2863,7 +2838,7 @@ class MultiverseDb(object):
                     style=row[10],
                     colour=row[11],
                     width=row[12],
-                    allegiance=idToAllegianceMap.get(row[13])))
+                    allegianceCode=row[13]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct route {routeId}', exc_info=ex)
 
@@ -2872,13 +2847,10 @@ class MultiverseDb(object):
     def _internalReadSectorBorders(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str,
-            allegiances: typing.Iterable[multiverse.DbAllegiance],
+            sectorId: str
             ) -> typing.List[multiverse.DbBorder]:
-        idToAllegianceMap = {allegiance.id(): allegiance for allegiance in allegiances}
-
         bordersSql = """
-            SELECT id, allegiance_id, style, colour, label,
+            SELECT id, allegiance_code, style, colour, label,
                 label_x, label_y, show_label, wrap_label
             FROM {table}
             WHERE sector_id = :id;
@@ -2901,7 +2873,7 @@ class MultiverseDb(object):
                 borders.append(multiverse.DbBorder(
                     id=borderId,
                     hexes=hexes,
-                    allegiance=idToAllegianceMap.get(row[1]),
+                    allegianceCode=row[1],
                     style=row[2],
                     colour=row[3],
                     label=row[4],

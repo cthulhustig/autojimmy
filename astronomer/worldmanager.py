@@ -561,10 +561,18 @@ class WorldManager(object):
                         exc_info=ex)
 
         dbSophonts = dbSector.sophonts()
-        sophontsNameMap: typing.Dict[str, str] = {}
+        sophontCodeMap: typing.Dict[str, astronomer.Sophont] = {}
         if dbSophonts:
             for dbSophont in dbSophonts:
-                sophontsNameMap[dbSophont.code()] = dbSophont.name()
+                try:
+                    sophontCodeMap[dbSophont.code()] = astronomer.Sophont(
+                        code=dbSophont.code(),
+                        name=dbSophont.name(),
+                        isMajor=dbSophont.isMajor())
+                except Exception as ex:
+                    logging.warning(
+                        f'Failed to load sophont {dbSophont.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                        exc_info=ex)
 
         dbSystems = dbSector.systems()
         if dbSystems:
@@ -595,9 +603,9 @@ class WorldManager(object):
                     subsectorCode = subsectorIndex.code()
                     subsectorName, _ = subsectorNameMap[subsectorCode]
 
-                    allegiance = dbSystem.allegiance()
-                    if allegiance:
-                        allegianceCode = allegiance.code()
+                    allegianceCode = dbSystem.allegianceCode()
+                    allegiance = None
+                    if allegianceCode:
                         allegiance = allegianceCodeMap.get(allegianceCode)
                         if not allegiance:
                             logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for world {worldName} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
@@ -633,7 +641,9 @@ class WorldManager(object):
                         dbOwningSystems=dbSystem.owningSystems(),
                         dbColonySystems=dbSystem.colonySystems(),
                         dbResearchStations=dbSystem.researchStations(),
-                        dbCustomRemarks=dbSystem.customRemarks())
+                        dbCustomRemarks=dbSystem.customRemarks(),
+                        allegianceCodeMap=allegianceCodeMap,
+                        sophontCodeMap=sophontCodeMap)
                     bases = astronomer.Bases(dbBases=dbSystem.bases())
                     stellar = astronomer.Stellar(dbStars=dbSystem.stars())
                     pbg = astronomer.PBG(
@@ -706,9 +716,9 @@ class WorldManager(object):
                             f'Ignoring invalid colour "{colour}" for route {dbRoute.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
 
-                    allegiance = dbRoute.allegiance()
-                    if allegiance:
-                        allegianceCode = allegiance.code()
+                    allegianceCode = dbRoute.allegianceCode()
+                    allegiance = None
+                    if allegianceCode:
                         allegiance = allegianceCodeMap.get(allegianceCode)
                         if not allegiance:
                             logging.warning(
@@ -753,9 +763,9 @@ class WorldManager(object):
                             f'Ignoring invalid colour "{colour}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
 
-                    allegiance = dbBorder.allegiance()
-                    if allegiance:
-                        allegianceCode = allegiance.code()
+                    allegianceCode = dbBorder.allegianceCode()
+                    allegiance = None
+                    if allegianceCode:
                         allegiance = allegianceCodeMap.get(allegianceCode)
                         if not allegiance:
                             logging.warning(
@@ -906,6 +916,7 @@ class WorldManager(object):
             sectorLabel=dbSector.sectorLabel(),
             subsectors=subsectors,
             allegiances=allegianceCodeMap.values(),
+            sophonts=sophontCodeMap.values(),
             routes=routes,
             borders=borders,
             regions=regions,

@@ -61,6 +61,9 @@ class SophontPopulation(object):
     def isDieBack(self) -> bool:
         return self._isDieBack
 
+# TODO: I REALLY don't like the way some of the astronomer object take
+# DB objects as constructor arguments. The astronomer objects should be
+# passed in
 class Remarks(object):
     def __init__(
             self,
@@ -72,7 +75,9 @@ class Remarks(object):
             dbOwningSystems: typing.Optional[typing.Collection[multiverse.DbOwningSystem]],
             dbColonySystems: typing.Optional[typing.Collection[multiverse.DbColonySystem]],
             dbResearchStations: typing.Optional[typing.Collection[multiverse.DbResearchStation]],
-            dbCustomRemarks: typing.Optional[typing.Collection[multiverse.DbCustomRemark]]
+            dbCustomRemarks: typing.Optional[typing.Collection[multiverse.DbCustomRemark]],
+            allegianceCodeMap: typing.Mapping[str, astronomer.Allegiance],
+            sophontCodeMap: typing.Mapping[str, astronomer.Sophont],
             ) -> None:
         self._zone = zone
         self._uwp = uwp
@@ -88,8 +93,8 @@ class Remarks(object):
         self._remarkStringMap: typing.Dict[typing.Optional[traveller.RuleSystem], str] = {}
 
         self._processTradeCodes(dbCodes=dbTradeCodes)
-        self._processSophontPopulations(dbPopulations=dbSophontPopulations)
-        self._processRulingAllegiances(dbAllegiances=dbRulingAllegiances)
+        self._processSophontPopulations(dbPopulations=dbSophontPopulations, sophontCodeMap=sophontCodeMap)
+        self._processRulingAllegiances(dbAllegiances=dbRulingAllegiances, allegianceCodeMap=allegianceCodeMap)
         self._processOwningSystems(dbSystems=dbOwningSystems)
         self._processColonySystems(dbSystems=dbColonySystems)
         self._processResearchStations(dbStations=dbResearchStations)
@@ -234,37 +239,48 @@ class Remarks(object):
         for dbCode in dbCodes:
             tradeCode = traveller.tradeCode(tradeCodeString=dbCode.code())
             if not tradeCode:
-                logging.warning(f'Ignoring unknown Trade Code {dbCode.code()}')
+                logging.warning(f'Ignoring unknown trade code {dbCode.code()}')
                 continue
             self._tradeCodes.add(tradeCode)
 
     def _processSophontPopulations(
             self,
-            dbPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]]
+            dbPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]],
+            sophontCodeMap: typing.Mapping[str, astronomer.Sophont]
             ) -> None:
         if not dbPopulations:
             return
 
         for dbPopulation in dbPopulations:
-            dbSophont = dbPopulation.sophont()
+            sophont = sophontCodeMap.get(dbPopulation.sophontCode())
+            if not sophont:
+                logging.warning(f'Ignoring population with unknown sophont {dbPopulation.sophontCode()}')
+                continue
+
             sophont = SophontPopulation(
-                code=dbSophont.code(),
-                name=dbSophont.name(),
+                code=sophont.code(),
+                name=sophont.name(),
                 percentage=dbPopulation.percentage(),
-                isMajorRace=dbSophont.isMajor(),
+                isMajorRace=sophont.isMajor(),
                 isHomeWorld=dbPopulation.isHomeWorld(),
                 isDieBack=dbPopulation.isDieBack())
             self._sophontPopulationMap[sophont.code()] = sophont
 
     def _processRulingAllegiances(
             self,
-            dbAllegiances: typing.Optional[typing.Collection[multiverse.DbRulingAllegiance]]
+            dbAllegiances: typing.Optional[typing.Collection[multiverse.DbRulingAllegiance]],
+            allegianceCodeMap: typing.Mapping[str, astronomer.Allegiance]
             ) -> None:
         if not dbAllegiances:
             return
 
         for dbAllegiance in dbAllegiances:
-            self._rulingAllegiances.append(dbAllegiance.allegiance().code())
+            allegiance = allegianceCodeMap.get(dbAllegiance.allegianceCode())
+            if not allegiance:
+                logging.warning(f'Ignoring ruling allegiance with unknown allegiance {dbAllegiance.allegianceCode()}')
+                continue
+
+            self._rulingAllegiances.append(allegiance.code())
 
     def _processOwningSystems(
             self,
