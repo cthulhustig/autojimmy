@@ -446,7 +446,7 @@ class FormLayoutEx(QtWidgets.QFormLayout):
 
         if label:
             label.setEnabled(self._shouldEnableLabel(field))
-            label.setToolTip(field.toolTip())
+            label.setToolTip(field.toolTip() if isinstance(field, QtWidgets.QWidget) else None)
             label.installEventFilter(self._parentChangeWatcher)
 
         if field:
