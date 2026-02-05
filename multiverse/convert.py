@@ -2067,7 +2067,6 @@ def convertRawUniverseToDbUniverse(
         name=universeName,
         sectors=dbSectors)
 
-# TODO: This should do some basic sanity tests on the passed on data (e.g. doesn't have multiple worlds with the same hex)
 def convertRawSectorToDbSector(
         milieu: str,
         rawMetadata: survey.RawMetadata,

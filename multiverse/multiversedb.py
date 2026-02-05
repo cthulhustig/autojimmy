@@ -24,10 +24,6 @@ import typing
 # - Would need a way to mark a world as the main world for the system. For
 #   now the main world would be used for everything
 # - Stars would need to be for the system rather than for the world
-# TODO: All the objects that take universe/sector/system id, should take the
-# object rather than the id (similar to what happens for system Allegiance)
-# - This should be true for objects that reference another object but I'm
-#   not sure about the parent object
 
 class ColumnDef(object):
     class ColumnType(enum.Enum):
