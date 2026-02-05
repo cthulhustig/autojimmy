@@ -495,8 +495,6 @@ class WorldManager(object):
         if not milieu:
             raise ValueError(f'Sector has unknown milieu "{dbSector.milieu()}"')
 
-        # TODO: I'm currently throwing away the language info for the
-        # primary and alternate names
         dbAlternateNames = dbSector.alternateNames()
         alternateNames = None
         if dbAlternateNames:
@@ -910,7 +908,6 @@ class WorldManager(object):
             name=sectorName,
             milieu=milieu,
             index=astronomer.SectorIndex(sectorX=sectorX, sectorY=sectorY),
-            # TODO: This is ugly and it also means I'm throwing away the language information
             alternateNames=alternateNames,
             abbreviation=dbSector.abbreviation(),
             sectorLabel=dbSector.sectorLabel(),
