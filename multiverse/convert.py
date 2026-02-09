@@ -97,9 +97,16 @@ _LegacyAllegianceToT5Overrides = {
     'So': 'SoCf',
     'Va': 'NaVa',
     'Zh': 'ZhCo',
+    # NOTE: The mappings for ?? and -- will have no effect due to the
+    # _IgnoreAllegianceCodes list below. I've left them here for
+    # completeness
     '??': 'XXXX',
     '--': 'XXXX'
 }
+
+# These allegiance codes are used as they're used in sector data to
+# indicate no allegiance.
+_IgnoreAllegianceCodes = set(['--', '??'])
 
 _MilitaryRuleRemarkPattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))Mr\((\S{4})\)(?=$|[\s,])')
 
@@ -212,10 +219,6 @@ def _hexToSectorWorldOffset(
 
         return (worldX, worldY)
 
-# TODO: For some reason I'm ending up with allegiances that have
-# a code of ?? and name of Unknown in the database. This looks
-# like it's meant to mean there is no allegiance but I'm not sure
-# where they're coming from
 def _findUsedAllegianceCodes(
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld]
@@ -224,23 +227,24 @@ def _findUsedAllegianceCodes(
     if rawSystems:
         for rawWorld in rawSystems:
             rawAllegianceCode = rawWorld.allegiance()
-            if rawAllegianceCode:
+            if rawAllegianceCode and rawAllegianceCode not in _IgnoreAllegianceCodes:
                 usedCodes.add(rawAllegianceCode)
 
             rawRemarks = rawWorld.remarks()
             if rawRemarks:
                 matches = _MilitaryRuleRemarkPattern.findall(rawRemarks)
                 for match in matches:
-                    usedCodes.add(match)
+                    if match not in _IgnoreAllegianceCodes:
+                        usedCodes.add(match)
     if rawMetadata.routes():
         for rawRoute in rawMetadata.routes():
             rawAllegianceCode = rawRoute.allegiance()
-            if rawAllegianceCode:
+            if rawAllegianceCode and rawAllegianceCode not in _IgnoreAllegianceCodes:
                 usedCodes.add(rawAllegianceCode)
     if rawMetadata.borders():
         for rawBorder in rawMetadata.borders():
             rawAllegianceCode = rawBorder.allegiance()
-            if rawAllegianceCode:
+            if rawAllegianceCode and rawAllegianceCode not in _IgnoreAllegianceCodes:
                 usedCodes.add(rawAllegianceCode)
     return usedCodes
 
