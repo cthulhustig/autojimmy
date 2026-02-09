@@ -599,7 +599,9 @@ class _CustomSectorTable(gui.ListTable):
         ColumnType.Location
     ]
 
-    _StateVersion = 'CustomSectorTable_v1'
+    # v1 - Last selection persisted by storing sector name
+    # v2 - Switch to persisting last selection using row index
+    _StateVersion = 'CustomSectorTable_v2'
 
     def __init__(
             self,
@@ -688,18 +690,12 @@ class _CustomSectorTable(gui.ListTable):
         if not self.hasSelection() and self.rowCount() > 0:
             self.setCurrentRow(0)
 
-    # TODO: These save/load the current selection by saving the sector name. Currently
-    # I don't enforce uniqueness in sector names in the database. If I want to allow
-    # sectors with the same name then I need to use a different id. I'm not sure the
-    # sector id is a good idea as I'm not sure if that is going to be static (e.g.
-    # when sectors are saved in the future or when snapshot updates happen now)
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(_CustomSectorTable._StateVersion)
 
-        currentSector = self.currentSectorInfo()
-        stream.writeQString(currentSector.name() if currentSector else '')
+        stream.writeInt32(self.currentRow())
 
         baseState = super().saveState()
         stream.writeUInt32(baseState.count() if baseState else 0)
@@ -719,18 +715,9 @@ class _CustomSectorTable(gui.ListTable):
             logging.debug(f'Failed to restore CustomSectorTable state (Incorrect version)')
             return False
 
-        sectorName = stream.readQString()
-        currentSector = None
-        if sectorName:
-            for row in range(self.rowCount()):
-                sector = self.sectorInfo(row)
-                if not sector:
-                    continue
-                if sector.name() == sectorName:
-                    currentSector = sector
-                    break
-        if currentSector:
-            self.setCurrentSectorInfo(currentSector)
+        selectedRow = stream.readInt32()
+        if selectedRow >= 0:
+            self.selectRow(selectedRow)
 
         count = stream.readUInt32()
         if count <= 0:
