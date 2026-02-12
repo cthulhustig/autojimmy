@@ -36,10 +36,10 @@ class SophontPopulation(object):
     def sophont(self) -> Sophont:
         return self._sophont
 
-    def code(self) -> int:
+    def code(self) -> str:
         return self._sophont.code()
 
-    def name(self) -> int:
+    def name(self) -> str:
         return self._sophont.name()
 
     def isMajorRace(self) -> bool:

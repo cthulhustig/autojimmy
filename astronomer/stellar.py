@@ -1,5 +1,4 @@
 import enum
-import multiverse
 import survey
 import typing
 
@@ -63,21 +62,24 @@ class Star(object):
 
     def __init__(
             self,
-            dbStar: multiverse.DbStar
+            luminosityClass: str,
+            spectralClass: typing.Optional[str] = None,
+            spectralScale: typing.Optional[str] = None
             ) -> None:
-        self._luminosityClass = dbStar.luminosityClass()
-        if self._luminosityClass is not None and self._luminosityClass not in _LuminosityDescriptionMap:
-            raise ValueError(f'Invalid stellar luminosity class "{self._luminosityClass}"')
-
-        self._spectralClass = dbStar.spectralClass()
-        if self._spectralClass is not None and self._spectralClass not in _SpectralClassDescriptionMap:
-            raise ValueError(f'Invalid stellar spectral class "{self._spectralClass}"')
-
-        self._spectralScale = dbStar.spectralScale()
-        if self._spectralScale is not None and self._spectralScale not in _SpectralScaleDescriptionMap:
-            raise ValueError(f'Invalid stellar spectral scale "{self._spectralScale}"')
-
+        self._valueMap: typing.Dict[Star.Element, str] = {}
         self._string = None
+
+        if luminosityClass not in _LuminosityDescriptionMap:
+            raise ValueError(f'Invalid stellar luminosity class "{luminosityClass}"')
+        self._valueMap[Star.Element.LuminosityClass] = luminosityClass
+
+        if spectralClass is not None and spectralClass not in _SpectralClassDescriptionMap:
+            raise ValueError(f'Invalid stellar spectral class "{spectralClass}"')
+        self._valueMap[Star.Element.SpectralClass] = spectralClass
+
+        if spectralScale is not None and spectralScale not in _SpectralScaleDescriptionMap:
+            raise ValueError(f'Invalid stellar spectral scale "{spectralScale}"')
+        self._valueMap[Star.Element.SpectralScale] = spectralScale
 
     @typing.overload
     def code(self, element: typing.Literal[Element.LuminosityClass]) -> str: ...
@@ -87,18 +89,14 @@ class Star(object):
     def code(self, element: typing.Literal[Element.SpectralScale]) -> typing.Optional[str]: ...
 
     def code(self, element: Element) -> typing.Optional[str]:
-        if element == Star.Element.SpectralClass:
-            return self._spectralClass
-        elif element == Star.Element.SpectralScale:
-            return self._spectralScale
-        elif element == Star.Element.LuminosityClass:
-            return self._luminosityClass
-        raise ValueError('Invalid star element')
+        return self._valueMap.get(element)
 
     def string(self) -> str:
         if self._string is None:
-            self._string = survey.formatSystemStellarString(
-                stars=[(self._luminosityClass, self._spectralClass, self._spectralScale)])
+            self._string = survey.formatSystemStellarString(stars=[(
+                self._valueMap.get(Star.Element.LuminosityClass),
+                self._valueMap.get(Star.Element.SpectralClass),
+                self._valueMap.get(Star.Element.SpectralScale))])
         return self._string
 
     def description(self, element: Element) -> str:
@@ -111,12 +109,9 @@ class Star(object):
 class Stellar(object):
     def __init__(
             self,
-            dbStars: typing.Optional[typing.Collection[multiverse.DbStar]]
+            stars: typing.Optional[typing.Collection[Star]]
             ) -> None:
-        self._stars: typing.List[Star] = []
-        if dbStars:
-            for dbStar in dbStars:
-                self._stars.append(Star(dbStar=dbStar))
+        self._stars = list(stars) if stars else []
         self._string = None
 
     def isEmpty(self) -> bool:

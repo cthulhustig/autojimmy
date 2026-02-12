@@ -1,6 +1,4 @@
 import enum
-import logging
-import multiverse
 import survey
 import typing
 
@@ -43,19 +41,15 @@ _NobilityTypeToDescriptionMap = {
     NobilityType.Emperor: 'Emperor',
 }
 
+def codeToNobilityType(code: str) -> typing.Optional[NobilityType]:
+    return _CodeToNobilityTypeMap.get(code)
+
 class Nobilities(object):
     def __init__(
             self,
-            dbNobilities: typing.Optional[typing.Collection[multiverse.DbNobility]]
+            nobilities: typing.Optional[typing.Collection[NobilityType]]
             ) -> None:
-        self._nobilities: typing.List[NobilityType] = []
-        if dbNobilities:
-            for dbNobility in dbNobilities:
-                nobility = _CodeToNobilityTypeMap.get(dbNobility.code())
-                if nobility is None:
-                    logging.debug(f'Ignoring unknown base code "{dbNobility.code()}"')
-                    continue
-                self._nobilities.append(nobility)
+        self._nobilities = list(nobilities) if nobilities else []
         self._string = None
 
     def isEmpty(self) -> bool:
@@ -81,15 +75,6 @@ class Nobilities(object):
     @staticmethod
     def descriptionMap() -> typing.Mapping[NobilityType, str]:
         return _NobilityTypeToDescriptionMap
-
-    @staticmethod
-    def _parseString(string: str) -> typing.List[NobilityType]:
-        # Use a list rather than a set to maintain priority order of nobilities (lowest to highest)
-        nobilities = []
-        for nobilityType, nobilityCode in _NobilityTypeToCodeMap.items():
-            if string.find(nobilityCode) >= 0:
-                nobilities.append(nobilityType)
-        return nobilities
 
     def __getitem__(self, index: int) -> NobilityType:
         return self._nobilities.__getitem__(index)

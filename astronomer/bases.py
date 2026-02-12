@@ -1,6 +1,4 @@
 import enum
-import logging
-import multiverse
 import survey
 import typing
 
@@ -125,19 +123,15 @@ _MilitaryBaseTypes = [
     BaseType.ZhodaniNavalMilitaryBase,
 ]
 
+def codeToBaseTypes(code: str) -> typing.Optional[typing.Collection[BaseType]]:
+    return  _CodeToBaseTypeMap.get(code)
+
 class Bases(object):
     def __init__(
             self,
-            dbBases: typing.Optional[typing.Collection[multiverse.DbBase]]
+            bases: typing.Optional[typing.Collection[BaseType]]
             ) -> None:
-        self._bases = []
-        if dbBases:
-            for dbBase in dbBases:
-                baseTypes = _CodeToBaseTypeMap.get(dbBase.code())
-                if baseTypes is None:
-                    logging.debug(f'Ignoring unknown base code "{dbBase.code()}"')
-                    continue
-                self._bases.extend(baseTypes)
+        self._bases = list(bases) if bases else []
         self._string = None
 
     def isEmpty(self) -> bool:

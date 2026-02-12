@@ -1,28 +1,25 @@
 import common
 import enum
-import multiverse
 import typing
 
-class SectorTagging(object):
-    class Tag(enum.Enum):
-        Official = 'Official'
-        Preserve = 'Preserve'
-        InReview = 'InReview'
-        Unreviewed = 'Unreviewed'
-        Apocryphal = 'Apocryphal'
-    _TagStringMap = {e.value.lower(): e for e in Tag}
+class SectorTag(enum.Enum):
+    Official = 'Official'
+    Preserve = 'Preserve'
+    InReview = 'InReview'
+    Unreviewed = 'Unreviewed'
+    Apocryphal = 'Apocryphal'
+_TagStringMap = {e.value.lower(): e for e in SectorTag}
 
+def stringToSectorTag(string: str) -> typing.Optional[SectorTag]:
+    return _TagStringMap.get(string.lower())
+
+class SectorTagging(object):
     def __init__(
             self,
-            dbTags: typing.Optional[typing.Collection[multiverse.DbTag]]
+            tags: typing.Optional[typing.Collection[SectorTag]] = None
             ) -> None:
-        self._tags = common.OrderedSet[SectorTagging.Tag]()
-        if dbTags:
-            for dbTag in dbTags:
-                tag = SectorTagging._TagStringMap.get(dbTag.tag().lower())
-                if tag:
-                    self._tags.add(tag)
+        self._tags = common.OrderedSet(tags) if tags else common.OrderedSet()
 
-    def contains(self, tag: Tag) -> bool:
+    def contains(self, tag: SectorTag) -> bool:
         return tag in self._tags
 

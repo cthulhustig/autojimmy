@@ -47,6 +47,24 @@ import typing
 #   - When using Atlas style, the route between Djend and Morphy should be
 #     solid rather than dashed. The special case for grayscale rendering in
 #     my _drawMicroRoutes shouldn't kick in
+# - System: Inast (Gateway)
+#   - Has a ruling allegiance
+# - System: Yeasea (Dark Nebula)
+#   - Has an owner in another sector
+# - System: Uyar (Datsatl)
+#   - Has a colony
+# - System: 551-458 (Storr)
+#   - Has 6 stars of different types
+# - System: Aestera (Storr)
+#   - Has 3 bases
+# - System: Ziruushda (Dagudashaag)
+#   - Has 4 sophonts
+# - System: Garden (Reft)
+#   - Has a named die back sophont
+# - System: Beta Station (Joyce's Void)
+#   - Has research station
+# - System: Canoga (Ilelish)
+#   - Has 5 nobilities
 
 # These unofficial allegiances are taken from Traveller Map. It has a
 # comment saying they're for M1120 but as far as I can tell it uses

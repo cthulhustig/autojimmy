@@ -3,6 +3,7 @@ import common
 import logging
 import multiverse
 import threading
+import traveller
 import typing
 
 # This object is thread safe, however the world objects are only thread safe
@@ -610,6 +611,7 @@ class WorldManager(object):
 
                     zone = astronomer.parseZoneString(
                         dbSystem.zone() if dbSystem.zone() else '')
+
                     uwp = astronomer.UWP(
                         starport=dbSystem.starport(),
                         worldSize=dbSystem.worldSize(),
@@ -619,31 +621,137 @@ class WorldManager(object):
                         government=dbSystem.government(),
                         lawLevel=dbSystem.lawLevel(),
                         techLevel=dbSystem.techLevel())
+
                     economics = astronomer.Economics(
                         resources=dbSystem.resources(),
                         labour=dbSystem.labour(),
                         infrastructure=dbSystem.infrastructure(),
                         efficiency=dbSystem.efficiency())
+
                     culture = astronomer.Culture(
                         heterogeneity=dbSystem.heterogeneity(),
                         acceptance=dbSystem.acceptance(),
                         strangeness=dbSystem.strangeness(),
                         symbols=dbSystem.symbols())
-                    nobilities = astronomer.Nobilities(dbSystem.nobilities())
+
+                    dbTradeCodes = dbSystem.tradeCodes()
+                    tradeCodes: typing.Optional[typing.List[traveller.TradeCode]] = None
+                    if dbTradeCodes:
+                        tradeCodes = []
+                        for dbTradeCode in dbTradeCodes:
+                            tradeCode = traveller.tradeCode(tradeCodeString=dbTradeCode.code())
+                            if not tradeCode:
+                                # TODO: Should include sector name etc
+                                logging.warning(f'Ignoring unknown trade code {dbTradeCode.code()}')
+                                continue
+                            tradeCodes.append(tradeCode)
+
+                    dbPopulations = dbSystem.sophontPopulations()
+                    sophontPopulations: typing.Optional[typing.List[astronomer.SophontPopulation]] = None
+                    if dbPopulations:
+                        sophontPopulations = []
+                        for dbPopulation in dbPopulations:
+                            sophont = sophontCodeMap.get(dbPopulation.sophontCode())
+                            if not sophont:
+                                # TODO: Should include sector name etc
+                                logging.warning(f'Ignoring population with unknown sophont {dbPopulation.sophontCode()}')
+                                continue
+                            sophontPopulations.append(astronomer.SophontPopulation(
+                                sophont=sophont,
+                                percentage=dbPopulation.percentage(),
+                                isHomeWorld=dbPopulation.isHomeWorld(),
+                                isDieBack=dbPopulation.isDieBack()))
+
+                    dbRulingAllegiances = dbSystem.rulingAllegiances()
+                    rulingAllegiances: typing.Optional[typing.List[str]] = None
+                    if dbRulingAllegiances:
+                        rulingAllegiances = []
+                        for dbAllegiance in dbRulingAllegiances:
+                            allegiance = allegianceCodeMap.get(dbAllegiance.allegianceCode())
+                            if not allegiance:
+                                # TODO: Should include sector name etc
+                                logging.warning(f'Ignoring ruling allegiance with unknown allegiance {dbAllegiance.allegianceCode()}')
+                                continue
+                            rulingAllegiances.append(allegiance)
+
+                    dbOwningSystems = dbSystem.owningSystems()
+                    owningWorlds: typing.Optional[typing.List[astronomer.WorldReference]] = None
+                    if dbOwningSystems:
+                        owningWorlds = []
+                        for dbOwningSystem in dbOwningSystems:
+                            owningWorlds.append(astronomer.WorldReference(
+                                hexX=dbOwningSystem.hexX(),
+                                hexY=dbOwningSystem.hexY(),
+                                sectorAbbreviation=dbOwningSystem.sectorAbbreviation()))
+
+                    dbColonySystems = dbSystem.colonySystems()
+                    colonyWorlds: typing.Optional[typing.List[astronomer.WorldReference]] = None
+                    if dbColonySystems:
+                        colonyWorlds = []
+                        for dbColonySystem in dbColonySystems:
+                            colonyWorlds.append(astronomer.WorldReference(
+                                hexX=dbColonySystem.hexX(),
+                                hexY=dbColonySystem.hexY(),
+                                sectorAbbreviation=dbColonySystem.sectorAbbreviation()))
+
+                    dbResearchStations = dbSystem.researchStations()
+                    researchStations: typing.Optional[typing.List[str]] = None
+                    if dbResearchStations:
+                        researchStations = [s.code() for s in dbResearchStations]
+
+                    dbCustomRemarks = dbSystem.customRemarks()
+                    customRemarks: typing.Optional[typing.List[str]] = None
+                    if dbCustomRemarks:
+                        customRemarks = [r.remark() for r in dbCustomRemarks]
+
                     remarks = astronomer.Remarks(
                         zone=zone,
                         uwp=uwp,
-                        dbTradeCodes=dbSystem.tradeCodes(),
-                        dbSophontPopulations=dbSystem.sophontPopulations(),
-                        dbRulingAllegiances=dbSystem.rulingAllegiances(),
-                        dbOwningSystems=dbSystem.owningSystems(),
-                        dbColonySystems=dbSystem.colonySystems(),
-                        dbResearchStations=dbSystem.researchStations(),
-                        dbCustomRemarks=dbSystem.customRemarks(),
-                        allegianceCodeMap=allegianceCodeMap,
-                        sophontCodeMap=sophontCodeMap)
-                    bases = astronomer.Bases(dbBases=dbSystem.bases())
-                    stellar = astronomer.Stellar(dbStars=dbSystem.stars())
+                        tradeCodes=tradeCodes,
+                        sophontPopulations=sophontPopulations,
+                        rulingAllegiances=rulingAllegiances,
+                        owningSystems=owningWorlds,
+                        colonySystems=colonyWorlds,
+                        researchStations=researchStations,
+                        customRemarks=customRemarks)
+
+                    dbNobilities = dbSystem.nobilities()
+                    nobilities = None
+                    if dbNobilities:
+                        nobilities = []
+                        for dbNobility in dbNobilities:
+                            nobility = astronomer.codeToNobilityType(dbNobility.code())
+                            if nobility is None:
+                                # TODO: Should include sector name etc
+                                logging.debug(f'Ignoring unknown base code "{dbNobility.code()}"')
+                                continue
+                            nobilities.append(nobility)
+                    nobilities = astronomer.Nobilities(nobilities=nobilities)
+
+                    dbBases = dbSystem.bases()
+                    bases = None
+                    if dbBases:
+                        bases = []
+                        for dbBase in dbBases:
+                            types = astronomer.codeToBaseTypes(dbBase.code())
+                            if types is None:
+                                # TODO: Should include sector name etc
+                                logging.debug(f'Ignoring unknown base code "{dbBase.code()}"')
+                                continue
+                            bases.extend(types)
+                    bases = astronomer.Bases(bases=bases)
+
+                    dbStars = dbSystem.stars()
+                    stars = None
+                    if dbStars:
+                        stars = []
+                        for dbStar in dbStars:
+                            stars.append(astronomer.Star(
+                                luminosityClass=dbStar.luminosityClass(),
+                                spectralClass=dbStar.spectralClass(),
+                                spectralScale=dbStar.spectralScale()))
+                    stellar = astronomer.Stellar(stars=stars)
+
                     pbg = astronomer.PBG(
                         populationMultiplier=dbSystem.populationMultiplier(),
                         planetoidBelts=dbSystem.planetoidBelts(),
@@ -852,12 +960,24 @@ class WorldManager(object):
                         f'Failed to load label {dbLabel.id()} for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
                         exc_info=ex)
 
-        try:
-            tags = astronomer.SectorTagging(dbTags=dbSector.tags())
-        except Exception as ex:
-            logging.warning(
-                f'Failed to load sector tagging for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
-                exc_info=ex)
+        dbTags = dbSector.tags()
+        tagging = None
+        if dbTags:
+            tags = []
+            for dbTag in dbTags:
+                tag = astronomer.stringToSectorTag(dbTag.tag())
+                if not tag:
+                    #logging.debug(
+                    #    f'Ignoring invalid sector tag "{dbTag.tag()}" in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                    continue
+                tags.append(tag)
+
+            try:
+                tagging = astronomer.SectorTagging(tags=tags)
+            except Exception as ex:
+                logging.warning(
+                    f'Failed to load sector tagging for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                    exc_info=ex)
 
         dbPrimaryPublication = dbSector.publication()
         dbPrimaryAuthor = dbSector.author()
@@ -919,7 +1039,7 @@ class WorldManager(object):
             regions=regions,
             labels=labels,
             selected=dbSector.selected(),
-            tags=tags,
+            tagging=tagging,
             sources=sources,
             isCustom=dbSector.isCustom())
 

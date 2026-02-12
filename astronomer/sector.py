@@ -76,8 +76,8 @@ class Sector(object):
             regions: typing.Iterable[astronomer.Region],
             labels: typing.Iterable[astronomer.Label],
             selected: bool,
-            tags: astronomer.SectorTagging,
-            sources: astronomer.SectorSources,
+            tagging: typing.Optional[astronomer.SectorTagging],
+            sources: typing.Optional[astronomer.SectorSources],
             isCustom: bool
             ) -> None:
         self._milieu = milieu
@@ -93,7 +93,7 @@ class Sector(object):
         self._regions = list(regions)
         self._labels = list(labels)
         self._selected = selected
-        self._tags = tags
+        self._tagging = tagging
         self._sources = sources
         self._isCustom = isCustom
 
@@ -192,11 +192,13 @@ class Sector(object):
     def selected(self) -> bool:
         return self._selected
 
-    def tagging(self) -> astronomer.SectorTagging:
-        return self._tags
+    def tagging(self) -> typing.Optional[astronomer.SectorTagging]:
+        return self._tagging
 
-    def hasTag(self, tag: astronomer.SectorTagging.Tag) -> bool:
-        return self._tags.contains(tag)
+    def hasTag(self, tag: astronomer.SectorTag) -> bool:
+        if self._tagging is None:
+            return False
+        return self._tagging.contains(tag)
 
     def sources(self) -> typing.Optional[astronomer.SectorSources]:
         return self._sources

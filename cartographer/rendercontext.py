@@ -1608,11 +1608,11 @@ class RenderContext(object):
                 colour=self._styleSheet.backgroundBrush.colour()))
             for sector in self._selector.sectors(tight=True):
                 tagging = sector.tagging()
-                shouldDim = sector.isCustom()
+                shouldDim = sector.isCustom() if tagging else False
                 if not shouldDim:
-                    shouldDim = not tagging.contains(astronomer.SectorTagging.Tag.Official) and \
-                        not tagging.contains(astronomer.SectorTagging.Tag.Preserve) and \
-                        not tagging.contains(astronomer.SectorTagging.Tag.InReview)
+                    shouldDim = not tagging.contains(astronomer.SectorTag.Official) and \
+                        not tagging.contains(astronomer.SectorTag.Preserve) and \
+                        not tagging.contains(astronomer.SectorTag.InReview)
                 if shouldDim:
                     clipPath = self._sectorCache.clipPath(
                         index=sector.index())
@@ -1624,23 +1624,25 @@ class RenderContext(object):
         if self._styleSheet.colourCodeSectorStatus and self._styleSheet.worlds.visible:
             for sector in self._selector.sectors(tight=True):
                 tagging = sector.tagging()
-                if tagging.contains(astronomer.SectorTagging.Tag.Official):
+                if tagging is None:
+                    continue
+                if tagging.contains(astronomer.SectorTag.Official):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerRed))
-                elif tagging.contains(astronomer.SectorTagging.Tag.InReview):
+                elif tagging.contains(astronomer.SectorTag.InReview):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Orange))
-                elif tagging.contains(astronomer.SectorTagging.Tag.Unreviewed):
+                elif tagging.contains(astronomer.SectorTag.Unreviewed):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerAmber))
-                elif tagging.contains(astronomer.SectorTagging.Tag.Apocryphal):
+                elif tagging.contains(astronomer.SectorTag.Apocryphal):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Magenta))
-                elif tagging.contains(astronomer.SectorTagging.Tag.Preserve):
+                elif tagging.contains(astronomer.SectorTag.Preserve):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerGreen))

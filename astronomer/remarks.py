@@ -1,7 +1,5 @@
 import astronomer
 import common
-import logging
-import multiverse
 import survey
 import traveller
 import typing
@@ -26,44 +24,31 @@ class WorldReference(object):
     def sectorAbbreviation(self) -> typing.Optional[str]:
         return self._sectorAbbreviation
 
-# TODO: I REALLY don't like the way some of the astronomer object take
-# DB objects as constructor arguments. The astronomer objects should be
-# passed in
 class Remarks(object):
     def __init__(
             self,
             zone: astronomer.ZoneType,
             uwp: astronomer.UWP,
-            dbTradeCodes: typing.Optional[typing.Collection[multiverse.DbTradeCode]],
-            dbSophontPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]],
-            dbRulingAllegiances: typing.Optional[typing.Collection[multiverse.DbRulingAllegiance]],
-            dbOwningSystems: typing.Optional[typing.Collection[multiverse.DbOwningSystem]],
-            dbColonySystems: typing.Optional[typing.Collection[multiverse.DbColonySystem]],
-            dbResearchStations: typing.Optional[typing.Collection[multiverse.DbResearchStation]],
-            dbCustomRemarks: typing.Optional[typing.Collection[multiverse.DbCustomRemark]],
-            allegianceCodeMap: typing.Mapping[str, astronomer.Allegiance],
-            sophontCodeMap: typing.Mapping[str, astronomer.Sophont],
+            tradeCodes: typing.Optional[typing.Collection[traveller.TradeCode]],
+            sophontPopulations: typing.Optional[typing.Collection[astronomer.SophontPopulation]],
+            rulingAllegiances: typing.Optional[typing.Collection[str]],
+            owningSystems: typing.Optional[typing.Collection[WorldReference]],
+            colonySystems: typing.Optional[typing.Collection[WorldReference]],
+            researchStations: typing.Optional[typing.Collection[str]],
+            customRemarks: typing.Optional[typing.Collection[str]]
             ) -> None:
         self._zone = zone
         self._uwp = uwp
-        self._tradeCodes = common.OrderedSet[traveller.TradeCode]()
-        self._rulingAllegiances = list[astronomer.Allegiance]()
-        self._owningWorlds = list[WorldReference]()
-        self._colonyWorlds = list[WorldReference]()
-        self._researchStations = common.OrderedSet[str]()
-        self._sophontPopulationMap = dict[str, astronomer.SophontPopulation]() # Map Sophont code to sophont
-        self._customRemarks = common.OrderedSet[str]()
+        self._tradeCodes = common.OrderedSet(tradeCodes) if tradeCodes else common.OrderedSet()
+        self._sophontPopulationMap = {p.code(): p for p in sophontPopulations} if sophontPopulations else {}
+        self._rulingAllegiances = list(rulingAllegiances) if rulingAllegiances else []
+        self._owningWorlds = list(owningSystems) if owningSystems else []
+        self._colonyWorlds = list(colonySystems) if colonySystems else []
+        self._researchStations = common.OrderedSet(researchStations) if researchStations else common.OrderedSet()
+        self._customRemarks = common.OrderedSet(customRemarks) if customRemarks else common.OrderedSet()
 
         self._ruleSystemTradeCodesMap: typing.Dict[traveller.RuleSystem, common.OrderedSet[str]] = {}
         self._remarkStringMap: typing.Dict[typing.Optional[traveller.RuleSystem], str] = {}
-
-        self._processTradeCodes(dbCodes=dbTradeCodes)
-        self._processSophontPopulations(dbPopulations=dbSophontPopulations, sophontCodeMap=sophontCodeMap)
-        self._processRulingAllegiances(dbAllegiances=dbRulingAllegiances, allegianceCodeMap=allegianceCodeMap)
-        self._processOwningSystems(dbSystems=dbOwningSystems)
-        self._processColonySystems(dbSystems=dbColonySystems)
-        self._processResearchStations(dbStations=dbResearchStations)
-        self._processCustomRemarks(dbRemarks=dbCustomRemarks)
 
     def tradeCodes(
             self,
@@ -197,103 +182,6 @@ class Remarks(object):
             rules: typing.Optional[traveller.Rules] = None
             ) -> bool:
         return len(self.string(rules=rules)) == 0
-
-    def _processTradeCodes(
-            self,
-            dbCodes: typing.Optional[typing.Collection[multiverse.DbTradeCode]]
-            ) -> None:
-        if not dbCodes:
-            return
-
-        for dbCode in dbCodes:
-            tradeCode = traveller.tradeCode(tradeCodeString=dbCode.code())
-            if not tradeCode:
-                logging.warning(f'Ignoring unknown trade code {dbCode.code()}')
-                continue
-            self._tradeCodes.add(tradeCode)
-
-    def _processSophontPopulations(
-            self,
-            dbPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]],
-            sophontCodeMap: typing.Mapping[str, astronomer.Sophont]
-            ) -> None:
-        if not dbPopulations:
-            return
-
-        for dbPopulation in dbPopulations:
-            sophont = sophontCodeMap.get(dbPopulation.sophontCode())
-            if not sophont:
-                logging.warning(f'Ignoring population with unknown sophont {dbPopulation.sophontCode()}')
-                continue
-
-            population = astronomer.SophontPopulation(
-                sophont=sophont,
-                percentage=dbPopulation.percentage(),
-                isHomeWorld=dbPopulation.isHomeWorld(),
-                isDieBack=dbPopulation.isDieBack())
-            self._sophontPopulationMap[population.code()] = population
-
-    def _processRulingAllegiances(
-            self,
-            dbAllegiances: typing.Optional[typing.Collection[multiverse.DbRulingAllegiance]],
-            allegianceCodeMap: typing.Mapping[str, astronomer.Allegiance]
-            ) -> None:
-        if not dbAllegiances:
-            return
-
-        for dbAllegiance in dbAllegiances:
-            allegiance = allegianceCodeMap.get(dbAllegiance.allegianceCode())
-            if not allegiance:
-                logging.warning(f'Ignoring ruling allegiance with unknown allegiance {dbAllegiance.allegianceCode()}')
-                continue
-
-            self._rulingAllegiances.append(allegiance)
-
-    def _processOwningSystems(
-            self,
-            dbSystems: typing.Optional[typing.Collection[multiverse.DbOwningSystem]]
-            ) -> None:
-        if not dbSystems:
-            return
-
-        for dbSystem in dbSystems:
-            self._owningWorlds.append(WorldReference(
-                hexX=dbSystem.hexX(),
-                hexY=dbSystem.hexY(),
-                sectorAbbreviation=dbSystem.sectorAbbreviation()))
-
-    def _processColonySystems(
-            self,
-            dbSystems: typing.Optional[typing.Collection[multiverse.DbColonySystem]]
-            ) -> None:
-        if not dbSystems:
-            return
-
-        for dbSystem in dbSystems:
-            self._colonyWorlds.append(WorldReference(
-                hexX=dbSystem.hexX(),
-                hexY=dbSystem.hexY(),
-                sectorAbbreviation=dbSystem.sectorAbbreviation()))
-
-    def _processResearchStations(
-            self,
-            dbStations: typing.Optional[typing.Collection[multiverse.DbResearchStation]]
-            ) -> None:
-        if not dbStations:
-            return
-
-        for dbStation in dbStations:
-            self._researchStations.add(dbStation.code())
-
-    def _processCustomRemarks(
-            self,
-            dbRemarks: typing.Optional[typing.Collection[multiverse.DbCustomRemark]]
-            ) -> None:
-        if not dbRemarks:
-            return
-
-        for dbRemark in dbRemarks:
-            self._customRemarks.add(dbRemark.remark())
 
     def _ruleSystemTradeCodes(
             self,
