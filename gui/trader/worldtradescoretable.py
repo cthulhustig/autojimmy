@@ -1,11 +1,11 @@
 import app
+import astronomer
 import common
 import enum
 import gui
 import logging
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -39,7 +39,7 @@ class WorldTradeScoreTable(gui.HexTable):
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -80,7 +80,7 @@ class WorldTradeScoreTable(gui.HexTable):
 
     def setTradeGoods(
             self,
-            tradeGoods: typing.Iterable[traveller.TradeGood]
+            tradeGoods: typing.Iterable[logic.TradeGood]
             ) -> None:
         ruleSystem = self._rules.system()
         tradeGoods = set([tradeGood for tradeGood in tradeGoods if tradeGood.ruleSystem() is ruleSystem])
@@ -171,9 +171,9 @@ class WorldTradeScoreTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> int:
-        world = multiverse.WorldManager.instance().worldByPosition(
+        world = astronomer.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=hex)
 
@@ -181,8 +181,8 @@ class WorldTradeScoreTable(gui.HexTable):
         # columns aren't being displayed. We want them to be available if the get function is called
         if world and (hex not in self._tradeScoreMap):
             self._tradeScoreMap[hex] = logic.TradeScore(
+                rules=self._rules,
                 world=world,
-                ruleSystem=self._rules.system(),
                 tradeGoods=self._tradeGoods)
 
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns

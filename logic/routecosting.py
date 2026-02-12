@@ -1,8 +1,8 @@
+import astronomer
 import enum
 import logic
 import math
 import traveller
-import multiverse
 import typing
 
 # NOTE: The name of these enums is stored in the app config
@@ -25,17 +25,17 @@ class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
 
     def initialise(
             self,
-            startHex: multiverse.HexPosition,
-            startWorld: typing.Optional[multiverse.World]
+            startHex: astronomer.HexPosition,
+            startWorld: typing.Optional[astronomer.World]
             ) -> typing.Any:
         return None
 
     def calculate(
             self,
-            currentHex: multiverse.HexPosition,
-            currentWorld: typing.Optional[multiverse.World],
-            nextHex: multiverse.HexPosition,
-            nextWorld: typing.Optional[multiverse.World],
+            currentHex: astronomer.HexPosition,
+            currentWorld: typing.Optional[astronomer.World],
+            nextHex: astronomer.HexPosition,
+            nextWorld: typing.Optional[astronomer.World],
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -64,17 +64,17 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
 
     def initialise(
             self,
-            startHex: multiverse.HexPosition,
-            startWorld: typing.Optional[multiverse.World]
+            startHex: astronomer.HexPosition,
+            startWorld: typing.Optional[astronomer.World]
             ) -> typing.Any:
         return None
 
     def calculate(
             self,
-            currentHex: multiverse.HexPosition,
-            currentWorld: typing.Optional[multiverse.World],
-            nextHex: multiverse.HexPosition,
-            nextWorld: typing.Optional[multiverse.World],
+            currentHex: astronomer.HexPosition,
+            currentWorld: typing.Optional[astronomer.World],
+            nextHex: astronomer.HexPosition,
+            nextWorld: typing.Optional[astronomer.World],
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -95,7 +95,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         def __init__(
                 self,
                 currentFuel: float,
-                lastFuelWorld: multiverse.World,
+                lastFuelWorld: astronomer.World,
                 lastFuelParsecs: int,
                 lastFuelType: logic.RefuellingType,
                 lastFuelCost: int,
@@ -111,7 +111,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         def currentFuel(self) -> float:
             return self._currentFuel
 
-        def lastFuelWorld(self) -> multiverse.World:
+        def lastFuelWorld(self) -> astronomer.World:
             return self._lastFuelWorld
 
         def lastFuelParsecs(self) -> int:
@@ -154,8 +154,8 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
     def initialise(
             self,
-            startHex: multiverse.HexPosition,
-            startWorld: typing.Optional[multiverse.World]
+            startHex: astronomer.HexPosition,
+            startWorld: typing.Optional[astronomer.World]
             ) -> typing.Any:
         if not self._pitCostCalculator:
             # Fuel based route calculation is disabled so the context isn't used
@@ -179,10 +179,10 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
     def calculate(
             self,
-            currentHex: multiverse.HexPosition,
-            currentWorld: typing.Optional[multiverse.World],
-            nextHex: multiverse.HexPosition,
-            nextWorld: typing.Optional[multiverse.World],
+            currentHex: astronomer.HexPosition,
+            currentWorld: typing.Optional[astronomer.World],
+            nextHex: astronomer.HexPosition,
+            nextWorld: typing.Optional[astronomer.World],
             jumpParsecs: int,
             costContext: typing.Optional[_CostContext]
             ) -> typing.Tuple[
@@ -277,27 +277,27 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 class StrictXBoatCostCalculator(logic.JumpCostCalculatorInterface):
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             shipJumpRating: int
             ) -> None:
         super().__init__()
         self._milieu = milieu
         self._shipJumpRating = shipJumpRating
-        self._universe = multiverse.WorldManager.instance().universe()
+        self._universe = astronomer.WorldManager.instance().universe()
 
     def initialise(
             self,
-            startHex: multiverse.HexPosition,
-            startWorld: typing.Optional[multiverse.World]
+            startHex: astronomer.HexPosition,
+            startWorld: typing.Optional[astronomer.World]
             ) -> typing.Any:
         return None
 
     def calculate(
             self,
-            currentHex: multiverse.HexPosition,
-            currentWorld: typing.Optional[multiverse.World],
-            nextHex: multiverse.HexPosition,
-            nextWorld: typing.Optional[multiverse.World],
+            currentHex: astronomer.HexPosition,
+            currentWorld: typing.Optional[astronomer.World],
+            nextHex: astronomer.HexPosition,
+            nextWorld: typing.Optional[astronomer.World],
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -322,27 +322,27 @@ class StrictXBoatCostCalculator(logic.JumpCostCalculatorInterface):
 class LooseXBoatCostCalculator(logic.JumpCostCalculatorInterface):
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             shipJumpRating: int
             ) -> None:
         super().__init__()
         self._milieu = milieu
         self._shipJumpRating = shipJumpRating
-        self._universe = multiverse.WorldManager.instance().universe()
+        self._universe = astronomer.WorldManager.instance().universe()
 
     def initialise(
             self,
-            startHex: multiverse.HexPosition,
-            startWorld: typing.Optional[multiverse.World]
+            startHex: astronomer.HexPosition,
+            startWorld: typing.Optional[astronomer.World]
             ) -> typing.Any:
         return None
 
     def calculate(
             self,
-            currentHex: multiverse.HexPosition,
-            currentWorld: typing.Optional[multiverse.World],
-            nextHex: multiverse.HexPosition,
-            nextWorld: typing.Optional[multiverse.World],
+            currentHex: astronomer.HexPosition,
+            currentWorld: typing.Optional[astronomer.World],
+            nextHex: astronomer.HexPosition,
+            nextWorld: typing.Optional[astronomer.World],
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[

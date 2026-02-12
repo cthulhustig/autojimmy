@@ -57,6 +57,18 @@ class FormLayoutEx(QtWidgets.QFormLayout):
                     self.enableChanged.emit(obj, obj.isEnabled())
             return super().eventFilter(obj, event)
 
+    class _TooltipChangedWatcher(QtCore.QObject):
+        toolTipChanged = QtCore.pyqtSignal([QtWidgets.QWidget, str])
+
+        def __init__(self):
+            super().__init__()
+
+        def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent):
+            if event.type() == QtCore.QEvent.Type.ToolTipChange:
+                if isinstance(obj, QtWidgets.QWidget):
+                    self.toolTipChanged.emit(obj, obj.toolTip())
+            return super().eventFilter(obj, event)
+
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
@@ -73,6 +85,9 @@ class FormLayoutEx(QtWidgets.QFormLayout):
 
         self._enableChangedWatcher = FormLayoutEx._WidgetEnabledChangeWatcher()
         self._enableChangedWatcher.enableChanged.connect(self._enableChangedDetected)
+
+        self._toolTipChangedWatcher = FormLayoutEx._TooltipChangedWatcher()
+        self._toolTipChangedWatcher.toolTipChanged.connect(self._toolTipChangedDetected)
 
         self.setFieldGrowthPolicy(QtWidgets.QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
         self.setLabelAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)
@@ -397,16 +412,7 @@ class FormLayoutEx(QtWidgets.QFormLayout):
             return # Row wasn't inserted
 
         row = args[0]
-
-        label = self.labelAt(row)
-        field = self.fieldAt(row)
-
-        if label:
-            label.setEnabled(self._shouldEnableLabel(field))
-            label.installEventFilter(self._parentChangeWatcher)
-
-        if field:
-            field.installEventFilter(self._parentChangeWatcher)
+        self._initRowWidget(row)
 
     @typing.overload
     def addRow(self, label: typing.Optional[QtWidgets.QWidget], field: typing.Optional[QtWidgets.QWidget]) -> None: ...
@@ -429,11 +435,18 @@ class FormLayoutEx(QtWidgets.QFormLayout):
         if self.rowCount() <= row:
             return # Row wasn't added
 
+        self._initRowWidget(row)
+
+    def _initRowWidget(
+            self,
+            row: int
+            ) -> None:
         label = self.labelAt(row)
         field = self.fieldAt(row)
 
         if label:
             label.setEnabled(self._shouldEnableLabel(field))
+            label.setToolTip(field.toolTip() if isinstance(field, QtWidgets.QWidget) else None)
             label.installEventFilter(self._parentChangeWatcher)
 
         if field:
@@ -537,6 +550,7 @@ class FormLayoutEx(QtWidgets.QFormLayout):
             widget: QtWidgets.QWidget
             ) -> None:
         widget.installEventFilter(self._enableChangedWatcher)
+        widget.installEventFilter(self._toolTipChangedWatcher)
 
     def _childRemovalDetected(
             self,
@@ -546,6 +560,7 @@ class FormLayoutEx(QtWidgets.QFormLayout):
         # actually seen it be deleted at this point
         if not sip.isdeleted(widget):
             widget.removeEventFilter(self._enableChangedWatcher)
+            widget.removeEventFilter(self._toolTipChangedWatcher)
 
     def _enableChangedDetected(
             self,
@@ -564,3 +579,17 @@ class FormLayoutEx(QtWidgets.QFormLayout):
         label = self.labelAt(row) if row >= 0 else None
         if label:
             label.setEnabled(self._shouldEnableLabel(widget))
+
+    def _toolTipChangedDetected(
+            self,
+            widget: QtWidgets.QWidget,
+            toolTip: str
+            ) -> None:
+        if self.rowForLabel(widget) >= 0:
+            # The widget is a label so ignore it changing
+            return
+
+        row = self._rowForHierarchicalField(widget)
+        label = self.labelAt(row) if row >= 0 else None
+        if label:
+            label.setToolTip(toolTip)

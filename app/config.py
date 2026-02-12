@@ -1,4 +1,5 @@
 import app
+import astronomer
 import cartographer
 import common
 import darkdetect
@@ -10,7 +11,6 @@ import re
 import urllib
 import threading
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -382,7 +382,7 @@ class ColourConfigItem(StringConfigItem):
             key=key,
             default=default,
             restart=restart,
-            validateCb=common.validateHtmlColour)
+            validateCb=common.isValidHtmlColour)
 
 class MapOptionsConfigItem(ConfigItem):
     _MapOptionToSettingsKey = {
@@ -458,6 +458,7 @@ class MapOptionsConfigItem(ConfigItem):
 
 class RulesConfigItem(ConfigItem):
     _RuleSystemKey = '/Rules' # NOTE: This name isn't ideal but it is what it is for backwards compatibility
+    _RegenerateTradeCodes = '/RegenerateTradeCodes'
     _ClassAFuelTypeKey = '/ClassAFuelTypeRule'
     _ClassBFuelTypeKey = '/ClassBFuelTypeRule'
     _ClassCFuelTypeKey = '/ClassCFuelTypeRule'
@@ -502,6 +503,12 @@ class RulesConfigItem(ConfigItem):
             traveller.RuleSystem.__members__[system] \
             if system in traveller.RuleSystem.__members__ else \
             self._default.system()
+
+        regenerateTradeCodes = self.loadConfigSetting(
+            settings=settings,
+            key=self._section + RulesConfigItem._RegenerateTradeCodes,
+            default=False,
+            type=bool)
 
         classAFuelType = self.loadConfigSetting(
             settings=settings,
@@ -555,6 +562,7 @@ class RulesConfigItem(ConfigItem):
 
         self._currentValue = self._futureValue = traveller.Rules(
             system=system,
+            regenerateTradeCodes=regenerateTradeCodes,
             classAStarPortFuelType=classAFuelType,
             classBStarPortFuelType=classBFuelType,
             classCStarPortFuelType=classCFuelType,
@@ -580,6 +588,9 @@ class RulesConfigItem(ConfigItem):
         settings.setValue(
             self._section + RulesConfigItem._ClassEFuelTypeKey,
             self._futureValue.starPortFuelType(code='E').name)
+        settings.setValue(
+            self._section + RulesConfigItem._RegenerateTradeCodes,
+            self._futureValue.regenerateTradeCodes())
 
 class OutcomeColoursConfigItem(ConfigItem):
     _AverageCaseKey = '/AverageCaseColour'
@@ -834,7 +845,7 @@ class TaggingColoursConfigItem(ConfigItem):
 
 class WorldTaggingConfigItem(ConfigItem):
     _PropertyConfig = [
-        ('ZoneTagging', multiverse.ZoneType, logic.TaggingProperty.Zone),
+        ('ZoneTagging', astronomer.ZoneType, logic.TaggingProperty.Zone),
         ('StarPortTagging', str, logic.TaggingProperty.StarPort),
         ('WorldSizeTagging', str, logic.TaggingProperty.WorldSize),
         ('AtmosphereTagging', str, logic.TaggingProperty.Atmosphere),
@@ -843,8 +854,8 @@ class WorldTaggingConfigItem(ConfigItem):
         ('GovernmentTagging', str, logic.TaggingProperty.Government),
         ('LawLevelTagging', str, logic.TaggingProperty.LawLevel),
         ('TechLevelTagging', str, logic.TaggingProperty.TechLevel),
-        ('BaseTypeTagging', multiverse.BaseType, logic.TaggingProperty.BaseType),
-        ('TradeCodeTagging', multiverse.TradeCode, logic.TaggingProperty.TradeCode),
+        ('BaseTypeTagging', astronomer.BaseType, logic.TaggingProperty.BaseType),
+        ('TradeCodeTagging', traveller.TradeCode, logic.TaggingProperty.TradeCode),
         ('ResourcesTagging', str, logic.TaggingProperty.Resources),
         ('LabourTagging', str, logic.TaggingProperty.Labour),
         ('InfrastructureTagging', str, logic.TaggingProperty.Infrastructure),
@@ -853,7 +864,7 @@ class WorldTaggingConfigItem(ConfigItem):
         ('AcceptanceTagging', str, logic.TaggingProperty.Acceptance),
         ('StrangenessTagging', str, logic.TaggingProperty.Strangeness),
         ('SymbolsTagging', str, logic.TaggingProperty.Symbols),
-        ('NobilityTagging', multiverse.NobilityType, logic.TaggingProperty.Nobility),
+        ('NobilityTagging', astronomer.NobilityType, logic.TaggingProperty.Nobility),
         ('AllegianceTagging', str, logic.TaggingProperty.Allegiance),
         ('SpectralTagging', str, logic.TaggingProperty.Spectral),
         ('LuminosityTagging', str, logic.TaggingProperty.Luminosity)]
@@ -1066,8 +1077,8 @@ class Config(QtCore.QObject):
             option=ConfigOption.Milieu,
             key='TravellerMap/Milieu',
             restart=False,
-            enumType=multiverse.Milieu,
-            default=multiverse.Milieu.M1105))
+            enumType=astronomer.Milieu,
+            default=astronomer.Milieu.M1105))
 
         self._addConfigItem(EnumConfigItem(
             option=ConfigOption.MapStyle,
@@ -1334,10 +1345,10 @@ class Config(QtCore.QObject):
             default=logic.WorldTagging(
                 config={
                     logic.TaggingProperty.Zone: {
-                        multiverse.ZoneType.AmberZone: logic.TagLevel.Warning,
-                        multiverse.ZoneType.RedZone: logic.TagLevel.Danger,
-                        multiverse.ZoneType.Unabsorbed: logic.TagLevel.Warning,
-                        multiverse.ZoneType.Forbidden: logic.TagLevel.Danger},
+                        astronomer.ZoneType.AmberZone: logic.TagLevel.Warning,
+                        astronomer.ZoneType.RedZone: logic.TagLevel.Danger,
+                        astronomer.ZoneType.Unabsorbed: logic.TagLevel.Warning,
+                        astronomer.ZoneType.Forbidden: logic.TagLevel.Danger},
                     logic.TaggingProperty.StarPort: {
                         'X': logic.TagLevel.Warning},
                     logic.TaggingProperty.Atmosphere: {
@@ -1352,20 +1363,18 @@ class Config(QtCore.QObject):
                     logic.TaggingProperty.LawLevel: {
                         '0': logic.TagLevel.Danger},
                     logic.TaggingProperty.TradeCode: {
-                        multiverse.TradeCode.AmberZone: logic.TagLevel.Warning,
-                        multiverse.TradeCode.RedZone: logic.TagLevel.Danger,
-                        multiverse.TradeCode.HellWorld: logic.TagLevel.Danger,
-                        multiverse.TradeCode.PenalColony: logic.TagLevel.Danger,
-                        multiverse.TradeCode.PrisonCamp: logic.TagLevel.Danger,
-                        multiverse.TradeCode.Reserve: logic.TagLevel.Danger,
-                        multiverse.TradeCode.DangerousWorld: logic.TagLevel.Danger,
-                        multiverse.TradeCode.ForbiddenWorld: logic.TagLevel.Danger}
+                        traveller.TradeCode.HellWorld: logic.TagLevel.Danger,
+                        traveller.TradeCode.PenalColony: logic.TagLevel.Danger,
+                        traveller.TradeCode.PrisonCamp: logic.TagLevel.Danger,
+                        traveller.TradeCode.Reserve: logic.TagLevel.Danger,
+                        traveller.TradeCode.DangerousWorld: logic.TagLevel.Danger,
+                        traveller.TradeCode.ForbiddenWorld: logic.TagLevel.Danger}
                 })))
 
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.LogLevel], futureValue: bool = False) -> int: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.Milieu], futureValue: bool = False) -> multiverse.Milieu: ...
+    def value(self, option: typing.Literal[ConfigOption.Milieu], futureValue: bool = False) -> astronomer.Milieu: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.MapStyle], futureValue: bool = False) -> cartographer.MapStyle: ...
     @typing.overload
