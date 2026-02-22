@@ -103,10 +103,10 @@ class Culture(object):
 
     def __init__(
             self,
-            heterogeneity: typing.Optional[str],
-            acceptance: typing.Optional[str],
-            strangeness: typing.Optional[str],
-            symbols: typing.Optional[str]
+            heterogeneity: typing.Optional[str] = None,
+            acceptance: typing.Optional[str] = None,
+            strangeness: typing.Optional[str] = None,
+            symbols: typing.Optional[str] = None
             ) -> None:
         self._valueMap: typing.Dict[Culture.Element, str] = {}
         self._string = None

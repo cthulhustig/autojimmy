@@ -27,17 +27,15 @@ class WorldReference(object):
 class Remarks(object):
     def __init__(
             self,
-            zone: astronomer.ZoneType,
             uwp: astronomer.UWP,
-            tradeCodes: typing.Optional[typing.Collection[traveller.TradeCode]],
-            sophontPopulations: typing.Optional[typing.Collection[astronomer.SophontPopulation]],
-            rulingAllegiances: typing.Optional[typing.Collection[str]],
-            owningSystems: typing.Optional[typing.Collection[WorldReference]],
-            colonySystems: typing.Optional[typing.Collection[WorldReference]],
-            researchStations: typing.Optional[typing.Collection[str]],
-            customRemarks: typing.Optional[typing.Collection[str]]
+            tradeCodes: typing.Optional[typing.Collection[traveller.TradeCode]] = None,
+            sophontPopulations: typing.Optional[typing.Collection[astronomer.SophontPopulation]] = None,
+            rulingAllegiances: typing.Optional[typing.Collection[str]] = None,
+            owningSystems: typing.Optional[typing.Collection[WorldReference]] = None,
+            colonySystems: typing.Optional[typing.Collection[WorldReference]] = None,
+            researchStations: typing.Optional[typing.Collection[str]] = None,
+            customRemarks: typing.Optional[typing.Collection[str]] = None
             ) -> None:
-        self._zone = zone
         self._uwp = uwp
         self._tradeCodes = common.OrderedSet(tradeCodes) if tradeCodes else common.OrderedSet()
         self._sophontPopulationMap = {p.code(): p for p in sophontPopulations} if sophontPopulations else {}

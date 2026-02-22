@@ -109,7 +109,7 @@ class Star(object):
 class Stellar(object):
     def __init__(
             self,
-            stars: typing.Optional[typing.Collection[Star]]
+            stars: typing.Optional[typing.Collection[Star]] = None
             ) -> None:
         self._stars = list(stars) if stars else []
         self._string = None

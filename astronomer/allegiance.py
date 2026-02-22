@@ -6,13 +6,13 @@ class Allegiance(object):
             self,
             code: str,
             name: str,
-            legacyCode: typing.Optional[str],
-            baseCode: typing.Optional[str],
-            routeColour: typing.Optional[str],
-            routeStyle: typing.Optional[astronomer.LineStyle],
-            routeWidth: typing.Optional[float],
-            borderColour: typing.Optional[str],
-            borderStyle: typing.Optional[astronomer.LineStyle]
+            legacyCode: typing.Optional[str] = None,
+            baseCode: typing.Optional[str] = None,
+            routeColour: typing.Optional[str] = None,
+            routeStyle: typing.Optional[astronomer.LineStyle] = None,
+            routeWidth: typing.Optional[float] = None,
+            borderColour: typing.Optional[str] = None,
+            borderStyle: typing.Optional[astronomer.LineStyle] = None
             ) -> None:
         self._code = code
         self._name = name

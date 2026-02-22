@@ -494,7 +494,13 @@ class WorldManager(object):
 
         milieu = WorldManager._mapMilieu(dbSector.milieu())
         if not milieu:
-            raise ValueError(f'Sector has unknown milieu "{dbSector.milieu()}"')
+            raise ValueError(f'Unknown milieu "{dbSector.milieu()}"')
+
+        sectorLoggingName = '{sectorName} ({sectorX}, {sectorY}) from {milieu}'.format(
+            sectorName=sectorName if sectorName else '<Unnamed Sector>',
+            sectorX=sectorX,
+            sectorY=sectorY,
+            milieu=milieu.value)
 
         dbAlternateNames = dbSector.alternateNames()
         alternateNames = None
@@ -534,15 +540,21 @@ class WorldManager(object):
                     if routeStyle:
                         routeStyle = WorldManager._mapLineStyle(routeStyle)
                         if not routeStyle:
-                            logging.warning(
-                                f'Ignoring invalid route style "{dbAllegiance.routeStyle()}" for allegiance {dbAllegiance.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                            logging.warning('Ignoring invalid route style "{style}" for allegiance {objectId} when loading sector {sectorId} ({name})'.format(
+                                style=dbAllegiance.routeStyle(),
+                                objectId=dbAllegiance.id(),
+                                sectorId=dbSector.id(),
+                                name=sectorLoggingName))
 
                     borderStyle = dbAllegiance.borderStyle()
                     if borderStyle:
                         borderStyle = WorldManager._mapLineStyle(borderStyle)
                         if not borderStyle:
-                            logging.warning(
-                                f'Ignoring invalid border style "{dbAllegiance.borderStyle()}" for allegiance {dbAllegiance.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                            logging.warning('Ignoring invalid border style "{style}" for allegiance {objectId} when loading sector {sectorId} ({name})'.format(
+                                style=dbAllegiance.borderStyle(),
+                                objectId=dbAllegiance.id(),
+                                sectorId=dbSector.id(),
+                                name=sectorLoggingName))
 
                     allegianceCodeMap[dbAllegiance.code()] = astronomer.Allegiance(
                         code=dbAllegiance.code(),
@@ -555,8 +567,10 @@ class WorldManager(object):
                         borderColour=dbAllegiance.borderColour(),
                         borderStyle=borderStyle)
                 except Exception as ex:
-                    logging.warning(
-                        f'Failed to load allegiance {dbAllegiance.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                    logging.warning('Failed to create allegiance {objectId} when loading sector {sectorId} ({name})'.format(
+                            objectId=dbAllegiance.id(),
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName),
                         exc_info=ex)
 
         dbSophonts = dbSector.sophonts()
@@ -569,13 +583,22 @@ class WorldManager(object):
                         name=dbSophont.name(),
                         isMajor=dbSophont.isMajor())
                 except Exception as ex:
-                    logging.warning(
-                        f'Failed to load sophont {dbSophont.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                    logging.warning('Failed to create sophont {objectId} when loading sector {sectorId} ({name})'.format(
+                            objectId=dbSophont.id(),
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName),
                         exc_info=ex)
 
         dbSystems = dbSector.systems()
         if dbSystems:
             for dbSystem in dbSystems:
+                systemName = dbSystem.name()
+                systemLoggingName = '{systemName} ({hexX}, {hexY}) in {sectorString}'.format(
+                    systemName=systemName if systemName else '<Unnamed System>',
+                    hexX=dbSystem.hexX(),
+                    hexY=dbSystem.hexY(),
+                    sectorString=sectorLoggingName)
+
                 try:
                     worldHex = astronomer.HexPosition(
                         sectorX=sectorX,
@@ -583,9 +606,8 @@ class WorldManager(object):
                         offsetX=dbSystem.hexX(),
                         offsetY=dbSystem.hexY())
 
-                    worldName = dbSystem.name()
                     isNameGenerated = False
-                    if not worldName:
+                    if not systemName:
                         # If the world doesn't have a name the sector combined with the hex. This format
                         # is important as it's the same format as Traveller Map meaning searches will
                         # work
@@ -595,8 +617,9 @@ class WorldManager(object):
                         # the user (in tables name is generally the first column in the table).
                         # - Need to look to see what Traveller Map displays on map and in the info
                         # dialog for worlds that have no name (but have a non ? UWP).
-                        worldName = f'{sectorName} {dbSystem.hexX():02d}{dbSystem.hexY():02d}'
+                        systemName = f'{sectorName} {dbSystem.hexX():02d}{dbSystem.hexY():02d}'
                         isNameGenerated = True
+
 
                     subsectorIndex = worldHex.subsectorIndex()
                     subsectorCode = subsectorIndex.code()
@@ -607,32 +630,85 @@ class WorldManager(object):
                     if allegianceCode:
                         allegiance = allegianceCodeMap.get(allegianceCode)
                         if not allegiance:
-                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for world {worldName} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                            logging.warning('Ignoring unknown allegiance "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                code=allegianceCode,
+                                systemId=dbSystem.id(),
+                                sectorId=dbSector.id(),
+                                name=systemLoggingName))
 
-                    zone = astronomer.parseZoneString(
-                        dbSystem.zone() if dbSystem.zone() else '')
+                    dbZone = dbSystem.zone()
+                    zone = None
+                    if dbZone:
+                        try:
+                            zone = astronomer.parseZoneString(dbZone)
+                        except Exception as ex:
+                            logging.warning('Failed to parse zone "{zone}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    zone=dbZone,
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName),
+                                exc_info=ex)
 
-                    uwp = astronomer.UWP(
-                        starport=dbSystem.starport(),
-                        worldSize=dbSystem.worldSize(),
-                        atmosphere=dbSystem.atmosphere(),
-                        hydrographics=dbSystem.hydrographics(),
-                        population=dbSystem.population(),
-                        government=dbSystem.government(),
-                        lawLevel=dbSystem.lawLevel(),
-                        techLevel=dbSystem.techLevel())
+                    try:
+                        uwp = astronomer.UWP(
+                            starport=dbSystem.starport(),
+                            worldSize=dbSystem.worldSize(),
+                            atmosphere=dbSystem.atmosphere(),
+                            hydrographics=dbSystem.hydrographics(),
+                            population=dbSystem.population(),
+                            government=dbSystem.government(),
+                            lawLevel=dbSystem.lawLevel(),
+                            techLevel=dbSystem.techLevel())
+                    except Exception as ex:
+                        logging.warning('Failed to create UWP when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                systemId=dbSystem.id(),
+                                sectorId=dbSector.id(),
+                                name=systemLoggingName),
+                            exc_info=ex)
+                        uwp = astronomer.UWP()
 
-                    economics = astronomer.Economics(
-                        resources=dbSystem.resources(),
-                        labour=dbSystem.labour(),
-                        infrastructure=dbSystem.infrastructure(),
-                        efficiency=dbSystem.efficiency())
+                    try:
+                        economics = astronomer.Economics(
+                            resources=dbSystem.resources(),
+                            labour=dbSystem.labour(),
+                            infrastructure=dbSystem.infrastructure(),
+                            efficiency=dbSystem.efficiency())
+                    except Exception as ex:
+                        logging.warning('Failed to create economics when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                systemId=dbSystem.id(),
+                                sectorId=dbSector.id(),
+                                name=systemLoggingName),
+                            exc_info=ex)
+                        economics = astronomer.Economics()
 
-                    culture = astronomer.Culture(
-                        heterogeneity=dbSystem.heterogeneity(),
-                        acceptance=dbSystem.acceptance(),
-                        strangeness=dbSystem.strangeness(),
-                        symbols=dbSystem.symbols())
+                    try:
+                        culture = astronomer.Culture(
+                            heterogeneity=dbSystem.heterogeneity(),
+                            acceptance=dbSystem.acceptance(),
+                            strangeness=dbSystem.strangeness(),
+                            symbols=dbSystem.symbols())
+                    except Exception as ex:
+                        logging.warning('Failed to create culture when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                systemId=dbSystem.id(),
+                                sectorId=dbSector.id(),
+                                name=systemLoggingName),
+                            exc_info=ex)
+                        culture = astronomer.Culture()
+
+                    try:
+                        pbg = astronomer.PBG(
+                            populationMultiplier=dbSystem.populationMultiplier(),
+                            planetoidBelts=dbSystem.planetoidBelts(),
+                            gasGiants=dbSystem.gasGiants())
+                    except Exception as ex:
+                        logging.warning('Failed to create PBG when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                systemId=dbSystem.id(),
+                                sectorId=dbSector.id(),
+                                name=systemLoggingName),
+                            exc_info=ex)
+                        pbg = astronomer.PBG()
+
+                    systemWorlds = dbSystem.systemWorlds()
 
                     dbTradeCodes = dbSystem.tradeCodes()
                     tradeCodes: typing.Optional[typing.List[traveller.TradeCode]] = None
@@ -641,8 +717,12 @@ class WorldManager(object):
                         for dbTradeCode in dbTradeCodes:
                             tradeCode = traveller.tradeCode(tradeCodeString=dbTradeCode.code())
                             if not tradeCode:
-                                # TODO: Should include sector name etc
-                                logging.warning(f'Ignoring unknown trade code {dbTradeCode.code()}')
+                                logging.warning('Ignoring trade code {objectId} with unknown code "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    objectId=dbTradeCode.id(),
+                                    code=dbTradeCode.code(),
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName))
                                 continue
                             tradeCodes.append(tradeCode)
 
@@ -653,14 +733,27 @@ class WorldManager(object):
                         for dbPopulation in dbPopulations:
                             sophont = sophontCodeMap.get(dbPopulation.sophontCode())
                             if not sophont:
-                                # TODO: Should include sector name etc
-                                logging.warning(f'Ignoring population with unknown sophont {dbPopulation.sophontCode()}')
+                                logging.warning('Ignoring sophont population {objectId} with unknown sophont "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    objectId=dbPopulation.id(),
+                                    code=dbPopulation.sophontCode(),
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName))
                                 continue
-                            sophontPopulations.append(astronomer.SophontPopulation(
-                                sophont=sophont,
-                                percentage=dbPopulation.percentage(),
-                                isHomeWorld=dbPopulation.isHomeWorld(),
-                                isDieBack=dbPopulation.isDieBack()))
+
+                            try:
+                                sophontPopulations.append(astronomer.SophontPopulation(
+                                    sophont=sophont,
+                                    percentage=dbPopulation.percentage(),
+                                    isHomeWorld=dbPopulation.isHomeWorld(),
+                                    isDieBack=dbPopulation.isDieBack()))
+                            except Exception as ex:
+                                logging.warning('Failed to create sophont population {objectId} when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                        objectId=dbPopulation.id(),
+                                        systemId=dbSystem.id(),
+                                        sectorId=dbSector.id(),
+                                        name=systemLoggingName),
+                                    exc_info=ex)
 
                     dbRulingAllegiances = dbSystem.rulingAllegiances()
                     rulingAllegiances: typing.Optional[typing.List[str]] = None
@@ -669,8 +762,12 @@ class WorldManager(object):
                         for dbAllegiance in dbRulingAllegiances:
                             allegiance = allegianceCodeMap.get(dbAllegiance.allegianceCode())
                             if not allegiance:
-                                # TODO: Should include sector name etc
-                                logging.warning(f'Ignoring ruling allegiance with unknown allegiance {dbAllegiance.allegianceCode()}')
+                                logging.warning('Ignoring ruling allegiance {objectId} with unknown allegiance "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    objectId=dbAllegiance.id(),
+                                    code=dbAllegiance.allegianceCode(),
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName))
                                 continue
                             rulingAllegiances.append(allegiance)
 
@@ -679,20 +776,36 @@ class WorldManager(object):
                     if dbOwningSystems:
                         owningWorlds = []
                         for dbOwningSystem in dbOwningSystems:
-                            owningWorlds.append(astronomer.WorldReference(
-                                hexX=dbOwningSystem.hexX(),
-                                hexY=dbOwningSystem.hexY(),
-                                sectorAbbreviation=dbOwningSystem.sectorAbbreviation()))
+                            try:
+                                owningWorlds.append(astronomer.WorldReference(
+                                    hexX=dbOwningSystem.hexX(),
+                                    hexY=dbOwningSystem.hexY(),
+                                    sectorAbbreviation=dbOwningSystem.sectorAbbreviation()))
+                            except Exception as ex:
+                                logging.warning('Failed to create world reference for owning system {objectId} when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                        objectId=dbOwningSystem.id(),
+                                        systemId=dbSystem.id(),
+                                        sectorId=dbSector.id(),
+                                        name=systemLoggingName),
+                                    exc_info=ex)
 
                     dbColonySystems = dbSystem.colonySystems()
                     colonyWorlds: typing.Optional[typing.List[astronomer.WorldReference]] = None
                     if dbColonySystems:
                         colonyWorlds = []
                         for dbColonySystem in dbColonySystems:
-                            colonyWorlds.append(astronomer.WorldReference(
-                                hexX=dbColonySystem.hexX(),
-                                hexY=dbColonySystem.hexY(),
-                                sectorAbbreviation=dbColonySystem.sectorAbbreviation()))
+                            try:
+                                colonyWorlds.append(astronomer.WorldReference(
+                                    hexX=dbColonySystem.hexX(),
+                                    hexY=dbColonySystem.hexY(),
+                                    sectorAbbreviation=dbColonySystem.sectorAbbreviation()))
+                            except Exception as ex:
+                                logging.warning('Failed to create world reference for colony system {objectId} when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                        objectId=dbColonySystem.id(),
+                                        systemId=dbSystem.id(),
+                                        sectorId=dbSector.id(),
+                                        name=systemLoggingName),
+                                    exc_info=ex)
 
                     dbResearchStations = dbSystem.researchStations()
                     researchStations: typing.Optional[typing.List[str]] = None
@@ -704,64 +817,108 @@ class WorldManager(object):
                     if dbCustomRemarks:
                         customRemarks = [r.remark() for r in dbCustomRemarks]
 
-                    remarks = astronomer.Remarks(
-                        zone=zone,
-                        uwp=uwp,
-                        tradeCodes=tradeCodes,
-                        sophontPopulations=sophontPopulations,
-                        rulingAllegiances=rulingAllegiances,
-                        owningSystems=owningWorlds,
-                        colonySystems=colonyWorlds,
-                        researchStations=researchStations,
-                        customRemarks=customRemarks)
+                    remarks = None
+                    try:
+                        remarks = astronomer.Remarks(
+                            uwp=uwp,
+                            tradeCodes=tradeCodes,
+                            sophontPopulations=sophontPopulations,
+                            rulingAllegiances=rulingAllegiances,
+                            owningSystems=owningWorlds,
+                            colonySystems=colonyWorlds,
+                            researchStations=researchStations,
+                            customRemarks=customRemarks)
+                    except Exception as ex:
+                        logging.warning('Failed to create remarks when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                systemId=dbSystem.id(),
+                                sectorId=dbSector.id(),
+                                name=systemLoggingName),
+                            exc_info=ex)
 
                     dbNobilities = dbSystem.nobilities()
-                    nobilities = None
+                    nobilityTypes = None
                     if dbNobilities:
-                        nobilities = []
+                        nobilityTypes = []
                         for dbNobility in dbNobilities:
-                            nobility = astronomer.codeToNobilityType(dbNobility.code())
-                            if nobility is None:
-                                # TODO: Should include sector name etc
-                                logging.debug(f'Ignoring unknown base code "{dbNobility.code()}"')
+                            nobilityType = astronomer.codeToNobilityType(dbNobility.code())
+                            if nobilityType is None:
+                                logging.warning('Ignoring nobility {objectId} with unknown code "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    objectId=dbNobility.id(),
+                                    code=dbNobility.code(),
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName))
                                 continue
-                            nobilities.append(nobility)
-                    nobilities = astronomer.Nobilities(nobilities=nobilities)
+                            nobilityTypes.append(nobilityType)
+
+                    nobilities = None
+                    try:
+                        nobilities = astronomer.Nobilities(nobilities=nobilityTypes)
+                    except Exception as ex:
+                        logging.warning('Failed to create nobilities when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                systemId=dbSystem.id(),
+                                sectorId=dbSector.id(),
+                                name=systemLoggingName),
+                            exc_info=ex)
 
                     dbBases = dbSystem.bases()
-                    bases = None
+                    baseTypes = None
                     if dbBases:
-                        bases = []
+                        baseTypes = []
                         for dbBase in dbBases:
-                            types = astronomer.codeToBaseTypes(dbBase.code())
-                            if types is None:
-                                # TODO: Should include sector name etc
-                                logging.debug(f'Ignoring unknown base code "{dbBase.code()}"')
+                            codeBaseTypes = astronomer.codeToBaseTypes(dbBase.code())
+                            if codeBaseTypes is None:
+                                logging.warning('Ignoring base {objectId} with unknown code "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    objectId=dbBase.id(),
+                                    code=dbBase.code(),
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName))
                                 continue
-                            bases.extend(types)
-                    bases = astronomer.Bases(bases=bases)
+                            baseTypes.extend(codeBaseTypes)
+
+                    bases = None
+                    try:
+                        bases = astronomer.Bases(bases=baseTypes)
+                    except Exception as ex:
+                        logging.warning('Failed to create bases when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                systemId=dbSystem.id(),
+                                sectorId=dbSector.id(),
+                                name=systemLoggingName),
+                            exc_info=ex)
 
                     dbStars = dbSystem.stars()
                     stars = None
                     if dbStars:
                         stars = []
                         for dbStar in dbStars:
-                            stars.append(astronomer.Star(
-                                luminosityClass=dbStar.luminosityClass(),
-                                spectralClass=dbStar.spectralClass(),
-                                spectralScale=dbStar.spectralScale()))
-                    stellar = astronomer.Stellar(stars=stars)
+                            try:
+                                stars.append(astronomer.Star(
+                                    luminosityClass=dbStar.luminosityClass(),
+                                    spectralClass=dbStar.spectralClass(),
+                                    spectralScale=dbStar.spectralScale()))
+                            except Exception as ex:
+                                logging.warning('Failed to create star {objectId} when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                        objectId=dbStar.id(),
+                                        systemId=dbSystem.id(),
+                                        sectorId=dbSector.id(),
+                                        name=systemLoggingName),
+                                    exc_info=ex)
 
-                    pbg = astronomer.PBG(
-                        populationMultiplier=dbSystem.populationMultiplier(),
-                        planetoidBelts=dbSystem.planetoidBelts(),
-                        gasGiants=dbSystem.gasGiants())
-                    systemWorlds = dbSystem.systemWorlds()
+                    stellar = None
+                    try:
+                        stellar = astronomer.Stellar(stars=stars)
+                    except Exception as ex:
+                        logging.warning('Failed to create stellar when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                systemId=dbSystem.id(),
+                                sectorId=dbSector.id(),
+                                name=systemLoggingName),
+                            exc_info=ex)
 
                     world = astronomer.World(
                         milieu=milieu,
                         hex=worldHex,
-                        worldName=worldName,
+                        worldName=systemName,
                         isNameGenerated=isNameGenerated,
                         sectorName=sectorName,
                         subsectorName=subsectorName,
@@ -780,8 +937,10 @@ class WorldManager(object):
                     subsectorWorlds = subsectorWorldsMap[subsectorCode]
                     subsectorWorlds.append(world)
                 except Exception as ex:
-                    logging.warning(
-                        f'Failed to load system {dbSystem.id()} in data for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                    logging.warning('Failed to load system {systemId} in sector {sectorId} ({name})'.format(
+                            systemId=dbSystem.id(),
+                            sectorId=dbSector.id(),
+                            name=systemLoggingName),
                         exc_info=ex)
 
         subsectors = []
@@ -800,8 +959,9 @@ class WorldManager(object):
                 worlds=subsectorWorlds))
 
         dbRoutes = dbSector.routes()
-        routes = []
+        routes = None
         if dbRoutes:
+            routes = []
             for dbRoute in dbRoutes:
                 try:
                     startHex = astronomer.HexPosition(
@@ -818,8 +978,11 @@ class WorldManager(object):
 
                     colour = dbRoute.colour()
                     if colour and not common.isValidHtmlColour(htmlColour=colour):
-                        logging.warning(
-                            f'Ignoring invalid colour "{colour}" for route {dbRoute.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                        logging.warning('Ignoring invalid colour "{colour}" for route {objectId} when loading sector {sectorId} ({name})'.format(
+                            colour=colour,
+                            objectId=dbRoute.id(),
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName))
                         colour = None
 
                     allegianceCode = dbRoute.allegianceCode()
@@ -827,15 +990,21 @@ class WorldManager(object):
                     if allegianceCode:
                         allegiance = allegianceCodeMap.get(allegianceCode)
                         if not allegiance:
-                            logging.warning(
-                                f'Ignoring unknown allegiance "{allegianceCode}" for route {dbRoute.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                            logging.warning('Ignoring unknown allegiance code "{code}" for route {objectId} when loading sector {sectorId} ({name})'.format(
+                                code=allegianceCode,
+                                objectId=dbRoute.id(),
+                                sectorId=dbSector.id(),
+                                name=sectorLoggingName))
 
                     style = dbRoute.style()
                     if style:
                         style = WorldManager._mapLineStyle(style)
                         if not style:
-                            logging.warning(
-                                f'Ignoring invalid style "{dbRoute.style()}" for route {dbRoute.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                            logging.warning('Ignoring invalid style "{style}" for route {objectId} when loading sector {sectorId} ({name})'.format(
+                                style=dbRoute.style(),
+                                objectId=dbRoute.id(),
+                                sectorId=dbSector.id(),
+                                name=sectorLoggingName))
 
                     routes.append(astronomer.Route(
                         startHex=startHex,
@@ -846,13 +1015,16 @@ class WorldManager(object):
                         colour=colour,
                         width=dbRoute.width()))
                 except Exception as ex:
-                    logging.warning(
-                        f'Failed to load route {dbRoute.id()} for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                    logging.warning('Failed to create route {objectId} when loading sector {sectorId} ({name})'.format(
+                            objectId=dbRoute.id(),
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName),
                         exc_info=ex)
 
         dbBorders = dbSector.borders()
-        borders = []
+        borders = None
         if dbBorders:
+            borders = []
             for dbBorder in dbBorders:
                 try:
                     hexes = []
@@ -865,8 +1037,11 @@ class WorldManager(object):
 
                     colour = dbBorder.colour()
                     if colour and not common.isValidHtmlColour(htmlColour=colour):
-                        logging.warning(
-                            f'Ignoring invalid colour "{colour}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                        logging.warning('Ignoring invalid colour "{colour}" for border {objectId} when loading sector {sectorId} ({name})'.format(
+                            colour=colour,
+                            objectId=dbBorder.id(),
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName))
                         colour = None
 
                     allegianceCode = dbBorder.allegianceCode()
@@ -874,15 +1049,21 @@ class WorldManager(object):
                     if allegianceCode:
                         allegiance = allegianceCodeMap.get(allegianceCode)
                         if not allegiance:
-                            logging.warning(
-                                f'Ignoring unknown allegiance "{allegianceCode}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                            logging.warning('Ignoring unknown allegiance code "{code}" for border {objectId} when loading sector {sectorId} ({name})'.format(
+                                code=allegianceCode,
+                                objectId=dbBorder.id(),
+                                sectorId=dbSector.id(),
+                                name=sectorLoggingName))
 
                     style = dbBorder.style()
                     if style:
                         style = WorldManager._mapLineStyle(style)
                         if not style:
-                            logging.warning(
-                                f'Ignoring invalid style "{dbBorder.style()}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                            logging.warning('Ignoring invalid style "{style}" for border {objectId} when loading sector {sectorId} ({name})'.format(
+                                style=dbBorder.style(),
+                                objectId=dbBorder.id(),
+                                sectorId=dbSector.id(),
+                                name=sectorLoggingName))
 
                     borders.append(astronomer.Border(
                         hexList=hexes,
@@ -895,13 +1076,16 @@ class WorldManager(object):
                         showLabel=dbBorder.showLabel(),
                         wrapLabel=dbBorder.wrapLabel()))
                 except Exception as ex:
-                    logging.warning(
-                        f'Failed to load border {dbBorder.id()} for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                    logging.warning('Failed to create border {objectId} when loading sector {sectorId} ({name})'.format(
+                            objectId=dbBorder.id(),
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName),
                         exc_info=ex)
 
         dbRegions = dbSector.regions()
-        regions = []
+        regions = None
         if dbRegions:
+            regions = []
             for dbRegion in dbRegions:
                 try:
                     hexes = []
@@ -914,7 +1098,11 @@ class WorldManager(object):
 
                     colour = dbRegion.colour()
                     if colour and not common.isValidHtmlColour(htmlColour=colour):
-                        logging.warning(f'Ignoring invalid colour "{colour}" for region {dbRegion.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                        logging.warning('Ignoring invalid colour "{colour}" for region {objectId} when loading sector {sectorId} ({name})'.format(
+                            colour=colour,
+                            objectId=dbRegion.id(),
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName))
                         colour = None
 
                     regions.append(astronomer.Region(
@@ -926,27 +1114,36 @@ class WorldManager(object):
                         showLabel=dbRegion.showLabel(),
                         wrapLabel=dbRegion.wrapLabel()))
                 except Exception as ex:
-                    logging.warning(
-                        f'Failed to load region {dbRegion.id()} for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                    logging.warning('Failed to create region {objectId} when loading sector {sectorId} ({name})'.format(
+                            objectId=dbRegion.id(),
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName),
                         exc_info=ex)
 
         dbLabels = dbSector.labels()
-        labels = []
+        labels = None
         if dbLabels:
+            labels = []
             for dbLabel in dbLabels:
                 try:
                     colour = dbLabel.colour()
                     if colour and not common.isValidHtmlColour(htmlColour=colour):
-                        logging.warning(
-                            f'Ignoring invalid colour "{colour}" for label {dbLabel.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                        logging.warning('Ignoring invalid colour "{colour}" for label {objectId} when loading sector {sectorId} ({name})'.format(
+                            colour=colour,
+                            objectId=dbLabel.id(),
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName))
                         colour = None
 
                     size = dbLabel.size()
                     if size:
                         size = WorldManager._mapLabelSize(size)
                         if not size:
-                            logging.warning(
-                                f'Ignoring invalid size "{dbLabel.size()}" for label {dbLabel.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                            logging.warning('Ignoring invalid size "{size}" for label {objectId} when loading sector {sectorId} ({name})'.format(
+                                size=dbLabel.size(),
+                                objectId=dbLabel.id(),
+                                sectorId=dbSector.id(),
+                                name=sectorLoggingName))
 
                     labels.append(astronomer.Label(
                         text=dbLabel.text(),
@@ -956,8 +1153,10 @@ class WorldManager(object):
                         size=size,
                         wrap=dbLabel.wrap()))
                 except Exception as ex:
-                    logging.warning(
-                        f'Failed to load label {dbLabel.id()} for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                    logging.warning('Failed to create label {objectId} when loading sector {sectorId} ({name})'.format(
+                            objectId=dbLabel.id(),
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName),
                         exc_info=ex)
 
         dbTags = dbSector.tags()
@@ -967,16 +1166,21 @@ class WorldManager(object):
             for dbTag in dbTags:
                 tag = astronomer.stringToSectorTag(dbTag.tag())
                 if not tag:
-                    #logging.debug(
-                    #    f'Ignoring invalid sector tag "{dbTag.tag()}" in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                    # NOTE: This is disabled as it's very spammy
+                    #logging.warning('Ignoring sector tag {objectId} with unknown value "{value}" when loading sector {sectorId} ({name})'.format(
+                    #    objectId=dbTag.id(),
+                    #    value=dbTag.tag(),
+                    #    sectorId=dbSector.id(),
+                    #    name=sectorLoggingName))
                     continue
                 tags.append(tag)
 
             try:
                 tagging = astronomer.SectorTagging(tags=tags)
             except Exception as ex:
-                logging.warning(
-                    f'Failed to load sector tagging for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                logging.warning('Failed to create sector tagging when loading sector {sectorId} ({name})'.format(
+                        sectorId=dbSector.id(),
+                        name=sectorLoggingName),
                     exc_info=ex)
 
         dbPrimaryPublication = dbSector.publication()
@@ -996,8 +1200,9 @@ class WorldManager(object):
                         publisher=dbPrimaryPublisher,
                         reference=dbPrimaryReference)
                 except Exception as ex:
-                    logging.warning(
-                        f'Failed to load primary source for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                    logging.warning('Failed to create primary source when loading sector {sectorId} ({name})'.format(
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName),
                         exc_info=ex)
 
             products = []
@@ -1010,8 +1215,10 @@ class WorldManager(object):
                             publisher=dbProduct.publisher(),
                             reference=dbProduct.reference()))
                     except Exception as ex:
-                        logging.warning(
-                            f'Failed to load source {dbProduct.id()} for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                        logging.warning('Failed to create source {objectId} when loading sector {sectorId} ({name})'.format(
+                                objectId=dbProduct.id(),
+                                sectorId=dbSector.id(),
+                                name=sectorLoggingName),
                             exc_info=ex)
 
             try:
@@ -1020,11 +1227,13 @@ class WorldManager(object):
                     primary=primary,
                     products=products)
             except Exception as ex:
-                logging.warning(
-                    f'Failed to load sources for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                logging.warning('Failed to create sources when loading sector {sectorId} ({name})'.format(
+                        sectorId=dbSector.id(),
+                        name=sectorLoggingName),
                     exc_info=ex)
 
         return astronomer.Sector(
+            isCustom=dbSector.isCustom(),
             name=sectorName,
             milieu=milieu,
             index=astronomer.SectorIndex(sectorX=sectorX, sectorY=sectorY),
@@ -1040,8 +1249,7 @@ class WorldManager(object):
             labels=labels,
             selected=dbSector.selected(),
             tagging=tagging,
-            sources=sources,
-            isCustom=dbSector.isCustom())
+            sources=sources)
 
     @staticmethod
     def _mapMilieu(milieu: str) -> typing.Optional[astronomer.Milieu]:

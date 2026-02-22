@@ -12,17 +12,17 @@ class World(object):
             isNameGenerated: bool,
             sectorName: str,
             subsectorName: str,
-            allegiance: typing.Optional[astronomer.Allegiance],
-            zone: typing.Optional[astronomer.ZoneType],
-            uwp: astronomer.UWP,
-            economics: astronomer.Economics,
-            culture: astronomer.Culture,
-            nobilities: astronomer.Nobilities,
-            bases: astronomer.Bases,
-            remarks: astronomer.Remarks,
-            systemWorlds: typing.Optional[int],
-            pbg: astronomer.PBG,
-            stellar: astronomer.Stellar
+            allegiance: typing.Optional[astronomer.Allegiance] = None,
+            zone: typing.Optional[astronomer.ZoneType] = None,
+            uwp: typing.Optional[astronomer.UWP] = None,
+            economics: typing.Optional[astronomer.Economics] = None,
+            culture: typing.Optional[astronomer.Culture] = None,
+            nobilities: typing.Optional[astronomer.Nobilities] = None,
+            bases: typing.Optional[astronomer.Bases] = None,
+            remarks: typing.Optional[astronomer.Remarks] = None,
+            systemWorlds: typing.Optional[int] = None,
+            pbg: typing.Optional[astronomer.PBG] = None,
+            stellar: typing.Optional[astronomer.Stellar] = None
             ) -> None:
         self._milieu = milieu
         self._hex = hex
@@ -32,17 +32,19 @@ class World(object):
         self._subsectorName = subsectorName
         self._allegiance = allegiance
         self._zone = zone
-        self._uwp = uwp
-        self._economics = economics
-        self._culture = culture
-        self._nobilities = nobilities
-        self._bases = bases
-        self._remarks = remarks
+        self._uwp = uwp if uwp else astronomer.UWP()
+        self._economics = economics if economics else astronomer.Economics()
+        self._culture = culture if culture else astronomer.Culture()
+        self._nobilities = nobilities if nobilities else astronomer.Nobilities()
+        self._bases = bases if bases else astronomer.Bases()
+        self._remarks = remarks if remarks else astronomer.Remarks(uwp=self._uwp)
+        self._systemWorlds = systemWorlds
+        self._pbg = pbg if pbg else astronomer.PBG()
+        self._stellar = stellar if stellar else astronomer.Stellar()
+
         self._isAnomaly = self._remarks.hasCustomRemark('{Anomaly}')
         self._isFuelCache = self._remarks.hasCustomRemark('{Fuel}')
-        self._systemWorlds = systemWorlds
-        self._pbg = pbg
-        self._stellar = stellar
+
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu

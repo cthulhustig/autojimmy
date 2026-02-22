@@ -9,14 +9,14 @@ class Subsector(object):
             subsectorName: str,
             isNameGenerated: bool,
             sectorName: str,
-            worlds: typing.Iterable[astronomer.World],
+            worlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
             ) -> None:
         self._milieu = milieu
         self._index = index
         self._name = subsectorName
         self._isNameGenerated = isNameGenerated
         self._sectorName = sectorName
-        self._worlds = list(worlds)
+        self._worlds = list(worlds) if worlds else []
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
@@ -61,41 +61,41 @@ class Subsector(object):
 class Sector(object):
     def __init__(
             self,
+            isCustom: bool,
             milieu: astronomer.Milieu,
-            index: astronomer.SubsectorIndex,
+            index: astronomer.SectorIndex,
             name: str,
-            alternateNames: typing.Optional[typing.Iterable[str]],
-            abbreviation: typing.Optional[str],
-            sectorLabel: typing.Optional[str],
+            alternateNames: typing.Optional[typing.Iterable[str]] = None,
+            abbreviation: typing.Optional[str] = None,
+            sectorLabel: typing.Optional[str] = None,
             # Subsectors should be ordered in subsector order (i.e. A-P)
-            subsectors: typing.Iterable[Subsector],
-            allegiances: typing.Iterable[astronomer.Allegiance],
-            sophonts: typing.Iterable[astronomer.Sophont],
-            routes: typing.Iterable[astronomer.Route],
-            borders: typing.Iterable[astronomer.Border],
-            regions: typing.Iterable[astronomer.Region],
-            labels: typing.Iterable[astronomer.Label],
-            selected: bool,
-            tagging: typing.Optional[astronomer.SectorTagging],
-            sources: typing.Optional[astronomer.SectorSources],
-            isCustom: bool
+            subsectors: typing.Optional[typing.Iterable[Subsector]] = None,
+            allegiances: typing.Optional[typing.Iterable[astronomer.Allegiance]] = None,
+            sophonts: typing.Optional[typing.Iterable[astronomer.Sophont]] = None,
+            routes: typing.Optional[typing.Iterable[astronomer.Route]] = None,
+            borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
+            regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
+            labels: typing.Optional[typing.Iterable[astronomer.Label]] = None,
+            selected: bool = False,
+            tagging: typing.Optional[astronomer.SectorTagging] = None,
+            sources: typing.Optional[astronomer.SectorSources] = None
             ) -> None:
+        self._isCustom = isCustom
         self._milieu = milieu
         self._index = index
         self._name = name
         self._alternateNames = list(alternateNames) if alternateNames else None
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
-        self._allegiances = list(allegiances)
-        self._sophonts = list(sophonts)
-        self._routes = list(routes)
-        self._borders = list(borders)
-        self._regions = list(regions)
-        self._labels = list(labels)
+        self._allegiances = list(allegiances) if allegiances else []
+        self._sophonts = list(sophonts) if sophonts else []
+        self._routes = list(routes) if routes else []
+        self._borders = list(borders) if borders else []
+        self._regions = list(regions) if regions else []
+        self._labels = list(labels) if labels else []
         self._selected = selected
         self._tagging = tagging
         self._sources = sources
-        self._isCustom = isCustom
 
         self._subsectorNameMap: typing.Dict[str, Subsector] = {}
         self._subsectorIndexMap: typing.Dict[typing.Tuple[int, int], Subsector] = {}

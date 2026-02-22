@@ -47,7 +47,7 @@ def codeToNobilityType(code: str) -> typing.Optional[NobilityType]:
 class Nobilities(object):
     def __init__(
             self,
-            nobilities: typing.Optional[typing.Collection[NobilityType]]
+            nobilities: typing.Optional[typing.Collection[NobilityType]] = None
             ) -> None:
         self._nobilities = list(nobilities) if nobilities else []
         self._string = None

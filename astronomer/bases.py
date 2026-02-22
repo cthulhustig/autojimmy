@@ -129,7 +129,7 @@ def codeToBaseTypes(code: str) -> typing.Optional[typing.Collection[BaseType]]:
 class Bases(object):
     def __init__(
             self,
-            bases: typing.Optional[typing.Collection[BaseType]]
+            bases: typing.Optional[typing.Collection[BaseType]] = None
             ) -> None:
         self._bases = list(bases) if bases else []
         self._string = None
