@@ -1035,11 +1035,12 @@ class MultiverseDb(object):
                     ColumnDef(columnName='acceptance', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='strangeness', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='symbols', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    ColumnDef(columnName='population_multiplier', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    ColumnDef(columnName='planetoid_belts', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    ColumnDef(columnName='gas_giants', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    # TODO: Should multiplier and counts enforce a valid range (min 0)
+                    ColumnDef(columnName='population_multiplier', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
+                    ColumnDef(columnName='planetoid_belt_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
+                    ColumnDef(columnName='gas_giant_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
+                    ColumnDef(columnName='other_world_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
                     ColumnDef(columnName='zone', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    ColumnDef(columnName='system_worlds', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
                     ColumnDef(columnName='allegiance_code', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='notes', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
@@ -1973,10 +1974,10 @@ class MultiverseDb(object):
                     'strangeness': system.strangeness(),
                     'symbols': system.symbols(),
                     'population_multiplier': system.populationMultiplier(),
-                    'planetoid_belts': system.planetoidBelts(),
-                    'gas_giants': system.gasGiants(),
+                    'planetoid_belt_count': system.planetoidBeltCount(),
+                    'gas_giant_count': system.gasGiantCount(),
+                    'other_world_count': system.otherWorldCount(),
                     'zone': system.zone(),
-                    'system_worlds': system.systemWorlds(),
                     'allegiance_code': system.allegianceCode(),
                     'notes': system.notes()})
 
@@ -2065,14 +2066,14 @@ class MultiverseDb(object):
                         starport, world_size, atmosphere, hydrographics, population, government, law_level, tech_level,
                         resources, labour, infrastructure, efficiency,
                         heterogeneity, acceptance, strangeness, symbols,
-                        population_multiplier, planetoid_belts, gas_giants,
-                        zone, system_worlds, allegiance_code, notes)
+                        population_multiplier, planetoid_belt_count, gas_giant_count, other_world_count,
+                        zone, allegiance_code, notes)
                     VALUES (:id, :sector_id, :hex_x, :hex_y, :name,
                         :starport, :world_size, :atmosphere, :hydrographics, :population, :government, :law_level, :tech_level,
                         :resources, :labour, :infrastructure, :efficiency,
                         :heterogeneity, :acceptance, :strangeness, :symbols,
-                        :population_multiplier, :planetoid_belts, :gas_giants,
-                        :zone, :system_worlds, :allegiance_code, :notes);
+                        :population_multiplier, :planetoid_belt_count, :gas_giant_count, :other_world_count,
+                        :zone, :allegiance_code, :notes);
                     """.format(table=MultiverseDb._SystemsTableName)
                 cursor.executemany(sql, systemRows)
             if nobilitiesRows:
@@ -2750,8 +2751,8 @@ class MultiverseDb(object):
                 starport, world_size, atmosphere, hydrographics, population, government, law_level, tech_level,
                 resources, labour, infrastructure, efficiency,
                 heterogeneity, acceptance, strangeness, symbols,
-                population_multiplier, planetoid_belts, gas_giants,
-                zone, system_worlds, allegiance_code, notes
+                population_multiplier, planetoid_belt_count, gas_giant_count, other_world_count,
+                zone, allegiance_code, notes
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SystemsTableName)
@@ -2782,10 +2783,10 @@ class MultiverseDb(object):
                     strangeness=row[18],
                     symbols=row[19],
                     populationMultiplier=row[20],
-                    planetoidBelts=row[21],
-                    gasGiants=row[22],
-                    zone=row[23],
-                    systemWorlds=row[24],
+                    planetoidBeltCount=row[21],
+                    gasGiantCount=row[22],
+                    otherWorldCount=row[23],
+                    zone=row[24],
                     allegianceCode=row[25],
                     notes=row[26],
                     nobilities=systemNobilitiesMap.get(systemId),

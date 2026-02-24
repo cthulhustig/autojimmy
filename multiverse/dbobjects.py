@@ -462,16 +462,19 @@ class DbSystem(DbSectorObject):
             strangeness: typing.Optional[str] = None,
             symbols: typing.Optional[str] = None,
             # PBG
-            populationMultiplier: typing.Optional[str] = None,
-            planetoidBelts: typing.Optional[str] = None,
-            gasGiants: typing.Optional[str] = None,
+            populationMultiplier: typing.Optional[int] = None,
+            planetoidBeltCount: typing.Optional[int] = None,
+            gasGiantCount: typing.Optional[int] = None,
+            # Other worlds is my invention, it's calculated using the total
+            # system world count that is (optionally) specified in sector files
+            # but with logic applied that ignores total system world counts that
+            # are lower than the specified number of belts + gas giants (basically
+            # ignores negative values). The total system world count can be
+            # re-constituted by calculating
+            # planetoid belt count + gas giant count + other world count + 1 (for
+            # the main world)
+            otherWorldCount: typing.Optional[int] = None,
             zone: typing.Optional[str] = None,
-            # System worlds can be None if the number is not not known (e.g. if uwp is ???????-?)
-            # It can also be none due to it just not being specified in sector data
-            # TODO: If I'm keeping gas giants etc as ehex strings, should system worlds be
-            # the same? I'm not sure if it's stored as ehex in the file. If it's
-            # not, should I convert it to ehex for consistency (what range does it need?)
-            systemWorlds: typing.Optional[int] = None,
             allegianceCode: typing.Optional[str] = None,
             nobilities: typing.Optional[typing.Collection[DbNobility]] = None,
             tradeCodes: typing.Optional[typing.Collection[DbTradeCode]] = None,
@@ -508,11 +511,11 @@ class DbSystem(DbSectorObject):
         survey.validateOptionalAcceptance(name='acceptance', value=acceptance)
         survey.validateOptionalStrangeness(name='strangeness', value=strangeness)
         survey.validateOptionalSymbols(name='symbols', value=symbols)
-        survey.validateOptionalPopulationMultiplier(name='populationMultiplier', value=populationMultiplier)
-        survey.validateOptionalPlanetoidBelts(name='planetoidBelts', value=planetoidBelts)
-        survey.validateOptionalGasGiants(name='gasGiants', value=gasGiants)
+        common.validateOptionalInt(name='populationMultiplier', value=populationMultiplier, min=1, max=9) # TODO: Is this max right?
+        common.validateOptionalInt(name='planetoidBeltCount', value=planetoidBeltCount, min=0)
+        common.validateOptionalInt(name='gasGiantCount', value=gasGiantCount, min=0)
+        common.validateOptionalInt(name='otherWorldCount', value=otherWorldCount, min=0)
         survey.validateOptionalZone(name='zone', value=zone)
-        common.validateOptionalInt(name='systemWorlds', value=systemWorlds, min=0)
         common.validateOptionalStr(name='allegianceCode', value=allegianceCode, allowEmpty=False)
         DbSystem._validateNobilities(name='nobilities', value=nobilities, systemId=id)
         DbSystem._validateTradeCodes(name='tradeCodes', value=tradeCodes, systemId=id)
@@ -546,10 +549,10 @@ class DbSystem(DbSectorObject):
         self._strangeness = strangeness
         self._symbols = symbols
         self._populationMultiplier = populationMultiplier
-        self._planetoidBelts = planetoidBelts
-        self._gasGiants = gasGiants
+        self._planetoidBeltCount = planetoidBeltCount
+        self._gasGiantCount = gasGiantCount
+        self._otherWorldCount = otherWorldCount
         self._zone = zone
-        self._systemWorlds = systemWorlds
         self._allegianceCode = allegianceCode
         self._notes = notes
 
@@ -631,14 +634,17 @@ class DbSystem(DbSectorObject):
     def symbols(self) -> typing.Optional[str]:
         return self._symbols
 
-    def populationMultiplier(self) -> typing.Optional[str]:
+    def populationMultiplier(self) -> typing.Optional[int]:
         return self._populationMultiplier
 
-    def planetoidBelts(self) -> typing.Optional[str]:
-        return self._planetoidBelts
+    def planetoidBeltCount(self) -> typing.Optional[int]:
+        return self._planetoidBeltCount
 
-    def gasGiants(self) -> typing.Optional[str]:
-        return self._gasGiants
+    def gasGiantCount(self) -> typing.Optional[int]:
+        return self._gasGiantCount
+
+    def otherWorldCount(self) -> typing.Optional[int]:
+        return self._otherWorldCount
 
     def zone(self) -> typing.Optional[str]:
         return self._zone

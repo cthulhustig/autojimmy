@@ -190,24 +190,6 @@ class World(object):
             element=astronomer.PBG.Element.GasGiants,
             default=None)
 
-    def numberOfTerrestrialPlanets(self) -> typing.Optional[int]:
-        systemWorlds = self.numberOfSystemWorlds()
-        if systemWorlds is None:
-            return None
-
-        planetoidBelts = self.numberOfPlanetoidBelts()
-        if planetoidBelts is None:
-            return None
-
-        gasGiants = self.numberOfGasGiants()
-        if gasGiants is None:
-            return None
-
-        terrestrialPlanets = systemWorlds - (planetoidBelts + gasGiants)
-        if terrestrialPlanets < 0:
-            terrestrialPlanets = 0
-        return terrestrialPlanets
-
     def numberOfSystemWorlds(self) -> typing.Optional[int]:
         return self._systemWorlds
 

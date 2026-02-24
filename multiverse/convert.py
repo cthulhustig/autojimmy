@@ -1517,6 +1517,8 @@ def _createDbSystems(
         ) -> typing.List[multiverse.DbSystem]:
     dbSystems = []
 
+    # TODO: Should all the survey.parse* calls here be wrapped in try/except so just
+    # the invalid data is ignored?
     for systemIndex, rawWorld in enumerate(rawSystems):
         try:
             rawHex = rawWorld.hex()
@@ -1549,21 +1551,72 @@ def _createDbSystems(
                     survey.parseSystemCultureString(culture=rawCulture.upper())
 
             rawPBG = rawWorld.pbg()
-            dbPopulationMultiplier = dbPlanetoidBelts = dbGasGiants = None
+            dbPopulationMultiplier = dbPlanetoidBeltCount = dbGasGiantCount = None
             if rawPBG:
-                dbPopulationMultiplier, dbPlanetoidBelts, dbGasGiants = \
+                dbPopulationMultiplier, dbPlanetoidBeltCount, dbGasGiantCount = \
                     survey.parseSystemPBGString(pbg=rawPBG.upper())
+                if dbPopulationMultiplier is not None:
+                    dbPopulationMultiplier = survey.ehexToInteger(dbPopulationMultiplier, None)
+                    # As per the Traveller Map Second Survey docs, some worlds
+                    # might have the multiplier incorrectly set to 0, in such
+                    # cases a value of 0 should be used
+                    # travellermap.com/doc/secondsurvey#pbg
+                    if dbPopulationMultiplier == 0:
+                        dbPopulationMultiplier = 1
+                if dbPlanetoidBeltCount is not None:
+                    dbPlanetoidBeltCount = survey.ehexToInteger(dbPlanetoidBeltCount, None)
+                if dbGasGiantCount is not None:
+                    dbGasGiantCount = survey.ehexToInteger(dbGasGiantCount, None)
 
             rawZone = rawWorld.zone()
             dbZone = None
             if rawZone:
                 dbZone = survey.parseSystemZoneString(zone=rawZone.upper())
 
+            # From the Traveller Map Second Survey documentation the system world count is
+            # Main World + Gas Giant Count + Planetoid Belt Count + Other Planetoid Count.
+            # With the minimum being 1 for the Main World. Gas Giant satellites (I assume
+            # this means moons or rings) aren't included in the Other Planetoid Count unless
+            # they are the Main World. If the Main World is a gas giant satellite, the world
+            # should have the "Sa" remark which I don't believe any of the current worlds
+            # have (but user data could).
+            # https://travellermap.com/doc/secondsurvey#worlds
+            # The section covering the Planetoid Belt Count in the PBG also says that a
+            # Main World of size 0 is not included in that count.
+            # https://travellermap.com/doc/secondsurvey#pbg
             rawSystemWorlds = rawWorld.systemWorlds()
-            try:
-                dbSystemWorlds = int(rawSystemWorlds) if rawSystemWorlds else None
-            except:
-                raise ValueError('Invalid system world count')
+            dbOtherWorldCount = None
+            if rawSystemWorlds:
+                numBelts = dbPlanetoidBeltCount if dbPlanetoidBeltCount else 0
+                numGiants = dbGasGiantCount if dbGasGiantCount else 0
+                numAccountedWorlds = numBelts + numGiants + 1 # +1 for main world
+                numSystemWorlds = None
+
+                try:
+                    numSystemWorlds = int(rawSystemWorlds)
+                except:
+                    logging.warning('Other world count for world {world} in {sector} at {milieu} is unknown as the system world count "{count}" is invalid'.format(
+                            count=rawSystemWorlds,
+                            world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                            sector=rawMetadata.canonicalName(),
+                            milieu=milieu))
+
+                if numSystemWorlds is not None:
+                    if numSystemWorlds >= numAccountedWorlds:
+                        dbOtherWorldCount = numSystemWorlds - numAccountedWorlds
+                    else:
+                        logging.warning('Other world count for world {world} in {sector} at {milieu} is unknown as the world count {total} is lower than the number of known worlds (Main World + {belts} Planetoid Belts + {giants} Gas Giants)'.format(
+                                total=numSystemWorlds,
+                                belts=numBelts,
+                                giants=numGiants,
+                                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                                sector=rawMetadata.canonicalName(),
+                                milieu=milieu))
+            else:
+                logging.debug('Other world count for world {world} in {sector} at {milieu} is unknown as the system world count is not specified'.format(
+                        world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                        sector=rawMetadata.canonicalName(),
+                        milieu=milieu))
 
             rawAllegianceCode = rawWorld.allegiance()
             dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
@@ -1667,10 +1720,10 @@ def _createDbSystems(
                 strangeness=dbStrangeness,
                 symbols=dbSymbols,
                 populationMultiplier=dbPopulationMultiplier,
-                planetoidBelts=dbPlanetoidBelts,
-                gasGiants=dbGasGiants,
+                planetoidBeltCount=dbPlanetoidBeltCount,
+                gasGiantCount=dbGasGiantCount,
+                otherWorldCount=dbOtherWorldCount,
                 zone=dbZone,
-                systemWorlds=dbSystemWorlds,
                 allegianceCode=dbAllegiance.code() if dbAllegiance else None,
                 nobilities=dbNobilities,
                 tradeCodes=dbTradeCodes,

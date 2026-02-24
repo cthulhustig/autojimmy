@@ -2,6 +2,7 @@ import astronomer
 import common
 import logging
 import multiverse
+import survey
 import threading
 import traveller
 import typing
@@ -695,11 +696,15 @@ class WorldManager(object):
                             exc_info=ex)
                         culture = astronomer.Culture()
 
+                    dbPopulationMultiplier = dbSystem.populationMultiplier()
+                    dbPlanetoidBeltCount = dbSystem.planetoidBeltCount()
+                    dbGasGiantCount = dbSystem.gasGiantCount()
+                    dbOtherWorldCount = dbSystem.otherWorldCount()
                     try:
                         pbg = astronomer.PBG(
-                            populationMultiplier=dbSystem.populationMultiplier(),
-                            planetoidBelts=dbSystem.planetoidBelts(),
-                            gasGiants=dbSystem.gasGiants())
+                            populationMultiplier=survey.ehexFromInteger(dbPopulationMultiplier),
+                            planetoidBelts=survey.ehexFromInteger(dbPlanetoidBeltCount),
+                            gasGiants=survey.ehexFromInteger(dbGasGiantCount))
                     except Exception as ex:
                         logging.warning('Failed to create PBG when loading system {systemId} in sector {sectorId} ({name})'.format(
                                 systemId=dbSystem.id(),
@@ -708,7 +713,51 @@ class WorldManager(object):
                             exc_info=ex)
                         pbg = astronomer.PBG()
 
-                    systemWorlds = dbSystem.systemWorlds()
+                    # TODO: For now I've got this logic to reconstruct the total system world
+                    # count based on the other world count I derive from it at convert time.
+                    # The aim is to keep the old logic where the number of gas giants and/or
+                    # belts in a system can be known but the total number of worlds in the
+                    # system can be unknown rather than known to be 0. An example of this
+                    # would be Khoengu in Mugheen't. It works on the logic that the only way
+                    # the other worlds count could have been calculated is the total system
+                    # world count was specified in the source data. This isn't completely
+                    # accurate as it ignores the fact the other world count could be null
+                    # because the source data did specify a count but it was invalid, however
+                    # I think it would be good enough if things stay the way they are.
+                    #
+                    # I'm not sure how this is going to work when I switch having worlds split
+                    # from the system in the database. I'm not sure if I'm going to need a way
+                    # to disambiguate the case where it's known that there are no worlds (e.g.
+                    # it's a system with just stars) and the case where the total count isn't
+                    # known because the system hasn't been fully surveyed.
+                    # I think the problem might be more general than that. For example, if I go
+                    # from having a nullable count for the number of gas giants to having an
+                    # entry for each gas giant in the system. I won't be able to differentiate
+                    # between there being no gas giants in the table because there are legitimately
+                    # no gas giants in the system and there being no gas giants in the table
+                    # because it's not known if there are gas giants in the system (i.e. the PBG
+                    # had ? in the source data)
+                    # POSSIBLE SOLUTIONS
+                    # - Keep the optional gas giant, planetoid belt & other world counts at the
+                    #   system level as having entries for them in the relevant tables. The counts
+                    #   can be set to null to indicate unknown. It could also be simplified to have
+                    #   a boolean for each element to indicate if it's known/unknown
+                    # - Have a simplified single boolean at the sector level along the lines of
+                    #   is_explored that is set to true if there was a UWP or gas giants or
+                    #   belts specified in the source data at convert time. The downside of this
+                    #   is it looses data so I wouldn't be able to accurately reconstitute PBG
+                    # - Try to infer the survey level for the system based on p13 of the world
+                    #   builder rules. The problem with this is I'm not sure if I can differentiate
+                    #   between the higher levels of survey so would likely be inaccurate for a
+                    #   lot of worlds (maybe there are rules later that would help define the
+                    #   different levels based on UWP)
+                    systemWorlds = None
+                    if dbOtherWorldCount is not None:
+                        systemWorlds = \
+                            (dbPlanetoidBeltCount if dbPlanetoidBeltCount else 0) + \
+                            (dbGasGiantCount if dbGasGiantCount else 0) + \
+                            (dbOtherWorldCount if dbOtherWorldCount else 0) + \
+                            1 # For the main world
 
                     dbTradeCodes = dbSystem.tradeCodes()
                     tradeCodes: typing.Optional[typing.List[traveller.TradeCode]] = None
