@@ -1,4 +1,5 @@
 import app
+import astronomer
 import cartographer
 import common
 import enum
@@ -7,6 +8,7 @@ import jobs
 import logging
 import multiverse
 import os
+import survey
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -253,7 +255,7 @@ class _NewSectorDialog(gui.DialogEx):
         self.setLayout(dialogLayout)
         self.setFixedHeight(self.sizeHint().height())
 
-    def sector(self) -> typing.Optional[multiverse.SectorInfo]:
+    def sector(self) -> typing.Optional[multiverse.DbSector]:
         return self._sector
 
     # NOTE: There is no saveSettings as settings are only saved when accept is triggered (i.e. not
@@ -416,24 +418,18 @@ class _NewSectorDialog(gui.DialogEx):
             with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorMetadata = file.read()
 
-            metadataFormat = multiverse.metadataFileFormatDetect(
-                content=sectorMetadata)
-            if not metadataFormat:
-                raise RuntimeError('Unknown metadata file format')
+            rawMetadata = survey.parseMetadata(content=sectorMetadata)
 
-            rawMetadata = multiverse.readMetadata(
-                content=sectorMetadata,
-                format=metadataFormat,
-                identifier=metadataFilePath)
-
-            # This will throw if there is a conflict with an existing sector
-            multiverse.DataStore.instance().customSectorConflictCheck(
-                sectorName=rawMetadata.canonicalName(),
+            milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+            existingSectorInfo = multiverse.MultiverseDb.instance().sectorInfoByPosition(
+                universeId=multiverse.customUniverseId(),
+                milieu=milieu.name,
                 sectorX=rawMetadata.x(),
-                sectorY=rawMetadata.y(),
-                milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
+                sectorY=rawMetadata.y())
+            if existingSectorInfo and existingSectorInfo.isCustom():
+                raise RuntimeError(f'There is already a custom sector at ({rawMetadata.x()}, {rawMetadata.y()}) in {milieu.value}')
         except Exception as ex:
-            message = 'Metadata validation failed.'
+            message = 'Failed to load metadata file.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -448,15 +444,9 @@ class _NewSectorDialog(gui.DialogEx):
             with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorData = file.read()
 
-            sectorFormat = multiverse.sectorFileFormatDetect(content=sectorData)
-            if not sectorFormat:
-                raise RuntimeError('Unknown sector file format')
-            multiverse.readSector(
-                content=sectorData,
-                format=sectorFormat,
-                identifier=sectorFilePath)
+            rawWorlds = survey.parseSector(content=sectorData)
         except Exception as ex:
-            message = 'Sector validation failed.'
+            message = 'Failed to load sector file.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -465,10 +455,50 @@ class _NewSectorDialog(gui.DialogEx):
             return
 
         try:
-            self._sector = multiverse.DataStore.instance().createCustomSector(
-                milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
-                sectorContent=sectorData,
-                metadataContent=sectorMetadata) # Write the users metadata, not the xml metadata if it was converted
+            rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
+        except:
+            message = 'Failed to load stock allegiances.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            rawStockSophonts = multiverse.readSnapshotStockSophonts()
+        except:
+            message = 'Failed to load stock sophonts.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            rawStyleSheet = multiverse.readSnapshotStyleSheet()
+        except:
+            message = 'Failed to load style sheet.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+            dbSector = multiverse.convertRawSectorToDbSector(
+                milieu=milieu.name,
+                rawMetadata=rawMetadata,
+                rawSystems=rawWorlds,
+                rawStockAllegiances=rawStockAllegiances,
+                rawStockSophonts=rawStockSophonts,
+                rawStockStyleSheet=rawStyleSheet,
+                isCustom=True,
+                universeId=multiverse.customUniverseId())
+            multiverse.MultiverseDb.instance().saveSector(sector=dbSector)
         except Exception as ex:
             message = 'Failed to add custom sector to data store'
             logging.critical(message, exc_info=ex)
@@ -478,6 +508,7 @@ class _NewSectorDialog(gui.DialogEx):
                 exception=ex)
             return
 
+        self._sector = dbSector
         self.accept()
 
     def _lintClicked(self) -> None:
@@ -500,27 +531,24 @@ class _NewSectorDialog(gui.DialogEx):
                 with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                     sectorMetadata = file.read()
 
-                metadataFormat = multiverse.metadataFileFormatDetect(
+                metadataFormat = survey.detectMetadataFormat(
                     content=sectorMetadata)
                 if not metadataFormat:
                     raise RuntimeError('Unknown metadata file format')
 
-                if metadataFormat == multiverse.MetadataFormat.XML:
+                if metadataFormat == survey.MetadataFormat.XML:
                     xmlMetadata = sectorMetadata
-                    multiverse.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
                 else:
                     gui.AutoSelectMessageBox.information(
                         parent=self,
                         text=_JsonMetadataWarning,
                         stateKey=_JsonMetadataWarningNoShowStateKey)
 
-                    rawMetadata = multiverse.readMetadata(
+                    rawMetadata = survey.parseMetadata(
                         content=sectorMetadata,
-                        format=metadataFormat,
-                        identifier=metadataFilePath)
-                    xmlMetadata = multiverse.writeXMLMetadata(
-                        metadata=rawMetadata,
-                        identifier='Generated XML metadata')
+                        format=metadataFormat)
+                    xmlMetadata = survey.formatXMLMetadata(
+                        metadata=rawMetadata)
             except Exception as ex:
                 message = 'Failed to load metadata file.'
                 logging.critical(message, exc_info=ex)
@@ -571,7 +599,9 @@ class _CustomSectorTable(gui.ListTable):
         ColumnType.Location
     ]
 
-    _StateVersion = 'CustomSectorTable_v1'
+    # v1 - Last selection persisted by storing sector name
+    # v2 - Switch to persisting last selection using row index
+    _StateVersion = 'CustomSectorTable_v2'
 
     def __init__(
             self,
@@ -587,30 +617,36 @@ class _CustomSectorTable(gui.ListTable):
 
         self.synchronise()
 
-    def sector(self, row: int) -> typing.Optional[multiverse.SectorInfo]:
+    def sectorInfo(self, row: int) -> typing.Optional[multiverse.DbSectorInfo]:
         tableItem = self.item(row, 0)
         if not tableItem:
             return None
         return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)
 
-    def sectorRow(self, sector: multiverse.SectorInfo) -> int:
+    def sectorInfoRow(self, sector: multiverse.DbSectorInfo) -> int:
         for row in range(self.rowCount()):
-            if sector == self.sector(row):
+            if sector == self.sectorInfo(row):
                 return row
         return -1
 
-    def currentSector(self) -> typing.Optional[multiverse.SectorInfo]:
+    def sectorIdRow(self, sectorId: str) -> int:
+        for row in range(self.rowCount()):
+            sectorInfo = self.sectorInfo(row)
+            if sectorId == sectorInfo.id():
+                return row
+
+    def currentSectorInfo(self) -> typing.Optional[multiverse.DbSectorInfo]:
         row = self.currentRow()
         if row < 0:
             return None
-        return self.sector(row)
+        return self.sectorInfo(row)
 
-    def setCurrentSector(
+    def setCurrentSectorInfo(
             self,
-            sector: typing.Optional[multiverse.SectorInfo]
+            sector: typing.Optional[multiverse.DbSectorInfo]
             ) -> None:
         if sector:
-            row = self.sectorRow(sector)
+            row = self.sectorInfoRow(sector)
             if row < 0:
                 return
             item = self.item(row, 0)
@@ -619,8 +655,12 @@ class _CustomSectorTable(gui.ListTable):
             self.setCurrentItem(None)
 
     def synchronise(self) -> None:
-        sectors = multiverse.DataStore.instance().sectors(
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+
+        sectorInfos = multiverse.MultiverseDb.instance().listSectorInfo(
+            universeId=multiverse.customUniverseId(),
+            milieu=milieu.name)
+        sectorInfos = [sector for sector in sectorInfos if sector.isCustom()]
 
         # Disable sorting while inserting multiple rows then sort once after they've
         # all been added
@@ -630,15 +670,13 @@ class _CustomSectorTable(gui.ListTable):
         try:
             currentSectors = set()
             for row in range(self.rowCount() - 1, -1, -1):
-                sector = self.sector(row)
-                if sector not in sectors:
+                sector = self.sectorInfo(row)
+                if sector not in sectorInfos:
                     self.removeRow(row)
                 else:
                     currentSectors.add(sector)
 
-            for sector in sectors:
-                if not sector.isCustomSector():
-                    continue # Ignore standard sectors
+            for sector in sectorInfos:
                 if sector in currentSectors:
                     continue # Table already has an entry for the sector
 
@@ -657,8 +695,7 @@ class _CustomSectorTable(gui.ListTable):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(_CustomSectorTable._StateVersion)
 
-        currentSector = self.currentSector()
-        stream.writeQString(currentSector.canonicalName() if currentSector else '')
+        stream.writeInt32(self.currentRow())
 
         baseState = super().saveState()
         stream.writeUInt32(baseState.count() if baseState else 0)
@@ -678,18 +715,9 @@ class _CustomSectorTable(gui.ListTable):
             logging.debug(f'Failed to restore CustomSectorTable state (Incorrect version)')
             return False
 
-        sectorName = stream.readQString()
-        currentSector = None
-        if sectorName:
-            for row in range(self.rowCount()):
-                sector = self.sector(row)
-                if not sector:
-                    continue
-                if sector.canonicalName() == sectorName:
-                    currentSector = sector
-                    break
-        if currentSector:
-            self.setCurrentSector(currentSector)
+        selectedRow = stream.readInt32()
+        if selectedRow >= 0:
+            self.selectRow(selectedRow)
 
         count = stream.readUInt32()
         if count <= 0:
@@ -703,7 +731,7 @@ class _CustomSectorTable(gui.ListTable):
     def _fillRow(
             self,
             row: int,
-            sector: multiverse.SectorInfo
+            sector: multiverse.DbSectorInfo
             ) -> int:
         # Workaround for the issue covered here, re-enabled after setting items
         # https://stackoverflow.com/questions/7960505/strange-qtablewidget-behavior-not-all-cells-populated-after-sorting-followed-b
@@ -716,10 +744,10 @@ class _CustomSectorTable(gui.ListTable):
                 tableItem = None
                 if columnType == self.ColumnType.Name:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, sector.canonicalName())
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, sector.name())
                 elif columnType == self.ColumnType.Location:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'({sector.x()}, {sector.y()})')
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'({sector.sectorX()}, {sector.sectorY()})')
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
@@ -786,13 +814,6 @@ class CustomSectorDialog(gui.DialogEx):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='SectorDataDisplayModeState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._sectorDataTabView.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
             key='SplitterState',
             type=QtCore.QByteArray)
         if storedValue:
@@ -804,7 +825,6 @@ class CustomSectorDialog(gui.DialogEx):
         self._settings.beginGroup(self._configSection)
 
         self._settings.setValue('SectorTableState', self._sectorTable.saveState())
-        self._settings.setValue('SectorDataDisplayModeState', self._sectorDataTabView.saveState())
         self._settings.setValue('SplitterState', self._horizontalSplitter.saveState())
 
         self._settings.endGroup()
@@ -839,18 +859,8 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorListGroupBox.setLayout(groupLayout)
 
     def _setupSectorDataControls(self) -> None:
-        monospaceFont = gui.getMonospaceFont()
-
-        self._sectorFileTextEdit = QtWidgets.QPlainTextEdit()
-        self._sectorFileTextEdit.setFont(monospaceFont)
-        self._sectorFileTextEdit.setReadOnly(True)
-
-        self._sectorMetadataTextEdit = QtWidgets.QPlainTextEdit()
-        self._sectorMetadataTextEdit.setFont(monospaceFont)
-        self._sectorMetadataTextEdit.setReadOnly(True)
-
         self._sectorMapWidget = gui.MapWidgetEx(
-            universe=multiverse.Universe(sectors=[]),
+            universe=astronomer.Universe(sectors=[]),
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             style=app.Config.instance().value(option=app.ConfigOption.MapStyle),
@@ -867,79 +877,33 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorMapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
         self._sectorMapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
-        mapLayout = QtWidgets.QVBoxLayout()
-        mapLayout.setContentsMargins(0, 0, 0, 0)
-        mapLayout.setSpacing(0)
-        mapLayout.addWidget(self._sectorMapWidget)
-        mapLayoutWidget = QtWidgets.QWidget()
-        mapLayoutWidget.setLayout(mapLayout)
-
-        self._sectorDataTabView = gui.TabWidgetEx()
-        self._sectorDataTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.North)
-        self._sectorDataTabView.addTab(self._sectorFileTextEdit, 'Sector')
-        self._sectorDataTabView.addTab(self._sectorMetadataTextEdit, 'Metadata')
-        self._sectorDataTabView.addTab(mapLayoutWidget, 'Maps')
-
         groupLayout = QtWidgets.QVBoxLayout()
-        groupLayout.addWidget(self._sectorDataTabView)
+        groupLayout.addWidget(self._sectorMapWidget)
 
-        self._sectorDataGroupBox = QtWidgets.QGroupBox('Map Images')
+        self._sectorDataGroupBox = QtWidgets.QGroupBox('Map')
         self._sectorDataGroupBox.setLayout(groupLayout)
 
         # Sync the controls to the currently selected sector
-        self._syncSectorDataControls(sectorInfo=self._sectorTable.currentSector())
+        self._syncSectorDataControls(sectorInfo=self._sectorTable.currentSectorInfo())
 
     def _sectorSelectionChanged(self) -> None:
-        self._syncSectorDataControls(sectorInfo=self._sectorTable.currentSector())
+        self._syncSectorDataControls(sectorInfo=self._sectorTable.currentSectorInfo())
 
     def _syncSectorDataControls(
             self,
-            sectorInfo: typing.Optional[multiverse.SectorInfo]
+            sectorInfo: typing.Optional[multiverse.DbSectorInfo]
             ) -> None:
         if not sectorInfo:
-            self._sectorFileTextEdit.clear()
-            self._sectorMetadataTextEdit.clear()
-            self._sectorMapWidget.setUniverse(universe=multiverse.Universe(sectors=[]))
+            self._sectorMapWidget.setUniverse(universe=astronomer.Universe(sectors=[]))
             return
 
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
-
         try:
-            sectorContent = multiverse.DataStore.instance().sectorFileData(
-                sectorName=sectorInfo.canonicalName(),
-                milieu=milieu)
-            self._sectorFileTextEdit.setPlainText(sectorContent)
+            universe, sector = astronomer.WorldManager.instance().createSectorUniverse(
+                dbSectorId=sectorInfo.id())
         except Exception as ex:
-            self._sectorFileTextEdit.clear()
-
-            message = 'Failed to retrieve sector file data.'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            # Continue to try and sync other controls
-
-        try:
-            metadataContent = multiverse.DataStore.instance().sectorMetaData(
-                sectorName=sectorInfo.canonicalName(),
-                milieu=milieu)
-            self._sectorMetadataTextEdit.setPlainText(metadataContent)
-        except Exception as ex:
-            self._sectorMetadataTextEdit.clear()
-
-            message = 'Failed to retrieve sector metadata.'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            # Continue to try and sync other controls
-
-        universe, sector = multiverse.WorldManager.instance().createSectorUniverse(
-            milieu=milieu,
-            sectorContent=sectorContent,
-            metadataContent=metadataContent)
+            logging.error('Failed to create sector universe for custom sector', exc_info=ex)
+            self._sectorMapWidget.setUniverse(universe=astronomer.Universe(sectors=[]))
+            return
 
         self._sectorMapWidget.setUniverse(universe=universe)
 
@@ -964,42 +928,40 @@ class CustomSectorDialog(gui.DialogEx):
             return
 
         newSector = dialog.sector()
-        assert(newSector != None)
+        assert(newSector is not None)
 
         self._modified = True
         self._sectorTable.synchronise()
 
         # Select the sector that was just added
-        row = self._sectorTable.sectorRow(newSector)
+        row = self._sectorTable.sectorIdRow(sectorId=newSector.id())
         if row >= 0:
             self._sectorTable.setCurrentRow(row)
 
     def _deleteSectorClicked(self) -> None:
-        sector = self._sectorTable.currentSector()
-        if not sector:
+        sectorInfo = self._sectorTable.currentSectorInfo()
+        if not sectorInfo:
             gui.MessageBoxEx.information(
                 parent=self,
                 text='No sector selected for deletion')
 
         answer = gui.MessageBoxEx.question(
             parent=self,
-            text=f'Are you sure you want to delete {sector.canonicalName()}')
+            text=f'Are you sure you want to delete {sectorInfo.name()}')
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
             return # User cancelled
 
         try:
-            multiverse.DataStore.instance().deleteCustomSector(
-                sectorName=sector.canonicalName(),
-                milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
+            multiverse.MultiverseDb.instance().deleteSector(
+                sectorId=sectorInfo.id())
         except Exception as ex:
-            message = f'Failed to delete {sector.canonicalName()}'
+            message = f'Failed to delete {sectorInfo.name()}'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
                 exception=ex)
-            # Continue in order to sync the table if an error occurs as we don't know what state
-            # the data store was left in after the error
+            return
 
         self._modified = True
         self._sectorTable.synchronise()

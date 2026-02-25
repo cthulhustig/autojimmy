@@ -1,3 +1,4 @@
+import astronomer
 import cartographer
 import common
 import logging
@@ -38,7 +39,7 @@ class LabelStore(object):
 
     # The Traveller Map world labels use sector hex locations with the
     # sectors using the M1105 names
-    _SectorHexMilieu = multiverse.Milieu.M1105
+    _SectorHexMilieu = astronomer.Milieu.M1105
 
     _cachedMinorLabels = None
     _cachedMegaLabels = None
@@ -47,18 +48,18 @@ class LabelStore(object):
 
     def __init__(
             self,
-            universe: multiverse.Universe
+            universe: astronomer.Universe
             ) -> None:
         self._universe = universe
 
         if LabelStore._cachedMinorLabels is None:
             LabelStore._cachedMinorLabels = self._parseMapLabels(
-                multiverse.DataStore.instance().loadTextResource(
+                multiverse.SnapshotManager.instance().loadTextResource(
                     filePath=LabelStore._MinorLabelsPath))
 
         if LabelStore._cachedMegaLabels is None:
             LabelStore._cachedMegaLabels = self._parseMapLabels(
-                multiverse.DataStore.instance().loadTextResource(
+                multiverse.SnapshotManager.instance().loadTextResource(
                     filePath=LabelStore._MegaLabelsPath))
 
         self._worldLabels = self._loadWorldLabels(self._universe)
@@ -74,7 +75,7 @@ class LabelStore(object):
 
     @staticmethod
     def _parseMapLabels(content: str) -> typing.List[MapLabel]:
-        _, rows = multiverse.parseTabContent(content=content)
+        _, rows = common.parseTabTableContent(content=content)
         labels = []
         for data in rows:
             labels.append(MapLabel(
@@ -84,9 +85,9 @@ class LabelStore(object):
         return labels
 
     @staticmethod
-    def _loadWorldLabels(universe: multiverse.Universe) -> typing.List[WorldLabel]:
+    def _loadWorldLabels(universe: astronomer.Universe) -> typing.List[WorldLabel]:
         if LabelStore._cachedWorldLabelsXml is None:
-            content = multiverse.DataStore.instance().loadTextResource(
+            content = multiverse.SnapshotManager.instance().loadTextResource(
                 filePath=LabelStore._WorldLabelPath)
             LabelStore._cachedWorldLabelsXml = xml.etree.ElementTree.fromstring(content)
 

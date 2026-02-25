@@ -5,19 +5,21 @@
 import depschecker
 
 import app
+import astronomer
 import enum
 import gui
 import gunsmith
 import locale
 import logging
 import multiprocessing
+import multiverse
 import objectdb
 import os
 import pathlib
 import qasync
 import robots
+import startup
 import sys
-import multiverse
 import uuid
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
@@ -58,16 +60,16 @@ def _snapshotUpdateCheck(
         isStartup: bool,
         parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> _SnapshotCheckResult:
-    snapshotAvailability = multiverse.DataStore.instance().checkForNewSnapshot()
+    snapshotAvailability = multiverse.SnapshotManager.instance().checkForNewSnapshot()
 
-    if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.NoNewSnapshot:
+    if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.NoNewSnapshot:
         return _SnapshotCheckResult.NoUpdate
 
-    if snapshotAvailability != multiverse.DataStore.SnapshotAvailability.NewSnapshotAvailable:
+    if snapshotAvailability != multiverse.SnapshotManager.SnapshotAvailability.NewSnapshotAvailable:
         promptMessage = 'New universe data is available, however it can\'t be installed as this version of {app} is to {age} to use it.'.format(
             app=app.AppName,
-            age='old' if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.AppToOld else 'new')
-        if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.AppToOld:
+            age='old' if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.AppToOld else 'new')
+        if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.AppToOld:
             promptMessage += ' New versions can be downloaded from: <br><br><a href=\'{url}\'>{url}</a>'.format(
                 url=app.AppURL)
             stateKey = 'UniverseUpdateAppToOld'
@@ -342,7 +344,6 @@ def main() -> None:
         print(f'{app.AppName} is already running.')
         return
 
-    exitCode = 0
     try:
         installDir = _installDirectory()
         application.setWindowIcon(QtGui.QIcon(os.path.join(installDir, 'icons', 'autojimmy.ico')))
@@ -372,16 +373,14 @@ def main() -> None:
         except Exception as ex:
             logging.warning('Failed to set log level', exc_info=ex)
 
-        databasePath = os.path.join(appDir, 'autojimmy.db')
-        objectdb.ObjectDbManager.instance().initialise(databasePath=databasePath)
+        multiverseDbPath = os.path.join(appDir, 'autojimmy.db')
+        objectdb.ObjectDbManager.instance().initialise(databasePath=multiverseDbPath)
 
         installMapsDir = os.path.join(installDir, 'data', 'map')
         overlayMapsDir = os.path.join(appDir, 'map')
-        customMapsDir = os.path.join(appDir, 'custom_map')
-        multiverse.DataStore.setSectorDirs(
+        multiverse.SnapshotManager.setSectorDirs(
             installDir=installMapsDir,
-            overlayDir=overlayMapsDir,
-            customDir=customMapsDir)
+            overlayDir=overlayMapsDir)
 
         gunsmith.WeaponStore.setWeaponDirs(
             userDir=os.path.join(appDir, 'weapons'),
@@ -411,17 +410,56 @@ def main() -> None:
                 stateKey='UniverseUpdateErrorWhenChecking')
             # Continue loading the app with the existing data
 
-        startupProgress = gui.StartupProgressDialog()
-        if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            exception = startupProgress.exception()
-            if exception is not None:
-                raise exception
-            raise RuntimeError('Startup failed with an unknown error')
+        multiverseDbPath = multiverseDbPath = os.path.join(appDir, 'multiverse.db')
+        multiverse.MultiverseDb.instance().initialise(
+            appVersion=app.AppVersion,
+            databasePath=multiverseDbPath)
+
+        multiverseSyncDir = overlayMapsDir if os.path.isdir(overlayMapsDir) else installMapsDir
+        hasDefaultUniverse = multiverse.MultiverseDb.instance().hasDefaultUniverse()
+        shouldSyncMultiverse = not hasDefaultUniverse
+        try:
+            shouldSyncMultiverse = multiverse.MultiverseDb.instance().isDefaultUniverseSnapshotNewer(
+                directoryPath=multiverseSyncDir)
+        except Exception as ex:
+            logging.warning('Failed to compare default universe snapshot age.', exc_info=ex)
+
+        shouldCreateCustomUniverse = not multiverse.hasCustomUniverseBeenCreated()
+
+        customSectorsDir = os.path.join(appDir, 'custom_map')
+        shouldImportCustomSectors = False
+        try:
+            if os.path.isdir(customSectorsDir):
+                shouldImportCustomSectors = not multiverse.haveCustomSectorsBeenImported(
+                    directoryPath=customSectorsDir)
+        except Exception as ex:
+            logging.warning('Failed to check for imported custom sectors.', exc_info=ex)
+
+        startupProgressDlg = gui.StartupProgressDialog()
+
+        if shouldSyncMultiverse:
+            startupProgressDlg.addJob(job=startup.ImportDefaultUniverseJob(
+                directoryPath=multiverseSyncDir,
+                isInitialImport=not hasDefaultUniverse))
+
+        if shouldCreateCustomUniverse:
+            startupProgressDlg.addJob(job=startup.CreateCustomUniverseJob())
+
+        if shouldImportCustomSectors:
+            startupProgressDlg.addJob(job=startup.ImportCustomSectorsJob(
+                directoryPath=customSectorsDir))
+
+        startupProgressDlg.addJob(job=startup.LoadSectorsJob())
+        startupProgressDlg.addJob(job=startup.LoadWeaponsJob())
+        startupProgressDlg.addJob(job=startup.LoadRobotsJob())
+
+        if startupProgressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            sys.exit(1)
 
         # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
         # when exec is called on the application
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
-        startupProgress.deleteLater()
+        startupProgressDlg.deleteLater()
 
         with qasync.QEventLoop() as asyncEventLoop:
             window = MainWindow()
@@ -433,9 +471,9 @@ def main() -> None:
         gui.MessageBoxEx.critical(
             text=message,
             exception=ex)
-        exitCode = 1
+        sys.exit(1)
 
-    sys.exit(exitCode)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

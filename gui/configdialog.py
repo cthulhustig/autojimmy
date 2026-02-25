@@ -1,10 +1,11 @@
 import app
+import astronomer
+import common
 import enum
 import gui
 import logging
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -57,19 +58,75 @@ _StarPortFuelToolTip = gui.createStringToolTip(
     up by the description of Alell Down Starport in the example adventure
     (p141), where it\'s stated to be a class B starport and to sell refined and
     unrefined fuel.</p>
-    """ + _RestartRequiredParagraph,
+    """,
     escape=False)
 
-class _InPlaceTagLevelComboBox(gui.TagLevelComboBox):
+_RegenerateTradeCodesToolTip = gui.createStringToolTip(
+    """
+    <p>
+    When enabled, this option tells {name} to regenerate Trade Codes for worlds
+    based on the selected Rule System and each world’s UWP, instead of using the
+    Trade Codes provided in the Traveller Map sector data.
+    </p>
+    <p>
+    Traveller Map sectors have been created by many different contributors over
+    a long period of time, often using different rule systems and varying levels
+    of accuracy. As a result, the Trade Codes listed in the Traveller Map data
+    for a given world may not match the Trade Codes that would be generated for
+    that same world using the rules applied in your game.
+    </p>
+    <p>
+    {name} will retain any Trade Codes from the Traveller Map data that are not
+    explicitly defined by the selected Rule System. These additional Trade Codes
+    do not affect trade calculations, but they can add useful flavour and
+    context to your game. For example, some worlds include the Penal Colony (Pe)
+    or Ancients Site (An) Trade Codes. While Mongoose Traveller does not define
+    equivalents for these, {name} preserves them as they provide valuable
+    information about the world.
+    </p>
+    """.format(name=app.AppName),
+    escape=False)
+
+"""
+    'Pe': TradeCode.PenalColony,
+    'Px': TradeCode.PrisonCamp,
+    'Re': TradeCode.Reserve,
+    'Ab': TradeCode.DataRepositoryWorld,
+    'An': TradeCode.AncientsSiteWorld,
+    'Ax': TradeCode.ConstructWorld,
+    'Da': TradeCode.DangerousWorld,
+    'Fo': TradeCode.ForbiddenWorld,
+    'Pz': TradeCode.PuzzleWorld,
+    'Rs': TradeCode.ResearchStation,
+"""
+
+class _InPlaceComboBoxWrapper(QtWidgets.QWidget):
     def __init__(self, colours, parent=None, value=None):
-        super().__init__(colours, parent, value)
+        super().__init__(parent)
+
+        self._comboBox = gui.TagLevelComboBox(colours=colours, value=value)
+
         # NOTE: Change focus policy and install event filter to prevent
         # accidental changes to the value if, while scrolling the list the
         # widget is contained in, the spin box happens to move under the
         # cursor
         self._noWheelFilter = gui.NoWheelEventUnlessFocusedFilter()
-        self.installEventFilter(self._noWheelFilter)
-        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._comboBox.installEventFilter(self._noWheelFilter)
+        self._comboBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
+        # Wrap combo box in a layout with a stretch so the combo box
+        # doesn't get stretched if the rows are multi-line
+        layout = QtWidgets.QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self._comboBox)
+        layout.addStretch()
+        self.setLayout(layout)
+
+    def currentTagLevel(self) -> typing.Optional[logic.TagLevel]:
+        return self._comboBox.currentTagLevel()
+
+    def setColours(self, colours: app.TaggingColours) -> None:
+        self._comboBox.setColours(colours)
 
 class _TaggingTable(gui.ListTable):
     def __init__(
@@ -140,8 +197,8 @@ class _TaggingTable(gui.ListTable):
 
         tagging = {}
         for row in range(self.rowCount()):
-            comboBox: _InPlaceTagLevelComboBox = self.cellWidget(row, 1)
-            if not isinstance(comboBox, _InPlaceTagLevelComboBox):
+            comboBox: _InPlaceComboBoxWrapper = self.cellWidget(row, 1)
+            if not isinstance(comboBox, _InPlaceComboBoxWrapper):
                 continue
 
             tagLevel = comboBox.currentTagLevel()
@@ -174,6 +231,7 @@ class _TaggingTable(gui.ListTable):
             item = QtWidgets.QTableWidgetItem(keyText)
             item.setData(QtCore.Qt.ItemDataRole.UserRole, key)
             item.setToolTip(toolTip)
+            item.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
             self.setItem(row, 0, item)
 
             tagLevel = self._keyTagging.get(key)
@@ -181,7 +239,7 @@ class _TaggingTable(gui.ListTable):
             item = QtWidgets.QTableWidgetItem()
             item.setToolTip(toolTip)
             self.setItem(row, 1, item)
-            comboBox = _InPlaceTagLevelComboBox(
+            comboBox = _InPlaceComboBoxWrapper(
                 value=tagLevel,
                 colours=self._taggingColours)
             # Set the background role of the combo box to the same background role that will be used
@@ -195,10 +253,12 @@ class _TaggingTable(gui.ListTable):
             item.setToolTip(toolTip)
             self.setItem(row, 2, item)
 
+            self.resizeRowToContents(row)
+
     def _syncToTagging(self) -> None:
         for row in range(self.rowCount()):
-            comboBox: _InPlaceTagLevelComboBox = self.cellWidget(row, 1)
-            if isinstance(comboBox, _InPlaceTagLevelComboBox):
+            comboBox: _InPlaceComboBoxWrapper = self.cellWidget(row, 1)
+            if isinstance(comboBox, _InPlaceComboBoxWrapper):
                 comboBox.setColours(self._taggingColours)
 
 class ConfigDialog(gui.DialogEx):
@@ -296,36 +356,20 @@ class ConfigDialog(gui.DialogEx):
 
         # Traveller widgets
         self._milieuComboBox = gui.EnumComboBox(
-            type=multiverse.Milieu,
+            type=astronomer.Milieu,
             value=app.Config.instance().value(
                 option=app.ConfigOption.Milieu,
                 futureValue=True),
-            textMap={milieu: multiverse.milieuDescription(milieu) for milieu in  multiverse.Milieu})
+            textMap={milieu: astronomer.milieuDescription(milieu) for milieu in  astronomer.Milieu})
         self._milieuComboBox.setToolTip(gui.createStringToolTip(
-            '<p>The milieu to use when determining sector and world information</p>' +
-            _RestartRequiredParagraph,
+            '<p>The milieu to use when determining sector and world information</p>',
             escape=False))
         self._milieuComboBox.currentIndexChanged.connect(self._milieuChanged)
-
-        rules = app.Config.instance().value(
-            option=app.ConfigOption.Rules,
-            futureValue=True)
-
-        self._rulesComboBox = gui.EnumComboBox(
-            type=traveller.RuleSystem,
-            value=rules.system())
-        self._rulesComboBox.setToolTip(gui.createStringToolTip(
-            '<p>The rules used for trade calculations</p>' +
-            _RestartRequiredParagraph,
-            escape=False))
 
         travellerLayout = gui.FormLayoutEx()
         travellerLayout.addRow(
             'Milieu:',
             self._milieuComboBox)
-        travellerLayout.addRow(
-            'Rule System:',
-            self._rulesComboBox)
 
         travellerGroupBox = QtWidgets.QGroupBox('Traveller')
         travellerGroupBox.setLayout(travellerLayout)
@@ -382,7 +426,7 @@ class ConfigDialog(gui.DialogEx):
         guiLayout.addRow('Worst Case Highlight Colour:', self._worstCaseColourButton)
         guiLayout.addRow('Best Case Highlight Colour:', self._bestCaseColourButton)
 
-        guiGroupBox = QtWidgets.QGroupBox('GUI')
+        guiGroupBox = QtWidgets.QGroupBox('UI')
         guiGroupBox.setLayout(guiLayout)
 
         # Tagging widgets
@@ -437,6 +481,29 @@ class ConfigDialog(gui.DialogEx):
             option=app.ConfigOption.Rules,
             futureValue=True)
 
+        self._rulesComboBox = gui.EnumComboBox(
+            type=traveller.RuleSystem,
+            value=rules.system())
+        self._rulesComboBox.setToolTip(gui.createStringToolTip(
+            '<p>The Traveller rule system to use</p>',
+            escape=False))
+
+        self._regenerateTradeCodesCheckBox = gui.CheckBoxEx()
+        self._regenerateTradeCodesCheckBox.setChecked(
+            rules.regenerateTradeCodes())
+        self._regenerateTradeCodesCheckBox.setToolTip(_RegenerateTradeCodesToolTip)
+
+        ruleSystemLayout = gui.FormLayoutEx()
+        ruleSystemLayout.addRow(
+            'Rule System',
+            self._rulesComboBox)
+        ruleSystemLayout.addRow(
+            'Regenerate Trade Codes',
+            self._regenerateTradeCodesCheckBox)
+
+        ruleSystemGroupBox = QtWidgets.QGroupBox('Rule System')
+        ruleSystemGroupBox.setLayout(ruleSystemLayout)
+
         self._classAStarPortFuelType = gui.EnumComboBox(
             type=traveller.StarPortFuelType,
             value=rules.starPortFuelType(code='A'))
@@ -484,6 +551,7 @@ class ConfigDialog(gui.DialogEx):
 
         tabLayout = QtWidgets.QVBoxLayout()
         tabLayout.setContentsMargins(0, 0, 0, 0)
+        tabLayout.addWidget(ruleSystemGroupBox)
         tabLayout.addWidget(starportFuelGroupBox)
         tabLayout.addStretch()
 
@@ -495,106 +563,106 @@ class ConfigDialog(gui.DialogEx):
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Zone,
             displayName='Zone',
-            keyDescriptions={zone: multiverse.zoneTypeName(zone) for zone in multiverse.ZoneType},
-            keyAliases={zone: multiverse.zoneTypeCode(zone) for zone in multiverse.ZoneType})
+            keyDescriptions={zone: astronomer.zoneTypeName(zone) for zone in astronomer.ZoneType},
+            keyAliases={zone: astronomer.zoneTypeCode(zone) for zone in astronomer.ZoneType})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.StarPort,
             displayName='Star Port',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.StarPort))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.StarPort))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.WorldSize,
             displayName='World Size',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.WorldSize))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.WorldSize))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Atmosphere,
             displayName='Atmosphere',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Atmosphere))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.Atmosphere))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Hydrographics,
             displayName='Hydrographics',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Hydrographics))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.Hydrographics))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Population,
             displayName='Population',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Population))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.Population))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Government,
             displayName='Government',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Government))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.Government))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.LawLevel,
             displayName='Law Level',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.LawLevel))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.LawLevel))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.TechLevel,
             displayName='Tech Level',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.TechLevel))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.TechLevel))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.BaseType,
             displayName='Base',
-            keyDescriptions={base: multiverse.Bases.description(base) for base in  multiverse.BaseType},
-            keyAliases={base: multiverse.Bases.code(base) for base in  multiverse.BaseType})
+            keyDescriptions={base: astronomer.Bases.description(base) for base in  astronomer.BaseType},
+            keyAliases={base: astronomer.Bases.code(base) for base in  astronomer.BaseType})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.TradeCode,
             displayName='Trade Code',
-            keyDescriptions={code: f'{multiverse.tradeCodeName(code)} - {multiverse.tradeCodeDescription(code)}' for code in  multiverse.TradeCode},
-            keyAliases={code: multiverse.tradeCodeString(code) for code in  multiverse.TradeCode})
+            keyDescriptions={code: f'{traveller.tradeCodeName(code)} - {traveller.tradeCodeDescription(code)}' for code in  traveller.TradeCode},
+            keyAliases={code: traveller.tradeCodeString(code) for code in  traveller.TradeCode})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Resources,
             displayName='Resources',
-            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Resources))
+            keyDescriptions=astronomer.Economics.descriptionMap(astronomer.Economics.Element.Resources))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Labour,
             displayName='Labour',
-            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Labour))
+            keyDescriptions=astronomer.Economics.descriptionMap(astronomer.Economics.Element.Labour))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Infrastructure,
             displayName='Infrastructure',
-            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Infrastructure))
+            keyDescriptions=astronomer.Economics.descriptionMap(astronomer.Economics.Element.Infrastructure))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Efficiency,
             displayName='Efficiency',
-            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Efficiency))
+            keyDescriptions=astronomer.Economics.descriptionMap(astronomer.Economics.Element.Efficiency))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Heterogeneity,
             displayName='Heterogeneity',
-            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Heterogeneity))
+            keyDescriptions=astronomer.Culture.descriptionMap(astronomer.Culture.Element.Heterogeneity))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Acceptance,
             displayName='Acceptance',
-            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Acceptance))
+            keyDescriptions=astronomer.Culture.descriptionMap(astronomer.Culture.Element.Acceptance))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Strangeness,
             displayName='Strangeness',
-            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Strangeness))
+            keyDescriptions=astronomer.Culture.descriptionMap(astronomer.Culture.Element.Strangeness))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Symbols,
             displayName='Symbols',
-            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Symbols))
+            keyDescriptions=astronomer.Culture.descriptionMap(astronomer.Culture.Element.Symbols))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Nobility,
             displayName='Nobility',
-            keyDescriptions={nobility: multiverse.Nobilities.description(nobility) for nobility in multiverse.NobilityType},
-            keyAliases={nobility: multiverse.Nobilities.code(nobility) for nobility in multiverse.NobilityType})
+            keyDescriptions={nobility: astronomer.Nobilities.description(nobility) for nobility in astronomer.NobilityType},
+            keyAliases={nobility: astronomer.Nobilities.code(nobility) for nobility in astronomer.NobilityType})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Allegiance,
@@ -604,12 +672,12 @@ class ConfigDialog(gui.DialogEx):
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Spectral,
             displayName='Spectral Class',
-            keyDescriptions=multiverse.Star.descriptionMap(multiverse.Star.Element.SpectralClass))
+            keyDescriptions=astronomer.Star.descriptionMap(astronomer.Star.Element.SpectralClass))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Luminosity,
             displayName='Luminosity Class',
-            keyDescriptions=multiverse.Star.descriptionMap(multiverse.Star.Element.LuminosityClass))
+            keyDescriptions=astronomer.Star.descriptionMap(astronomer.Star.Element.LuminosityClass))
 
     def _setupTaggingTab(
             self,
@@ -658,6 +726,7 @@ class ConfigDialog(gui.DialogEx):
                 option=app.ConfigOption.Rules,
                 value=traveller.Rules(
                     system=self._rulesComboBox.currentEnum(),
+                    regenerateTradeCodes=self._regenerateTradeCodesCheckBox.isChecked(),
                     classAStarPortFuelType=self._classAStarPortFuelType.currentEnum(),
                     classBStarPortFuelType=self._classBStarPortFuelType.currentEnum(),
                     classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
@@ -743,17 +812,55 @@ class ConfigDialog(gui.DialogEx):
             table.setTaggingColours(colours=colours)
 
     def _generateAllegianceDescriptions(self) -> typing.Mapping[str, str]:
-        universe = multiverse.WorldManager.instance().universe()
-        allegiances = universe.allegiances(
-            milieu=self._milieuComboBox.currentEnum())
+        universe = astronomer.WorldManager.instance().universe()
+        milieu = self._milieuComboBox.currentEnum()
 
-        # Create a copy of the allegiances list and sort it by code
-        allegiances.sort(key=lambda x: x.code())
+        codeToAllegianceMap: typing.Dict[
+            str, # Allegiance Code
+            typing.List[typing.Tuple[
+                astronomer.Sector,
+                astronomer.Allegiance]]] = {}
+        for sector in universe.yieldSectors(milieu=milieu):
+            for allegiance in sector.allegiances():
+                allegianceList = codeToAllegianceMap.get(allegiance.code())
+                if allegianceList is None:
+                    allegianceList = []
+                    codeToAllegianceMap[allegiance.code()] = allegianceList
+                allegianceList.append((sector, allegiance))
 
-        descriptions: typing.Mapping[str, str] = {}
-        for allegiance in allegiances:
-            name = allegiance.name()
-            if name:
-                descriptions[allegiance.code()] = name
+        codeToDescriptionMap: typing.Dict[str, str] = {}
+        for allegianceCode, allegianceList in codeToAllegianceMap.items():
+            nameToSectorMap: typing.Dict[
+                str, # Lower case allegiance name
+                typing.List[typing.Tuple[
+                    str, # Normal case allegiance name
+                    str # Sector name
+                    ]]] = {}
+            for sector, allegiance in allegianceList:
+                lowerName = allegiance.name().lower()
+                _, sectorList = nameToSectorMap.get(lowerName, (None, None))
+                if sectorList is None:
+                    sectorList = []
+                    nameToSectorMap[lowerName] = (allegiance.name(), sectorList)
+                sectorList.append(sector.name())
 
-        return descriptions
+            description = ''
+            for allegianceName, sectorList in nameToSectorMap.values():
+                if len(nameToSectorMap) == 1:
+                    description = allegianceName
+                    break
+
+                if description:
+                    description += '\n'
+                description += '{name} in {sectors}'.format(
+                    name=allegianceName,
+                    sectors=common.humanFriendlyListString(sectorList))
+
+            codeToDescriptionMap[allegianceCode] = description
+
+        # Sort by code
+        tempList = [(code, desc) for code, desc in codeToDescriptionMap.items()]
+        tempList.sort(key=lambda data: data[0])
+        codeToDescriptionMap = {code: desc for code, desc in tempList}
+
+        return codeToDescriptionMap

@@ -1,6 +1,7 @@
 import enum
 import gui
 import logging
+import logic
 import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -20,7 +21,7 @@ class TradeGoodTable(gui.ListTable):
     def __init__(
             self,
             rules: traveller.Rules,
-            filterCallback: typing.Optional[typing.Callable[[traveller.TradeGood], bool]] = None,
+            filterCallback: typing.Optional[typing.Callable[[logic.TradeGood], bool]] = None,
             columns: typing.Iterable[ColumnType] = AllColumns
             ) -> None:
         super().__init__()
@@ -52,23 +53,23 @@ class TradeGoodTable(gui.ListTable):
         self._rules = traveller.Rules(rules)
         self._updateContent()
 
-    def filterCallback(self) -> typing.Optional[typing.Callable[[traveller.TradeGood], bool]]:
+    def filterCallback(self) -> typing.Optional[typing.Callable[[logic.TradeGood], bool]]:
         return self._filterCallback
 
     def setFilterCallback(
             self,
-            callback: typing.Optional[typing.Callable[[traveller.TradeGood], bool]]
+            callback: typing.Optional[typing.Callable[[logic.TradeGood], bool]]
             ) -> None:
         self._filterCallback = callback
         self._updateContent()
 
-    def tradeGood(self, row: int) -> typing.Optional[traveller.TradeGood]:
+    def tradeGood(self, row: int) -> typing.Optional[logic.TradeGood]:
         tableItem = self.item(row, 0)
         if not tableItem:
             return None
         return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)
 
-    def tradeGoods(self) -> typing.List[traveller.TradeGood]:
+    def tradeGoods(self) -> typing.List[logic.TradeGood]:
         tradeGoods = []
         for row in range(self.rowCount()):
             tradeGood = self.tradeGood(row)
@@ -83,17 +84,17 @@ class TradeGoodTable(gui.ListTable):
     def tradeGoodAt(
             self,
             y: int
-            ) -> typing.Optional[traveller.TradeGood]:
+            ) -> typing.Optional[logic.TradeGood]:
         row = self.itemAt(y)
         return self.tradeGood(row) if row >= 0 else None
 
-    def currentTradeGood(self) -> typing.Optional[traveller.TradeGood]:
+    def currentTradeGood(self) -> typing.Optional[logic.TradeGood]:
         row = self.currentRow()
         if row < 0:
             return None
         return self.tradeGood(row)
 
-    def selectedTradeGoods(self) -> typing.List[traveller.TradeGood]:
+    def selectedTradeGoods(self) -> typing.List[logic.TradeGood]:
         tradeGoods = []
         for row in range(self.rowCount()):
             if self.isRowSelected(row):
@@ -139,7 +140,7 @@ class TradeGoodTable(gui.ListTable):
 
     def setTradeGoodCheckState(
             self,
-            tradeGood: traveller.TradeGood,
+            tradeGood: logic.TradeGood,
             checkState: bool
             ) -> None:
         if not self._checkable:
@@ -200,7 +201,7 @@ class TradeGoodTable(gui.ListTable):
             item.setCheckState(QtCore.Qt.CheckState.Checked if checkState else QtCore.Qt.CheckState.Unchecked)
             row += 1
 
-    def checkedTradeGoods(self) -> typing.Iterable[traveller.TradeGood]:
+    def checkedTradeGoods(self) -> typing.Iterable[logic.TradeGood]:
         checked = []
         for row in range(self.rowCount()):
             item = self.item(row, 0)
@@ -302,7 +303,7 @@ class TradeGoodTable(gui.ListTable):
         count = stream.readUInt32()
         for _ in range(count):
             id = stream.readUInt32()
-            tradeGood = traveller.tradeGoodFromId(ruleSystem=self._rules.system(), tradeGoodId=id)
+            tradeGood = logic.tradeGoodFromId(ruleSystem=self._rules.system(), tradeGoodId=id)
             if not tradeGood:
                 logging.warning(f'Failed to restore NearbyWorldWindow TradeGoodTable state (Unknown ID "{id}")')
                 continue
@@ -316,7 +317,7 @@ class TradeGoodTable(gui.ListTable):
         return True
 
     def _updateContent(self) -> None:
-        newGoods = traveller.tradeGoodList(ruleSystem=self._rules.system())
+        newGoods = logic.tradeGoodList(ruleSystem=self._rules.system())
         if self._filterCallback:
             newGoods = [tradeGood for tradeGood in newGoods if self._filterCallback(tradeGood)]
         newGoods = set(newGoods)
@@ -347,7 +348,7 @@ class TradeGoodTable(gui.ListTable):
     def _fillRow(
             self,
             row: int,
-            tradeGood: traveller.TradeGood
+            tradeGood: logic.TradeGood
             ) -> int:
         # Workaround for the issue covered here, re-enabled after setting items
         # https://stackoverflow.com/questions/7960505/strange-qtablewidget-behavior-not-all-cells-populated-after-sorting-followed-b

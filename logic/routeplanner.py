@@ -1,10 +1,10 @@
+import astronomer
 import common
 import enum
 import heapq
 import logic
 import math
 import traveller
-import multiverse
 import typing
 
 # NOTE: The name of these enums is stored in the app config
@@ -17,8 +17,8 @@ class _RouteNode(object):
     def __init__(
             self,
             targetIndex: int,
-            hex: multiverse.HexPosition,
-            world: typing.Optional[multiverse.World],
+            hex: astronomer.HexPosition,
+            world: typing.Optional[astronomer.World],
             gScore: float,
             fScore: float,
             isFuelWorld: bool,
@@ -39,10 +39,10 @@ class _RouteNode(object):
     def targetIndex(self) -> int:
         return self._targetIndex
 
-    def hex(self) -> multiverse.HexPosition:
+    def hex(self) -> astronomer.HexPosition:
         return self._hex
 
-    def world(self) -> typing.Optional[multiverse.World]:
+    def world(self) -> typing.Optional[astronomer.World]:
         return self._world
 
     def gScore(self) -> float:
@@ -83,18 +83,18 @@ class _RouteNode(object):
 class JumpCostCalculatorInterface(object):
     def initialise(
             self,
-            startHex: multiverse.HexPosition,
-            startWorld: typing.Optional[multiverse.World]
+            startHex: astronomer.HexPosition,
+            startWorld: typing.Optional[astronomer.World]
             ) -> typing.Any:
         raise RuntimeError(f'{type(self)} is derived from JumpCostCalculatorInterface so must implement initialise')
 
     # Calculate the cost of the jump from the current world to the next world
     def calculate(
             self,
-            currentHex: multiverse.HexPosition,
-            currentWorld: typing.Optional[multiverse.World],
-            nextHex: multiverse.HexPosition,
-            nextWorld: typing.Optional[multiverse.World],
+            currentHex: astronomer.HexPosition,
+            currentWorld: typing.Optional[astronomer.World],
+            nextHex: astronomer.HexPosition,
+            nextWorld: typing.Optional[astronomer.World],
             jumpParsecs: int,
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -115,8 +115,8 @@ class JumpCostCalculatorInterface(object):
 class HexFilterInterface(object):
     def match(
             self,
-            hex: multiverse.HexPosition,
-            world: typing.Optional[multiverse.World]
+            hex: astronomer.HexPosition,
+            world: typing.Optional[astronomer.World]
             ) -> float:
         raise RuntimeError(f'{type(self)} is derived from HexFilterInterface so must implement match')
 
@@ -124,9 +124,9 @@ class RoutePlanner(object):
     def calculateDirectRoute(
             self,
             routingType: RoutingType,
-            milieu: multiverse.Milieu,
-            startHex: multiverse.HexPosition,
-            finishHex: multiverse.HexPosition,
+            milieu: astronomer.Milieu,
+            startHex: astronomer.HexPosition,
+            finishHex: astronomer.HexPosition,
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -174,8 +174,8 @@ class RoutePlanner(object):
     def calculateSequenceRoute(
             self,
             routingType: RoutingType,
-            milieu: multiverse.Milieu,
-            hexSequence: typing.Sequence[multiverse.HexPosition],
+            milieu: astronomer.Milieu,
+            hexSequence: typing.Sequence[astronomer.HexPosition],
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -236,8 +236,8 @@ class RoutePlanner(object):
     def _calculateRoute(
             self,
             routingType: RoutingType,
-            milieu: multiverse.Milieu,
-            hexSequence: typing.Sequence[multiverse.HexPosition], # This code assumes sequences of the same hex have already been removed
+            milieu: astronomer.Milieu,
+            hexSequence: typing.Sequence[astronomer.HexPosition], # This code assumes sequences of the same hex have already been removed
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -276,7 +276,7 @@ class RoutePlanner(object):
             raise ValueError('Ship\'s fuel capacity doesn\'t allow for jump-1')
 
         # Take a local reference to the WorldManager singleton to avoid repeated calls to instance()
-        worldManager = multiverse.WorldManager.instance()
+        worldManager = astronomer.WorldManager.instance()
 
         sequenceLength = len(hexSequence)
         finishWorldIndex = sequenceLength - 1
@@ -360,9 +360,9 @@ class RoutePlanner(object):
         openQueue: typing.List[_RouteNode] = []
         targetStates: typing.List[
             typing.Tuple[
-                typing.Set[multiverse.HexPosition], # Closed hexes
+                typing.Set[astronomer.HexPosition], # Closed hexes
                 typing.Dict[
-                    multiverse.HexPosition,
+                    astronomer.HexPosition,
                     typing.Tuple[
                         float, # Best gScore for a route reaching this hex
                         int, # Best remaining fuel for a route reaching this hex
@@ -371,7 +371,7 @@ class RoutePlanner(object):
                 int # Min parsecs from target to finish (going via all waypoints)
                 ]] = []
         filterResultCache: typing.Set[
-            multiverse.HexPosition, # Hex position
+            astronomer.HexPosition, # Hex position
             bool # Cached filter result
             ] = {}
 
@@ -549,27 +549,27 @@ class RoutePlanner(object):
     def _yieldPotentialHexes(
             self,
             routingType: RoutingType,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             currentNode: _RouteNode,
-            targetHex: multiverse.HexPosition,
+            targetHex: astronomer.HexPosition,
             shipJumpRating: int,
             shipParsecsWithoutRefuelling: int,
-            closedSet: typing.Set[multiverse.HexPosition],
+            closedSet: typing.Set[astronomer.HexPosition],
             hexData: typing.Dict[
-                multiverse.HexPosition,
+                astronomer.HexPosition,
                 typing.Tuple[
                     float, # Best gScore for a route reaching this hex
                     int, # Best remaining fuel for a route reaching this hex
                     int # Parsecs from hex to target (note target not necessarily finish)
                 ]],
-            worldManager: multiverse.WorldManager,
+            worldManager: astronomer.WorldManager,
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator],
             hexFilter: typing.Optional[HexFilterInterface] = None,
-            filterResultCache: typing.Optional[typing.Dict[multiverse.HexPosition, bool]] = None
+            filterResultCache: typing.Optional[typing.Dict[astronomer.HexPosition, bool]] = None
             ) -> typing.Generator[
                 typing.Tuple[
-                    multiverse.HexPosition, # Potential next hex
-                    typing.Optional[multiverse.World], # World at hex
+                    astronomer.HexPosition, # Potential next hex
+                    typing.Optional[astronomer.World], # World at hex
                     int, # Parsecs from current hex to potential hex
                     bool, # True if potential hex is a fuel world
                     float, # Current best score for potential hex
@@ -612,7 +612,7 @@ class RoutePlanner(object):
                 return
 
         currentHex = currentNode.hex()
-        alreadyProcessed: typing.Optional[typing.Set[multiverse.HexPosition]] = None
+        alreadyProcessed: typing.Optional[typing.Set[astronomer.HexPosition]] = None
         if routingType is RoutingType.DeadSpace:
             alreadyProcessed = set()
 
@@ -810,7 +810,7 @@ class RoutePlanner(object):
     def _finaliseRoute(
             self,
             finishNode: _RouteNode,
-            hexSequence: typing.Sequence[multiverse.HexPosition],
+            hexSequence: typing.Sequence[astronomer.HexPosition],
             berthingIndices: typing.Optional[typing.Collection[int]], # This is a collection of indices into the hex sequence where berthing is mandatory
             progressCount: int,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]],

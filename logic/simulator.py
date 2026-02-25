@@ -1,10 +1,10 @@
+import astronomer
 import common
 import enum
-import logic
 import functools
+import logic
 import time
 import traveller
-import multiverse
 import typing
 
 # Rules for finding a supplier (seller or buyer)
@@ -67,8 +67,8 @@ class Simulator(object):
 
     def run(
             self,
-            milieu: multiverse.Milieu,
-            startHex: multiverse.HexPosition,
+            milieu: astronomer.Milieu,
+            startHex: astronomer.HexPosition,
             startingFunds: int,
             shipTonnage: int,
             shipJumpRating: int,
@@ -137,7 +137,7 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
-        currentWorld = multiverse.WorldManager.instance().worldByPosition(
+        currentWorld = astronomer.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=self._currentHex)
 
@@ -147,7 +147,7 @@ class Simulator(object):
 
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
             worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
-            self._nearbyWorlds = multiverse.WorldManager.instance().worldsInRadius(
+            self._nearbyWorlds = astronomer.WorldManager.instance().worldsInRadius(
                 milieu=self._milieu,
                 center=self._currentHex,
                 searchRadius=self._searchRadius,
@@ -220,13 +220,13 @@ class Simulator(object):
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex = jumpRoute.nodeAt(self._jumpRouteIndex)
-                nextWorld = multiverse.WorldManager.instance().worldByPosition(
+                nextWorld = astronomer.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,
                     hex=nextHex)
-                currentString = multiverse.WorldManager.instance().canonicalHexName(
+                currentString = astronomer.WorldManager.instance().canonicalHexName(
                     milieu=self._milieu,
                     hex=self._currentHex)
-                nextString = multiverse.WorldManager.instance().canonicalHexName(
+                nextString = astronomer.WorldManager.instance().canonicalHexName(
                     milieu=self._milieu,
                     hex=nextHex)
                 self._logMessage(
@@ -271,7 +271,7 @@ class Simulator(object):
                 self._availableFunds,
                 self._simulationTime))
 
-    def _setCurrentHex(self, hex: multiverse.HexPosition) -> None:
+    def _setCurrentHex(self, hex: astronomer.HexPosition) -> None:
         self._currentHex = hex
         if self._eventCallback:
             self._eventCallback(Simulator.Event(
@@ -304,7 +304,7 @@ class Simulator(object):
 
     def _sellerFound(
             self,
-            world: multiverse.World,
+            world: astronomer.World,
             elapsedHours: int,
             blackMarket: bool,
             ) -> bool:
@@ -318,7 +318,7 @@ class Simulator(object):
 
         diceRoller = common.DiceRoller(randomGenerator=self._randomGenerator)
         cargoRecords, _ = logic.generateRandomPurchaseCargo(
-            ruleSystem=self._rules.system(),
+            rules=self._rules,
             world=world,
             playerBrokerDm=self._playerBrokerDm,
             sellerDm=sellerDm,
@@ -408,7 +408,7 @@ class Simulator(object):
 
     def _buyerFound(
             self,
-            world: multiverse.World,
+            world: astronomer.World,
             elapsedHours: int,
             blackMarket: bool,
             ) -> bool:
@@ -420,7 +420,7 @@ class Simulator(object):
 
         purchaseCargoRecords = self._cargoManifest.cargoRecords()
         saleCargoRecords, _ = logic.generateRandomSaleCargo(
-            ruleSystem=self._rules.system(),
+            rules=self._rules,
             world=world,
             currentCargo=purchaseCargoRecords,
             playerBrokerDm=self._playerBrokerDm,
@@ -503,8 +503,8 @@ class Simulator(object):
 
     def _runTradeLoop(
             self,
-            world: multiverse.World,
-            onTraderCallback: typing.Callable[[multiverse.World, int, bool], bool],
+            world: astronomer.World,
+            onTraderCallback: typing.Callable[[astronomer.World, int, bool], bool],
             lookingForSeller: bool
             ) -> None:
         class MethodState(object):
@@ -533,7 +533,7 @@ class Simulator(object):
             for tradeOption in self._cargoManifest.tradeOptions():
                 tradeGood = tradeOption.tradeGood()
 
-                if tradeGood.id() != traveller.TradeGoodIds.Exotics:
+                if tradeGood.id() != logic.TradeGoodIds.Exotics:
                     # Look for a buyer that matches the legality of the trade good
                     if tradeGood.isIllegal(world=world):
                         lookForBlackMarketTrader = True
@@ -559,7 +559,7 @@ class Simulator(object):
                 False, # Not online
                 True, # Black market buyer/seller
                 0))
-        if self._playerAdminDm != None and multiverse.ehexToInteger(value=world.uwp().code(multiverse.UWP.Element.TechLevel), default=-1) >= 8:
+        if self._playerAdminDm != None and world.uwp().numeric(astronomer.UWP.Element.TechLevel, default=-1) >= 8:
             if lookForLegalTrader:
                 methods.append(MethodState(
                     self._playerAdminDm,
@@ -636,8 +636,8 @@ class Simulator(object):
                 lastTraderFoundTime = tradeTime
 
     @staticmethod
-    def _starPortModifier(world: multiverse.World) -> int:
-        starPortCode = world.uwp().code(multiverse.UWP.Element.StarPort)
+    def _starPortModifier(world: astronomer.World) -> int:
+        starPortCode = world.uwp().code(astronomer.UWP.Element.StarPort)
         return 0 if starPortCode not in Simulator.StarPortModifiers else Simulator.StarPortModifiers[starPortCode]
 
     def _traderSearchStep(

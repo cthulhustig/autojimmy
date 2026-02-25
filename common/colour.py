@@ -148,11 +148,17 @@ class HtmlColours(object):
     Yellow = '#FFFF00'
     YellowGreen = '#9ACD32'
 
+_NameToColourMap = {}
+for name, colour in common.getClassVariables(HtmlColours).items():
+    _NameToColourMap[name.lower()] = colour
 
-_NameToColourMap = {name.lower(): colour for name, colour in common.getClassVariables(HtmlColours).items()}
+    # Add mappings for Grey rather than Gray to allow for proper English
+    replaced = name.replace('Gray', 'Grey')
+    if replaced != name:
+        _NameToColourMap[replaced.lower()] = colour
 
 _ValidDigits = set('0123456789AaBbCcDdEeFf')
-def validateHtmlColour(htmlColour: str) -> bool:
+def isValidHtmlColour(htmlColour: str) -> bool:
     length = len(htmlColour)
     if not length:
         return False
@@ -252,3 +258,33 @@ def noticeableColourDifference(a: str, b: str) -> bool:
     bl, ba, bb = _convertXYZtoLab(bx, by, bz)
 
     return _deltaE76(al, aa, ab, bl, ba, bb) > JND
+
+# The intention is this works in the same was as the more generic
+# parameter validation functions in validation.py
+def validateMandatoryHtmlColour(
+        name: str,
+        value: str,
+        validationFn: typing.Optional[typing.Callable[[str, typing.Any], typing.Any]] = None
+        ) -> str:
+    common.validateMandatoryStr(name=name, value=value, allowEmpty=False)
+    if not isValidHtmlColour(value):
+        raise ValueError(f'{name} must be a valid HTML colour')
+
+    if validationFn is not None:
+        validationFn(name, value)
+
+    return value
+
+def validateOptionalHtmlColour(
+        name: str,
+        value: typing.Optional[str],
+        validationFn: typing.Optional[typing.Callable[[str, typing.Any], typing.Any]] = None
+        ) -> typing.Optional[str]:
+    common.validateOptionalStr(name=name, value=value, allowEmpty=False)
+    if value is not None and not isValidHtmlColour(value):
+        raise ValueError(f'{name} must be a valid HTML colour or None')
+
+    if validationFn is not None:
+        validationFn(name, value)
+
+    return value

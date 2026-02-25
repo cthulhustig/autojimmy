@@ -1,11 +1,11 @@
 import app
+import astronomer
 import cartographer
 import common
 import gui
 import logic
 import logging
 import math
-import multiverse
 import typing
 import uuid
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -86,8 +86,8 @@ class _JumpRouteOverlay(_MapOverlay):
         for hex in jumpRoute:
             centerX, centerY = hex.worldCenter()
             self._jumpRoutePath.append(QtCore.QPointF(
-                centerX * multiverse.ParsecScaleX,
-                centerY * multiverse.ParsecScaleY))
+                centerX * astronomer.ParsecScaleX,
+                centerY * astronomer.ParsecScaleY))
 
         self._pitStopPoints = None
         if refuellingPlan:
@@ -95,8 +95,8 @@ class _JumpRouteOverlay(_MapOverlay):
             for pitStop in refuellingPlan:
                 centerX, centerY = pitStop.hex().worldCenter()
                 self._pitStopPoints.append(QtCore.QPointF(
-                    centerX * multiverse.ParsecScaleX,
-                    centerY * multiverse.ParsecScaleY))
+                    centerX * astronomer.ParsecScaleX,
+                    centerY * astronomer.ParsecScaleY))
 
     def draw(
             self,
@@ -134,28 +134,28 @@ class _HexHighlightOverlay(_MapOverlay):
     _HexPolygon = QtGui.QPolygonF([
         # Upper left
         QtCore.QPointF(
-            (-0.5 + multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            -0.5 * multiverse.ParsecScaleY),
+            (-0.5 + astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+            -0.5 * astronomer.ParsecScaleY),
         # Upper right
         QtCore.QPointF(
-            (+0.5 - multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            -0.5 * multiverse.ParsecScaleY),
+            (+0.5 - astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+            -0.5 * astronomer.ParsecScaleY),
         # Center right
         QtCore.QPointF(
-            (+0.5 + multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            0 * multiverse.ParsecScaleY) ,
+            (+0.5 + astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+            0 * astronomer.ParsecScaleY) ,
         # Lower right
         QtCore.QPointF(
-            (+0.5 - multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            +0.5 * multiverse.ParsecScaleY),
+            (+0.5 - astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+            +0.5 * astronomer.ParsecScaleY),
         # Lower Left
         QtCore.QPointF(
-            (-0.5 + multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            +0.5 * multiverse.ParsecScaleY),
+            (-0.5 + astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+            +0.5 * astronomer.ParsecScaleY),
         # Center left
         QtCore.QPointF(
-            (-0.5 - multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            0 * multiverse.ParsecScaleY),
+            (-0.5 - astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+            0 * astronomer.ParsecScaleY),
     ])
 
     def __init__(self):
@@ -184,7 +184,7 @@ class _HexHighlightOverlay(_MapOverlay):
             ] = {}
 
         self._hexMap: typing.Dict[
-            multiverse.HexPosition,
+            astronomer.HexPosition,
             typing.Set[typing.Tuple[
                 gui.MapPrimitiveType,
                 typing.Tuple[int, int, int, int], # Colour
@@ -195,7 +195,7 @@ class _HexHighlightOverlay(_MapOverlay):
 
     def addHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             type: gui.MapPrimitiveType,
             colour: QtGui.QColor,
             radius: float = 0.0 # Only valid if primitive type is Circle
@@ -221,8 +221,8 @@ class _HexHighlightOverlay(_MapOverlay):
         centerX, centerY = hex.worldCenter()
         polygon = renderData[0]
         polygon.append(QtCore.QPointF(
-            centerX * multiverse.ParsecScaleX,
-            centerY * multiverse.ParsecScaleY))
+            centerX * astronomer.ParsecScaleX,
+            centerY * astronomer.ParsecScaleY))
 
         if not hexStyleKeys:
             hexStyleKeys = set()
@@ -231,10 +231,10 @@ class _HexHighlightOverlay(_MapOverlay):
 
     def addHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             type: gui.MapPrimitiveType,
             colour: typing.Optional[QtGui.QColor],
-            colourMap: typing.Optional[typing.Mapping[multiverse.HexPosition, QtGui.QColor]] = None,
+            colourMap: typing.Optional[typing.Mapping[astronomer.HexPosition, QtGui.QColor]] = None,
             radius: float = 0.0 # Only valid if primitive type is Circle
             ) -> None:
         radius = int(round(radius * 100)) if type is gui.MapPrimitiveType.Circle else 0
@@ -286,8 +286,8 @@ class _HexHighlightOverlay(_MapOverlay):
             centerX, centerY = hex.worldCenter()
             polygon = renderData[0]
             polygon.append(QtCore.QPointF(
-                centerX * multiverse.ParsecScaleX,
-                centerY * multiverse.ParsecScaleY))
+                centerX * astronomer.ParsecScaleX,
+                centerY * astronomer.ParsecScaleY))
 
             if not hexStyleKeys:
                 hexStyleKeys = set()
@@ -296,7 +296,7 @@ class _HexHighlightOverlay(_MapOverlay):
 
     def removeHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         hexStyleKeys = self._hexMap.get(hex)
         if not hexStyleKeys:
@@ -368,7 +368,7 @@ class _HexHighlightOverlay(_MapOverlay):
 class _HexBorderOverlay(_MapOverlay):
     def __init__(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
             fillColour: typing.Optional[QtGui.QColor] = None,
@@ -419,13 +419,13 @@ class _HexBorderOverlay(_MapOverlay):
 
 class _EmpressWaveOverlay(_MapOverlay):
     # The origin is taken from Traveller Map where it's 0, 10000 in its map space
-    _WaveOriginHex = multiverse.HexPosition(0, -10000)
+    _WaveOriginHex = astronomer.HexPosition(0, -10000)
     _WaveColour = QtGui.QColor('#4CFFCC00')
     _WaveVelocity = math.pi / 3.26 # Velocity of effect is light speed (so 1 ly/y)
 
     def __init__(
             self,
-            milieu: multiverse.Milieu
+            milieu: astronomer.Milieu
             ) -> None:
         super().__init__()
         self._milieu = milieu
@@ -433,7 +433,7 @@ class _EmpressWaveOverlay(_MapOverlay):
             _EmpressWaveOverlay._WaveColour,
             0) # Width will be set at render time
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         self._milieu = milieu
 
     # This code is based on the Traveller Map drawWave code (map.js)
@@ -445,14 +445,14 @@ class _EmpressWaveOverlay(_MapOverlay):
         if not self.isEnabled():
             return False
 
-        year = multiverse.milieuToYear(milieu=self._milieu)
+        year = astronomer.milieuToYear(milieu=self._milieu)
 
         w = 1 #pc
 
         # Per MWM: center is 10000pc coreward
         x, y = _EmpressWaveOverlay._WaveOriginHex.absolute()
-        x *= multiverse.ParsecScaleX
-        y *= multiverse.ParsecScaleY
+        x *= astronomer.ParsecScaleX
+        y *= astronomer.ParsecScaleY
 
         # Per MWM: Wave crosses Ring 10,000 [Reference] on 045-1281
         radius = (year - (1281 + (45 - 1) / 365)) * _EmpressWaveOverlay._WaveVelocity - y
@@ -477,7 +477,7 @@ class _EmpressWaveOverlay(_MapOverlay):
 class _QrekrshaZoneOverlay(_MapOverlay):
     # This center position was taken from Traveller Map where it's
     # -179.4, 131 in its map space
-    _CenterHex = multiverse.HexPosition(-207,  -131)
+    _CenterHex = astronomer.HexPosition(-207,  -131)
     _ZoneColour = QtGui.QColor('#4CFFCC00')
 
     def __init__(self) -> None:
@@ -496,10 +496,10 @@ class _QrekrshaZoneOverlay(_MapOverlay):
             return False
 
         x, y = _QrekrshaZoneOverlay._CenterHex.absolute()
-        x *= multiverse.ParsecScaleX
-        y *= multiverse.ParsecScaleY
+        x *= astronomer.ParsecScaleX
+        y *= astronomer.ParsecScaleY
 
-        radius = 30 * multiverse.ParsecScaleX
+        radius = 30 * astronomer.ParsecScaleX
 
         rect = QtCore.QRectF(
             (x - radius) + 0.5,
@@ -515,19 +515,19 @@ class _QrekrshaZoneOverlay(_MapOverlay):
 
 class _AntaresSupernovaOverlay(_MapOverlay):
     _SupernovaColour = QtGui.QColor('#26FFCC00')
-    _SupernovaCenter = multiverse.HexPosition(55, -59) # Antares
+    _SupernovaCenter = astronomer.HexPosition(55, -59) # Antares
     _SupernovaVelocity = 1 / 3.26 # Velocity of effect is light speed (so 1 ly/y)
 
     def __init__(
             self,
-            milieu: multiverse.Milieu
+            milieu: astronomer.Milieu
             ) -> None:
         super().__init__()
         self._milieu = milieu
         self._brush = QtGui.QBrush(
             _AntaresSupernovaOverlay._SupernovaColour)
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         self._milieu = milieu
 
     # This code is based on the Traveller Map drawAS code (map.js)
@@ -539,15 +539,15 @@ class _AntaresSupernovaOverlay(_MapOverlay):
         if not self.isEnabled():
             return False
 
-        year = multiverse.milieuToYear(milieu=self._milieu)
+        year = astronomer.milieuToYear(milieu=self._milieu)
         yearRadius = (year - 1270) * _AntaresSupernovaOverlay._SupernovaVelocity
         if yearRadius < 0:
             return False
 
         # Center is Antares (ANT 2421)
         x, y = _AntaresSupernovaOverlay._SupernovaCenter.worldCenter()
-        x *= multiverse.ParsecScaleX
-        y *= multiverse.ParsecScaleY
+        x *= astronomer.ParsecScaleX
+        y *= astronomer.ParsecScaleY
 
         for section, sectionRadius in enumerate([0.5, 4, 8, 12]):
             # Date of supernova: 1270
@@ -574,7 +574,7 @@ class _MainsOverlay(_MapOverlay):
         self._points = None
         self._pen = None
 
-    def setMain(self, main: typing.Optional[multiverse.Main]) -> None:
+    def setMain(self, main: typing.Optional[astronomer.Main]) -> None:
         if not main:
             self._points = self._pen = None
             return
@@ -583,8 +583,8 @@ class _MainsOverlay(_MapOverlay):
         for world in main:
             centerX, centerY = world.hex().worldCenter()
             self._points.append(QtCore.QPointF(
-                centerX * multiverse.ParsecScaleX,
-                centerY * multiverse.ParsecScaleY))
+                centerX * astronomer.ParsecScaleX,
+                centerY * astronomer.ParsecScaleY))
 
         if len(main) <= 10:
             colour = _MainsOverlay._SmallMainColour
@@ -733,8 +733,8 @@ class _MoveAnimationEasingCurve(QtCore.QEasingCurve):
 class MapWidget(QtWidgets.QWidget):
     centerChanged = QtCore.pyqtSignal(QtCore.QPointF)
     scaleChanged = QtCore.pyqtSignal(gui.MapScale)
-    leftClicked = QtCore.pyqtSignal(multiverse.HexPosition)
-    rightClicked = QtCore.pyqtSignal(multiverse.HexPosition)
+    leftClicked = QtCore.pyqtSignal(astronomer.HexPosition)
+    rightClicked = QtCore.pyqtSignal(astronomer.HexPosition)
 
     _MinLogScale = -5
     _MaxLogScale = 10
@@ -795,8 +795,8 @@ class MapWidget(QtWidgets.QWidget):
             int, # Tile X
             int, # Tile Y
             int,
-            multiverse.Universe,
-            multiverse.Milieu,
+            astronomer.Universe,
+            astronomer.Milieu,
             cartographer.MapStyle,
             int], # MapOptions as an int
         QtGui.QImage](capacity=_TileCacheSize)
@@ -821,8 +821,8 @@ class MapWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            universe: multiverse.Universe,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             style: cartographer.MapStyle,
             options: typing.Collection[app.MapOption],
             rendering: app.MapRendering,
@@ -862,7 +862,6 @@ class MapWidget(QtWidgets.QWidget):
         self._imageStore = cartographer.ImageStore(graphics=self._mapGraphics)
         self._vectorStore = cartographer.VectorStore(graphics=self._mapGraphics)
         self._labelStore = cartographer.LabelStore(universe=self._universe)
-        self._styleStore = cartographer.StyleStore()
         self._renderer = self._newRenderer()
 
         self._worldDragAnchor: typing.Optional[QtCore.QPointF] = None
@@ -971,12 +970,12 @@ class MapWidget(QtWidgets.QWidget):
 
         self._updateView()
 
-    def universe(self) -> multiverse.Universe:
+    def universe(self) -> astronomer.Universe:
         return self._universe
 
     def setUniverse(
             self,
-            universe: multiverse.Universe
+            universe: astronomer.Universe
             ) -> None:
         if universe is self._universe:
             return
@@ -992,10 +991,10 @@ class MapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
-    def milieu(self) -> multiverse.Milieu:
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         if milieu is self._milieu:
             return
 
@@ -1211,13 +1210,13 @@ class MapWidget(QtWidgets.QWidget):
     def hexAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
-            ) -> multiverse.HexPosition:
+            ) -> astronomer.HexPosition:
         return self._pixelSpaceToHex(pixelPos=pos)
 
     def worldAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
-            ) -> typing.Optional[multiverse.World]:
+            ) -> typing.Optional[astronomer.World]:
         hex = self._pixelSpaceToHex(pixelPos=pos)
         return self._universe.worldByPosition(
             milieu=self._milieu,
@@ -1225,7 +1224,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def centerOnHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=64), # None keeps current scale
             immediate: bool = False
             ) -> None:
@@ -1236,7 +1235,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def centerOnHexes(
             self,
-            hexes: typing.Collection[multiverse.HexPosition],
+            hexes: typing.Collection[astronomer.HexPosition],
             immediate: bool = False
             ) -> None:
         self._stopMoveAnimation()
@@ -1305,7 +1304,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def highlightHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             radius: float = 0.5,
             colour: str = QtGui.QColor('#7F8080FF')
             ) -> None:
@@ -1318,7 +1317,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def highlightHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             radius: float = 0.5,
             colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
@@ -1331,7 +1330,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def clearHexHighlight(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         self._hexHighlightOverlay.removeHex(hex)
         self.update() # Trigger redraw
@@ -1343,11 +1342,11 @@ class MapWidget(QtWidgets.QWidget):
     # Create an overlay with a primitive at each hex
     def createHexOverlay(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             primitive: gui.MapPrimitiveType,
             fillColour: typing.Optional[QtGui.QColor] = None,
             fillMap: typing.Optional[typing.Mapping[
-                multiverse.HexPosition,
+                astronomer.HexPosition,
                 QtGui.QColor
             ]] = None,
             radius: float = 0.5 # Only used for circle primitive
@@ -1366,7 +1365,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def createHexBordersOverlay(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
             fillColour: typing.Optional[QtGui.QColor] = None,
@@ -1847,7 +1846,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def _handleLeftClickEvent(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         if hex and self.isEnabled():
             if app.MapOption.MainsOverlay in self._options:
@@ -1861,7 +1860,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def _handleRightClickEvent(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         if hex and self.isEnabled():
             self.rightClicked.emit(hex)
@@ -1870,8 +1869,8 @@ class MapWidget(QtWidgets.QWidget):
             self,
             pixelPos: typing.Union[QtCore.QPointF, QtCore.QPoint]
             ) -> QtCore.QPointF:
-        scaleX = (self._viewScale.linear * multiverse.ParsecScaleX)
-        scaleY = (self._viewScale.linear * multiverse.ParsecScaleY)
+        scaleX = (self._viewScale.linear * astronomer.ParsecScaleX)
+        scaleY = (self._viewScale.linear * astronomer.ParsecScaleY)
 
         width = self.width() / scaleX
         height = self.height() / scaleY
@@ -1887,8 +1886,8 @@ class MapWidget(QtWidgets.QWidget):
             self,
             worldPos: typing.Union[QtCore.QPointF, QtCore.QPoint]
             ) -> QtCore.QPointF:
-        scaleX = (self._viewScale.linear * multiverse.ParsecScaleX)
-        scaleY = (self._viewScale.linear * multiverse.ParsecScaleY)
+        scaleX = (self._viewScale.linear * astronomer.ParsecScaleX)
+        scaleY = (self._viewScale.linear * astronomer.ParsecScaleY)
 
         width = self.width() / scaleX
         height = self.height() / scaleY
@@ -1903,17 +1902,17 @@ class MapWidget(QtWidgets.QWidget):
     def _pixelSpaceToHex(
             self,
             pixelPos: typing.Union[QtCore.QPointF, QtCore.QPoint]
-            ) -> multiverse.HexPosition:
+            ) -> astronomer.HexPosition:
         return self._worldSpaceToHex(self._pixelSpaceToWorldSpace(pixelPos))
 
     def _worldSpaceToHex(
             self,
             worldPos: typing.Union[QtCore.QPointF, QtCore.QPoint]
-            ) -> multiverse.HexPosition:
+            ) -> astronomer.HexPosition:
         absoluteX = int(round(worldPos.x() + 0.5))
         absoluteY = int(round(worldPos.y() + (0.5 if (absoluteX % 2 == 0) else 0)))
 
-        return multiverse.HexPosition(
+        return astronomer.HexPosition(
             absoluteX=absoluteX,
             absoluteY=absoluteY)
 
@@ -1930,7 +1929,6 @@ class MapWidget(QtWidgets.QWidget):
             style=self._style,
             options=gui.mapOptionsToRenderOptions(self._options),
             imageStore=self._imageStore,
-            styleStore=self._styleStore,
             vectorStore=self._vectorStore,
             labelStore=self._labelStore)
 
@@ -1948,23 +1946,23 @@ class MapWidget(QtWidgets.QWidget):
         scaleChanged = scale != self._viewScale
         self._viewScale = scale
 
-        worldWidth = self.width() / (self._viewScale.linear * multiverse.ParsecScaleX)
-        worldHeight = self.height() / (self._viewScale.linear * multiverse.ParsecScaleY)
+        worldWidth = self.width() / (self._viewScale.linear * astronomer.ParsecScaleX)
+        worldHeight = self.height() / (self._viewScale.linear * astronomer.ParsecScaleY)
         worldLeft = self._viewCenter.x() - (worldWidth / 2)
         worldTop = self._viewCenter.y() - (worldHeight / 2)
 
         self._imageSpaceToWorldSpace = QtGui.QTransform()
         self._imageSpaceToWorldSpace.scale(
-            self._viewScale.linear * multiverse.ParsecScaleX,
-            self._viewScale.linear * multiverse.ParsecScaleY)
+            self._viewScale.linear * astronomer.ParsecScaleX,
+            self._viewScale.linear * astronomer.ParsecScaleY)
         self._imageSpaceToWorldSpace.translate(
             -worldLeft,
             -worldTop)
 
         scaleMatrix = QtGui.QTransform()
         scaleMatrix.scale(
-            1 / multiverse.ParsecScaleX,
-            1 / multiverse.ParsecScaleY)
+            1 / astronomer.ParsecScaleX,
+            1 / astronomer.ParsecScaleY)
         self._imageSpaceToOverlaySpace = scaleMatrix * self._imageSpaceToWorldSpace
 
         # Clear the tile queue as the render view/style map have
@@ -2003,8 +2001,8 @@ class MapWidget(QtWidgets.QWidget):
             # This code is just doing _pixelSpaceToWorldSpace except it's
             # using the scale that we are going to apply rather than the
             # current scale
-            scaleX = (newViewScale.linear * multiverse.ParsecScaleX)
-            scaleY = (newViewScale.linear * multiverse.ParsecScaleY)
+            scaleX = (newViewScale.linear * astronomer.ParsecScaleX)
+            scaleY = (newViewScale.linear * astronomer.ParsecScaleY)
 
             width = self.width() / scaleX
             height = self.height() / scaleY
@@ -2041,8 +2039,8 @@ class MapWidget(QtWidgets.QWidget):
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
         tileSize = MapWidget._TileSize * tileMultiplier
 
-        scaleX = (self._viewScale.linear * multiverse.ParsecScaleX)
-        scaleY = (self._viewScale.linear * multiverse.ParsecScaleY)
+        scaleX = (self._viewScale.linear * astronomer.ParsecScaleX)
+        scaleY = (self._viewScale.linear * astronomer.ParsecScaleY)
 
         worldWidgetWidth = self.width() / scaleX
         worldWidgetHeight = self.height() / scaleY
@@ -2122,8 +2120,8 @@ class MapWidget(QtWidgets.QWidget):
         tileScale = int(math.floor(self._viewScale.log + 0.5))
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
         tilePixelSize = MapWidget._TileSize * tileMultiplier
-        tileWorldWidth = tilePixelSize / (self._viewScale.linear * multiverse.ParsecScaleX)
-        tileWorldHeight = tilePixelSize / (self._viewScale.linear * multiverse.ParsecScaleY)
+        tileWorldWidth = tilePixelSize / (self._viewScale.linear * astronomer.ParsecScaleX)
+        tileWorldHeight = tilePixelSize / (self._viewScale.linear * astronomer.ParsecScaleY)
         targetTileX = int(math.floor(targetWorld.x() / tileWorldWidth))
         targetTileY = int(math.floor(targetWorld.y() / tileWorldHeight))
 
@@ -2165,8 +2163,8 @@ class MapWidget(QtWidgets.QWidget):
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
         tileSize = MapWidget._TileSize * tileMultiplier
 
-        scaleX = (self._viewScale.linear * multiverse.ParsecScaleX)
-        scaleY = (self._viewScale.linear * multiverse.ParsecScaleY)
+        scaleX = (self._viewScale.linear * astronomer.ParsecScaleX)
+        scaleY = (self._viewScale.linear * astronomer.ParsecScaleY)
         worldViewWidth = self.width() / scaleX
         worldViewHeight = self.height() / scaleY
         worldViewLeft = self._viewCenter.x() - (worldViewWidth / 2)
@@ -2294,8 +2292,8 @@ class MapWidget(QtWidgets.QWidget):
         tileMultiplier = math.pow(2, self._viewScale.log - placeholderScale)
         tileSize = MapWidget._TileSize * tileMultiplier
 
-        scaleX = (self._viewScale.linear * multiverse.ParsecScaleX)
-        scaleY = (self._viewScale.linear * multiverse.ParsecScaleY)
+        scaleX = (self._viewScale.linear * astronomer.ParsecScaleX)
+        scaleY = (self._viewScale.linear * astronomer.ParsecScaleY)
 
         worldWidgetWidth = self.width() / scaleX
         worldWidgetHeight = self.height() / scaleY
@@ -2376,8 +2374,8 @@ class MapWidget(QtWidgets.QWidget):
             image: typing.Optional[QtGui.QImage]
             ) -> QtGui.QImage:
         tileScale = gui.logScaleToLinearScale(tileScale)
-        scaleX = (tileScale * multiverse.ParsecScaleX)
-        scaleY = (tileScale * multiverse.ParsecScaleY)
+        scaleX = (tileScale * astronomer.ParsecScaleX)
+        scaleY = (tileScale * astronomer.ParsecScaleY)
         worldTileWidth = MapWidget._TileSize / scaleX
         worldTileHeight = MapWidget._TileSize / scaleY
 
@@ -2437,8 +2435,8 @@ class MapWidget(QtWidgets.QWidget):
             # Normalize the delta and translate it to world space
             length = math.sqrt((deltaX * deltaX) + (deltaY * deltaY))
             if length:
-                horzStep = MapWidget._KeyboardMoveDelta / (self._viewScale.linear * multiverse.ParsecScaleX)
-                vertStep = MapWidget._KeyboardMoveDelta / (self._viewScale.linear * multiverse.ParsecScaleY)
+                horzStep = MapWidget._KeyboardMoveDelta / (self._viewScale.linear * astronomer.ParsecScaleX)
+                vertStep = MapWidget._KeyboardMoveDelta / (self._viewScale.linear * astronomer.ParsecScaleY)
                 deltaX = (deltaX / length) * horzStep
                 deltaY = (deltaY / length) * vertStep
 
@@ -2473,7 +2471,7 @@ class MapWidget(QtWidgets.QWidget):
         # Traveller Map uses a value of 64 for the multiplier but I've
         # increased it to 256 so it will animate over a larger transition
         # as drawing tiles is "cheaper" with my implementation
-        xyThreshold = multiverse.SectorHeight * 256 / self._viewScale.linear
+        xyThreshold = astronomer.SectorHeight * 256 / self._viewScale.linear
         return xyDistance < xyThreshold
 
     def _startMoveAnimation(

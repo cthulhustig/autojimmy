@@ -1,6 +1,6 @@
+import astronomer
 import logic
 import time
-import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -18,8 +18,8 @@ class RoutePlannerJob(QtCore.QThread):
             self,
             parent: QtCore.QObject,
             routingType: logic.RoutingType,
-            milieu: multiverse.Milieu,
-            hexSequence: typing.Sequence[multiverse.World],
+            milieu: astronomer.Milieu,
+            hexSequence: typing.Sequence[astronomer.World],
             shipTonnage: int,
             shipJumpRating: int,
             shipFuelCapacity: int,

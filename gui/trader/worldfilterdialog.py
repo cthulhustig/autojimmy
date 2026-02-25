@@ -1,8 +1,9 @@
 import app
+import astronomer
 import enum
 import gui
 import logic
-import multiverse
+import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -59,34 +60,34 @@ _RefuellingFilterTypeTextMap = {
 }
 
 _UWPElementTextMap = {
-    multiverse.UWP.Element.StarPort: 'Star Port',
-    multiverse.UWP.Element.WorldSize: 'World Size',
-    multiverse.UWP.Element.Atmosphere: 'Atmosphere',
-    multiverse.UWP.Element.Hydrographics: 'Hydrographics',
-    multiverse.UWP.Element.Population: 'Population',
-    multiverse.UWP.Element.Government: 'Government',
-    multiverse.UWP.Element.LawLevel: 'Law Level',
-    multiverse.UWP.Element.TechLevel: 'Tech Level'
+    astronomer.UWP.Element.StarPort: 'Star Port',
+    astronomer.UWP.Element.WorldSize: 'World Size',
+    astronomer.UWP.Element.Atmosphere: 'Atmosphere',
+    astronomer.UWP.Element.Hydrographics: 'Hydrographics',
+    astronomer.UWP.Element.Population: 'Population',
+    astronomer.UWP.Element.Government: 'Government',
+    astronomer.UWP.Element.LawLevel: 'Law Level',
+    astronomer.UWP.Element.TechLevel: 'Tech Level'
 }
 
 _EconomicsElementTextMap = {
-    multiverse.Economics.Element.Resources: 'Resources',
-    multiverse.Economics.Element.Labour: 'Labour',
-    multiverse.Economics.Element.Infrastructure: 'Infrastructure',
-    multiverse.Economics.Element.Efficiency: 'Efficiency'
+    astronomer.Economics.Element.Resources: 'Resources',
+    astronomer.Economics.Element.Labour: 'Labour',
+    astronomer.Economics.Element.Infrastructure: 'Infrastructure',
+    astronomer.Economics.Element.Efficiency: 'Efficiency'
 }
 
 _CultureElementTextMap = {
-    multiverse.Culture.Element.Heterogeneity: 'Heterogeneity',
-    multiverse.Culture.Element.Acceptance: 'Acceptance',
-    multiverse.Culture.Element.Strangeness: 'Strangeness',
-    multiverse.Culture.Element.Symbols: 'Symbols'
+    astronomer.Culture.Element.Heterogeneity: 'Heterogeneity',
+    astronomer.Culture.Element.Acceptance: 'Acceptance',
+    astronomer.Culture.Element.Strangeness: 'Strangeness',
+    astronomer.Culture.Element.Symbols: 'Symbols'
 }
 
 _PBGElementTextMap = {
-    multiverse.PBG.Element.PopulationMultiplier: 'Population Multiplier',
-    multiverse.PBG.Element.PlanetoidBelts: 'Planetoid Belts',
-    multiverse.PBG.Element.GasGiants: 'Gas Giants'
+    astronomer.PBG.Element.PopulationMultiplier: 'Population Multiplier',
+    astronomer.PBG.Element.PlanetoidBelts: 'Planetoid Belts',
+    astronomer.PBG.Element.GasGiants: 'Gas Giants'
 }
 
 class _CodeComboBox(QtWidgets.QComboBox):
@@ -110,28 +111,28 @@ class _CodeComboBox(QtWidgets.QComboBox):
                 return
 
 class _UWPCodeComboBox(_CodeComboBox):
-    def setElement(self, element: multiverse.UWP.Element) -> None:
+    def setElement(self, element: astronomer.UWP.Element) -> None:
         self.clear()
-        for code, description in multiverse.UWP.descriptionMap(element=element).items():
+        for code, description in astronomer.UWP.descriptionMap(element=element).items():
             self.addItem(f'{code} - {description}', code)
 
 class _EconomicsCodeComboBox(_CodeComboBox):
-    def setElement(self, element: multiverse.Economics.Element) -> None:
+    def setElement(self, element: astronomer.Economics.Element) -> None:
         self.clear()
-        for code, description in multiverse.Economics.descriptionMap(element=element).items():
+        for code, description in astronomer.Economics.descriptionMap(element=element).items():
             self.addItem(f'{code} - {description}', code)
 
 class _CultureCodeComboBox(_CodeComboBox):
-    def setElement(self, element: multiverse.Culture.Element) -> None:
+    def setElement(self, element: astronomer.Culture.Element) -> None:
         self.clear()
-        for code, description in multiverse.Culture.descriptionMap(element=element).items():
+        for code, description in astronomer.Culture.descriptionMap(element=element).items():
             self.addItem(f'{code} - {description}', code)
 
 class _PBGCodeComboBox(_CodeComboBox):
-    def setElement(self, element: multiverse.PBG.Element) -> None:
+    def setElement(self, element: astronomer.PBG.Element) -> None:
         self.clear()
-        for code in multiverse.PBG.codeList(element=element):
-            self.addItem(f'{code}', code)
+        for code in astronomer.PBG.descriptionMap(element=element).keys():
+            self.addItem(code, code)
 
 class _VerticallyResizingStackWidget(QtWidgets.QStackedWidget):
     def sizeHint(self) -> QtCore.QSize:
@@ -439,8 +440,8 @@ class WorldFilterDialog(gui.DialogEx):
             textMap=_ComparisonFilterOperationTextMap)
 
         self._zoneFilterValueComboBox = gui.EnumComboBox(
-            type=multiverse.ZoneType,
-            textMap=multiverse.zoneTypeNameMap())
+            type=astronomer.ZoneType,
+            textMap=astronomer.zoneTypeNameMap())
 
         layout = gui.FormLayoutEx()
         layout.addRow('Operation:', self._zoneFilterOperationComboBox)
@@ -452,7 +453,7 @@ class WorldFilterDialog(gui.DialogEx):
 
     def _setupUWPFilterLayout(self) -> None:
         self._uwpFilterElementComboBox = gui.EnumComboBox(
-            type=multiverse.UWP.Element,
+            type=astronomer.UWP.Element,
             textMap=_UWPElementTextMap)
         self._uwpFilterElementComboBox.currentIndexChanged.connect(self._uwpElementChanged)
 
@@ -474,7 +475,7 @@ class WorldFilterDialog(gui.DialogEx):
 
     def _setupEconomicsFilterLayout(self) -> None:
         self._economicsFilterElementComboBox = gui.EnumComboBox(
-            type=multiverse.Economics.Element,
+            type=astronomer.Economics.Element,
             textMap=_EconomicsElementTextMap)
         self._economicsFilterElementComboBox.currentIndexChanged.connect(self._economicsElementChanged)
 
@@ -496,7 +497,7 @@ class WorldFilterDialog(gui.DialogEx):
 
     def _setupCultureFilterLayout(self) -> None:
         self._cultureFilterElementComboBox = gui.EnumComboBox(
-            type=multiverse.Culture.Element,
+            type=astronomer.Culture.Element,
             textMap=_CultureElementTextMap)
         self._cultureFilterElementComboBox.currentIndexChanged.connect(self._cultureElementChanged)
 
@@ -578,9 +579,9 @@ class WorldFilterDialog(gui.DialogEx):
             textMap=_ListFilterOperationTextMap)
 
         self._basesFilterValuesList = _EnumOptionWidget(
-            type=multiverse.BaseType,
+            type=astronomer.BaseType,
             columnCount=2,
-            textMap=multiverse.Bases.descriptionMap(),
+            textMap=astronomer.Bases.descriptionMap(),
             sortAlphabetically=True)
 
         layout = gui.FormLayoutEx()
@@ -597,9 +598,9 @@ class WorldFilterDialog(gui.DialogEx):
             textMap=_ListFilterOperationTextMap)
 
         self._nobilityFilterValuesList = _EnumOptionWidget(
-            type=multiverse.NobilityType,
+            type=astronomer.NobilityType,
             columnCount=3,
-            textMap=multiverse.Nobilities.descriptionMap(),
+            textMap=astronomer.Nobilities.descriptionMap(),
             sortAlphabetically=False) # Show nobility in priority order rather than alphabetic
 
         layout = gui.FormLayoutEx()
@@ -635,9 +636,9 @@ class WorldFilterDialog(gui.DialogEx):
             textMap=_ListFilterOperationTextMap)
 
         self._tradeCodeFilterValuesList = _EnumOptionWidget(
-            type=multiverse.TradeCode,
+            type=traveller.TradeCode,
             columnCount=3,
-            textMap=multiverse.tradeCodeNameMap(),
+            textMap=traveller.tradeCodeNameMap(),
             sortAlphabetically=True)
 
         layout = gui.FormLayoutEx()
@@ -650,7 +651,7 @@ class WorldFilterDialog(gui.DialogEx):
 
     def _setupPBGFilterLayout(self) -> None:
         self._pbgFilterElementComboBox = gui.EnumComboBox(
-            type=multiverse.PBG.Element,
+            type=astronomer.PBG.Element,
             textMap=_PBGElementTextMap)
         self._pbgFilterElementComboBox.currentIndexChanged.connect(self._pbgElementChanged)
 
