@@ -2,9 +2,6 @@ import common
 import re
 import typing
 
-# TODO: The PBG elements should probably be stored as integers in the db and
-# treated as integers elsewhere in the code
-
 _PBGPattern = re.compile(r'([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])')
 _ValidPopulationMultiplierCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
 _ValidPlanetoidBeltsCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G',

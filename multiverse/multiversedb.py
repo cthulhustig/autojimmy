@@ -24,6 +24,15 @@ import typing
 # - Would need a way to mark a world as the main world for the system. For
 #   now the main world would be used for everything
 # - Stars would need to be for the system rather than for the world
+# TODO: I think I want to drop the overlay system and have custom universes
+# create a complete copy of the stock universe. The stock universe would
+# update with new snapshots but the custom universes would remain as they
+# were when you created them (barring any edits). This avoids a lot of
+# problems with having to create custom versions of sectors when you want
+# to edit them in your custom universe.
+# IMPORTANT: If I do this it probably also makes sense to move to a seperate
+# database file for each universe. This would make it easier for people to
+# share just one universe.
 
 class ColumnDef(object):
     class ColumnType(enum.Enum):
@@ -47,10 +56,8 @@ class ColumnDef(object):
             foreignTableName: typing.Optional[str] = None,
             foreignColumnName: typing.Optional[str] = None,
             foreignDeleteOp: typing.Optional[ForeignKeyDeleteOp] = None,
-            validRange: typing.Optional[typing.Tuple[
-                typing.Union[str, int, float], # Range min
-                typing.Union[str, int, float] # Range max
-                ]] = None
+            minValue: typing.Optional[typing.Union[str, int, float]] = None,
+            maxValue: typing.Optional[typing.Union[str, int, float]] = None
             ):
         if not columnName:
             raise ValueError('Column name can\'t be empty')
@@ -65,18 +72,31 @@ class ColumnDef(object):
         if foreignDeleteOp and (not foreignTableName or not foreignColumnName):
             raise ValueError('Foreign key table and column names must be specified if foreign key delete operation is specified')
 
-        if validRange:
+        if minValue is not None:
             if columnType is ColumnDef.ColumnType.Text:
-                if not isinstance(validRange[0], str) and not isinstance(validRange[1], str):
-                    raise ValueError('Valid range for Text column must be of type str')
+                if not isinstance(minValue, str):
+                    raise ValueError('Min value for Text column must be of type str')
             elif columnType is ColumnDef.ColumnType.Integer:
-                if not isinstance(validRange[0], int) and not isinstance(validRange[1], int):
-                    raise ValueError('Valid range for Integer column must be of type int')
+                if not isinstance(minValue, int):
+                    raise ValueError('Min value for Integer column must be of type int')
             elif columnType is ColumnDef.ColumnType.Real:
-                if not isinstance(validRange[0], [float, int]) and not isinstance(validRange[1], [float, int]):
-                    raise ValueError('Valid range for Float column must be of type float or int')
+                if not isinstance(minValue, [float, int]):
+                    raise ValueError('Min value for Float column must be of type float or int')
             elif columnType is ColumnDef.ColumnType.Boolean:
-                raise ValueError('Valid range for is not allowed for Boolean columns')
+                raise ValueError('Min value for is not allowed for Boolean columns')
+
+        if maxValue is not None:
+            if columnType is ColumnDef.ColumnType.Text:
+                if not isinstance(maxValue, str):
+                    raise ValueError('Max value for Text column must be of type str')
+            elif columnType is ColumnDef.ColumnType.Integer:
+                if not isinstance(maxValue, int):
+                    raise ValueError('Max value for Integer column must be of type int')
+            elif columnType is ColumnDef.ColumnType.Real:
+                if not isinstance(maxValue, [float, int]):
+                    raise ValueError('Max value for Float column must be of type float or int')
+            elif columnType is ColumnDef.ColumnType.Boolean:
+                raise ValueError('Max value for is not allowed for Boolean columns')
 
         hasForeignKey = foreignTableName and foreignColumnName and foreignDeleteOp
 
@@ -89,7 +109,8 @@ class ColumnDef(object):
         self._foreignTableName = foreignTableName
         self._foreignColumnName = foreignColumnName
         self._foreignDeleteOp = foreignDeleteOp
-        self._validRange = validRange
+        self._minValue = minValue
+        self._maxValue = maxValue
 
     def columnName(self) -> str:
         return self._columnName
@@ -121,11 +142,11 @@ class ColumnDef(object):
     def foreignDeleteOp(self) -> typing.Optional[ForeignKeyDeleteOp]:
         return self._foreignDeleteOp
 
-    def validRange(self) -> typing.Optional[typing.Tuple[
-            typing.Union[str, int, float], # Range min
-            typing.Union[str, int, float] # Range max
-            ]]:
-        return self._validRange
+    def minValue(self) -> typing.Optional[typing.Union[str, int, float]]:
+        return self._minValue
+
+    def maxValue(self) -> typing.Optional[typing.Union[str, int, float]]:
+        return self._maxValue
 
 class UniqueConstraintDef(object):
     def __init__(
@@ -961,7 +982,7 @@ class MultiverseDb(object):
                               foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
                     ColumnDef(columnName='code', columnType=ColumnDef.ColumnType.Text, isNullable=False,
-                              validRange=('A', 'P')),
+                              minValue='A', maxValue='P'),
                     ColumnDef(columnName='name', columnType=ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
                     UniqueConstraintDef(columnNames=['sector_id', 'code'])])
@@ -1035,11 +1056,10 @@ class MultiverseDb(object):
                     ColumnDef(columnName='acceptance', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='strangeness', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='symbols', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    # TODO: Should multiplier and counts enforce a valid range (min 0)
-                    ColumnDef(columnName='population_multiplier', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
-                    ColumnDef(columnName='planetoid_belt_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
-                    ColumnDef(columnName='gas_giant_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
-                    ColumnDef(columnName='other_world_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
+                    ColumnDef(columnName='population_multiplier', columnType=ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
+                    ColumnDef(columnName='planetoid_belt_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
+                    ColumnDef(columnName='gas_giant_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
+                    ColumnDef(columnName='other_world_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
                     ColumnDef(columnName='zone', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='allegiance_code', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='notes', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
@@ -1499,18 +1519,22 @@ class MultiverseDb(object):
                 sql += '  CHECK ({column} IN (0, 1)),\n'.format(
                     column=column.columnName())
             else:
-                validRange = column.validRange()
-                if validRange:
-                    if column.columnType() is ColumnDef.ColumnType.Text:
-                        sql += '  CHECK ({column} BETWEEN \'{min}\' AND \'{max}\'),\n'.format(
-                            column=column.columnName(),
-                            min=validRange[0],
-                            max=validRange[1])
-                    else:
-                        sql += '  CHECK ({column} BETWEEN {min} AND {max}),\n'.format(
-                            column=column.columnName(),
-                            min=validRange[0],
-                            max=validRange[1])
+                minValue = column.minValue()
+                maxValue = column.maxValue()
+                isText = column.columnType() is ColumnDef.ColumnType.Text
+                if minValue is not None and maxValue is not None:
+                    sql += '  CHECK ({column} BETWEEN {min} AND {max}),\n'.format(
+                        column=column.columnName(),
+                        min=f'\'{minValue}\'' if isText else minValue,
+                        max=f'\'{maxValue}\'' if isText else maxValue)
+                elif minValue is not None:
+                    sql += '  CHECK ({column} >= {min}),\n'.format(
+                        column=column.columnName(),
+                        min=f'\'{minValue}\'' if isText else minValue)
+                elif maxValue is not None:
+                    sql += '  CHECK ({column} <= {max}),\n'.format(
+                        column=column.columnName(),
+                        max=f'\'{maxValue}\'' if isText else maxValue)
 
         # Add any unique constraints
         if uniqueConstraints:
