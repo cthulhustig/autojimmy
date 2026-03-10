@@ -80,7 +80,7 @@ class ColumnDef(object):
                 if not isinstance(minValue, int):
                     raise ValueError('Min value for Integer column must be of type int')
             elif columnType is ColumnDef.ColumnType.Real:
-                if not isinstance(minValue, [float, int]):
+                if not isinstance(minValue, (float, int)):
                     raise ValueError('Min value for Float column must be of type float or int')
             elif columnType is ColumnDef.ColumnType.Boolean:
                 raise ValueError('Min value for is not allowed for Boolean columns')
@@ -93,7 +93,7 @@ class ColumnDef(object):
                 if not isinstance(maxValue, int):
                     raise ValueError('Max value for Integer column must be of type int')
             elif columnType is ColumnDef.ColumnType.Real:
-                if not isinstance(maxValue, [float, int]):
+                if not isinstance(maxValue, (float, int)):
                     raise ValueError('Max value for Float column must be of type float or int')
             elif columnType is ColumnDef.ColumnType.Boolean:
                 raise ValueError('Max value for is not allowed for Boolean columns')
@@ -1002,7 +1002,7 @@ class MultiverseDb(object):
                     ColumnDef(columnName='base', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='route_colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='route_style', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    ColumnDef(columnName='route_width', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='route_width', columnType=ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
                     ColumnDef(columnName='border_colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='border_style', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
@@ -1056,7 +1056,7 @@ class MultiverseDb(object):
                     ColumnDef(columnName='acceptance', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='strangeness', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='symbols', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    ColumnDef(columnName='population_multiplier', columnType=ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
+                    ColumnDef(columnName='population_multiplier', columnType=ColumnDef.ColumnType.Integer, isNullable=True, minValue=1, maxValue=9),
                     ColumnDef(columnName='planetoid_belt_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
                     ColumnDef(columnName='gas_giant_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
                     ColumnDef(columnName='other_world_count', columnType=ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
@@ -1102,7 +1102,7 @@ class MultiverseDb(object):
                               foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
                     ColumnDef(columnName='sophont_code', columnType=ColumnDef.ColumnType.Text, isNullable=False),
-                    ColumnDef(columnName='percentage', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
+                    ColumnDef(columnName='percentage', columnType=ColumnDef.ColumnType.Integer, isNullable=True, minValue=0, maxValue=100),
                     ColumnDef(columnName='is_home_world', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
                     ColumnDef(columnName='is_die_back', columnType=ColumnDef.ColumnType.Boolean, isNullable=False)],
                 uniqueConstraints=[
@@ -1231,7 +1231,7 @@ class MultiverseDb(object):
                     ColumnDef(columnName='type', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='style', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    ColumnDef(columnName='width', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='width', columnType=ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
                     ColumnDef(columnName='allegiance_code', columnType=ColumnDef.ColumnType.Text, isNullable=True)])
 
             self._internalCreateTable(
