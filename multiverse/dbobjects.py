@@ -511,7 +511,7 @@ class DbSystem(DbSectorObject):
         survey.validateOptionalAcceptance(name='acceptance', value=acceptance)
         survey.validateOptionalStrangeness(name='strangeness', value=strangeness)
         survey.validateOptionalSymbols(name='symbols', value=symbols)
-        common.validateOptionalInt(name='populationMultiplier', value=populationMultiplier, min=1, max=9) # TODO: Is this max right?
+        common.validateOptionalInt(name='populationMultiplier', value=populationMultiplier, min=1, max=9)
         common.validateOptionalInt(name='planetoidBeltCount', value=planetoidBeltCount, min=0)
         common.validateOptionalInt(name='gasGiantCount', value=gasGiantCount, min=0)
         common.validateOptionalInt(name='otherWorldCount', value=otherWorldCount, min=0)
