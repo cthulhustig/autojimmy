@@ -271,8 +271,7 @@ class WorldInfo(object):
         remarks = world.remarks()
         return remarks.hasTradeCode(traveller.TradeCode.SectorCapital) or \
             remarks.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
-            remarks.hasTradeCode(traveller.TradeCode.ImperialCapital) or \
-            remarks.hasCustomRemark('Capital')
+            remarks.hasTradeCode(traveller.TradeCode.ImperialCapital)
 
     @staticmethod
     def _calcIsAncientSite(world: astronomer.World) -> bool:
