@@ -1,11 +1,11 @@
 import app
+import astronomer
 import common
 import gui
 import jobs
 import logging
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -27,7 +27,7 @@ class _WorldSaleScoreTable(gui.WorldTradeScoreTable):
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -277,6 +277,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(configurationLayout)
 
     def _setupTradeOptionControls(self) -> None:
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         outcomeColours = app.Config.instance().value(option=app.ConfigOption.OutcomeColours)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
@@ -298,6 +299,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionCalculationModeTabs.currentChanged.connect(self._updateTradeOptionTableColumns)
 
         self._tradeOptionsTable = gui.TradeOptionsTable(
+            rules=rules,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -347,6 +349,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             self._hexTooltipProvider.setRules(rules=newValue)
             self._localPurchaseBrokerWidget.setRules(rules=newValue)
             self._localSaleBrokerWidget.setRules(rules=newValue)
+            self._tradeOptionsTable.setRules(rules=newValue)
 
             # Changing the rules invalidates existing trade options as the
             # trade goods they use are tied to a rule system and the starport
@@ -855,8 +858,8 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def configureControls(
             self,
-            purchaseWorld: typing.Optional[multiverse.World] = None,
-            saleWorlds: typing.Optional[typing.Iterable[multiverse.World]] = None,
+            purchaseWorld: typing.Optional[astronomer.World] = None,
+            saleWorlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
             playerBrokerDm: typing.Optional[int] = None,
             minSellerDm: typing.Optional[int] = None,
             maxSellerDm: typing.Optional[int] = None,
@@ -1513,7 +1516,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         replacements = {}
         for currentCargoRecord in self._speculativeCargoTable.cargoRecords():
             cargoRecords = logic.generateSpeculativePurchaseCargo(
-                ruleSystem=rules.system(),
+                rules=rules,
                 world=world,
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
                 useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1576,7 +1579,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         return cargoRecords
 
-    def _allowSaleWorld(self, hex: multiverse.HexPosition) -> bool:
+    def _allowSaleWorld(self, hex: astronomer.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
         return not self._saleWorldsWidget.containsHex(hex)
 
@@ -1675,7 +1678,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         cargoRecords = logic.generateSpeculativePurchaseCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1694,16 +1697,16 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         # Don't list exotics. We can't generate speculate trade options for them so there's no
         # reason to add them here
-        ignoreTradeGoods = [traveller.tradeGoodFromId(
+        ignoreTradeGoods = [logic.tradeGoodFromId(
             ruleSystem=rules.system(),
-            tradeGoodId=traveller.TradeGoodIds.Exotics)]
+            tradeGoodId=logic.TradeGoodIds.Exotics)]
 
         # Don't list trade goods that have already been added to the list
         for row in range(self._speculativeCargoTable.rowCount()):
             cargoRecord = self._speculativeCargoTable.cargoRecord(row)
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
-        tradeGoods = traveller.tradeGoodList(
+        tradeGoods = logic.tradeGoodList(
             ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
@@ -1722,7 +1725,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             return
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1802,7 +1805,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
-        tradeGoods = traveller.tradeGoodList(
+        tradeGoods = logic.tradeGoodList(
             ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
@@ -2438,8 +2441,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
     def configureControls(
             self,
-            purchaseWorlds: typing.Optional[typing.Iterable[multiverse.World]] = None,
-            saleWorlds: typing.Optional[typing.Iterable[multiverse.World]] = None,
+            purchaseWorlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
+            saleWorlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
             playerBrokerDm: typing.Optional[int] = None,
             minSellerDm: typing.Optional[int] = None,
             maxSellerDm: typing.Optional[int] = None,
@@ -2679,11 +2682,11 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._purchaseWorldsGroupBox.setDisabled(self._traderJob != None)
         self._saleWorldsGroupBox.setDisabled(self._traderJob != None)
 
-    def _allowPurchaseWorld(self, hex: multiverse.HexPosition) -> bool:
+    def _allowPurchaseWorld(self, hex: astronomer.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
         return not self._purchaseWorldsWidget.containsHex(hex)
 
-    def _allowSaleWorld(self, hex: multiverse.HexPosition) -> bool:
+    def _allowSaleWorld(self, hex: astronomer.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
         return not self._saleWorldsWidget.containsHex(hex)
 

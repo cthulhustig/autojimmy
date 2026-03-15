@@ -4,7 +4,6 @@ import enum
 import gui
 import logging
 import logic
-import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -579,9 +578,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
             return
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
-        exoticsTradeGood = traveller.tradeGoodFromId(
+        exoticsTradeGood = logic.tradeGoodFromId(
             ruleSystem=rules.system(),
-            tradeGoodId=traveller.TradeGoodIds.Exotics)
+            tradeGoodId=logic.TradeGoodIds.Exotics)
 
         # There might be multiple cargo records for a given trade good. Condense it down to the
         # tonnage for each trade good. We loose the purchase prices from the original options but
@@ -624,16 +623,16 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         # Don't list exotics. Calculating their sale price requires role playing rather than dice
         # rolling
-        ignoreTradeGoods = [traveller.tradeGoodFromId(
+        ignoreTradeGoods = [logic.tradeGoodFromId(
             ruleSystem=rules.system(),
-            tradeGoodId=traveller.TradeGoodIds.Exotics)]
+            tradeGoodId=logic.TradeGoodIds.Exotics)]
 
         # Don't list trade goods that have already been added to the list
         for row in range(self._cargoTable.rowCount()):
             cargoRecord = self._cargoTable.cargoRecord(row)
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
-        tradeGoods = traveller.tradeGoodList(
+        tradeGoods = logic.tradeGoodList(
             ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
@@ -733,7 +732,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         for cargoRecord in self._cargoTable.cargoRecords():
             tradeGood = cargoRecord.tradeGood()
 
-            if tradeGood.id() != traveller.TradeGoodIds.Exotics:
+            if tradeGood.id() != logic.TradeGoodIds.Exotics:
                 # Only generate prices for goods that match the selected legality
                 isIllegal = tradeGood.isIllegal(world=saleWorld)
                 if blackMarket == isIllegal:
@@ -755,7 +754,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         saleCargo, localBrokerIsInformant = logic.generateRandomSaleCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=saleWorld,
             currentCargo=cargoRecords,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),

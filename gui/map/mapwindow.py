@@ -1,8 +1,8 @@
 import app
+import astronomer
 import cartographer
 import gui
 import logic
-import multiverse
 import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 
@@ -23,7 +23,7 @@ class MapWindow(gui.WindowWidget):
         app.Config.instance().configChanged.connect(self._appConfigChanged)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=multiverse.WorldManager.instance().universe(),
+            universe=astronomer.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -44,7 +44,7 @@ class MapWindow(gui.WindowWidget):
 
     def centerOnHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=64), # None keeps current scale
             ) -> None:
         self._mapWidget.centerOnHex(
@@ -54,7 +54,7 @@ class MapWindow(gui.WindowWidget):
 
     def centerOnHexes(
             self,
-            hexes: multiverse.HexPosition
+            hexes: astronomer.HexPosition
             ) -> None:
         self._mapWidget.centerOnHexes(
             hexes=hexes,
@@ -73,7 +73,7 @@ class MapWindow(gui.WindowWidget):
 
     def highlightHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             radius: float = 0.5,
             colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
@@ -87,7 +87,7 @@ class MapWindow(gui.WindowWidget):
 
     def highlightHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             radius: float = 0.5,
             colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
