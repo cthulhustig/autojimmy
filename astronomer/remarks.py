@@ -108,6 +108,12 @@ class Remarks(object):
     def hasCustomRemark(self, remark: str) -> bool:
         return remark in self._customRemarks
 
+    # TODO: Drop regenerating trade codes here. It should be an option
+    # to regenerate for all worlds when making a custom universe. This
+    # assumes I've moved to making a complete copy rather than the overlay.
+    # The default universe will always use the trade codes from Traveller
+    # Map. Doing this should mean I don't need the remarks to know about
+    # the UWP.
     def string(
             self,
             rules: typing.Optional[traveller.Rules] = None

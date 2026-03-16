@@ -130,14 +130,50 @@ class DbSystemObject(DbObject):
 
         self._systemId = systemId
 
-class DbNobility(DbSystemObject):
+class DbWorldObject(DbObject):
+    def __init__(
+            self,
+            id: typing.Optional[str] = None, # None means allocate an id
+            worldId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        common.validateOptionalStr(name='worldId', value=worldId, allowEmpty=False)
+
+        self._worldId = worldId
+
+    def worldId(self) -> None:
+        return self._worldId
+
+    # NOTE: Setting the id back to None is intentionally disallowed as the only
+    # reason to do so would be to remove an object from its parent and it's not
+    # safe to do that as the object may hold references to other objects owned
+    # by the parent. If the object was removed from the parent and attached to
+    # another object, it would still refer to objects owned by its old parent.
+    # An example of this would be sophont populations. They're attached to a
+    # system but hold references to the sophont which is owned by the sector. If
+    # the system was removed from one sector and added to another, it would still
+    # reference the sophont from its old sector which would result in horrible
+    # bugs and the mangled data being written back to the database.
+    def setWorldId(self, worldId: str) -> None:
+        common.validateMandatoryStr(name='worldId', value=worldId, allowEmpty=False)
+
+        if worldId == self._worldId:
+            return # Nothing to do
+
+        if self._worldId is not None:
+            raise RuntimeError(f'Object {self._id} of type {type(self)} is already attached to a world')
+
+        self._worldId = worldId
+
+class DbNobility(DbWorldObject):
     def __init__(
             self,
             code: str,
             id: typing.Optional[str] = None, # None means allocate an id
-            systemId: typing.Optional[str] = None
+            worldId: typing.Optional[str] = None
             ) -> None:
-        super().__init__(id=id, systemId=systemId)
+        super().__init__(id=id, worldId=worldId)
 
         survey.validateMandatoryNobility(name='code', value=code)
 
@@ -146,14 +182,14 @@ class DbNobility(DbSystemObject):
     def code(self) -> typing.Optional[str]:
         return self._code
 
-class DbTradeCode(DbSystemObject):
+class DbTradeCode(DbWorldObject):
     def __init__(
             self,
             code: str,
             id: typing.Optional[str] = None, # None means allocate an id
-            systemId: typing.Optional[str] = None
+            worldId: typing.Optional[str] = None
             ) -> None:
-        super().__init__(id=id, systemId=systemId)
+        super().__init__(id=id, worldId=worldId)
 
         survey.validateMandatoryTradeCode(name='code', value=code)
 
@@ -161,6 +197,601 @@ class DbTradeCode(DbSystemObject):
 
     def code(self) -> typing.Optional[str]:
         return self._code
+
+class DbSophontPopulation(DbWorldObject):
+    def __init__(
+            self,
+            sophontCode: str,
+            percentage: typing.Optional[int], # None means it's a die back sophont
+            isHomeWorld: bool,
+            isDieBack: bool,
+            id: typing.Optional[str] = None, # None means allocate an id
+            worldId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id, worldId=worldId)
+
+        common.validateMandatoryStr(name='sophontCode', value=sophontCode, allowEmpty=False)
+        common.validateOptionalInt(name='percentage', value=percentage, min=0, max=100)
+        common.validateMandatoryBool(name='isHomeWorld', value=isHomeWorld)
+        common.validateMandatoryBool(name='isDieBack', value=isDieBack)
+
+        self._sophontCode = sophontCode
+        self._percentage = percentage
+        self._isHomeWorld = isHomeWorld
+        self._isDieBack = isDieBack
+
+    def sophontCode(self) -> str:
+        return self._sophontCode
+
+    def percentage(self) -> typing.Optional[int]:
+        return self._percentage
+
+    def isHomeWorld(self) -> bool:
+        return self._isHomeWorld
+
+    def isDieBack(self) -> bool:
+        return self._isDieBack
+
+class DbRulingAllegiance(DbWorldObject):
+    def __init__(
+            self,
+            allegianceCode: str,
+            id: typing.Optional[str] = None, # None means allocate an id
+            worldId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id, worldId=worldId)
+
+        common.validateMandatoryStr(name='allegianceCode', value=allegianceCode, allowEmpty=False)
+
+        self._allegiance = allegianceCode
+
+    def allegianceCode(self) -> str:
+        return self._allegiance
+
+class DbOwningSystem(DbWorldObject):
+    def __init__(
+            self,
+            hexX: int,
+            hexY: int,
+            sectorAbbreviation: typing.Optional[str], # None means current sector
+            id: typing.Optional[str] = None, # None means allocate an id
+            worldId: typing.Optional[str] = None
+            ):
+        super().__init__(id=id, worldId=worldId)
+
+        common.validateMandatoryInt(name='hexX', value=hexX)
+        common.validateMandatoryInt(name='hexY', value=hexY)
+        common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
+
+        self._hexX = hexX
+        self._hexY = hexY
+        self._sectorAbbreviation = sectorAbbreviation
+
+    def hexX(self) -> int:
+        return self._hexX
+
+    def hexY(self) -> int:
+        return self._hexY
+
+    def sectorAbbreviation(self) -> typing.Optional[str]:
+        return self._sectorAbbreviation
+
+class DbColonySystem(DbWorldObject):
+    def __init__(
+            self,
+            hexX: int,
+            hexY: int,
+            sectorAbbreviation: typing.Optional[str], # None means current sector
+            id: typing.Optional[str] = None, # None means allocate an id
+            worldId: typing.Optional[str] = None
+            ):
+        super().__init__(id=id, worldId=worldId)
+
+        common.validateMandatoryInt(name='hexX', value=hexX)
+        common.validateMandatoryInt(name='hexY', value=hexY)
+        common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
+
+        self._hexX = hexX
+        self._hexY = hexY
+        self._sectorAbbreviation = sectorAbbreviation
+
+    def hexX(self) -> int:
+        return self._hexX
+
+    def hexY(self) -> int:
+        return self._hexY
+
+    def sectorAbbreviation(self) -> typing.Optional[str]:
+        return self._sectorAbbreviation
+
+class DbCustomRemark(DbWorldObject):
+    def __init__(
+            self,
+            remark: str,
+            id: typing.Optional[str] = None, # None means allocate an id
+            worldId: typing.Optional[str] = None
+            ):
+        super().__init__(id=id, worldId=worldId)
+
+        common.validateMandatoryStr(name='remark', value=remark, allowEmpty=False)
+
+        self._remark = remark
+
+    def remark(self) -> str:
+        return self._remark
+
+class DbBase(DbWorldObject):
+    def __init__(
+            self,
+            code: str,
+            id: typing.Optional[str] = None, # None means allocate an id
+            worldId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id, worldId=worldId)
+
+        survey.validateMandatoryBase(name='code', value=code)
+
+        self._code = code
+
+    def code(self) -> str:
+        return self._code
+
+class DbResearchStation(DbWorldObject):
+    def __init__(
+            self,
+            code: str,
+            id: typing.Optional[str] = None, # None means allocate an id
+            worldId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id, worldId=worldId)
+
+        survey.validateMandatoryResearchStation(name='code', value=code)
+
+        self._code = code
+
+    def code(self) -> str:
+        return self._code
+
+class DbBody(DbSystemObject):
+    def __init__(
+            self,
+            orbitIndex: int,
+            name: typing.Optional[str] = None,
+            notes: typing.Optional[str] = None,
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id, systemId=systemId)
+
+        common.validateMandatoryInt(name='orbitIndex', value=orbitIndex)
+        common.validateOptionalStr(name='name', value=name, allowEmpty=False)
+        common.validateOptionalStr(name='notes', value=notes)
+
+        self._orbitIndex = orbitIndex
+        self._name = name
+        self._notes = notes
+
+    def orbitIndex(self) -> int:
+        return self._orbitIndex
+
+    def name(self) -> str:
+        return self._name
+
+    def notes(self) -> typing.Optional[str]:
+        return self._notes
+
+class DbWorld(DbBody):
+    def __init__(
+            self,
+            orbitIndex: int,
+            name: typing.Optional[str] = None,
+            isMainWorld: bool = False,
+            # UWP
+            starport: typing.Optional[str] = None,
+            worldSize: typing.Optional[str] = None,
+            atmosphere: typing.Optional[str] = None,
+            hydrographics: typing.Optional[str] = None,
+            population: typing.Optional[str] = None,
+            government: typing.Optional[str] = None,
+            lawLevel: typing.Optional[str] = None,
+            techLevel: typing.Optional[str] = None,
+            # Economics
+            resources: typing.Optional[str] = None,
+            labour: typing.Optional[str] = None,
+            infrastructure: typing.Optional[str] = None,
+            efficiency: typing.Optional[str] = None,
+            # Culture
+            heterogeneity: typing.Optional[str] = None,
+            acceptance: typing.Optional[str] = None,
+            strangeness: typing.Optional[str] = None,
+            symbols: typing.Optional[str] = None,
+            # PBG (Belts and Gas Giants are stored at the DbSystem level)
+            populationMultiplier: typing.Optional[int] = None,
+            nobilities: typing.Optional[typing.Collection[DbNobility]] = None,
+            bases: typing.Optional[typing.Collection[DbBase]] = None,
+            tradeCodes: typing.Optional[typing.Collection[DbTradeCode]] = None,
+            sophontPopulations: typing.Optional[typing.Collection[DbSophontPopulation]] = None,
+            rulingAllegiances: typing.Optional[typing.Collection[DbRulingAllegiance]] = None,
+            owningSystems: typing.Optional[typing.Collection[DbOwningSystem]] = None,
+            colonySystems: typing.Optional[typing.Collection[DbColonySystem]] = None,
+            researchStations: typing.Optional[typing.Collection[DbResearchStation]] = None,
+            customRemarks: typing.Optional[typing.Collection[DbCustomRemark]] = None,
+            notes: typing.Optional[str] = None,
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(
+            id=id,
+            systemId=systemId,
+            orbitIndex=orbitIndex,
+            name=name,
+            notes=notes)
+
+        common.validateMandatoryBool(name='isMainWorld', value=isMainWorld)
+        survey.validateOptionalStarport(name='starport', value=starport)
+        survey.validateOptionalWorldSize(name='worldSize', value=worldSize)
+        survey.validateOptionalAtmosphere(name='atmosphere', value=atmosphere)
+        survey.validateOptionalHydrographics(name='hydrographics', value=hydrographics)
+        survey.validateOptionalPopulation(name='population', value=population)
+        survey.validateOptionalGovernment(name='government', value=government)
+        survey.validateOptionalLawLevel(name='lawLevel', value=lawLevel)
+        survey.validateOptionalTechLevel(name='techLevel', value=techLevel)
+        survey.validateOptionalEconomicsResources(name='resources', value=resources)
+        survey.validateOptionalEconomicsLabour(name='labour', value=labour)
+        survey.validateOptionalEconomicsInfrastructure(name='infrastructure', value=infrastructure)
+        survey.validateOptionalEconomicsEfficiency(name='efficiency', value=efficiency)
+        survey.validateOptionalHeterogeneity(name='heterogeneity', value=heterogeneity)
+        survey.validateOptionalAcceptance(name='acceptance', value=acceptance)
+        survey.validateOptionalStrangeness(name='strangeness', value=strangeness)
+        survey.validateOptionalSymbols(name='symbols', value=symbols)
+        common.validateOptionalInt(name='populationMultiplier', value=populationMultiplier, min=1, max=9)
+        DbWorld._validateNobilities(name='nobilities', value=nobilities, worldId=id)
+        DbWorld._validateBases(name='bases', value=bases, worldId=id)
+        DbWorld._validateTradeCodes(name='tradeCodes', value=tradeCodes, worldId=id)
+        DbWorld._validateSophontPopulations(name='sophontPopulations', value=sophontPopulations, worldId=id)
+        DbWorld._validateRulingAllegiances(name='rulingAllegiances', value=rulingAllegiances, worldId=id)
+        DbWorld._validateOwningSystems(name='owningSystems', value=owningSystems, worldId=id)
+        DbWorld._validateColonySystems(name='colonySystems', value=colonySystems, worldId=id)
+        DbWorld._validateResearchStations(name='researchStations', value=researchStations, worldId=id)
+        DbWorld._validateCustomRemarks(name='customRemarks', value=customRemarks, worldId=id)
+
+        self._isMainWorld = isMainWorld
+        self._starport = starport
+        self._worldSize = worldSize
+        self._atmosphere = atmosphere
+        self._hydrographics = hydrographics
+        self._population = population
+        self._government = government
+        self._lawLevel = lawLevel
+        self._techLevel = techLevel
+        self._resources = resources
+        self._labour = labour
+        self._infrastructure = infrastructure
+        self._efficiency = efficiency
+        self._heterogeneity = heterogeneity
+        self._acceptance = acceptance
+        self._strangeness = strangeness
+        self._symbols = symbols
+        self._populationMultiplier = populationMultiplier
+
+        self._nobilities = list(nobilities) if nobilities else None
+        self._attachObjects(self._nobilities)
+        self._bases = list(bases) if bases else None
+        self._attachObjects(self._bases)
+        self._tradeCodes = list(tradeCodes) if tradeCodes else None
+        self._attachObjects(self._tradeCodes)
+        self._sophontPopulations = list(sophontPopulations) if sophontPopulations else None
+        self._attachObjects(self._sophontPopulations)
+        self._rulingAllegiances = list(rulingAllegiances) if rulingAllegiances else None
+        self._attachObjects(self._rulingAllegiances)
+        self._owningSystems = list(owningSystems) if owningSystems else None
+        self._attachObjects(self._owningSystems)
+        self._colonySystems = list(colonySystems) if colonySystems else None
+        self._attachObjects(self._colonySystems)
+        self._researchStations = list(researchStations) if researchStations else None
+        self._attachObjects(self._researchStations)
+        self._customRemarks = list(customRemarks) if customRemarks else None
+        self._attachObjects(self._customRemarks)
+
+    def isMainWorld(self) -> bool:
+        return self._isMainWorld
+
+    def starport(self) -> typing.Optional[str]:
+        return self._starport
+
+    def worldSize(self) -> typing.Optional[str]:
+        return self._worldSize
+
+    def atmosphere(self) -> typing.Optional[str]:
+        return self._atmosphere
+
+    def hydrographics(self) -> typing.Optional[str]:
+        return self._hydrographics
+
+    def population(self) -> typing.Optional[str]:
+        return self._population
+
+    def government(self) -> typing.Optional[str]:
+        return self._government
+
+    def lawLevel(self) -> typing.Optional[str]:
+        return self._lawLevel
+
+    def techLevel(self) -> typing.Optional[str]:
+        return self._techLevel
+
+    def resources(self ) -> typing.Optional[str]:
+        return self._resources
+
+    def labour(self ) -> typing.Optional[str]:
+        return self._labour
+
+    def infrastructure(self ) -> typing.Optional[str]:
+        return self._infrastructure
+
+    def efficiency(self ) -> typing.Optional[str]:
+        return self._efficiency
+
+    def heterogeneity(self) -> typing.Optional[str]:
+        return self._heterogeneity
+
+    def acceptance(self) -> typing.Optional[str]:
+        return self._acceptance
+
+    def strangeness(self) -> typing.Optional[str]:
+        return self._strangeness
+
+    def symbols(self) -> typing.Optional[str]:
+        return self._symbols
+
+    def populationMultiplier(self) -> typing.Optional[int]:
+        return self._populationMultiplier
+
+    def nobilities(self) -> typing.Optional[typing.Collection[DbNobility]]:
+        return self._nobilities
+
+    def bases(self) -> typing.Optional[typing.Collection[DbBase]]:
+        return self._bases
+
+    def tradeCodes(self) -> typing.Optional[typing.Collection[DbTradeCode]]:
+        return self._tradeCodes
+
+    def sophontPopulations(self) -> typing.Optional[typing.Collection[DbSophontPopulation]]:
+        return self._sophontPopulations
+
+    def rulingAllegiances(self) -> typing.Optional[typing.Collection[DbRulingAllegiance]]:
+        return self._rulingAllegiances
+
+    def owningSystems(self) -> typing.Optional[typing.Collection[DbOwningSystem]]:
+        return self._owningSystems
+
+    def colonySystems(self) -> typing.Optional[typing.Collection[DbColonySystem]]:
+        return self._colonySystems
+
+    def researchStations(self) -> typing.Optional[typing.Collection[DbResearchStation]]:
+        return self._researchStations
+
+    def customRemarks(self) -> typing.Optional[typing.Collection[DbCustomRemark]]:
+        return self._customRemarks
+
+    def _attachObjects(
+            self,
+            objects: typing.Optional[typing.Iterable[DbWorldObject]]
+            ) -> None:
+        if not objects:
+            return
+        for obj in objects:
+            obj.setWorldId(worldId=self._id)
+
+    @staticmethod
+    def _validateNobilities(
+            name: str,
+            value: typing.Optional[typing.Collection[DbNobility]],
+            worldId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbNobility)
+        if not value:
+            return
+
+        seen = set()
+        for nobility in value:
+            currentWorldId = nobility.worldId()
+            if currentWorldId is not None and currentWorldId != worldId:
+                raise ValueError(f'{name} contains nobilities that are already attached to a system')
+
+            code = nobility.code()
+            if code in seen:
+                raise ValueError(f'{name} contains multiple instances of the same nobility')
+            seen.add(code)
+
+    @staticmethod
+    def _validateBases(
+            name: str,
+            value: typing.Optional[typing.Collection[DbBase]],
+            worldId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbBase)
+        if not value:
+            return
+
+        seen = set()
+        for base in value:
+            currentWorldId = base.worldId()
+            if currentWorldId is not None and currentWorldId != worldId:
+                raise ValueError(f'{name} contains bases that are already attached to a world')
+
+            code = base.code()
+            if code in seen:
+                raise ValueError(f'{name} contains multiple instances of the same base code')
+            seen.add(code)
+
+    @staticmethod
+    def _validateTradeCodes(
+            name: str,
+            value: typing.Optional[typing.Collection[DbTradeCode]],
+            worldId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbTradeCode)
+        if not value:
+            return
+
+        seen = set()
+        for tradeCode in value:
+            currentWorldId = tradeCode.worldId()
+            if currentWorldId is not None and currentWorldId != worldId:
+                raise ValueError(f'{name} contains trade codes that are already attached to a world')
+
+            code = tradeCode.code()
+            if code in seen:
+                raise ValueError(f'{name} contains multiple instances of the same trade code')
+            seen.add(code)
+
+    @staticmethod
+    def _validateSophontPopulations(
+            name: str,
+            value: typing.Optional[typing.Collection[DbSophontPopulation]],
+            worldId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbSophontPopulation)
+        if not value:
+            return
+
+        seen = set()
+        for population in value:
+            currentWorldId = population.worldId()
+            if currentWorldId is not None and currentWorldId != worldId:
+                raise ValueError(f'{name} contains populations that are already attached to a world')
+
+            sophont = population.sophontCode()
+            if sophont in seen:
+                raise ValueError(f'{name} contains multiple populations for the same sophont')
+            seen.add(sophont)
+
+    @staticmethod
+    def _validateRulingAllegiances(
+            name: str,
+            value: typing.Optional[typing.Collection[DbRulingAllegiance]],
+            worldId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbRulingAllegiance)
+        if not value:
+            return
+
+        seen = set()
+        for ruler in value:
+            currentWorldId = ruler.worldId()
+            if currentWorldId is not None and currentWorldId != worldId:
+                raise ValueError(f'{name} contains ruling allegiances that are already attached to a world')
+
+            allegiance = ruler.allegianceCode()
+            if allegiance in seen:
+                raise ValueError(f'{name} contains multiple ruling allegiances for the same allegiance')
+            seen.add(allegiance)
+
+    @staticmethod
+    def _validateOwningSystems(
+            name: str,
+            value: typing.Optional[typing.Collection[DbOwningSystem]],
+            worldId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbOwningSystem)
+        if not value:
+            return
+
+        seen = set()
+        for owner in value:
+            currentWorldId = owner.worldId()
+            if currentWorldId is not None and currentWorldId != worldId:
+                raise ValueError(f'{name} contains owning systems that are already attached to a world')
+
+            key = (owner.hexX(), owner.hexY(), owner.sectorAbbreviation())
+            if key in seen:
+                raise ValueError(f'{name} contains multiple instances of the same owning system')
+            seen.add(key)
+
+    @staticmethod
+    def _validateColonySystems(
+            name: str,
+            value: typing.Optional[typing.Collection[DbColonySystem]],
+            worldId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbColonySystem)
+        if not value:
+            return
+
+        seen = set()
+        for colony in value:
+            currentWorldId = colony.worldId()
+            if currentWorldId is not None and currentWorldId != worldId:
+                raise ValueError(f'{name} contains colony systems that are already attached to a world')
+
+            key = (colony.hexX(), colony.hexY(), colony.sectorAbbreviation())
+            if key in seen:
+                raise ValueError(f'{name} contains multiple instances of the same colony system')
+            seen.add(key)
+
+    @staticmethod
+    def _validateResearchStations(
+            name: str,
+            value: typing.Optional[typing.Collection[DbResearchStation]],
+            worldId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbResearchStation)
+        if not value:
+            return
+
+        seen = set()
+        for station in value:
+            currentWorldId = station.worldId()
+            if currentWorldId is not None and currentWorldId != worldId:
+                raise ValueError(f'{name} contains research stations that are already attached to a world')
+
+            code = station.code()
+            if code in seen:
+                raise ValueError(f'{name} contains multiple instances of the same research station')
+            seen.add(code)
+
+    @staticmethod
+    def _validateCustomRemarks(
+            name: str,
+            value: typing.Optional[typing.Collection[DbCustomRemark]],
+            worldId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbCustomRemark)
+        if not value:
+            return
+
+        for remark in value:
+            currentWorldId = remark.worldId()
+            if currentWorldId is not None and currentWorldId != worldId:
+                raise ValueError(f'{name} contains custom remarks that are already attached to a world')
 
 class DbAllegiance(DbSectorObject):
     def __init__(
@@ -226,22 +857,6 @@ class DbAllegiance(DbSectorObject):
     def borderStyle(self) -> typing.Optional[str]:
         return self._borderStyle
 
-class DbRulingAllegiance(DbSystemObject):
-    def __init__(
-            self,
-            allegianceCode: str,
-            id: typing.Optional[str] = None, # None means allocate an id
-            systemId: typing.Optional[str] = None
-            ) -> None:
-        super().__init__(id=id, systemId=systemId)
-
-        common.validateMandatoryStr(name='allegianceCode', value=allegianceCode, allowEmpty=False)
-
-        self._allegiance = allegianceCode
-
-    def allegianceCode(self) -> str:
-        return self._allegiance
-
 class DbSophont(DbSectorObject):
     def __init__(
             self,
@@ -269,144 +884,6 @@ class DbSophont(DbSectorObject):
 
     def isMajor(self) -> bool:
         return self._isMajor
-
-class DbSophontPopulation(DbSystemObject):
-    def __init__(
-            self,
-            sophontCode: str,
-            percentage: typing.Optional[int], # None means it's a die back sophont
-            isHomeWorld: bool,
-            isDieBack: bool,
-            id: typing.Optional[str] = None, # None means allocate an id
-            systemId: typing.Optional[str] = None
-            ) -> None:
-        super().__init__(id=id, systemId=systemId)
-
-        common.validateMandatoryStr(name='sophontCode', value=sophontCode, allowEmpty=False)
-        common.validateOptionalInt(name='percentage', value=percentage, min=0, max=100)
-        common.validateMandatoryBool(name='isHomeWorld', value=isHomeWorld)
-        common.validateMandatoryBool(name='isDieBack', value=isDieBack)
-
-        self._sophontCode = sophontCode
-        self._percentage = percentage
-        self._isHomeWorld = isHomeWorld
-        self._isDieBack = isDieBack
-
-    def sophontCode(self) -> str:
-        return self._sophontCode
-
-    def percentage(self) -> typing.Optional[int]:
-        return self._percentage
-
-    def isHomeWorld(self) -> bool:
-        return self._isHomeWorld
-
-    def isDieBack(self) -> bool:
-        return self._isDieBack
-
-class DbOwningSystem(DbSystemObject):
-    def __init__(
-            self,
-            hexX: int,
-            hexY: int,
-            sectorAbbreviation: typing.Optional[str], # None means current sector
-            id: typing.Optional[str] = None, # None means allocate an id
-            systemId: typing.Optional[str] = None
-            ):
-        super().__init__(id=id, systemId=systemId)
-
-        common.validateMandatoryInt(name='hexX', value=hexX)
-        common.validateMandatoryInt(name='hexY', value=hexY)
-        common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
-
-        self._hexX = hexX
-        self._hexY = hexY
-        self._sectorAbbreviation = sectorAbbreviation
-
-    def hexX(self) -> int:
-        return self._hexX
-
-    def hexY(self) -> int:
-        return self._hexY
-
-    def sectorAbbreviation(self) -> typing.Optional[str]:
-        return self._sectorAbbreviation
-
-class DbColonySystem(DbSystemObject):
-    def __init__(
-            self,
-            hexX: int,
-            hexY: int,
-            sectorAbbreviation: typing.Optional[str], # None means current sector
-            id: typing.Optional[str] = None, # None means allocate an id
-            systemId: typing.Optional[str] = None
-            ):
-        super().__init__(id=id, systemId=systemId)
-
-        common.validateMandatoryInt(name='hexX', value=hexX)
-        common.validateMandatoryInt(name='hexY', value=hexY)
-        common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
-
-        self._hexX = hexX
-        self._hexY = hexY
-        self._sectorAbbreviation = sectorAbbreviation
-
-    def hexX(self) -> int:
-        return self._hexX
-
-    def hexY(self) -> int:
-        return self._hexY
-
-    def sectorAbbreviation(self) -> typing.Optional[str]:
-        return self._sectorAbbreviation
-
-class DbCustomRemark(DbSystemObject):
-    def __init__(
-            self,
-            remark: str,
-            id: typing.Optional[str] = None, # None means allocate an id
-            systemId: typing.Optional[str] = None
-            ):
-        super().__init__(id=id, systemId=systemId)
-
-        common.validateMandatoryStr(name='remark', value=remark, allowEmpty=False)
-
-        self._remark = remark
-
-    def remark(self) -> str:
-        return self._remark
-
-class DbBase(DbSystemObject):
-    def __init__(
-            self,
-            code: str,
-            id: typing.Optional[str] = None, # None means allocate an id
-            systemId: typing.Optional[str] = None
-            ) -> None:
-        super().__init__(id=id, systemId=systemId)
-
-        survey.validateMandatoryBase(name='code', value=code)
-
-        self._code = code
-
-    def code(self) -> str:
-        return self._code
-
-class DbResearchStation(DbSystemObject):
-    def __init__(
-            self,
-            code: str,
-            id: typing.Optional[str] = None, # None means allocate an id
-            systemId: typing.Optional[str] = None
-            ) -> None:
-        super().__init__(id=id, systemId=systemId)
-
-        survey.validateMandatoryResearchStation(name='code', value=code)
-
-        self._code = code
-
-    def code(self) -> str:
-        return self._code
 
 class DbStar(DbSystemObject):
     def __init__(
@@ -442,27 +919,7 @@ class DbSystem(DbSectorObject):
             hexX: int,
             hexY: int,
             name: typing.Optional[str] = None,
-            # UWP
-            starport: typing.Optional[str] = None,
-            worldSize: typing.Optional[str] = None,
-            atmosphere: typing.Optional[str] = None,
-            hydrographics: typing.Optional[str] = None,
-            population: typing.Optional[str] = None,
-            government: typing.Optional[str] = None,
-            lawLevel: typing.Optional[str] = None,
-            techLevel: typing.Optional[str] = None,
-            # Economics
-            resources: typing.Optional[str] = None,
-            labour: typing.Optional[str] = None,
-            infrastructure: typing.Optional[str] = None,
-            efficiency: typing.Optional[str] = None,
-            # Culture
-            heterogeneity: typing.Optional[str] = None,
-            acceptance: typing.Optional[str] = None,
-            strangeness: typing.Optional[str] = None,
-            symbols: typing.Optional[str] = None,
-            # PBG
-            populationMultiplier: typing.Optional[int] = None,
+            # PBG (Population Multiplier is stored as the DbWorld level)
             planetoidBeltCount: typing.Optional[int] = None,
             gasGiantCount: typing.Optional[int] = None,
             # Other worlds is my invention, it's calculated using the total
@@ -476,16 +933,8 @@ class DbSystem(DbSectorObject):
             otherWorldCount: typing.Optional[int] = None,
             zone: typing.Optional[str] = None,
             allegianceCode: typing.Optional[str] = None,
-            nobilities: typing.Optional[typing.Collection[DbNobility]] = None,
-            tradeCodes: typing.Optional[typing.Collection[DbTradeCode]] = None,
-            sophontPopulations: typing.Optional[typing.Collection[DbSophontPopulation]] = None,
-            rulingAllegiances: typing.Optional[typing.Collection[DbRulingAllegiance]] = None,
-            owningSystems: typing.Optional[typing.Collection[DbOwningSystem]] = None,
-            colonySystems: typing.Optional[typing.Collection[DbColonySystem]] = None,
-            researchStations: typing.Optional[typing.Collection[DbResearchStation]] = None,
-            customRemarks: typing.Optional[typing.Collection[DbCustomRemark]] = None,
-            bases: typing.Optional[typing.Collection[DbBase]] = None,
             stars: typing.Optional[typing.Collection[DbStar]] = None,
+            bodies: typing.Optional[typing.Collection[DbBody]] = None,
             notes: typing.Optional[str] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
@@ -495,60 +944,18 @@ class DbSystem(DbSectorObject):
         common.validateMandatoryInt(name='hexX', value=hexX)
         common.validateMandatoryInt(name='hexY', value=hexY)
         common.validateOptionalStr(name='name', value=name, allowEmpty=False)
-        survey.validateOptionalStarport(name='starport', value=starport)
-        survey.validateOptionalWorldSize(name='worldSize', value=worldSize)
-        survey.validateOptionalAtmosphere(name='atmosphere', value=atmosphere)
-        survey.validateOptionalHydrographics(name='hydrographics', value=hydrographics)
-        survey.validateOptionalPopulation(name='population', value=population)
-        survey.validateOptionalGovernment(name='government', value=government)
-        survey.validateOptionalLawLevel(name='lawLevel', value=lawLevel)
-        survey.validateOptionalTechLevel(name='techLevel', value=techLevel)
-        survey.validateOptionalEconomicsResources(name='resources', value=resources)
-        survey.validateOptionalEconomicsLabour(name='labour', value=labour)
-        survey.validateOptionalEconomicsInfrastructure(name='infrastructure', value=infrastructure)
-        survey.validateOptionalEconomicsEfficiency(name='efficiency', value=efficiency)
-        survey.validateOptionalHeterogeneity(name='heterogeneity', value=heterogeneity)
-        survey.validateOptionalAcceptance(name='acceptance', value=acceptance)
-        survey.validateOptionalStrangeness(name='strangeness', value=strangeness)
-        survey.validateOptionalSymbols(name='symbols', value=symbols)
-        common.validateOptionalInt(name='populationMultiplier', value=populationMultiplier, min=1, max=9)
         common.validateOptionalInt(name='planetoidBeltCount', value=planetoidBeltCount, min=0)
         common.validateOptionalInt(name='gasGiantCount', value=gasGiantCount, min=0)
         common.validateOptionalInt(name='otherWorldCount', value=otherWorldCount, min=0)
         survey.validateOptionalZone(name='zone', value=zone)
         common.validateOptionalStr(name='allegianceCode', value=allegianceCode, allowEmpty=False)
-        DbSystem._validateNobilities(name='nobilities', value=nobilities, systemId=id)
-        DbSystem._validateTradeCodes(name='tradeCodes', value=tradeCodes, systemId=id)
-        DbSystem._validateSophontPopulations(name='sophontPopulations', value=sophontPopulations, systemId=id, sectorId=sectorId)
-        DbSystem._validateRulingAllegiances(name='rulingAllegiances', value=rulingAllegiances, systemId=id, sectorId=sectorId)
-        DbSystem._validateOwningSystems(name='owningSystems', value=owningSystems, systemId=id)
-        DbSystem._validateColonySystems(name='colonySystems', value=colonySystems, systemId=id)
-        DbSystem._validateResearchStations(name='researchStations', value=researchStations, systemId=id)
-        DbSystem._validateBases(name='bases', value=bases, systemId=id)
         DbSystem._validateStars(name='stars', value=stars, systemId=id)
-        DbSystem._validateCustomRemarks(name='customRemarks', value=customRemarks, systemId=id)
+        DbSystem._validateBodies(name='bodies', value=bodies, systemId=id)
         common.validateOptionalStr(name='notes', value=notes)
 
         self._hexX = hexX
         self._hexY = hexY
         self._name = name
-        self._starport = starport
-        self._worldSize = worldSize
-        self._atmosphere = atmosphere
-        self._hydrographics = hydrographics
-        self._population = population
-        self._government = government
-        self._lawLevel = lawLevel
-        self._techLevel = techLevel
-        self._resources = resources
-        self._labour = labour
-        self._infrastructure = infrastructure
-        self._efficiency = efficiency
-        self._heterogeneity = heterogeneity
-        self._acceptance = acceptance
-        self._strangeness = strangeness
-        self._symbols = symbols
-        self._populationMultiplier = populationMultiplier
         self._planetoidBeltCount = planetoidBeltCount
         self._gasGiantCount = gasGiantCount
         self._otherWorldCount = otherWorldCount
@@ -556,26 +963,10 @@ class DbSystem(DbSectorObject):
         self._allegianceCode = allegianceCode
         self._notes = notes
 
-        self._nobilities = list(nobilities) if nobilities else None
-        self._attachObjects(self._nobilities)
-        self._tradeCodes = list(tradeCodes) if tradeCodes else None
-        self._attachObjects(self._tradeCodes)
-        self._sophontPopulations = list(sophontPopulations) if sophontPopulations else None
-        self._attachObjects(self._sophontPopulations)
-        self._rulingAllegiances = list(rulingAllegiances) if rulingAllegiances else None
-        self._attachObjects(self._rulingAllegiances)
-        self._owningSystems = list(owningSystems) if owningSystems else None
-        self._attachObjects(self._owningSystems)
-        self._colonySystems = list(colonySystems) if colonySystems else None
-        self._attachObjects(self._colonySystems)
-        self._researchStations = list(researchStations) if researchStations else None
-        self._attachObjects(self._researchStations)
-        self._customRemarks = list(customRemarks) if customRemarks else None
-        self._attachObjects(self._customRemarks)
-        self._bases = list(bases) if bases else None
-        self._attachObjects(self._bases)
         self._stars = list(stars) if stars else None
         self._attachObjects(self._stars)
+        self._bodies = list(bodies) if bodies else None
+        self._attachObjects(self._bodies)
 
     def hexX(self) -> int:
         return self._hexX
@@ -585,57 +976,6 @@ class DbSystem(DbSectorObject):
 
     def name(self) -> typing.Optional[str]:
         return self._name
-
-    def starport(self) -> typing.Optional[str]:
-        return self._starport
-
-    def worldSize(self) -> typing.Optional[str]:
-        return self._worldSize
-
-    def atmosphere(self) -> typing.Optional[str]:
-        return self._atmosphere
-
-    def hydrographics(self) -> typing.Optional[str]:
-        return self._hydrographics
-
-    def population(self) -> typing.Optional[str]:
-        return self._population
-
-    def government(self) -> typing.Optional[str]:
-        return self._government
-
-    def lawLevel(self) -> typing.Optional[str]:
-        return self._lawLevel
-
-    def techLevel(self) -> typing.Optional[str]:
-        return self._techLevel
-
-    def resources(self ) -> typing.Optional[str]:
-        return self._resources
-
-    def labour(self ) -> typing.Optional[str]:
-        return self._labour
-
-    def infrastructure(self ) -> typing.Optional[str]:
-        return self._infrastructure
-
-    def efficiency(self ) -> typing.Optional[str]:
-        return self._efficiency
-
-    def heterogeneity(self) -> typing.Optional[str]:
-        return self._heterogeneity
-
-    def acceptance(self) -> typing.Optional[str]:
-        return self._acceptance
-
-    def strangeness(self) -> typing.Optional[str]:
-        return self._strangeness
-
-    def symbols(self) -> typing.Optional[str]:
-        return self._symbols
-
-    def populationMultiplier(self) -> typing.Optional[int]:
-        return self._populationMultiplier
 
     def planetoidBeltCount(self) -> typing.Optional[int]:
         return self._planetoidBeltCount
@@ -649,41 +989,14 @@ class DbSystem(DbSectorObject):
     def zone(self) -> typing.Optional[str]:
         return self._zone
 
-    def systemWorlds(self) -> typing.Optional[int]:
-        return self._systemWorlds
-
     def allegianceCode(self) -> typing.Optional[str]:
         return self._allegianceCode
 
-    def nobilities(self) -> typing.Optional[typing.Collection[DbNobility]]:
-        return self._nobilities
-
-    def tradeCodes(self) -> typing.Optional[typing.Collection[DbTradeCode]]:
-        return self._tradeCodes
-
-    def sophontPopulations(self) -> typing.Optional[typing.Collection[DbSophontPopulation]]:
-        return self._sophontPopulations
-
-    def rulingAllegiances(self) -> typing.Optional[typing.Collection[DbRulingAllegiance]]:
-        return self._rulingAllegiances
-
-    def owningSystems(self) -> typing.Optional[typing.Collection[DbOwningSystem]]:
-        return self._owningSystems
-
-    def colonySystems(self) -> typing.Optional[typing.Collection[DbColonySystem]]:
-        return self._colonySystems
-
-    def researchStations(self) -> typing.Optional[typing.Collection[DbResearchStation]]:
-        return self._researchStations
-
-    def customRemarks(self) -> typing.Optional[typing.Collection[DbCustomRemark]]:
-        return self._customRemarks
-
-    def bases(self) -> typing.Optional[typing.Collection[DbBase]]:
-        return self._bases
-
     def stars(self) -> typing.Optional[typing.Collection[DbStar]]:
         return self._stars
+
+    def bodies(self) -> typing.Optional[typing.Collection[DbBody]]:
+        return self._bodies
 
     def notes(self) -> typing.Optional[str]:
         return self._notes
@@ -696,206 +1009,6 @@ class DbSystem(DbSectorObject):
             return
         for obj in objects:
             obj.setSystemId(systemId=self._id)
-
-    @staticmethod
-    def _validateNobilities(
-            name: str,
-            value: typing.Optional[typing.Collection[DbNobility]],
-            systemId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateOptionalCollection(name=name, value=value, type=DbNobility)
-        if not value:
-            return
-
-        seen = set()
-        for nobility in value:
-            currentSystemId = nobility.systemId()
-            if currentSystemId is not None and currentSystemId != systemId:
-                raise ValueError('{name} contains nobilities that are already attached to a system')
-
-            code = nobility.code()
-            if code in seen:
-                raise ValueError('{name} contains multiple instances of the same nobility')
-            seen.add(code)
-
-    @staticmethod
-    def _validateTradeCodes(
-            name: str,
-            value: typing.Optional[typing.Collection[DbTradeCode]],
-            systemId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateOptionalCollection(name=name, value=value, type=DbTradeCode)
-        if not value:
-            return
-
-        seen = set()
-        for tradeCode in value:
-            currentSystemId = tradeCode.systemId()
-            if currentSystemId is not None and currentSystemId != systemId:
-                raise ValueError('{name} contains trade codes that are already attached to a system')
-
-            code = tradeCode.code()
-            if code in seen:
-                raise ValueError('{name} contains multiple instances of the same trade code')
-            seen.add(code)
-
-    @staticmethod
-    def _validateSophontPopulations(
-            name: str,
-            value: typing.Optional[typing.Collection[DbSophontPopulation]],
-            systemId: typing.Optional[str],
-            sectorId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateOptionalCollection(name=name, value=value, type=DbSophontPopulation)
-        if not value:
-            return
-
-        seen = set()
-        for population in value:
-            currentSystemId = population.systemId()
-            if currentSystemId is not None and currentSystemId != systemId:
-                raise ValueError('{name} contains populations that are already attached to a system')
-
-            sophont = population.sophontCode()
-            if sectorId is not None and sectorId != sophont.sectorId():
-                raise ValueError('{name} contains populations that references a sophont from another sector')
-
-            if sophont in seen:
-                raise ValueError('{name} contains multiple populations for the same sophont')
-            seen.add(sophont)
-
-    @staticmethod
-    def _validateRulingAllegiances(
-            name: str,
-            value: typing.Optional[typing.Collection[DbRulingAllegiance]],
-            systemId: typing.Optional[str],
-            sectorId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateOptionalCollection(name=name, value=value, type=DbRulingAllegiance)
-        if not value:
-            return
-
-        seen = set()
-        for ruler in value:
-            currentSystemId = ruler.systemId()
-            if currentSystemId is not None and currentSystemId != systemId:
-                raise ValueError('{name} contains ruling allegiances that are already attached to a system')
-
-            allegiance = ruler.allegianceCode()
-            if sectorId is not None and sectorId != allegiance.sectorId():
-                raise ValueError('{name} contains ruling allegiances that references an allegiance from another sector')
-
-            if allegiance in seen:
-                raise ValueError('{name} contains multiple ruling allegiances for the same allegiance')
-            seen.add(allegiance)
-
-    @staticmethod
-    def _validateOwningSystems(
-            name: str,
-            value: typing.Optional[typing.Collection[DbOwningSystem]],
-            systemId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateOptionalCollection(name=name, value=value, type=DbOwningSystem)
-        if not value:
-            return
-
-        seen = set()
-        for owner in value:
-            currentSystemId = owner.systemId()
-            if currentSystemId is not None and currentSystemId != systemId:
-                raise ValueError('{name} contains owning systems that are already attached to a system')
-
-            key = (owner.hexX(), owner.hexY(), owner.sectorAbbreviation())
-            if key in seen:
-                raise ValueError('{name} contains multiple instances of the same owning system')
-            seen.add(key)
-
-    @staticmethod
-    def _validateColonySystems(
-            name: str,
-            value: typing.Optional[typing.Collection[DbColonySystem]],
-            systemId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateOptionalCollection(name=name, value=value, type=DbColonySystem)
-        if not value:
-            return
-
-        seen = set()
-        for colony in value:
-            currentSystemId = colony.systemId()
-            if currentSystemId is not None and currentSystemId != systemId:
-                raise ValueError('{name} contains colony systems that are already attached to a system')
-
-            key = (colony.hexX(), colony.hexY(), colony.sectorAbbreviation())
-            if key in seen:
-                raise ValueError('{name} contains multiple instances of the same colony system')
-            seen.add(key)
-
-    @staticmethod
-    def _validateResearchStations(
-            name: str,
-            value: typing.Optional[typing.Collection[DbResearchStation]],
-            systemId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateOptionalCollection(name=name, value=value, type=DbResearchStation)
-        if not value:
-            return
-
-        seen = set()
-        for station in value:
-            currentSystemId = station.systemId()
-            if currentSystemId is not None and currentSystemId != systemId:
-                raise ValueError('{name} contains research stations that are already attached to a system')
-
-            code = station.code()
-            if code in seen:
-                raise ValueError('{name} contains multiple instances of the same research station')
-            seen.add(code)
-
-    @staticmethod
-    def _validateBases(
-            name: str,
-            value: typing.Optional[typing.Collection[DbBase]],
-            systemId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateOptionalCollection(name=name, value=value, type=DbBase)
-        if not value:
-            return
-
-        seen = set()
-        for base in value:
-            currentSystemId = base.systemId()
-            if currentSystemId is not None and currentSystemId != systemId:
-                raise ValueError('{name} contains bases that are already attached to a system')
-
-            code = base.code()
-            if code in seen:
-                raise ValueError('{name} contains multiple instances of the same base code')
-            seen.add(code)
 
     @staticmethod
     def _validateStars(
@@ -913,25 +1026,38 @@ class DbSystem(DbSectorObject):
         for base in value:
             currentSystemId = base.systemId()
             if currentSystemId is not None and currentSystemId != systemId:
-                raise ValueError('{name} contains stars that are already attached to a system')
+                raise ValueError(f'{name} contains stars that are already attached to a system')
 
     @staticmethod
-    def _validateCustomRemarks(
+    def _validateBodies(
             name: str,
-            value: typing.Optional[typing.Collection[DbCustomRemark]],
+            value: typing.Optional[typing.Collection[DbBody]],
             systemId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbCustomRemark)
+        common.validateOptionalCollection(name=name, value=value, type=DbBody)
         if not value:
             return
 
-        for base in value:
-            currentSystemId = base.systemId()
+        hasWorld = False
+        hasMainWorld = False
+        for body in value:
+            currentSystemId = body.systemId()
             if currentSystemId is not None and currentSystemId != systemId:
-                raise ValueError('{name} contains custom remarks that are already attached to a system')
+                raise ValueError(f'{name} contains bodies that are already attached to a system')
+
+            if isinstance(body, DbWorld):
+                hasWorld = True
+
+                if body.isMainWorld():
+                    if hasMainWorld:
+                        raise ValueError(f'{name} contains more than one main world')
+                    hasMainWorld = True
+
+        if hasWorld and not hasMainWorld:
+            raise ValueError(f'{name} contains worlds but has no main world')
 
 class DbAlternateName(DbSectorObject):
     def __init__(
@@ -1342,7 +1468,7 @@ class DbSector(DbUniverseObject):
         DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames, sectorId=id)
         DbSector._validateAllegiances(name='allegiances', value=allegiances, sectorId=id)
         DbSector._validateSophonts(name='sophonts', value=sophonts, sectorId=id)
-        DbSector._validateSystems(name='systems', value=systems, sectorId=id)
+        DbSector._validateSystems(name='systems', value=systems, sectorId=id, allegiances=allegiances, sophonts=sophonts)
         DbSector._validateRoutes(name='routes', value=routes, sectorId=id)
         DbSector._validateBorders(name='borders', value=borders, sectorId=id)
         DbSector._validateRegions(name='regions', value=regions, sectorId=id)
@@ -1496,7 +1622,7 @@ class DbSector(DbUniverseObject):
         for alternateName in value:
             currentSectorId = alternateName.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError('{name} contains alternate names that are already attached to a sector')
+                raise ValueError(f'{name} contains alternate names that are already attached to a sector')
 
     @staticmethod
     def _validateSubsectorNames(
@@ -1513,11 +1639,11 @@ class DbSector(DbUniverseObject):
         for subsectorName in value:
             currentSectorId = subsectorName.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError('{name} contains subsector names that are already attached to a sector')
+                raise ValueError(f'{name} contains subsector names that are already attached to a sector')
 
             code = subsectorName.code()
             if code in seen:
-                raise ValueError('{name} contains multiple names for the same subsector')
+                raise ValueError(f'{name} contains multiple names for the same subsector')
             seen.add(code)
 
     @staticmethod
@@ -1535,11 +1661,11 @@ class DbSector(DbUniverseObject):
         for allegiance in value:
             currentSectorId = allegiance.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError('{name} contains allegiances that are already attached to a sector')
+                raise ValueError(f'{name} contains allegiances that are already attached to a sector')
 
             code = allegiance.code()
             if code in seen:
-                raise ValueError('{name} contains multiple allegiances with the same code')
+                raise ValueError(f'{name} contains multiple allegiances with the same code')
             seen.add(code)
 
     @staticmethod
@@ -1558,39 +1684,70 @@ class DbSector(DbUniverseObject):
         for sophont in value:
             currentSectorId = sophont.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError('{name} contains sophonts that are already attached to a sector')
+                raise ValueError(f'{name} contains sophonts that are already attached to a sector')
 
             code = sophont.code()
             if code in seenCodes:
-                raise ValueError('{name} contains multiple sophonts with the same code')
+                raise ValueError(f'{name} contains multiple sophonts with the same code')
             seenCodes.add(code)
 
             name = sophont.code()
             if name in seenNames:
-                raise ValueError('{name} contains multiple sophonts with the same name')
+                raise ValueError(f'{name} contains multiple sophonts with the same name')
             seenNames.add(name)
 
     @staticmethod
     def _validateSystems(
             name: str,
             value: typing.Optional[typing.Collection[DbSystem]],
-            sectorId: typing.Optional[str]
+            sectorId: typing.Optional[str],
+            allegiances: typing.Optional[typing.Collection[DbAllegiance]],
+            sophonts: typing.Optional[typing.Collection[DbSophont]]
             ) -> None:
         if value is None:
             return
 
         common.validateOptionalCollection(name=name, value=value, type=DbSystem)
 
-        seen = set()
+        knownAllegianceCodes = knownSophontCodes = None
+        seenHexes = set()
         for system in value:
             currentSectorId = system.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError('{name} contains systems that are already attached to a sector')
+                raise ValueError(f'{name} contains systems that are already attached to a sector')
 
             key = (system.hexX(), system.hexY())
-            if key in seen:
-                raise ValueError('{name} contains multiple systems with the same location')
-            seen.add(key)
+            if key in seenHexes:
+                raise ValueError(f'{name} contains multiple systems with the same location')
+            seenHexes.add(key)
+
+            bodies = system.bodies()
+            if bodies:
+                for body in bodies:
+                    if not isinstance(body, DbWorld):
+                        continue
+
+                    rulers = body.rulingAllegiances()
+                    if rulers:
+                        if knownAllegianceCodes is None:
+                            knownAllegianceCodes = set()
+                            for allegiance in allegiances:
+                                knownAllegianceCodes.add(allegiance.code())
+
+                        for ruler in rulers:
+                            if ruler.allegianceCode() not in knownAllegianceCodes:
+                                raise ValueError(f'{name} contains ruling allegiances that reference allegiances from another sector')
+
+                    populations = body.sophontPopulations()
+                    if populations:
+                        if knownSophontCodes is None:
+                            knownSophontCodes = set()
+                            for sophont in sophonts:
+                                knownSophontCodes.add(sophont.code())
+
+                        for populations in populations:
+                            if populations.sophontCode() not in knownSophontCodes:
+                                raise ValueError(f'{name} contains sophont populations that reference sophonts from another sector')
 
     @staticmethod
     def _validateRoutes(
@@ -1606,7 +1763,7 @@ class DbSector(DbUniverseObject):
         for route in value:
             currentSectorId = route.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError('{name} contains routes that are already attached to a sector')
+                raise ValueError(f'{name} contains routes that are already attached to a sector')
 
     @staticmethod
     def _validateBorders(
@@ -1622,7 +1779,7 @@ class DbSector(DbUniverseObject):
         for border in value:
             currentSectorId = border.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError('{name} contains borders that are already attached to a sector')
+                raise ValueError(f'{name} contains borders that are already attached to a sector')
 
     @staticmethod
     def _validateRegions(
@@ -1638,7 +1795,7 @@ class DbSector(DbUniverseObject):
         for region in value:
             currentSectorId = region.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError('{name} contains regions that are already attached to a sector')
+                raise ValueError(f'{name} contains regions that are already attached to a sector')
 
     @staticmethod
     def _validateLabels(
@@ -1654,7 +1811,7 @@ class DbSector(DbUniverseObject):
         for label in value:
             currentSectorId = label.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError('{name} contains labels that are already attached to a sector')
+                raise ValueError(f'{name} contains labels that are already attached to a sector')
 
     @staticmethod
     def _validateTags(
@@ -1670,7 +1827,7 @@ class DbSector(DbUniverseObject):
         for tag in value:
             currentSectorId = tag.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError('{name} contains tags that are already attached to a sector')
+                raise ValueError(f'{name} contains tags that are already attached to a sector')
 
     @staticmethod
     def _validateProducts(
@@ -1686,7 +1843,7 @@ class DbSector(DbUniverseObject):
         for tag in value:
             currentSectorId = tag.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError('{name} contains products that are already attached to a sector')
+                raise ValueError(f'{name} contains products that are already attached to a sector')
 
 # TODO: This needs updated to be immutable like the other db objects
 class DbUniverse(DbObject):
@@ -1790,9 +1947,9 @@ class DbUniverse(DbObject):
         for sector in value:
             currentSectorId = sector.universeId()
             if currentSectorId is not None and currentSectorId != universeId:
-                raise ValueError('{name} contains sectors that are already attached to a universe')
+                raise ValueError(f'{name} contains sectors that are already attached to a universe')
 
             key = (sector.sectorX(), sector.sectorY(), sector.milieu())
             if key in seen:
-                raise ValueError('{name} contains multiple systems with the same location and milieu')
+                raise ValueError(f'{name} contains multiple systems with the same location and milieu')
             seen.add(key)

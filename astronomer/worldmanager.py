@@ -650,53 +650,246 @@ class WorldManager(object):
                                     name=systemLoggingName),
                                 exc_info=ex)
 
-                    try:
-                        uwp = astronomer.UWP(
-                            starport=dbSystem.starport(),
-                            worldSize=dbSystem.worldSize(),
-                            atmosphere=dbSystem.atmosphere(),
-                            hydrographics=dbSystem.hydrographics(),
-                            population=dbSystem.population(),
-                            government=dbSystem.government(),
-                            lawLevel=dbSystem.lawLevel(),
-                            techLevel=dbSystem.techLevel())
-                    except Exception as ex:
-                        logging.warning('Failed to create UWP when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                systemId=dbSystem.id(),
-                                sectorId=dbSector.id(),
-                                name=systemLoggingName),
-                            exc_info=ex)
+                    dbBodies = dbSystem.bodies()
+                    dbMainWorld = None
+                    if dbBodies:
+                        dbMainWorld = dbBodies[0]
+                        if not isinstance(dbMainWorld, multiverse.DbWorld):
+                            # TODO: Log something????
+                            dbMainWorld = None
+
+                    nobilities = bases = remarks = None
+                    if dbMainWorld:
+                        try:
+                            uwp = astronomer.UWP(
+                                starport=dbMainWorld.starport(),
+                                worldSize=dbMainWorld.worldSize(),
+                                atmosphere=dbMainWorld.atmosphere(),
+                                hydrographics=dbMainWorld.hydrographics(),
+                                population=dbMainWorld.population(),
+                                government=dbMainWorld.government(),
+                                lawLevel=dbMainWorld.lawLevel(),
+                                techLevel=dbMainWorld.techLevel())
+                        except Exception as ex:
+                            logging.warning('Failed to create UWP when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName),
+                                exc_info=ex)
+                            uwp = astronomer.UWP()
+
+                        try:
+                            economics = astronomer.Economics(
+                                resources=dbMainWorld.resources(),
+                                labour=dbMainWorld.labour(),
+                                infrastructure=dbMainWorld.infrastructure(),
+                                efficiency=dbMainWorld.efficiency())
+                        except Exception as ex:
+                            logging.warning('Failed to create economics when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName),
+                                exc_info=ex)
+                            economics = astronomer.Economics()
+
+                        try:
+                            culture = astronomer.Culture(
+                                heterogeneity=dbMainWorld.heterogeneity(),
+                                acceptance=dbMainWorld.acceptance(),
+                                strangeness=dbMainWorld.strangeness(),
+                                symbols=dbMainWorld.symbols())
+                        except Exception as ex:
+                            logging.warning('Failed to create culture when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName),
+                                exc_info=ex)
+                            culture = astronomer.Culture()
+
+                        dbTradeCodes = dbMainWorld.tradeCodes()
+                        tradeCodes: typing.Optional[typing.List[traveller.TradeCode]] = None
+                        if dbTradeCodes:
+                            tradeCodes = []
+                            for dbTradeCode in dbTradeCodes:
+                                tradeCode = traveller.tradeCode(tradeCodeString=dbTradeCode.code())
+                                if not tradeCode:
+                                    logging.warning('Ignoring trade code {objectId} with unknown code "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                        objectId=dbTradeCode.id(),
+                                        code=dbTradeCode.code(),
+                                        systemId=dbSystem.id(),
+                                        sectorId=dbSector.id(),
+                                        name=systemLoggingName))
+                                    continue
+                                tradeCodes.append(tradeCode)
+
+                        dbPopulations = dbMainWorld.sophontPopulations()
+                        sophontPopulations: typing.Optional[typing.List[astronomer.SophontPopulation]] = None
+                        if dbPopulations:
+                            sophontPopulations = []
+                            for dbPopulation in dbPopulations:
+                                sophont = sophontCodeMap.get(dbPopulation.sophontCode())
+                                if not sophont:
+                                    logging.warning('Ignoring sophont population {objectId} with unknown sophont "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                        objectId=dbPopulation.id(),
+                                        code=dbPopulation.sophontCode(),
+                                        systemId=dbSystem.id(),
+                                        sectorId=dbSector.id(),
+                                        name=systemLoggingName))
+                                    continue
+
+                                try:
+                                    sophontPopulations.append(astronomer.SophontPopulation(
+                                        sophont=sophont,
+                                        percentage=dbPopulation.percentage(),
+                                        isHomeWorld=dbPopulation.isHomeWorld(),
+                                        isDieBack=dbPopulation.isDieBack()))
+                                except Exception as ex:
+                                    logging.warning('Failed to create sophont population {objectId} when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                            objectId=dbPopulation.id(),
+                                            systemId=dbSystem.id(),
+                                            sectorId=dbSector.id(),
+                                            name=systemLoggingName),
+                                        exc_info=ex)
+
+                        dbRulingAllegiances = dbMainWorld.rulingAllegiances()
+                        rulingAllegiances: typing.Optional[typing.List[str]] = None
+                        if dbRulingAllegiances:
+                            rulingAllegiances = []
+                            for dbAllegiance in dbRulingAllegiances:
+                                allegiance = allegianceCodeMap.get(dbAllegiance.allegianceCode())
+                                if not allegiance:
+                                    logging.warning('Ignoring ruling allegiance {objectId} with unknown allegiance "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                        objectId=dbAllegiance.id(),
+                                        code=dbAllegiance.allegianceCode(),
+                                        systemId=dbSystem.id(),
+                                        sectorId=dbSector.id(),
+                                        name=systemLoggingName))
+                                    continue
+                                rulingAllegiances.append(allegiance)
+
+                        dbOwningSystems = dbMainWorld.owningSystems()
+                        owningWorlds: typing.Optional[typing.List[astronomer.WorldReference]] = None
+                        if dbOwningSystems:
+                            owningWorlds = []
+                            for dbOwningSystem in dbOwningSystems:
+                                try:
+                                    owningWorlds.append(astronomer.WorldReference(
+                                        hexX=dbOwningSystem.hexX(),
+                                        hexY=dbOwningSystem.hexY(),
+                                        sectorAbbreviation=dbOwningSystem.sectorAbbreviation()))
+                                except Exception as ex:
+                                    logging.warning('Failed to create world reference for owning system {objectId} when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                            objectId=dbOwningSystem.id(),
+                                            systemId=dbSystem.id(),
+                                            sectorId=dbSector.id(),
+                                            name=systemLoggingName),
+                                        exc_info=ex)
+
+                        dbColonySystems = dbMainWorld.colonySystems()
+                        colonyWorlds: typing.Optional[typing.List[astronomer.WorldReference]] = None
+                        if dbColonySystems:
+                            colonyWorlds = []
+                            for dbColonySystem in dbColonySystems:
+                                try:
+                                    colonyWorlds.append(astronomer.WorldReference(
+                                        hexX=dbColonySystem.hexX(),
+                                        hexY=dbColonySystem.hexY(),
+                                        sectorAbbreviation=dbColonySystem.sectorAbbreviation()))
+                                except Exception as ex:
+                                    logging.warning('Failed to create world reference for colony system {objectId} when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                            objectId=dbColonySystem.id(),
+                                            systemId=dbSystem.id(),
+                                            sectorId=dbSector.id(),
+                                            name=systemLoggingName),
+                                        exc_info=ex)
+
+                        dbResearchStations = dbMainWorld.researchStations()
+                        researchStations: typing.Optional[typing.List[str]] = None
+                        if dbResearchStations:
+                            researchStations = [s.code() for s in dbResearchStations]
+
+                        dbCustomRemarks = dbMainWorld.customRemarks()
+                        customRemarks: typing.Optional[typing.List[str]] = None
+                        if dbCustomRemarks:
+                            customRemarks = [r.remark() for r in dbCustomRemarks]
+
+                        try:
+                            remarks = astronomer.Remarks(
+                                uwp=uwp,
+                                tradeCodes=tradeCodes,
+                                sophontPopulations=sophontPopulations,
+                                rulingAllegiances=rulingAllegiances,
+                                owningSystems=owningWorlds,
+                                colonySystems=colonyWorlds,
+                                researchStations=researchStations,
+                                customRemarks=customRemarks)
+                        except Exception as ex:
+                            logging.warning('Failed to create remarks when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName),
+                                exc_info=ex)
+
+                        dbNobilities = dbMainWorld.nobilities()
+                        nobilityTypes = None
+                        if dbNobilities:
+                            nobilityTypes = []
+                            for dbNobility in dbNobilities:
+                                nobilityType = astronomer.codeToNobilityType(dbNobility.code())
+                                if nobilityType is None:
+                                    logging.warning('Ignoring nobility {objectId} with unknown code "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                        objectId=dbNobility.id(),
+                                        code=dbNobility.code(),
+                                        systemId=dbSystem.id(),
+                                        sectorId=dbSector.id(),
+                                        name=systemLoggingName))
+                                    continue
+                                nobilityTypes.append(nobilityType)
+
+                        try:
+                            nobilities = astronomer.Nobilities(nobilities=nobilityTypes)
+                        except Exception as ex:
+                            logging.warning('Failed to create nobilities when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName),
+                                exc_info=ex)
+
+                        dbBases = dbMainWorld.bases()
+                        baseTypes = None
+                        if dbBases:
+                            baseTypes = []
+                            for dbBase in dbBases:
+                                codeBaseTypes = astronomer.codeToBaseTypes(dbBase.code())
+                                if codeBaseTypes is None:
+                                    logging.warning('Ignoring base {objectId} with unknown code "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                        objectId=dbBase.id(),
+                                        code=dbBase.code(),
+                                        systemId=dbSystem.id(),
+                                        sectorId=dbSector.id(),
+                                        name=systemLoggingName))
+                                    continue
+                                baseTypes.extend(codeBaseTypes)
+
+                        try:
+                            bases = astronomer.Bases(bases=baseTypes)
+                        except Exception as ex:
+                            logging.warning('Failed to create bases when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName),
+                                exc_info=ex)
+                    else:
+                        # TODO: This is all a bit hacky, it's currently needed as a UWP needs to be
+                        # created so it can be passed into the remarks. I could make remarks world
+                        # specific (so they'd only be created if there was a main world) but remarks
+                        # feel like they should be at the system level (at least some of them) so
+                        # I wouldn't be able to have any for systems that have no main world
                         uwp = astronomer.UWP()
-
-                    try:
-                        economics = astronomer.Economics(
-                            resources=dbSystem.resources(),
-                            labour=dbSystem.labour(),
-                            infrastructure=dbSystem.infrastructure(),
-                            efficiency=dbSystem.efficiency())
-                    except Exception as ex:
-                        logging.warning('Failed to create economics when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                systemId=dbSystem.id(),
-                                sectorId=dbSector.id(),
-                                name=systemLoggingName),
-                            exc_info=ex)
                         economics = astronomer.Economics()
-
-                    try:
-                        culture = astronomer.Culture(
-                            heterogeneity=dbSystem.heterogeneity(),
-                            acceptance=dbSystem.acceptance(),
-                            strangeness=dbSystem.strangeness(),
-                            symbols=dbSystem.symbols())
-                    except Exception as ex:
-                        logging.warning('Failed to create culture when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                systemId=dbSystem.id(),
-                                sectorId=dbSector.id(),
-                                name=systemLoggingName),
-                            exc_info=ex)
                         culture = astronomer.Culture()
 
-                    dbPopulationMultiplier = dbSystem.populationMultiplier()
+                    dbPopulationMultiplier = dbMainWorld.populationMultiplier() if dbMainWorld else None
                     dbPlanetoidBeltCount = dbSystem.planetoidBeltCount()
                     dbGasGiantCount = dbSystem.gasGiantCount()
                     dbOtherWorldCount = dbSystem.otherWorldCount()
@@ -713,228 +906,27 @@ class WorldManager(object):
                             exc_info=ex)
                         pbg = astronomer.PBG()
 
-                    # TODO: For now I've got this logic to reconstruct the total system world
-                    # count based on the other world count I derive from it at convert time.
-                    # The aim is to keep the old logic where the number of gas giants and/or
-                    # belts in a system can be known but the total number of worlds in the
-                    # system can be unknown rather than known to be 0. An example of this
-                    # would be Khoengu in Mugheen't. It works on the logic that the only way
-                    # the other worlds count could have been calculated is the total system
+                    # This code regenerates the system world count from the the original
+                    # second survey data. The other world count that it uses was derived
+                    # from the system world count at convert time. The aim is to keep the
+                    # old logic where the number of gas giants and/or belts in a system
+                    # can be known but the total number of worlds in the system can be
+                    # unknown rather than known to be 0. An example of this would be
+                    # Khoengu in Mugheen't. It works on the logic that the only way the
+                    # other worlds count could have been calculated is the total system
                     # world count was specified in the source data. This isn't completely
                     # accurate as it ignores the fact the other world count could be null
-                    # because the source data did specify a count but it was invalid, however
-                    # I think it would be good enough if things stay the way they are.
-                    #
-                    # I'm not sure how this is going to work when I switch having worlds split
-                    # from the system in the database. I'm not sure if I'm going to need a way
-                    # to disambiguate the case where it's known that there are no worlds (e.g.
-                    # it's a system with just stars) and the case where the total count isn't
-                    # known because the system hasn't been fully surveyed.
-                    # I think the problem might be more general than that. For example, if I go
-                    # from having a nullable count for the number of gas giants to having an
-                    # entry for each gas giant in the system. I won't be able to differentiate
-                    # between there being no gas giants in the table because there are legitimately
-                    # no gas giants in the system and there being no gas giants in the table
-                    # because it's not known if there are gas giants in the system (i.e. the PBG
-                    # had ? in the source data)
-                    # POSSIBLE SOLUTIONS
-                    # - Keep the optional gas giant, planetoid belt & other world counts at the
-                    #   system level as having entries for them in the relevant tables. The counts
-                    #   can be set to null to indicate unknown. It could also be simplified to have
-                    #   a boolean for each element to indicate if it's known/unknown
-                    # - Have a simplified single boolean at the sector level along the lines of
-                    #   is_explored that is set to true if there was a UWP or gas giants or
-                    #   belts specified in the source data at convert time. The downside of this
-                    #   is it looses data so I wouldn't be able to accurately reconstitute PBG
-                    # - Try to infer the survey level for the system based on p13 of the world
-                    #   builder rules. The problem with this is I'm not sure if I can differentiate
-                    #   between the higher levels of survey so would likely be inaccurate for a
-                    #   lot of worlds (maybe there are rules later that would help define the
-                    #   different levels based on UWP)
+                    # because the source data did specify a count but it was invalid (e.g.
+                    # the count was lower than the gas giant and belt count specified in
+                    # the PBG), however I think it would be good enough if things stay the
+                    # way they are.
                     systemWorlds = None
                     if dbOtherWorldCount is not None:
                         systemWorlds = \
                             (dbPlanetoidBeltCount if dbPlanetoidBeltCount else 0) + \
                             (dbGasGiantCount if dbGasGiantCount else 0) + \
                             (dbOtherWorldCount if dbOtherWorldCount else 0) + \
-                            1 # For the main world
-
-                    dbTradeCodes = dbSystem.tradeCodes()
-                    tradeCodes: typing.Optional[typing.List[traveller.TradeCode]] = None
-                    if dbTradeCodes:
-                        tradeCodes = []
-                        for dbTradeCode in dbTradeCodes:
-                            tradeCode = traveller.tradeCode(tradeCodeString=dbTradeCode.code())
-                            if not tradeCode:
-                                logging.warning('Ignoring trade code {objectId} with unknown code "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                    objectId=dbTradeCode.id(),
-                                    code=dbTradeCode.code(),
-                                    systemId=dbSystem.id(),
-                                    sectorId=dbSector.id(),
-                                    name=systemLoggingName))
-                                continue
-                            tradeCodes.append(tradeCode)
-
-                    dbPopulations = dbSystem.sophontPopulations()
-                    sophontPopulations: typing.Optional[typing.List[astronomer.SophontPopulation]] = None
-                    if dbPopulations:
-                        sophontPopulations = []
-                        for dbPopulation in dbPopulations:
-                            sophont = sophontCodeMap.get(dbPopulation.sophontCode())
-                            if not sophont:
-                                logging.warning('Ignoring sophont population {objectId} with unknown sophont "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                    objectId=dbPopulation.id(),
-                                    code=dbPopulation.sophontCode(),
-                                    systemId=dbSystem.id(),
-                                    sectorId=dbSector.id(),
-                                    name=systemLoggingName))
-                                continue
-
-                            try:
-                                sophontPopulations.append(astronomer.SophontPopulation(
-                                    sophont=sophont,
-                                    percentage=dbPopulation.percentage(),
-                                    isHomeWorld=dbPopulation.isHomeWorld(),
-                                    isDieBack=dbPopulation.isDieBack()))
-                            except Exception as ex:
-                                logging.warning('Failed to create sophont population {objectId} when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                        objectId=dbPopulation.id(),
-                                        systemId=dbSystem.id(),
-                                        sectorId=dbSector.id(),
-                                        name=systemLoggingName),
-                                    exc_info=ex)
-
-                    dbRulingAllegiances = dbSystem.rulingAllegiances()
-                    rulingAllegiances: typing.Optional[typing.List[str]] = None
-                    if dbRulingAllegiances:
-                        rulingAllegiances = []
-                        for dbAllegiance in dbRulingAllegiances:
-                            allegiance = allegianceCodeMap.get(dbAllegiance.allegianceCode())
-                            if not allegiance:
-                                logging.warning('Ignoring ruling allegiance {objectId} with unknown allegiance "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                    objectId=dbAllegiance.id(),
-                                    code=dbAllegiance.allegianceCode(),
-                                    systemId=dbSystem.id(),
-                                    sectorId=dbSector.id(),
-                                    name=systemLoggingName))
-                                continue
-                            rulingAllegiances.append(allegiance)
-
-                    dbOwningSystems = dbSystem.owningSystems()
-                    owningWorlds: typing.Optional[typing.List[astronomer.WorldReference]] = None
-                    if dbOwningSystems:
-                        owningWorlds = []
-                        for dbOwningSystem in dbOwningSystems:
-                            try:
-                                owningWorlds.append(astronomer.WorldReference(
-                                    hexX=dbOwningSystem.hexX(),
-                                    hexY=dbOwningSystem.hexY(),
-                                    sectorAbbreviation=dbOwningSystem.sectorAbbreviation()))
-                            except Exception as ex:
-                                logging.warning('Failed to create world reference for owning system {objectId} when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                        objectId=dbOwningSystem.id(),
-                                        systemId=dbSystem.id(),
-                                        sectorId=dbSector.id(),
-                                        name=systemLoggingName),
-                                    exc_info=ex)
-
-                    dbColonySystems = dbSystem.colonySystems()
-                    colonyWorlds: typing.Optional[typing.List[astronomer.WorldReference]] = None
-                    if dbColonySystems:
-                        colonyWorlds = []
-                        for dbColonySystem in dbColonySystems:
-                            try:
-                                colonyWorlds.append(astronomer.WorldReference(
-                                    hexX=dbColonySystem.hexX(),
-                                    hexY=dbColonySystem.hexY(),
-                                    sectorAbbreviation=dbColonySystem.sectorAbbreviation()))
-                            except Exception as ex:
-                                logging.warning('Failed to create world reference for colony system {objectId} when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                        objectId=dbColonySystem.id(),
-                                        systemId=dbSystem.id(),
-                                        sectorId=dbSector.id(),
-                                        name=systemLoggingName),
-                                    exc_info=ex)
-
-                    dbResearchStations = dbSystem.researchStations()
-                    researchStations: typing.Optional[typing.List[str]] = None
-                    if dbResearchStations:
-                        researchStations = [s.code() for s in dbResearchStations]
-
-                    dbCustomRemarks = dbSystem.customRemarks()
-                    customRemarks: typing.Optional[typing.List[str]] = None
-                    if dbCustomRemarks:
-                        customRemarks = [r.remark() for r in dbCustomRemarks]
-
-                    remarks = None
-                    try:
-                        remarks = astronomer.Remarks(
-                            uwp=uwp,
-                            tradeCodes=tradeCodes,
-                            sophontPopulations=sophontPopulations,
-                            rulingAllegiances=rulingAllegiances,
-                            owningSystems=owningWorlds,
-                            colonySystems=colonyWorlds,
-                            researchStations=researchStations,
-                            customRemarks=customRemarks)
-                    except Exception as ex:
-                        logging.warning('Failed to create remarks when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                systemId=dbSystem.id(),
-                                sectorId=dbSector.id(),
-                                name=systemLoggingName),
-                            exc_info=ex)
-
-                    dbNobilities = dbSystem.nobilities()
-                    nobilityTypes = None
-                    if dbNobilities:
-                        nobilityTypes = []
-                        for dbNobility in dbNobilities:
-                            nobilityType = astronomer.codeToNobilityType(dbNobility.code())
-                            if nobilityType is None:
-                                logging.warning('Ignoring nobility {objectId} with unknown code "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                    objectId=dbNobility.id(),
-                                    code=dbNobility.code(),
-                                    systemId=dbSystem.id(),
-                                    sectorId=dbSector.id(),
-                                    name=systemLoggingName))
-                                continue
-                            nobilityTypes.append(nobilityType)
-
-                    nobilities = None
-                    try:
-                        nobilities = astronomer.Nobilities(nobilities=nobilityTypes)
-                    except Exception as ex:
-                        logging.warning('Failed to create nobilities when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                systemId=dbSystem.id(),
-                                sectorId=dbSector.id(),
-                                name=systemLoggingName),
-                            exc_info=ex)
-
-                    dbBases = dbSystem.bases()
-                    baseTypes = None
-                    if dbBases:
-                        baseTypes = []
-                        for dbBase in dbBases:
-                            codeBaseTypes = astronomer.codeToBaseTypes(dbBase.code())
-                            if codeBaseTypes is None:
-                                logging.warning('Ignoring base {objectId} with unknown code "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                    objectId=dbBase.id(),
-                                    code=dbBase.code(),
-                                    systemId=dbSystem.id(),
-                                    sectorId=dbSector.id(),
-                                    name=systemLoggingName))
-                                continue
-                            baseTypes.extend(codeBaseTypes)
-
-                    bases = None
-                    try:
-                        bases = astronomer.Bases(bases=baseTypes)
-                    except Exception as ex:
-                        logging.warning('Failed to create bases when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                systemId=dbSystem.id(),
-                                sectorId=dbSector.id(),
-                                name=systemLoggingName),
-                            exc_info=ex)
+                            (1 if dbMainWorld else 0) # For the main world
 
                     dbStars = dbSystem.stars()
                     stars = None

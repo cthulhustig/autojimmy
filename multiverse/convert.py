@@ -1013,6 +1013,196 @@ def _createDbSophonts(
 
     return (dbSophontCodeMap, dbSophontNameMap)
 
+def _createDbStars(
+        milieu: str,
+        rawMetadata: survey.RawMetadata,
+        rawWorld: survey.RawWorld
+        ) -> typing.Optional[typing.List[multiverse.DbStar]]:
+    rawStellar = rawWorld.stellar()
+    if not rawStellar:
+        return None
+
+    dbStars = []
+    for luminosityClass, spectralClass, spectralScale in survey.parseSystemStellarString(string=rawStellar):
+        try:
+            dbStars.append(multiverse.DbStar(
+                luminosityClass=luminosityClass,
+                spectralClass=spectralClass,
+                spectralScale=spectralScale))
+        except Exception as ex:
+            logging.error('Converter failed to construct star on world {world} in {sector} at {milieu}'.format(
+                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                    sector=rawMetadata.canonicalName(),
+                    milieu=milieu),
+                exc_info=ex)
+
+    return dbStars
+
+def _createDbBodies(
+        milieu: str,
+        rawMetadata: survey.RawMetadata,
+        rawWorld: survey.RawWorld,
+        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
+        dbSophontCodeMap: typing.Dict[str, multiverse.DbSophont],
+        dbSophontNameMap: typing.Dict[str, multiverse.DbSophont]
+        ) -> typing.Optional[typing.List[multiverse.DbBody]]:
+    rawSystemWorlds = rawWorld.systemWorlds()
+    numSystemWorlds = None
+    if rawSystemWorlds:
+        try:
+            numSystemWorlds = int(rawSystemWorlds)
+        except:
+            pass # This will already have been logged processing the system
+
+    rawSystemName = rawWorld.name()
+    dbSystemName = rawSystemName if rawSystemName else None
+
+    rawUWP = rawWorld.uwp()
+    dbStarport = dbWorldSize = dbAtmosphere = dbHydrographics = \
+        dbPopulation = dbGovernment = dbLawLevel = dbTechLevel = None
+    if rawUWP:
+        dbStarport, dbWorldSize, dbAtmosphere, dbHydrographics, \
+            dbPopulation, dbGovernment, dbLawLevel, dbTechLevel = \
+            survey.parseSystemUWPString(uwp=rawUWP.upper())
+
+    rawEconomics = rawWorld.economics()
+    dbResources = dbLabour = dbInfrastructure = dbEfficiency = None
+    if rawEconomics:
+        dbResources, dbLabour, dbInfrastructure, dbEfficiency = \
+            survey.parseSystemEconomicsString(economics=rawEconomics.upper())
+
+    rawCulture = rawWorld.culture()
+    dbHeterogeneity = dbAcceptance = dbStrangeness = dbSymbols = None
+    if rawCulture:
+        dbHeterogeneity, dbAcceptance, dbStrangeness, dbSymbols = \
+            survey.parseSystemCultureString(culture=rawCulture.upper())
+
+    rawPBG = rawWorld.pbg()
+    dbPopulationMultiplier = None
+    if rawPBG:
+        dbPopulationMultiplier, _, _ = \
+            survey.parseSystemPBGString(pbg=rawPBG.upper())
+        if dbPopulationMultiplier is not None:
+            dbPopulationMultiplier = survey.ehexToInteger(dbPopulationMultiplier, None)
+            # As per the Traveller Map Second Survey docs, some worlds
+            # might have the multiplier incorrectly set to 0, in such
+            # cases a value of 0 should be used
+            # travellermap.com/doc/secondsurvey#pbg
+            if dbPopulationMultiplier == 0:
+                dbPopulationMultiplier = 1
+
+    dbNobilities = _createDbNobilities(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        rawWorld=rawWorld)
+
+    dbBases = _createDbBases(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        rawWorld=rawWorld)
+
+    rawRemarks = rawWorld.remarks()
+    dbTradeCodes = dbSophontPopulations = dbRulingAllegiances = dbOwningSystems = dbColonySystems = \
+        dbResearchStations = dbCustomRemarks = None
+    if rawRemarks:
+        rawTradeCodes, rawMajorHomeWorlds, rawMinorHomeWorlds, rawSophontPopulations, \
+            rawDieBackSophonts, rawOwningSystems, rawColonySystems, rawRulingAllegiances, \
+            rawResearchStations, rawUnrecognisedRemarks = survey.parseSystemRemarksString(rawRemarks)
+
+        dbSophontPopulations = _createDbSophontPopulations(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            rawWorld=rawWorld,
+            rawMajorHomeWorlds=rawMajorHomeWorlds,
+            rawMinorHomeWorlds=rawMinorHomeWorlds,
+            rawSophontPopulations=rawSophontPopulations,
+            rawDieBackSophonts=rawDieBackSophonts,
+            dbSophontCodeMap=dbSophontCodeMap,
+            dbSophontNameMap=dbSophontNameMap)
+
+        dbOwningSystems = _createDbOwningSystems(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            rawWorld=rawWorld,
+            rawOwningSystems=rawOwningSystems)
+
+        dbColonySystems = _createDbColonySystems(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            rawWorld=rawWorld,
+            rawColonySystems=rawColonySystems)
+
+        dbRulingAllegiances = _createDbRulingAllegiances(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            rawWorld=rawWorld,
+            rawRulingAllegiances=rawRulingAllegiances,
+            dbAllegianceCodeMap=dbAllegianceCodeMap)
+
+        dbResearchStations = _createDbResearchStations(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            rawWorld=rawWorld,
+            rawResearchStations=rawResearchStations)
+
+        dbTradeCodes = _createDbTradeCodes(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            rawWorld=rawWorld,
+            rawTradeCodes=rawTradeCodes,
+            dbSophontPopulations=dbSophontPopulations,
+            dbRulingAllegiances=dbRulingAllegiances,
+            dbResearchStations=dbResearchStations)
+
+        dbCustomRemarks = _createDbCustomRemarks(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            rawWorld=rawWorld,
+            rawUnrecognisedRemarks=rawUnrecognisedRemarks)
+
+    # Only create the main world if there is some data or there is known
+    # to be at least one system world
+    hasData = dbStarport or dbWorldSize or dbAtmosphere or dbHydrographics or \
+        dbPopulation or dbGovernment or dbLawLevel or dbTechLevel or \
+        dbResources or dbLabour or dbInfrastructure or dbEfficiency or \
+        dbHeterogeneity or dbAcceptance or dbStrangeness or dbSymbols or \
+        dbPopulationMultiplier or dbTradeCodes or dbSophontPopulations or \
+        dbRulingAllegiances or dbOwningSystems or dbColonySystems or \
+        dbResearchStations or dbCustomRemarks
+    if not hasData and not numSystemWorlds:
+        return None
+
+    return [multiverse.DbWorld(
+        orbitIndex=1,
+        isMainWorld=True,
+        name=dbSystemName,
+        starport=dbStarport,
+        worldSize=dbWorldSize,
+        atmosphere=dbAtmosphere,
+        hydrographics=dbHydrographics,
+        population=dbPopulation,
+        government=dbGovernment,
+        lawLevel=dbLawLevel,
+        techLevel=dbTechLevel,
+        resources=dbResources,
+        labour=dbLabour,
+        infrastructure=dbInfrastructure,
+        efficiency=dbEfficiency,
+        heterogeneity=dbHeterogeneity,
+        acceptance=dbAcceptance,
+        strangeness=dbStrangeness,
+        symbols=dbSymbols,
+        populationMultiplier=dbPopulationMultiplier,
+        nobilities=dbNobilities,
+        bases=dbBases,
+        tradeCodes=dbTradeCodes,
+        sophontPopulations=dbSophontPopulations,
+        rulingAllegiances=dbRulingAllegiances,
+        owningSystems=dbOwningSystems,
+        colonySystems=dbColonySystems,
+        researchStations=dbResearchStations,
+        customRemarks=dbCustomRemarks)]
+
 def _createDbNobilities(
         milieu: str,
         rawMetadata: survey.RawMetadata,
@@ -1076,31 +1266,6 @@ def _createDbBases(
                 exc_info=ex)
 
     return dbBases
-
-def _createDbStars(
-        milieu: str,
-        rawMetadata: survey.RawMetadata,
-        rawWorld: survey.RawWorld
-        ) -> typing.Optional[typing.List[multiverse.DbStar]]:
-    rawStellar = rawWorld.stellar()
-    if not rawStellar:
-        return None
-
-    dbStars = []
-    for luminosityClass, spectralClass, spectralScale in survey.parseSystemStellarString(string=rawStellar):
-        try:
-            dbStars.append(multiverse.DbStar(
-                luminosityClass=luminosityClass,
-                spectralClass=spectralClass,
-                spectralScale=spectralScale))
-        except Exception as ex:
-            logging.error('Converter failed to construct star on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
-                exc_info=ex)
-
-    return dbStars
 
 def _createDbSophontPopulations(
         milieu: str,
@@ -1530,39 +1695,11 @@ def _createDbSystems(
             rawSystemName = rawWorld.name()
             dbSystemName = rawSystemName if rawSystemName else None
 
-            rawUWP = rawWorld.uwp()
-            dbStarport = dbWorldSize = dbAtmosphere = dbHydrographics = \
-                dbPopulation = dbGovernment = dbLawLevel = dbTechLevel = None
-            if rawUWP:
-                dbStarport, dbWorldSize, dbAtmosphere, dbHydrographics, \
-                    dbPopulation, dbGovernment, dbLawLevel, dbTechLevel = \
-                    survey.parseSystemUWPString(uwp=rawUWP.upper())
-
-            rawEconomics = rawWorld.economics()
-            dbResources = dbLabour = dbInfrastructure = dbEfficiency = None
-            if rawEconomics:
-                dbResources, dbLabour, dbInfrastructure, dbEfficiency = \
-                    survey.parseSystemEconomicsString(economics=rawEconomics.upper())
-
-            rawCulture = rawWorld.culture()
-            dbHeterogeneity = dbAcceptance = dbStrangeness = dbSymbols = None
-            if rawCulture:
-                dbHeterogeneity, dbAcceptance, dbStrangeness, dbSymbols = \
-                    survey.parseSystemCultureString(culture=rawCulture.upper())
-
             rawPBG = rawWorld.pbg()
-            dbPopulationMultiplier = dbPlanetoidBeltCount = dbGasGiantCount = None
+            dbPlanetoidBeltCount = dbGasGiantCount = None
             if rawPBG:
-                dbPopulationMultiplier, dbPlanetoidBeltCount, dbGasGiantCount = \
+                _, dbPlanetoidBeltCount, dbGasGiantCount = \
                     survey.parseSystemPBGString(pbg=rawPBG.upper())
-                if dbPopulationMultiplier is not None:
-                    dbPopulationMultiplier = survey.ehexToInteger(dbPopulationMultiplier, None)
-                    # As per the Traveller Map Second Survey docs, some worlds
-                    # might have the multiplier incorrectly set to 0, in such
-                    # cases a value of 0 should be used
-                    # travellermap.com/doc/secondsurvey#pbg
-                    if dbPopulationMultiplier == 0:
-                        dbPopulationMultiplier = 1
                 if dbPlanetoidBeltCount is not None:
                     dbPlanetoidBeltCount = survey.ehexToInteger(dbPlanetoidBeltCount, None)
                 if dbGasGiantCount is not None:
@@ -1585,12 +1722,12 @@ def _createDbSystems(
             # Main World of size 0 is not included in that count.
             # https://travellermap.com/doc/secondsurvey#pbg
             rawSystemWorlds = rawWorld.systemWorlds()
+            numSystemWorlds = None
             dbOtherWorldCount = None
             if rawSystemWorlds:
                 numBelts = dbPlanetoidBeltCount if dbPlanetoidBeltCount else 0
                 numGiants = dbGasGiantCount if dbGasGiantCount else 0
                 numAccountedWorlds = numBelts + numGiants + 1 # +1 for main world
-                numSystemWorlds = None
 
                 try:
                     numSystemWorlds = int(rawSystemWorlds)
@@ -1625,116 +1762,30 @@ def _createDbSystems(
                 # if it's a custom sector it should also warn the user
                 raise RuntimeError(f'World at {rawHex} in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
 
-            dbNobilities = _createDbNobilities(
-                milieu=milieu,
-                rawMetadata=rawMetadata,
-                rawWorld=rawWorld)
-
-            dbBases = _createDbBases(
-                milieu=milieu,
-                rawMetadata=rawMetadata,
-                rawWorld=rawWorld)
-
             dbStars = _createDbStars(
                 milieu=milieu,
                 rawMetadata=rawMetadata,
                 rawWorld=rawWorld)
 
-            rawRemarks = rawWorld.remarks()
-            dbTradeCodes = dbSophontPopulations = dbRulingAllegiances = dbOwningSystems = dbColonySystems = \
-                dbResearchStations = dbCustomRemarks = None
-            if rawRemarks:
-                rawTradeCodes, rawMajorHomeWorlds, rawMinorHomeWorlds, rawSophontPopulations, \
-                    rawDieBackSophonts, rawOwningSystems, rawColonySystems, rawRulingAllegiances, \
-                    rawResearchStations, rawUnrecognisedRemarks = survey.parseSystemRemarksString(rawRemarks)
-
-                dbSophontPopulations = _createDbSophontPopulations(
-                    milieu=milieu,
-                    rawMetadata=rawMetadata,
-                    rawWorld=rawWorld,
-                    rawMajorHomeWorlds=rawMajorHomeWorlds,
-                    rawMinorHomeWorlds=rawMinorHomeWorlds,
-                    rawSophontPopulations=rawSophontPopulations,
-                    rawDieBackSophonts=rawDieBackSophonts,
-                    dbSophontCodeMap=dbSophontCodeMap,
-                    dbSophontNameMap=dbSophontNameMap)
-
-                dbOwningSystems = _createDbOwningSystems(
-                    milieu=milieu,
-                    rawMetadata=rawMetadata,
-                    rawWorld=rawWorld,
-                    rawOwningSystems=rawOwningSystems)
-
-                dbColonySystems = _createDbColonySystems(
-                    milieu=milieu,
-                    rawMetadata=rawMetadata,
-                    rawWorld=rawWorld,
-                    rawColonySystems=rawColonySystems)
-
-                dbRulingAllegiances = _createDbRulingAllegiances(
-                    milieu=milieu,
-                    rawMetadata=rawMetadata,
-                    rawWorld=rawWorld,
-                    rawRulingAllegiances=rawRulingAllegiances,
-                    dbAllegianceCodeMap=dbAllegianceCodeMap)
-
-                dbResearchStations = _createDbResearchStations(
-                    milieu=milieu,
-                    rawMetadata=rawMetadata,
-                    rawWorld=rawWorld,
-                    rawResearchStations=rawResearchStations)
-
-                dbTradeCodes = _createDbTradeCodes(
-                    milieu=milieu,
-                    rawMetadata=rawMetadata,
-                    rawWorld=rawWorld,
-                    rawTradeCodes=rawTradeCodes,
-                    dbSophontPopulations=dbSophontPopulations,
-                    dbRulingAllegiances=dbRulingAllegiances,
-                    dbResearchStations=dbResearchStations)
-
-                dbCustomRemarks = _createDbCustomRemarks(
-                    milieu=milieu,
-                    rawMetadata=rawMetadata,
-                    rawWorld=rawWorld,
-                    rawUnrecognisedRemarks=rawUnrecognisedRemarks)
+            dbBodies = _createDbBodies(
+                milieu=milieu,
+                rawMetadata=rawMetadata,
+                rawWorld=rawWorld,
+                dbSophontCodeMap=dbSophontCodeMap,
+                dbAllegianceCodeMap=dbAllegianceCodeMap,
+                dbSophontNameMap=dbSophontNameMap)
 
             dbSystems.append(multiverse.DbSystem(
                 hexX=dbHexX,
                 hexY=dbHexY,
                 name=dbSystemName,
-                starport=dbStarport,
-                worldSize=dbWorldSize,
-                atmosphere=dbAtmosphere,
-                hydrographics=dbHydrographics,
-                population=dbPopulation,
-                government=dbGovernment,
-                lawLevel=dbLawLevel,
-                techLevel=dbTechLevel,
-                resources=dbResources,
-                labour=dbLabour,
-                infrastructure=dbInfrastructure,
-                efficiency=dbEfficiency,
-                heterogeneity=dbHeterogeneity,
-                acceptance=dbAcceptance,
-                strangeness=dbStrangeness,
-                symbols=dbSymbols,
-                populationMultiplier=dbPopulationMultiplier,
                 planetoidBeltCount=dbPlanetoidBeltCount,
                 gasGiantCount=dbGasGiantCount,
                 otherWorldCount=dbOtherWorldCount,
                 zone=dbZone,
                 allegianceCode=dbAllegiance.code() if dbAllegiance else None,
-                nobilities=dbNobilities,
-                tradeCodes=dbTradeCodes,
-                sophontPopulations=dbSophontPopulations,
-                rulingAllegiances=dbRulingAllegiances,
-                owningSystems=dbOwningSystems,
-                colonySystems=dbColonySystems,
-                researchStations=dbResearchStations,
-                customRemarks=dbCustomRemarks,
-                bases=dbBases,
-                stars=dbStars))
+                stars=dbStars,
+                bodies=dbBodies))
         except Exception as ex:
             logging.warning(f'Failed to convert system {systemIndex} in {rawMetadata.canonicalName()} at {milieu}', exc_info=ex)
 

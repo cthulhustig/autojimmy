@@ -36,7 +36,11 @@ def formatSystemNobilityString(
             raise ValueError(f'Invalid nobility code "{code}"')
         validCodes.add(code)
 
-    return ''.join(sorted(validCodes))
+    # NOTE: This slightly odd sorting is to maintain the canonical ordering
+    # when it comes to things like 'c' vs 'C'. The primary sort is done on
+    # the case insensitive character so ('B' is before 'c') and the secondary
+    # sort is done on the upper/lower case-ness (so 'c' is before 'C')
+    return ''.join(sorted(validCodes, key=lambda c: (c.lower(), c.isupper())))
 
 def _mandatoryNobilityValidator(
         name: str,
