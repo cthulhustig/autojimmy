@@ -33,6 +33,22 @@ import typing
 # IMPORTANT: If I do this it probably also makes sense to move to a seperate
 # database file for each universe. This would make it easier for people to
 # share just one universe.
+# TODO: When I switch to making a copy of the entire universe for custom
+# universes, I need to add an option to regenerate the trade codes for
+# the entire universe based on a specified rule set. It should default to
+# the current selected rules but also have the option to use the trade
+# codes as they appear on Traveller Map (explain the difference in a tooltip).
+# The default universe will always use the Traveller Map trade codes.
+# This will replace the ability to switch between modes dynamically which
+# I removed as it complicated the code for generating remarks.
+# Part of this work will probably need to be converting calculateMongooseTradeCodes
+# to use string trade codes rather than traveller.TradeCode as the converter
+# code doesn't have access to that logic.
+# Alternatively it might be the time to convert DbObjects to use enums for things.
+# It would make sense if it was the same ones as the traveller/astronomer code, so
+# maybe I need some kind of low level basic type namespace.
+# I've left the _RegenerateTradeCodesToolTip text as it could be a basis for the
+# option when I add it to the custom universe creation dialog
 
 class ColumnDef(object):
     class ColumnType(enum.Enum):

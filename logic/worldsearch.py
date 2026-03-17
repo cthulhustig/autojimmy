@@ -197,9 +197,7 @@ class TagLevelFiler(WorldFilter):
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        tagLevel = tagging.calculateWorldTagLevel(
-            rules=rules,
-            world=world)
+        tagLevel = tagging.calculateWorldTagLevel(world=world)
         return _performComparisonOperation(
             operation=self._operation,
             worldValue=TagLevelFiler._tagLevelToInt(tagLevel),
@@ -811,10 +809,10 @@ class RemarksFilter(WorldFilter):
         remarks = world.remarks()
         if remarks:
             if self._operation == StringFilterOperation.ContainsString:
-                if self._regex.search(remarks.string(rules=rules)):
+                if self._regex.search(remarks.string()):
                     return True
             elif self._operation == StringFilterOperation.MatchRegex:
-                if self._regex.match(remarks.string(rules=rules)):
+                if self._regex.match(remarks.string()):
                     return True
             else:
                 raise ValueError('Invalid remarks filter operation')
@@ -867,7 +865,7 @@ class TradeCodeFilter(WorldFilter):
             ) -> bool:
         checkList = traveller.TradeCode if self._operation == ListFilterOperation.ContainsOnly else self._value
         for tradeCode in checkList:
-            match = world.hasTradeCode(tradeCode=tradeCode, rules=rules)
+            match = world.hasTradeCode(tradeCode=tradeCode)
             if self._operation == ListFilterOperation.ContainsAny:
                 if match:
                     return True

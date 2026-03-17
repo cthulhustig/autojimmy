@@ -223,7 +223,6 @@ class TradeGood(object):
 
     def checkTradeGoodAvailability(
             self,
-            rules: traveller.Rules,
             world: astronomer.World
             ) -> bool:
         availabilityTradeCodes = self._data.availabilityTradeCodes()
@@ -231,7 +230,7 @@ class TradeGood(object):
             # Trade goods with an availability set to None are available everywhere
             return True
 
-        for tradeCode in world.tradeCodes(rules=rules):
+        for tradeCode in world.tradeCodes():
             if tradeCode in availabilityTradeCodes:
                 # The world has this trade good available due to the world trade codes
                 return True
@@ -239,11 +238,9 @@ class TradeGood(object):
 
     def calculatePurchaseTradeCodeDm(
             self,
-            rules: traveller.Rules,
             world: astronomer.World
             ) -> typing.Optional[common.ScalarCalculation]:
         return self._calculateTradeCodeDm(
-            rules=rules,
             world=world,
             tradeCodeDmMap=self._data.buyTradeCodeDmMap(),
             amberZoneDm=self._data.buyAmberZoneDm(),
@@ -251,11 +248,9 @@ class TradeGood(object):
 
     def calculateSaleTradeCodeDm(
             self,
-            rules: traveller.Rules,
             world: astronomer.World
             ) -> typing.Optional[common.ScalarCalculation]:
         return self._calculateTradeCodeDm(
-            rules=rules,
             world=world,
             tradeCodeDmMap=self._data.sellTradeCodeDmMap(),
             amberZoneDm=self._data.sellAmberZoneDm(),
@@ -263,7 +258,6 @@ class TradeGood(object):
 
     def calculateTotalPurchaseDm(
             self,
-            rules: traveller.Rules,
             world: astronomer.World,
             brokerDm: typing.Union[int, common.ScalarCalculation, common.RangeCalculation],
             sellerDm: typing.Union[int, common.ScalarCalculation, common.RangeCalculation],
@@ -289,7 +283,6 @@ class TradeGood(object):
                 name='3D6 Roll')
 
         tradeCodeDm = self._calculateTradeCodeDm(
-            rules=rules,
             world=world,
             tradeCodeDmMap=self._data.buyTradeCodeDmMap(),
             amberZoneDm=self._data.buyAmberZoneDm(),
@@ -302,7 +295,6 @@ class TradeGood(object):
             purchaseDm = brokerDm
 
         tradeCodeDm = self._calculateTradeCodeDm(
-            rules=rules,
             world=world,
             tradeCodeDmMap=self._data.sellTradeCodeDmMap(),
             amberZoneDm=self._data.sellAmberZoneDm(),
@@ -343,7 +335,6 @@ class TradeGood(object):
             ) -> typing.Union[common.ScalarCalculation, common.RangeCalculation]:
         purchaseDm = self.calculateTotalPurchaseDm(
             world=world,
-            rules=rules,
             brokerDm=brokerDm,
             sellerDm=sellerDm,
             known3D6Roll=known3D6Roll)
@@ -374,7 +365,6 @@ class TradeGood(object):
 
     def calculateTotalSaleDm(
             self,
-            rules: traveller.rules,
             world: astronomer.World,
             brokerDm: typing.Union[int, common.ScalarCalculation, common.RangeCalculation],
             buyerDm: typing.Union[int, common.ScalarCalculation, common.RangeCalculation],
@@ -400,7 +390,6 @@ class TradeGood(object):
                 name='3D6 Roll')
 
         tradeCodeDm = self._calculateTradeCodeDm(
-            rules=rules,
             world=world,
             tradeCodeDmMap=self._data.sellTradeCodeDmMap(),
             amberZoneDm=self._data.sellAmberZoneDm(),
@@ -413,7 +402,6 @@ class TradeGood(object):
             saleDm = brokerDm
 
         tradeCodeDm = self._calculateTradeCodeDm(
-            rules=rules,
             world=world,
             tradeCodeDmMap=self._data.buyTradeCodeDmMap(),
             amberZoneDm=self._data.buyAmberZoneDm(),
@@ -453,7 +441,6 @@ class TradeGood(object):
             known3D6Roll: typing.Optional[common.ScalarCalculation] = None
             ) -> typing.Union[common.ScalarCalculation, common.RangeCalculation]:
         saleDm = self.calculateTotalSaleDm(
-            rules=rules,
             world=world,
             brokerDm=brokerDm,
             buyerDm=buyerDm,
@@ -485,14 +472,13 @@ class TradeGood(object):
 
     def _calculateTradeCodeDm(
             self,
-            rules: traveller.Rules,
             world: astronomer.World,
             tradeCodeDmMap: typing.Mapping[traveller.TradeCode, common.ScalarCalculation],
             amberZoneDm: typing.Optional[common.ScalarCalculation],
             redZoneDm: typing.Optional[common.ScalarCalculation]
             ) -> typing.Optional[common.ScalarCalculation]:
         largestDm = None
-        for tradeCode in world.tradeCodes(rules=rules):
+        for tradeCode in world.tradeCodes():
             tradeCodeDm = tradeCodeDmMap.get(tradeCode)
             if tradeCodeDm is not None:
                 largestDm = self._compareTradeCodeDm(
@@ -693,7 +679,7 @@ def worldTradeGoods(
         isIllegal = tradeGood.isIllegal(world)
         if (isIllegal and not includeIllegal) or (not isIllegal and not includeLegal):
             continue
-        if tradeGood.checkTradeGoodAvailability(rules=rules, world=world):
+        if tradeGood.checkTradeGoodAvailability(world=world):
             available.append(tradeGood)
     return available
 

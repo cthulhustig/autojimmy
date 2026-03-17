@@ -277,7 +277,6 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(configurationLayout)
 
     def _setupTradeOptionControls(self) -> None:
-        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         outcomeColours = app.Config.instance().value(option=app.ConfigOption.OutcomeColours)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
@@ -299,7 +298,6 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionCalculationModeTabs.currentChanged.connect(self._updateTradeOptionTableColumns)
 
         self._tradeOptionsTable = gui.TradeOptionsTable(
-            rules=rules,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -349,7 +347,6 @@ class _BaseTraderWindow(gui.WindowWidget):
             self._hexTooltipProvider.setRules(rules=newValue)
             self._localPurchaseBrokerWidget.setRules(rules=newValue)
             self._localSaleBrokerWidget.setRules(rules=newValue)
-            self._tradeOptionsTable.setRules(rules=newValue)
 
             # Changing the rules invalidates existing trade options as the
             # trade goods they use are tied to a rule system and the starport

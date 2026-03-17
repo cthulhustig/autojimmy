@@ -37,14 +37,13 @@ class World(object):
         self._culture = culture if culture else astronomer.Culture()
         self._nobilities = nobilities if nobilities else astronomer.Nobilities()
         self._bases = bases if bases else astronomer.Bases()
-        self._remarks = remarks if remarks else astronomer.Remarks(uwp=self._uwp)
+        self._remarks = remarks if remarks else astronomer.Remarks()
         self._systemWorlds = systemWorlds
         self._pbg = pbg if pbg else astronomer.PBG()
         self._stellar = stellar if stellar else astronomer.Stellar()
 
         self._isAnomaly = self._remarks.hasCustomRemark('{Anomaly}')
         self._isFuelCache = self._remarks.hasCustomRemark('{Fuel}')
-
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
@@ -108,18 +107,14 @@ class World(object):
     def hasBase(self, baseType: astronomer.BaseType) -> bool:
         return self._bases.hasBase(baseType)
 
-    def tradeCodes(
-            self,
-            rules: typing.Optional[traveller.Rules] = None
-            ) -> typing.Iterable[traveller.TradeCode]:
-        return self._remarks.tradeCodes(rules)
+    def tradeCodes(self) -> typing.Iterable[traveller.TradeCode]:
+        return self._remarks.tradeCodes()
 
     def hasTradeCode(
             self,
-            tradeCode: traveller.TradeCode,
-            rules: typing.Optional[traveller.Rules] = None
+            tradeCode: traveller.TradeCode
             ) -> bool:
-        return self._remarks.hasTradeCode(tradeCode, rules)
+        return self._remarks.hasTradeCode(tradeCode)
 
     def hasStarPort(self):
         starPortCode = self._uwp.code(astronomer.UWP.Element.StarPort)

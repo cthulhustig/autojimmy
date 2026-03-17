@@ -61,6 +61,9 @@ _StarPortFuelToolTip = gui.createStringToolTip(
     """,
     escape=False)
 
+# TODO: This isn't used but I've left it for now as I could form the basis
+# for the tooltip when I add regeneration of trade codes as an option when
+# creating a custom universe
 _RegenerateTradeCodesToolTip = gui.createStringToolTip(
     """
     <p>
@@ -488,18 +491,10 @@ class ConfigDialog(gui.DialogEx):
             '<p>The Traveller rule system to use</p>',
             escape=False))
 
-        self._regenerateTradeCodesCheckBox = gui.CheckBoxEx()
-        self._regenerateTradeCodesCheckBox.setChecked(
-            rules.regenerateTradeCodes())
-        self._regenerateTradeCodesCheckBox.setToolTip(_RegenerateTradeCodesToolTip)
-
         ruleSystemLayout = gui.FormLayoutEx()
         ruleSystemLayout.addRow(
             'Rule System',
             self._rulesComboBox)
-        ruleSystemLayout.addRow(
-            'Regenerate Trade Codes',
-            self._regenerateTradeCodesCheckBox)
 
         ruleSystemGroupBox = QtWidgets.QGroupBox('Rule System')
         ruleSystemGroupBox.setLayout(ruleSystemLayout)
@@ -726,7 +721,6 @@ class ConfigDialog(gui.DialogEx):
                 option=app.ConfigOption.Rules,
                 value=traveller.Rules(
                     system=self._rulesComboBox.currentEnum(),
-                    regenerateTradeCodes=self._regenerateTradeCodesCheckBox.isChecked(),
                     classAStarPortFuelType=self._classAStarPortFuelType.currentEnum(),
                     classBStarPortFuelType=self._classBStarPortFuelType.currentEnum(),
                     classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),

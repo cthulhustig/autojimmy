@@ -27,7 +27,6 @@ class WorldReference(object):
 class Remarks(object):
     def __init__(
             self,
-            uwp: astronomer.UWP,
             tradeCodes: typing.Optional[typing.Collection[traveller.TradeCode]] = None,
             sophontPopulations: typing.Optional[typing.Collection[astronomer.SophontPopulation]] = None,
             rulingAllegiances: typing.Optional[typing.Collection[str]] = None,
@@ -36,7 +35,6 @@ class Remarks(object):
             researchStations: typing.Optional[typing.Collection[str]] = None,
             customRemarks: typing.Optional[typing.Collection[str]] = None
             ) -> None:
-        self._uwp = uwp
         self._tradeCodes = common.OrderedSet(tradeCodes) if tradeCodes else common.OrderedSet()
         self._sophontPopulationMap = {p.code(): p for p in sophontPopulations} if sophontPopulations else {}
         self._rulingAllegiances = list(rulingAllegiances) if rulingAllegiances else []
@@ -45,27 +43,15 @@ class Remarks(object):
         self._researchStations = common.OrderedSet(researchStations) if researchStations else common.OrderedSet()
         self._customRemarks = common.OrderedSet(customRemarks) if customRemarks else common.OrderedSet()
 
-        self._ruleSystemTradeCodesMap: typing.Dict[traveller.RuleSystem, common.OrderedSet[str]] = {}
-        self._remarkStringMap: typing.Dict[typing.Optional[traveller.RuleSystem], str] = {}
+        self._string = None
 
-    def tradeCodes(
-            self,
-            rules: typing.Optional[traveller.Rules] = None
-            ) -> typing.Collection[traveller.TradeCode]:
-        if rules is not None and rules.regenerateTradeCodes():
-            return self._ruleSystemTradeCodes(rules.system())
-
+    def tradeCodes(self) -> typing.Collection[traveller.TradeCode]:
         return self._tradeCodes
 
     def hasTradeCode(
             self,
-            tradeCode: traveller.TradeCode,
-            rules: typing.Optional[traveller.Rules] = None
+            tradeCode: traveller.TradeCode
             ) -> bool:
-        if rules is not None and rules.regenerateTradeCodes():
-            tradeCodes = self._ruleSystemTradeCodes(rules.system())
-            return tradeCode in tradeCodes
-
         return tradeCode in self._tradeCodes
 
     def sophonts(self) -> typing.Collection[astronomer.SophontPopulation]:
@@ -108,20 +94,9 @@ class Remarks(object):
     def hasCustomRemark(self, remark: str) -> bool:
         return remark in self._customRemarks
 
-    # TODO: Drop regenerating trade codes here. It should be an option
-    # to regenerate for all worlds when making a custom universe. This
-    # assumes I've moved to making a complete copy rather than the overlay.
-    # The default universe will always use the trade codes from Traveller
-    # Map. Doing this should mean I don't need the remarks to know about
-    # the UWP.
-    def string(
-            self,
-            rules: typing.Optional[traveller.Rules] = None
-            ) -> str:
-        ruleSystem = rules.system() if rules and rules.regenerateTradeCodes() else None
-        string = self._remarkStringMap.get(ruleSystem)
-        if string is not None:
-            return string
+    def string(self) -> str:
+        if self._string is not None:
+            return self._string
 
         tradeCodes = []
         majorRaceHomeWorlds = []
@@ -132,12 +107,8 @@ class Remarks(object):
         colonySystems = []
         rulingAllegiances = []
 
-        if ruleSystem is not None:
-            for tradeCode in self._ruleSystemTradeCodes(ruleSystem=ruleSystem):
-                tradeCodes.append(traveller.tradeCodeString(tradeCode))
-        else:
-            for tradeCode in self._tradeCodes:
-                tradeCodes.append(traveller.tradeCodeString(tradeCode))
+        for tradeCode in self._tradeCodes:
+            tradeCodes.append(traveller.tradeCodeString(tradeCode))
         tradeCodes.sort()
 
         for population in self._sophontPopulationMap.values():
@@ -167,7 +138,7 @@ class Remarks(object):
         for allegiance in self._rulingAllegiances:
             rulingAllegiances.append(allegiance.code())
 
-        string = survey.formatSystemRemarksString(
+        self._string = survey.formatSystemRemarksString(
             tradeCodes=tradeCodes,
             majorRaceHomeWorlds=majorRaceHomeWorlds,
             minorRaceHomeWorlds=minorRaceHomeWorlds,
@@ -178,28 +149,7 @@ class Remarks(object):
             rulingAllegiances=rulingAllegiances,
             researchStations=self._researchStations,
             customRemarks=self._customRemarks)
-        self._remarkStringMap[ruleSystem] = string
-        return string
+        return self._string
 
-    def isEmpty(
-            self,
-            rules: typing.Optional[traveller.Rules] = None
-            ) -> bool:
-        return len(self.string(rules=rules)) == 0
-
-    def _ruleSystemTradeCodes(
-            self,
-            ruleSystem: traveller.RuleSystem
-            ) -> common.OrderedSet:
-        tradeCodes = self._ruleSystemTradeCodesMap.get(ruleSystem)
-        if tradeCodes is not None:
-            return tradeCodes
-
-        tradeCodes = traveller.calculateMongooseTradeCodes(
-            uwp=self._uwp.string(),
-            ruleSystem=ruleSystem,
-            # Merge the trade codes stored in the DB so any non-calculated trade
-            # codes (sector capital, penal colony etc) are maintained
-            mergeTradeCodes=self._tradeCodes)
-        self._ruleSystemTradeCodesMap[ruleSystem] = tradeCodes
-        return tradeCodes
+    def isEmpty(self) -> bool:
+        return len(self.string()) == 0

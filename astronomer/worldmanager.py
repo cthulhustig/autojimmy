@@ -658,7 +658,7 @@ class WorldManager(object):
                             # TODO: Log something????
                             dbMainWorld = None
 
-                    nobilities = bases = remarks = None
+                    uwp = economics = culture = nobilities = bases = remarks = None
                     if dbMainWorld:
                         try:
                             uwp = astronomer.UWP(
@@ -676,7 +676,6 @@ class WorldManager(object):
                                     sectorId=dbSector.id(),
                                     name=systemLoggingName),
                                 exc_info=ex)
-                            uwp = astronomer.UWP()
 
                         try:
                             economics = astronomer.Economics(
@@ -690,7 +689,6 @@ class WorldManager(object):
                                     sectorId=dbSector.id(),
                                     name=systemLoggingName),
                                 exc_info=ex)
-                            economics = astronomer.Economics()
 
                         try:
                             culture = astronomer.Culture(
@@ -704,7 +702,6 @@ class WorldManager(object):
                                     sectorId=dbSector.id(),
                                     name=systemLoggingName),
                                 exc_info=ex)
-                            culture = astronomer.Culture()
 
                         dbTradeCodes = dbMainWorld.tradeCodes()
                         tradeCodes: typing.Optional[typing.List[traveller.TradeCode]] = None
@@ -815,7 +812,6 @@ class WorldManager(object):
 
                         try:
                             remarks = astronomer.Remarks(
-                                uwp=uwp,
                                 tradeCodes=tradeCodes,
                                 sophontPopulations=sophontPopulations,
                                 rulingAllegiances=rulingAllegiances,
@@ -879,20 +875,12 @@ class WorldManager(object):
                                     sectorId=dbSector.id(),
                                     name=systemLoggingName),
                                 exc_info=ex)
-                    else:
-                        # TODO: This is all a bit hacky, it's currently needed as a UWP needs to be
-                        # created so it can be passed into the remarks. I could make remarks world
-                        # specific (so they'd only be created if there was a main world) but remarks
-                        # feel like they should be at the system level (at least some of them) so
-                        # I wouldn't be able to have any for systems that have no main world
-                        uwp = astronomer.UWP()
-                        economics = astronomer.Economics()
-                        culture = astronomer.Culture()
 
                     dbPopulationMultiplier = dbMainWorld.populationMultiplier() if dbMainWorld else None
                     dbPlanetoidBeltCount = dbSystem.planetoidBeltCount()
                     dbGasGiantCount = dbSystem.gasGiantCount()
                     dbOtherWorldCount = dbSystem.otherWorldCount()
+                    pbg = None
                     try:
                         pbg = astronomer.PBG(
                             populationMultiplier=survey.ehexFromInteger(dbPopulationMultiplier),
@@ -904,7 +892,6 @@ class WorldManager(object):
                                 sectorId=dbSector.id(),
                                 name=systemLoggingName),
                             exc_info=ex)
-                        pbg = astronomer.PBG()
 
                     # This code regenerates the system world count from the the original
                     # second survey data. The other world count that it uses was derived

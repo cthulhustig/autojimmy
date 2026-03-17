@@ -171,7 +171,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
     def __init__(
             self,
-            rules: traveller.Rules,
             outcomeColours: app.OutcomeColours,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -179,7 +178,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             ) -> None:
         super().__init__()
 
-        self._rules = traveller.Rules(rules)
         self._outcomeColours = app.OutcomeColours(outcomeColours)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
@@ -240,19 +238,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     columnType == self.ColumnType.SaleSector or \
                     columnType == self.ColumnType.SaleSubsector:
                 self.setColumnWidth(column, 100)
-
-    def rules(self) -> traveller.Rules:
-        return traveller.Rules(self._rules)
-
-    def setRules(
-            self,
-            rules: traveller.Rules
-            ) -> None:
-        if rules == self._rules:
-            return
-
-        self._rules = traveller.Rules(rules)
-        self._syncContent()
 
     def outcomeColours(self) -> app.OutcomeColours:
         return app.OutcomeColours(self._outcomeColours)
@@ -532,15 +517,11 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
             purchaseWorldTagColour = saleWorldTagColour = None
             if self._worldTagging and self._taggingColours:
-                tagLevel = self._worldTagging.calculateWorldTagLevel(
-                    rules=self._rules,
-                    world=purchaseWorld)
+                tagLevel = self._worldTagging.calculateWorldTagLevel(world=purchaseWorld)
                 if tagLevel:
                     purchaseWorldTagColour = self._taggingColours.colour(level=tagLevel)
 
-                tagLevel = self._worldTagging.calculateWorldTagLevel(
-                    rules=self._rules,
-                    world=saleWorld)
+                tagLevel = self._worldTagging.calculateWorldTagLevel(world=saleWorld)
                 if tagLevel:
                     saleWorldTagColour = self._taggingColours.colour(level=tagLevel)
 
@@ -742,7 +723,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 return gui.createStringToolTip('No notes')
         elif columnType == self.ColumnType.Jumps:
             return gui.createLogisticsToolTip(
-                rules=self._rules,
                 routeLogistics=tradeOption.routeLogistics(),
                 worldTagging=self._worldTagging,
                 taggingColours=self._taggingColours)

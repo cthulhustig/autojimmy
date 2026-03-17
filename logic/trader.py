@@ -617,7 +617,6 @@ class Trader(object):
             return
 
         tradeOption = self._generateTradeOptionNotes(
-            rules=self._rules,
             tradeOption=tradeOption,
             shipFuelPerParsec=shipFuelPerParsec,
             pitCostCalculator=pitCostCalculator)
@@ -683,7 +682,6 @@ class Trader(object):
 
     @staticmethod
     def _generateTradeOptionNotes(
-            rules: traveller.Rules,
             tradeOption: logic.TradeOption,
             shipFuelPerParsec: common.ScalarCalculation,
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator]
@@ -716,15 +714,11 @@ class Trader(object):
                     percentageOfProfit = math.ceil((fuelCostToGetOffWorld / netProfit.averageCaseValue()) * 100)
                     notes.append(f'On the sale world the cost of buying the fuel for jump-1 will be Cr{fuelCostToGetOffWorld}. With average dice rolls, this will be {percentageOfProfit}% of the profits from the trade.')
 
-        isLowPop = purchaseWorld.hasTradeCode(
-            tradeCode=traveller.TradeCode.LowPopulationWorld,
-            rules=rules)
+        isLowPop = purchaseWorld.hasTradeCode(tradeCode=traveller.TradeCode.LowPopulationWorld)
         if isLowPop:
             notes.append(f'The purchase world has the Low Population trade code, you may struggle to find a seller')
 
-        isLowPop = saleWorld.hasTradeCode(
-            tradeCode=traveller.TradeCode.LowPopulationWorld,
-            rules=rules)
+        isLowPop = saleWorld.hasTradeCode(tradeCode=traveller.TradeCode.LowPopulationWorld)
         if isLowPop:
             notes.append(f'The sale world has the Low Population trade code, you may struggle to find a buyer')
 

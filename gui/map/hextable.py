@@ -626,9 +626,7 @@ class HexTable(gui.FrozenColumnListTable):
                 pbg = world.pbg()
                 worldTagLevel = worldTagColour = None
                 if self._worldTagging:
-                    worldTagLevel = self._worldTagging.calculateWorldTagLevel(
-                        rules=self._rules,
-                        world=world)
+                    worldTagLevel = self._worldTagging.calculateWorldTagLevel(world=world)
                     worldTagColour = self._taggingColour(worldTagLevel) if worldTagLevel else None
 
             # NOTE: It's important that an item is always created for each of the
@@ -856,7 +854,7 @@ class HexTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.TradeCodes:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tradeCodeStrings = [traveller.tradeCodeString(tc) for tc in world.tradeCodes(rules=self._rules)]
+                        tradeCodeStrings = [traveller.tradeCodeString(tc) for tc in world.tradeCodes()]
                         tradeCodeStrings.sort()
                         tableItem.setData(
                             QtCore.Qt.ItemDataRole.DisplayRole, ', '.join(tradeCodeStrings))
@@ -982,9 +980,7 @@ class HexTable(gui.FrozenColumnListTable):
                                         hex=ownerHex)
 
                                 if ownerWorld:
-                                    tagLevel = self._worldTagging.calculateWorldTagLevel(
-                                        rules=self._rules,
-                                        world=ownerWorld)
+                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld)
                                     if tagLevel and (not highestTagLevel or tagLevel > highestTagLevel):
                                         highestTagLevel = tagLevel
                                 else:
@@ -1022,9 +1018,7 @@ class HexTable(gui.FrozenColumnListTable):
                                         hex=colonyHex)
 
                                 if colonyWorld:
-                                    tagLevel = self._worldTagging.calculateWorldTagLevel(
-                                        rules=self._rules,
-                                        world=colonyWorld)
+                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=colonyWorld)
                                     if tagLevel and (not highestTagLevel or tagLevel > highestTagLevel):
                                         highestTagLevel = tagLevel
                                 else:
@@ -1042,7 +1036,7 @@ class HexTable(gui.FrozenColumnListTable):
                         remarks = world.remarks()
                         tableItem.setData(
                             QtCore.Qt.ItemDataRole.DisplayRole,
-                            remarks.string(rules=self._rules))
+                            remarks.string())
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
@@ -1160,7 +1154,7 @@ class HexTable(gui.FrozenColumnListTable):
                     strings=lines)
         elif columnType == self.ColumnType.TradeCodes:
             lines = []
-            for tradeCode in world.tradeCodes(rules=self._rules):
+            for tradeCode in world.tradeCodes():
                 lines.append('{code} - {name} - {description}'.format(
                     code=traveller.tradeCodeString(tradeCode=tradeCode),
                     name=traveller.tradeCodeName(tradeCode=tradeCode),
@@ -1271,9 +1265,7 @@ class HexTable(gui.FrozenColumnListTable):
                         ownerString = ownerWorld.name(includeSubsector=True)
                         listStrings.append(ownerString)
                         if self._worldTagging:
-                            tagLevel = self._worldTagging.calculateWorldTagLevel(
-                                rules=self._rules,
-                                world=ownerWorld)
+                            tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld)
                             if tagLevel:
                                 listColours[ownerString] = self._taggingColour(level=tagLevel)
                     else:
@@ -1319,9 +1311,7 @@ class HexTable(gui.FrozenColumnListTable):
                         colonyString = colonyWorld.name(includeSubsector=True)
                         listStrings.append(colonyString)
                         if self._worldTagging:
-                            tagLevel = self._worldTagging.calculateWorldTagLevel(
-                                rules=self._rules,
-                                world=colonyWorld)
+                            tagLevel = self._worldTagging.calculateWorldTagLevel(world=colonyWorld)
                             if tagLevel:
                                 listColours[colonyString] = self._taggingColour(level=tagLevel)
                     else:
@@ -1338,7 +1328,7 @@ class HexTable(gui.FrozenColumnListTable):
                     stringColours=listColours)
         elif columnType == self.ColumnType.Remarks:
             remarks = world.remarks()
-            return gui.createStringToolTip(remarks.string(rules=self._rules))
+            return gui.createStringToolTip(remarks.string())
 
         return None
 

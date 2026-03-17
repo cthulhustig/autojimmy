@@ -106,7 +106,6 @@ class WorldTagging(object):
 
     def calculateWorldTagLevel(
             self,
-            rules: traveller.Rules,
             world: astronomer.World
             ) -> typing.Optional[logic.TagLevel]:
         # Always tag Anomalies at warning level as they're not necessarily a danger
@@ -156,7 +155,7 @@ class WorldTagging(object):
             if tempTagLevel and (not worldTagLevel or (tempTagLevel > worldTagLevel)):
                 worldTagLevel = tempTagLevel
 
-        for tradeCode in world.tradeCodes(rules=rules):
+        for tradeCode in world.tradeCodes():
             tempTagLevel = self.calculateTradeCodeTagLevel(tradeCode)
             if tempTagLevel and (not worldTagLevel or (tempTagLevel > worldTagLevel)):
                 worldTagLevel = tempTagLevel
