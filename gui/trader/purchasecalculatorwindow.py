@@ -3,7 +3,6 @@ import common
 import gui
 import logging
 import logic
-import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -387,7 +386,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         cargoRecords, localBrokerIsInformant = logic.generateRandomPurchaseCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=purchaseWorld,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localBrokerSpinBox.isChecked(),
@@ -461,7 +460,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
-        tradeGoods = traveller.tradeGoodList(
+        tradeGoods = logic.tradeGoodList(
             ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
