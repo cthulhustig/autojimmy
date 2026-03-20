@@ -125,9 +125,6 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
         if lang != None:
             nameLanguages[name] = lang
 
-    sectorLabelElement = sectorElement.find('./Label')
-    sectorLabel = sectorLabelElement.text if sectorLabelElement != None else None
-
     xElement = sectorElement.find('./X')
     if xElement == None:
         raise RuntimeError('Failed to find X element in metadata')
@@ -325,7 +322,7 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
         alternateNames=names[1:],
         nameLanguages=nameLanguages,
         abbreviation=sectorElement.get('Abbreviation'),
-        sectorLabel=sectorLabel,
+        sectorLabel=sectorElement.get('Label'),
         subsectorNames=subsectorNames,
         x=x,
         y=y,
