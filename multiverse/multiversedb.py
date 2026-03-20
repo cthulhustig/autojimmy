@@ -1139,9 +1139,7 @@ class MultiverseDb(object):
                     ColumnDef(columnName='acceptance', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='strangeness', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='symbols', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    # TODO: It probably makes sense to switch the population multiplier back to Text for
-                    # consistency now that the belt/giant counts are in a separate table
-                    ColumnDef(columnName='population_multiplier', columnType=ColumnDef.ColumnType.Integer, isNullable=True, minValue=1, maxValue=9)])
+                    ColumnDef(columnName='population_multiplier', columnType=ColumnDef.ColumnType.Text, isNullable=True)])
 
             self._createTable(
                 cursor=cursor,

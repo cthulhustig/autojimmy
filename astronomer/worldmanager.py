@@ -655,7 +655,11 @@ class WorldManager(object):
                     if dbBodies:
                         dbMainWorld = dbBodies[0]
                         if not isinstance(dbMainWorld, multiverse.DbWorld):
-                            # TODO: Log something????
+                            logging.warning('Ignoring {type} main world when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    type=type(dbMainWorld),
+                                    systemId=dbSystem.id(),
+                                    sectorId=dbSector.id(),
+                                    name=systemLoggingName))
                             dbMainWorld = None
 
                     uwp = economics = culture = nobilities = bases = remarks = None
@@ -883,7 +887,9 @@ class WorldManager(object):
                     pbg = None
                     try:
                         pbg = astronomer.PBG(
-                            populationMultiplier=survey.ehexFromInteger(dbPopulationMultiplier),
+                            # Multiplier is stored as ehex code
+                            populationMultiplier=dbPopulationMultiplier,
+                            # Belt and giant counts need converted to an ehex code
                             planetoidBelts=survey.ehexFromInteger(dbPlanetoidBeltCount),
                             gasGiants=survey.ehexFromInteger(dbGasGiantCount))
                     except Exception as ex:

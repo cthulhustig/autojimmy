@@ -406,7 +406,7 @@ class DbWorld(DbBody):
             strangeness: typing.Optional[str] = None,
             symbols: typing.Optional[str] = None,
             # PBG (Belts and Gas Giants are stored at the DbSystem level)
-            populationMultiplier: typing.Optional[int] = None,
+            populationMultiplier: typing.Optional[str] = None,
             nobilities: typing.Optional[typing.Collection[DbNobility]] = None,
             bases: typing.Optional[typing.Collection[DbBase]] = None,
             tradeCodes: typing.Optional[typing.Collection[DbTradeCode]] = None,
@@ -444,7 +444,7 @@ class DbWorld(DbBody):
         survey.validateOptionalAcceptance(name='acceptance', value=acceptance)
         survey.validateOptionalStrangeness(name='strangeness', value=strangeness)
         survey.validateOptionalSymbols(name='symbols', value=symbols)
-        common.validateOptionalInt(name='populationMultiplier', value=populationMultiplier, min=1, max=9)
+        survey.validateOptionalPopulationMultiplier(name='populationMultiplier', value=populationMultiplier)
         DbWorld._validateNobilities(name='nobilities', value=nobilities, worldId=id)
         DbWorld._validateBases(name='bases', value=bases, worldId=id)
         DbWorld._validateTradeCodes(name='tradeCodes', value=tradeCodes, worldId=id)
@@ -544,7 +544,7 @@ class DbWorld(DbBody):
     def symbols(self) -> typing.Optional[str]:
         return self._symbols
 
-    def populationMultiplier(self) -> typing.Optional[int]:
+    def populationMultiplier(self) -> typing.Optional[str]:
         return self._populationMultiplier
 
     def nobilities(self) -> typing.Optional[typing.Collection[DbNobility]]:

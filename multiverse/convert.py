@@ -1082,14 +1082,6 @@ def _createDbBodies(
     if rawPBG:
         dbPopulationMultiplier, _, _ = \
             survey.parseSystemPBGString(pbg=rawPBG.upper())
-        if dbPopulationMultiplier is not None:
-            dbPopulationMultiplier = survey.ehexToInteger(dbPopulationMultiplier, None)
-            # As per the Traveller Map Second Survey docs, some worlds
-            # might have the multiplier incorrectly set to 0, in such
-            # cases a value of 0 should be used
-            # travellermap.com/doc/secondsurvey#pbg
-            if dbPopulationMultiplier == 0:
-                dbPopulationMultiplier = 1
 
     dbNobilities = _createDbNobilities(
         milieu=milieu,

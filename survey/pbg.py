@@ -3,7 +3,10 @@ import re
 import typing
 
 _PBGPattern = re.compile(r'([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])')
-_ValidPopulationMultiplierCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+# NOTE: 0 is not a valid option but, as per the Traveller Map second survey documentation,
+# some worlds are specified as having a multiplier of 0 but they should be interpreted as
+# a multiplier of 1
+_ValidPopulationMultiplierCodes = set(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
 _ValidPlanetoidBeltsCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
                                 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']) # Any valid ehex
 _ValidGasGiantsCodes = _ValidPlanetoidBeltsCodes
@@ -30,10 +33,9 @@ def parseSystemPBGString(
         pbg: str,
         strict: bool = False
         ) -> typing.Tuple[
-            typing.Optional[str], # Heterogeneity
-            typing.Optional[str], # Acceptance
-            typing.Optional[str], # Strangeness
-            typing.Optional[str]]: # Symbols
+            typing.Optional[str], # Population Multiplier
+            typing.Optional[str], # Planetoid Belts
+            typing.Optional[str]]: # Gas Giants
     # Handle a PBG of XXX as a special case to indicate none of the fields are known
     # (equivalent of ???). This format is used by a number of the Traveller Map
     # sectors. It's important to treat it as a special case rather than treating 'X' as
@@ -48,8 +50,14 @@ def parseSystemPBGString(
             return (None, None, None, None)
         raise ValueError(f'Invalid PBG string "{pbg}"')
 
+    multiplierCode = result[1]
+    if not strict and multiplierCode == '0':
+        # Strict parsing is disabled and the multiplier is 0 so interpret it as 1, as
+        # per the Traveller Map second survey documentation
+        multiplierCode = '1'
+
     return (
-        _processParsedCode(code=result[1], allowed=_ValidPopulationMultiplierCodes, name='Population Multiplier', strict=strict),
+        _processParsedCode(code=multiplierCode, allowed=_ValidPopulationMultiplierCodes, name='Population Multiplier', strict=strict),
         _processParsedCode(code=result[2], allowed=_ValidPlanetoidBeltsCodes, name='Planetoid Belts', strict=strict),
         _processParsedCode(code=result[3], allowed=_ValidGasGiantsCodes, name='Gas Giants', strict=strict))
 
