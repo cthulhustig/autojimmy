@@ -1,11 +1,7 @@
 import common
 import typing
 
-# TODO: Should this include G for green zone. It's one of the valid
-# codes in the Traveller Map second survey documentation. I don't
-# think anything current uses it but in theory user sectors could.
-# I could support it here but convert G to None in the convert code
-_ValidZoneCodes = set(['A', 'R', 'B', 'U', 'F'])
+_ValidZoneCodes = set(['G', 'A', 'R', 'B', 'U', 'F'])
 
 def parseSystemZoneString(
         zone: str,

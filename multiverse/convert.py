@@ -1701,6 +1701,9 @@ def _createDbSystems(
             dbZone = None
             if rawZone:
                 dbZone = survey.parseSystemZoneString(zone=rawZone.upper())
+                if dbZone == 'G':
+                    # In the database a green zone is represented by null
+                    dbZone = None
 
             # From the Traveller Map Second Survey documentation the system world count is
             # Main World + Gas Giant Count + Planetoid Belt Count + Other Planetoid Count.
