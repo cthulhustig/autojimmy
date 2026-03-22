@@ -533,7 +533,7 @@ class WorldManager(object):
                 # NOTE: Unlike most other places, it's intentional that this is upper case
                 subsectorNameMap[dbSubsectorName.code()] = (dbSubsectorName.name(), False)
 
-        allegianceCodeMap: typing.Dict[str, astronomer.Allegiance] = {}
+        allegianceIdMap: typing.Dict[str, astronomer.Allegiance] = {}
         if dbSector.allegiances():
             for dbAllegiance in dbSector.allegiances():
                 try:
@@ -557,7 +557,7 @@ class WorldManager(object):
                                 sectorId=dbSector.id(),
                                 name=sectorLoggingName))
 
-                    allegianceCodeMap[dbAllegiance.code()] = astronomer.Allegiance(
+                    allegianceIdMap[dbAllegiance.id()] = astronomer.Allegiance(
                         code=dbAllegiance.code(),
                         name=dbAllegiance.name(),
                         legacyCode=dbAllegiance.legacy(),
@@ -575,11 +575,11 @@ class WorldManager(object):
                         exc_info=ex)
 
         dbSophonts = dbSector.sophonts()
-        sophontCodeMap: typing.Dict[str, astronomer.Sophont] = {}
+        sophontIdMap: typing.Dict[str, astronomer.Sophont] = {}
         if dbSophonts:
             for dbSophont in dbSophonts:
                 try:
-                    sophontCodeMap[dbSophont.code()] = astronomer.Sophont(
+                    sophontIdMap[dbSophont.id()] = astronomer.Sophont(
                         code=dbSophont.code(),
                         name=dbSophont.name(),
                         isMajor=dbSophont.isMajor())
@@ -626,13 +626,13 @@ class WorldManager(object):
                     subsectorCode = subsectorIndex.code()
                     subsectorName, _ = subsectorNameMap[subsectorCode]
 
-                    allegianceCode = dbSystem.allegianceCode()
-                    allegiance = None
-                    if allegianceCode:
-                        allegiance = allegianceCodeMap.get(allegianceCode)
-                        if not allegiance:
-                            logging.warning('Ignoring unknown allegiance "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                code=allegianceCode,
+                    allegianceId = dbSystem.allegianceId()
+                    systemAllegiance = None
+                    if allegianceId:
+                        systemAllegiance = allegianceIdMap.get(allegianceId)
+                        if not systemAllegiance:
+                            logging.warning('Ignoring unknown allegiance {allegianceId} when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                allegianceId=allegianceId,
                                 systemId=dbSystem.id(),
                                 sectorId=dbSector.id(),
                                 name=systemLoggingName))
@@ -728,11 +728,11 @@ class WorldManager(object):
                         if dbPopulations:
                             sophontPopulations = []
                             for dbPopulation in dbPopulations:
-                                sophont = sophontCodeMap.get(dbPopulation.sophontCode())
+                                sophont = sophontIdMap.get(dbPopulation.sophontId())
                                 if not sophont:
-                                    logging.warning('Ignoring sophont population {objectId} with unknown sophont "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                    logging.warning('Ignoring sophont population {objectId} with unknown sophont {sophontId} when loading system {systemId} in sector {sectorId} ({name})'.format(
                                         objectId=dbPopulation.id(),
-                                        code=dbPopulation.sophontCode(),
+                                        sophontId=dbPopulation.sophontId(),
                                         systemId=dbSystem.id(),
                                         sectorId=dbSector.id(),
                                         name=systemLoggingName))
@@ -757,16 +757,16 @@ class WorldManager(object):
                         if dbRulingAllegiances:
                             rulingAllegiances = []
                             for dbAllegiance in dbRulingAllegiances:
-                                allegiance = allegianceCodeMap.get(dbAllegiance.allegianceCode())
-                                if not allegiance:
-                                    logging.warning('Ignoring ruling allegiance {objectId} with unknown allegiance "{code}" when loading system {systemId} in sector {sectorId} ({name})'.format(
+                                rulingAllegiance = allegianceIdMap.get(dbAllegiance.allegianceId())
+                                if not rulingAllegiance:
+                                    logging.warning('Ignoring ruling allegiance {objectId} with unknown allegiance {allegianceId} when loading system {systemId} in sector {sectorId} ({name})'.format(
                                         objectId=dbAllegiance.id(),
-                                        code=dbAllegiance.allegianceCode(),
+                                        allegianceId=dbAllegiance.allegianceId(),
                                         systemId=dbSystem.id(),
                                         sectorId=dbSector.id(),
                                         name=systemLoggingName))
                                     continue
-                                rulingAllegiances.append(allegiance)
+                                rulingAllegiances.append(rulingAllegiance)
 
                         dbOwningSystems = dbMainWorld.owningSystems()
                         owningWorlds: typing.Optional[typing.List[astronomer.WorldReference]] = None
@@ -956,7 +956,7 @@ class WorldManager(object):
                         isNameGenerated=isNameGenerated,
                         sectorName=sectorName,
                         subsectorName=subsectorName,
-                        allegiance=allegiance,
+                        allegiance=systemAllegiance,
                         zone=zone,
                         uwp=uwp,
                         economics=economics,
@@ -1019,13 +1019,13 @@ class WorldManager(object):
                             name=sectorLoggingName))
                         colour = None
 
-                    allegianceCode = dbRoute.allegianceCode()
-                    allegiance = None
-                    if allegianceCode:
-                        allegiance = allegianceCodeMap.get(allegianceCode)
-                        if not allegiance:
-                            logging.warning('Ignoring unknown allegiance code "{code}" for route {objectId} when loading sector {sectorId} ({name})'.format(
-                                code=allegianceCode,
+                    allegianceId = dbRoute.allegianceId()
+                    routeAllegiance = None
+                    if allegianceId:
+                        routeAllegiance = allegianceIdMap.get(allegianceId)
+                        if not routeAllegiance:
+                            logging.warning('Ignoring unknown allegiance {allegianceId} for route {objectId} when loading sector {sectorId} ({name})'.format(
+                                allegianceId=allegianceId,
                                 objectId=dbRoute.id(),
                                 sectorId=dbSector.id(),
                                 name=sectorLoggingName))
@@ -1043,7 +1043,7 @@ class WorldManager(object):
                     routes.append(astronomer.Route(
                         startHex=startHex,
                         endHex=endHex,
-                        allegiance=allegiance,
+                        allegiance=routeAllegiance,
                         type=dbRoute.type(),
                         style=style,
                         colour=colour,
@@ -1078,13 +1078,13 @@ class WorldManager(object):
                             name=sectorLoggingName))
                         colour = None
 
-                    allegianceCode = dbBorder.allegianceCode()
-                    allegiance = None
-                    if allegianceCode:
-                        allegiance = allegianceCodeMap.get(allegianceCode)
-                        if not allegiance:
-                            logging.warning('Ignoring unknown allegiance code "{code}" for border {objectId} when loading sector {sectorId} ({name})'.format(
-                                code=allegianceCode,
+                    allegianceId = dbBorder.allegianceId()
+                    borderAllegiance = None
+                    if allegianceId:
+                        borderAllegiance = allegianceIdMap.get(allegianceId)
+                        if not borderAllegiance:
+                            logging.warning('Ignoring unknown allegiance code {allegianceId} for border {objectId} when loading sector {sectorId} ({name})'.format(
+                                allegianceId=allegianceId,
                                 objectId=dbBorder.id(),
                                 sectorId=dbSector.id(),
                                 name=sectorLoggingName))
@@ -1101,7 +1101,7 @@ class WorldManager(object):
 
                     borders.append(astronomer.Border(
                         hexList=hexes,
-                        allegiance=allegiance,
+                        allegiance=borderAllegiance,
                         style=style,
                         colour=colour,
                         label=dbBorder.label(),
@@ -1275,8 +1275,8 @@ class WorldManager(object):
             abbreviation=dbSector.abbreviation(),
             sectorLabel=dbSector.sectorLabel(),
             subsectors=subsectors,
-            allegiances=allegianceCodeMap.values(),
-            sophonts=sophontCodeMap.values(),
+            allegiances=allegianceIdMap.values(),
+            sophonts=sophontIdMap.values(),
             routes=routes,
             borders=borders,
             regions=regions,

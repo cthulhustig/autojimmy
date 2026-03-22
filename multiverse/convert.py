@@ -1303,7 +1303,7 @@ def _createDbSophontPopulations(
 
         try:
             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophontCode=dbSophont.code(),
+                sophontId=dbSophont.id(),
                 percentage=rawPopulation,
                 isHomeWorld=True,
                 isDieBack=False))
@@ -1332,7 +1332,7 @@ def _createDbSophontPopulations(
 
         try:
             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophontCode=dbSophont.code(),
+                sophontId=dbSophont.id(),
                 percentage=rawPopulation,
                 isHomeWorld=True,
                 isDieBack=False))
@@ -1361,7 +1361,7 @@ def _createDbSophontPopulations(
 
         try:
             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophontCode=dbSophont.code(),
+                sophontId=dbSophont.id(),
                 percentage=rawPopulation,
                 isHomeWorld=False,
                 isDieBack=False))
@@ -1390,7 +1390,7 @@ def _createDbSophontPopulations(
 
         try:
             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophontCode=dbSophont.code(),
+                sophontId=dbSophont.id(),
                 percentage=None,
                 isHomeWorld=False,
                 isDieBack=True))
@@ -1521,7 +1521,7 @@ def _createDbRulingAllegiances(
             raise RuntimeError(f'Military rule trade code (Mr) in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
 
         try:
-            dbRulingAllegiances.append(multiverse.DbRulingAllegiance(allegianceCode=dbAllegiance.code()))
+            dbRulingAllegiances.append(multiverse.DbRulingAllegiance(allegianceId=dbAllegiance.id()))
         except Exception as ex:
             logging.error('Converter failed to construct ruling allegiance on world {world} in {sector} at {milieu}'.format(
                     world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
@@ -1778,7 +1778,7 @@ def _createDbSystems(
                 gasGiantCount=dbGasGiantCount,
                 otherWorldCount=dbOtherWorldCount,
                 zone=dbZone,
-                allegianceCode=dbAllegiance.code() if dbAllegiance else None,
+                allegianceId=dbAllegiance.id() if dbAllegiance else None,
                 stars=dbStars,
                 bodies=dbBodies))
         except Exception as ex:
@@ -1871,7 +1871,7 @@ def _createDbRoutes(
                 style=dbStyle,
                 colour=dbColour,
                 width=dbWidth,
-                allegianceCode=dbAllegiance.code() if dbAllegiance else None))
+                allegianceId=dbAllegiance.id() if dbAllegiance else None))
 
     return dbRoutes
 
@@ -1959,7 +1959,7 @@ def _createDbBorders(
 
             dbBorders.append(multiverse.DbBorder(
                 hexes=dbHexes,
-                allegianceCode=dbAllegiance.code() if dbAllegiance else None,
+                allegianceId=dbAllegiance.id() if dbAllegiance else None,
                 style=dbStyle,
                 colour=dbColour,
                 label=dbLabel,
