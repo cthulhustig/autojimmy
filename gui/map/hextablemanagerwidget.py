@@ -1,11 +1,11 @@
 import app
+import astronomer
 import cartographer
 import enum
 import gui
 import logging
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -22,7 +22,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Iterable[app.MapOption],
@@ -30,7 +30,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
-            allowHexCallback: typing.Optional[typing.Callable[[multiverse.HexPosition], bool]] = None,
+            allowHexCallback: typing.Optional[typing.Callable[[astronomer.HexPosition], bool]] = None,
             isOrderedList: bool = False,
             hexTable: typing.Optional[gui.HexTable] = None,
             displayModeTabs: typing.Optional[gui.HexTableTabBar] = None
@@ -175,10 +175,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self.setLayout(widgetLayout)
         self.installEventFilter(self)
 
-    def milieu(self) -> multiverse.Milieu:
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         if milieu is self._milieu:
             return
         self._milieu = milieu
@@ -253,7 +253,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def addHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         if self._allowHexCallback:
             if not self._allowHexCallback(hex):
@@ -263,10 +263,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def addHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         if self._allowHexCallback:
-            filteredHexes: typing.List[multiverse.HexPosition] = []
+            filteredHexes: typing.List[astronomer.HexPosition] = []
             for hex in hexes:
                 if not self._allowHexCallback(hex):
                     continue
@@ -281,7 +281,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def removeHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> bool:
         removed = self._hexTable.removeHex(hex)
         if removed:
@@ -299,25 +299,25 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def containsHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> bool:
         return self._hexTable.containsHex(hex)
 
     def rowCount(self) -> int:
         return self._hexTable.rowCount()
 
-    def hex(self, row: int) -> typing.Optional[multiverse.HexPosition]:
+    def hex(self, row: int) -> typing.Optional[astronomer.HexPosition]:
         return self._hexTable.hex(row=row)
 
-    def world(self, row: int) -> typing.Optional[multiverse.World]:
+    def world(self, row: int) -> typing.Optional[astronomer.World]:
         return self._hexTable.world(row)
 
-    def hexes(self) -> typing.List[multiverse.HexPosition]:
+    def hexes(self) -> typing.List[astronomer.HexPosition]:
         return self._hexTable.hexes()
 
     # NOTE: Indexing into the list of returned worlds does not match
     # table row indexing if the table contains dead space hexes.
-    def worlds(self) -> typing.List[multiverse.World]:
+    def worlds(self) -> typing.List[astronomer.World]:
         return self._hexTable.worlds()
 
     def rowAt(self, y: int) -> int:
@@ -325,23 +325,23 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         translated = self._hexTable.viewport().mapFromGlobal(translated)
         return self._hexTable.rowAt(translated.y())
 
-    def hexAt(self, y: int) -> typing.Optional[multiverse.HexPosition]:
+    def hexAt(self, y: int) -> typing.Optional[astronomer.HexPosition]:
         row = self.rowAt(y)
         return self.hex(row) if row >= 0 else None
 
-    def worldAt(self, y: int) -> typing.Optional[multiverse.World]:
+    def worldAt(self, y: int) -> typing.Optional[astronomer.World]:
         row = self.rowAt(y)
         return self.world(row) if row >= 0 else None
 
     def hasSelection(self) -> bool:
         return self._hexTable.hasSelection()
 
-    def selectedHexes(self) -> typing.List[multiverse.HexPosition]:
+    def selectedHexes(self) -> typing.List[astronomer.HexPosition]:
         return self._hexTable.selectedHexes()
 
     # NOTE: Indexing into the list of returned worlds does not match table
     # selection indexing if the selection contains dead space hexes.
-    def selectedWorlds(self) -> typing.List[multiverse.World]:
+    def selectedWorlds(self) -> typing.List[astronomer.World]:
         return self._hexTable.selectedWorlds()
 
     def removeSelectedRows(self) -> None:
@@ -353,15 +353,15 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def setRelativeHex(
             self,
-            hex: typing.Union[multiverse.HexPosition, multiverse.World]
+            hex: typing.Union[astronomer.HexPosition, astronomer.World]
             ) -> None:
-        if isinstance(hex, multiverse.World):
+        if isinstance(hex, astronomer.World):
             hex = hex.hex()
         self._relativeHex = hex
 
     def setRelativeWorld(
             self,
-            world: multiverse.World
+            world: astronomer.World
             ) -> None:
         self.setRelativeHex(world)
 
@@ -447,7 +447,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             # the table
             contentChanged = False
             for row in range(self._hexTable.rowCount() - 1, -1, -1):
-                world = multiverse.WorldManager.instance().worldByPosition(
+                world = astronomer.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,
                     hex=self.hex(row=row))
                 if not world:
@@ -522,11 +522,11 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def promptAddNearby(
             self,
             initialHex: typing.Optional[typing.Union[
-                multiverse.HexPosition,
-                multiverse.World
+                astronomer.HexPosition,
+                astronomer.World
                 ]] = None
             ) -> None:
-        centerHex = initialHex.hex() if isinstance(initialHex, multiverse.World) else initialHex
+        centerHex = initialHex.hex() if isinstance(initialHex, astronomer.World) else initialHex
         if not centerHex and self._relativeHex:
             centerHex = self._relativeHex
 

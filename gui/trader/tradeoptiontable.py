@@ -1,10 +1,11 @@
 import app
+import astronomer
 import common
 import enum
 import gui
 import logging
 import logic
-import multiverse
+import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -330,7 +331,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     tradeOptions.append(tradeOption)
         return tradeOptions
 
-    def uniqueWorlds(self, selectedOnly: bool = False) -> typing.Set[multiverse.World]:
+    def uniqueWorlds(self, selectedOnly: bool = False) -> typing.Set[astronomer.World]:
         rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
         worlds = set()
         for row in rowsIter:
@@ -340,7 +341,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 worlds.add(tradeOption.saleWorld())
         return worlds
 
-    def uniquePurchaseWorlds(self, selectedOnly: bool = False) -> typing.Set[multiverse.World]:
+    def uniquePurchaseWorlds(self, selectedOnly: bool = False) -> typing.Set[astronomer.World]:
         rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
         worlds = set()
         for row in rowsIter:
@@ -349,7 +350,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 worlds.add(tradeOption.purchaseWorld())
         return worlds
 
-    def uniqueSaleWorlds(self, selectedOnly: bool = False) -> typing.Set[multiverse.World]:
+    def uniqueSaleWorlds(self, selectedOnly: bool = False) -> typing.Set[astronomer.World]:
         rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
         worlds = set()
         for row in rowsIter:
@@ -516,11 +517,11 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
             purchaseWorldTagColour = saleWorldTagColour = None
             if self._worldTagging and self._taggingColours:
-                tagLevel = self._worldTagging.calculateWorldTagLevel(purchaseWorld)
+                tagLevel = self._worldTagging.calculateWorldTagLevel(world=purchaseWorld)
                 if tagLevel:
                     purchaseWorldTagColour = self._taggingColours.colour(level=tagLevel)
 
-                tagLevel = self._worldTagging.calculateWorldTagLevel(saleWorld)
+                tagLevel = self._worldTagging.calculateWorldTagLevel(world=saleWorld)
                 if tagLevel:
                     saleWorldTagColour = self._taggingColours.colour(level=tagLevel)
 
@@ -702,7 +703,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=purchaseWorld.hex())
             else:
-                return multiverse.WorldManager.instance().canonicalHexName(
+                return astronomer.WorldManager.instance().canonicalHexName(
                     milieu=purchaseWorld.milieu(),
                     hex=purchaseWorld.hex())
         elif columnType == self.ColumnType.SaleWorld or columnType == self.ColumnType.SaleSector or \
@@ -711,7 +712,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=saleWorld.hex())
             else:
-                return multiverse.WorldManager.instance().canonicalHexName(
+                return astronomer.WorldManager.instance().canonicalHexName(
                     milieu=saleWorld.milieu(),
                     hex=saleWorld.hex())
         elif columnType == self.ColumnType.Notes:
@@ -782,14 +783,14 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showWorldsOnMap(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         try:
             mapWindow = gui.WindowManager.instance().showUniverseMapWindow()

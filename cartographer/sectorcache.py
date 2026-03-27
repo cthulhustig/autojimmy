@@ -1,6 +1,6 @@
+import astronomer
 import cartographer
 import math
-import multiverse
 import typing
 
 class SectorPath(object):
@@ -34,16 +34,12 @@ class SectorLines(object):
             points: typing.Iterable[cartographer.AbstractPointList],
             colour: typing.Optional[str],
             width: typing.Optional[float],
-            style: typing.Optional[cartographer.LineStyle],
-            type: typing.Optional[str],
-            allegiance: typing.Optional[str]
+            style: typing.Optional[cartographer.LineStyle]
             ) -> None:
         self._points = points
         self._colour = colour
         self._width = width
         self._style = style
-        self._type = type
-        self._allegiance = allegiance
 
     def points(self) -> cartographer.AbstractPointList:
         return self._points
@@ -57,12 +53,6 @@ class SectorLines(object):
     def style(self) -> typing.Optional[cartographer.LineStyle]:
         return self._style
 
-    def type(self) -> typing.Optional[str]:
-        return self._type
-
-    def allegiance(self) -> typing.Optional[str]:
-        return self._allegiance
-
 class SectorCache(object):
     # This was moved from the style sheet as it never actually changes
     _RouteEndAdjust = 0.25
@@ -72,66 +62,64 @@ class SectorCache(object):
 
     # NOTE: These offsets assume a clockwise winding
     _TopClipOffsets = [
-        (-0.5 - multiverse.HexWidthOffset, 0), # Center left
-        (-0.5 + multiverse.HexWidthOffset, -0.5), # Upper left
-        (+0.5 - multiverse.HexWidthOffset, -0.5), # Upper right
-        (+0.5 + multiverse.HexWidthOffset, 0) # Center right
+        (-0.5 - astronomer.HexWidthOffset, 0), # Center left
+        (-0.5 + astronomer.HexWidthOffset, -0.5), # Upper left
+        (+0.5 - astronomer.HexWidthOffset, -0.5), # Upper right
+        (+0.5 + astronomer.HexWidthOffset, 0) # Center right
     ]
 
     _RightClipOffsets = [
-        (+0.5 - multiverse.HexWidthOffset, -0.5), # Upper right
-        (+0.5 + multiverse.HexWidthOffset, 0), # Center right
-        (+0.5 - multiverse.HexWidthOffset, +0.5), # Lower right
-        (+0.5 + multiverse.HexWidthOffset, 1) # Center right of next hex
+        (+0.5 - astronomer.HexWidthOffset, -0.5), # Upper right
+        (+0.5 + astronomer.HexWidthOffset, 0), # Center right
+        (+0.5 - astronomer.HexWidthOffset, +0.5), # Lower right
+        (+0.5 + astronomer.HexWidthOffset, 1) # Center right of next hex
     ]
 
     _BottomClipOffsets = [
-        (+0.5 + multiverse.HexWidthOffset, 0), # Center right
-        (+0.5 - multiverse.HexWidthOffset, +0.5), # Lower right
-        (-0.5 + multiverse.HexWidthOffset, +0.5), # Lower Left
-        (-0.5 - multiverse.HexWidthOffset, 0) # Center left
+        (+0.5 + astronomer.HexWidthOffset, 0), # Center right
+        (+0.5 - astronomer.HexWidthOffset, +0.5), # Lower right
+        (-0.5 + astronomer.HexWidthOffset, +0.5), # Lower Left
+        (-0.5 - astronomer.HexWidthOffset, 0) # Center left
     ]
 
     _LeftClipOffsets = [
-        (-0.5 + multiverse.HexWidthOffset, +0.5), # Lower Left
-        (-0.5 - multiverse.HexWidthOffset, 0), # Center left
-        (-0.5 + multiverse.HexWidthOffset, -0.5), # Upper left
-        (-0.5 - multiverse.HexWidthOffset, -1) # Center left of next hex
+        (-0.5 + astronomer.HexWidthOffset, +0.5), # Lower Left
+        (-0.5 - astronomer.HexWidthOffset, 0), # Center left
+        (-0.5 + astronomer.HexWidthOffset, -0.5), # Upper left
+        (-0.5 - astronomer.HexWidthOffset, -1) # Center left of next hex
     ]
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
-            universe: multiverse.Universe,
-            graphics: cartographer.AbstractGraphics,
-            styleStore: cartographer.StyleStore
+            milieu: astronomer.Milieu,
+            universe: astronomer.Universe,
+            graphics: cartographer.AbstractGraphics
             ) -> None:
         self._milieu = milieu
         self._universe = universe
         self._graphics = graphics
-        self._styleStore = styleStore
         self._worldsCache: typing.Dict[
-            multiverse.SectorIndex,
+            astronomer.SectorIndex,
             cartographer.AbstractPointList
         ] = {}
         self._borderCache: typing.Dict[
-            multiverse.SectorIndex,
+            astronomer.SectorIndex,
             typing.List[SectorPath]
         ] = {}
         self._regionCache: typing.Dict[
-            multiverse.SectorIndex,
+            astronomer.SectorIndex,
             typing.List[SectorPath]
         ] = {}
         self._routeCache: typing.Dict[
-            multiverse.SectorIndex,
+            astronomer.SectorIndex,
             typing.List[SectorLines]
         ] = {}
         self._clipCache: typing.Dict[
-            multiverse.SectorIndex,
+            astronomer.SectorIndex,
             cartographer.AbstractPath
         ] = {}
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         if milieu is self._milieu:
             return
         self._milieu = milieu
@@ -144,7 +132,7 @@ class SectorCache(object):
 
     def isotropicWorldPoints(
             self,
-            index: multiverse.SectorIndex
+            index: astronomer.SectorIndex
             ) -> typing.Optional[cartographer.AbstractPointList]:
         worlds = self._worldsCache.get(index)
         if worlds is not None:
@@ -163,8 +151,8 @@ class SectorCache(object):
             centerX, centerY = world.hex().worldCenter()
             points.append(cartographer.PointF(
                 # Scale center point by parsec scale to convert to isotropic coordinates
-                x=centerX * multiverse.ParsecScaleX,
-                y=centerY * multiverse.ParsecScaleY))
+                x=centerX * astronomer.ParsecScaleX,
+                y=centerY * astronomer.ParsecScaleY))
 
         worlds = self._graphics.createPointList(points=points)
         self._worldsCache[index] = worlds
@@ -172,7 +160,7 @@ class SectorCache(object):
 
     def borderPaths(
             self,
-            index: multiverse.SectorIndex
+            index: astronomer.SectorIndex
             ) -> typing.Optional[typing.List[SectorPath]]:
         borders = self._borderCache.get(index)
         if borders is not None:
@@ -193,7 +181,7 @@ class SectorCache(object):
 
     def regionPaths(
             self,
-            index: multiverse.SectorIndex
+            index: astronomer.SectorIndex
             ) -> typing.Optional[typing.List[SectorPath]]:
         regions = self._regionCache.get(index)
         if regions is not None:
@@ -214,7 +202,7 @@ class SectorCache(object):
 
     def routeLines(
             self,
-            index: multiverse.SectorIndex
+            index: astronomer.SectorIndex
             ) -> typing.Optional[typing.List[SectorLines]]:
         routes = self._routeCache.get(index)
         if routes is not None:
@@ -233,7 +221,7 @@ class SectorCache(object):
                 typing.Optional[float], # Width
                 typing.Optional[cartographer.LineStyle], # Line style
                 typing.Optional[str], # Type
-                typing.Optional[str]], # Allegiance
+                typing.Optional[astronomer.Allegiance]], # Allegiance
             typing.List[cartographer.PointF]] = {}
         for route in sector.yieldRoutes():
             # Compute source/target sectors (may be offset)
@@ -271,75 +259,58 @@ class SectorCache(object):
 
         routes = []
         for (colour, width, style, type, allegiance), points in routePointsMap.items():
-            if style is multiverse.Route.Style.Solid:
+            if allegiance:
+                if colour is None:
+                    colour = allegiance.routeColour()
+                if style is None:
+                    style = allegiance.routeStyle()
+                if width is None:
+                    width = allegiance.routeWidth()
+
+            if style is astronomer.LineStyle.Solid:
                 style = cartographer.LineStyle.Solid
-            elif style is multiverse.Route.Style.Dashed:
+            elif style is astronomer.LineStyle.Dashed:
                 style = cartographer.LineStyle.Dash
-            elif style is multiverse.Route.Style.Dotted:
+            elif style is astronomer.LineStyle.Dotted:
                 style = cartographer.LineStyle.Dot
             else:
                 style = None
-
-            if not colour or not style or not width:
-                # This code is intended to mimic the behaviour of code from
-                # Traveller Map DrawMicroRoutes
-                precedence = []
-                if allegiance:
-                    precedence.append(allegiance)
-                elif type:
-                    precedence.append(type)
-                else:
-                    precedence.append('Im')
-                precedence.append(None)
-
-                for key in precedence:
-                    if self._styleStore.hasRouteStyle(key):
-                        defaultColour, defaultStyle, defaultWidth = self._styleStore.routeStyle(key)
-                        if not colour:
-                            colour = defaultColour
-                        if not style:
-                            style = defaultStyle
-                        if not width:
-                            width = defaultWidth
-                        break
 
             routes.append(SectorLines(
                 points=self._graphics.createPointList(points=points),
                 colour=colour,
                 width=width,
-                style=style,
-                type=type,
-                allegiance=allegiance))
+                style=style))
         self._routeCache[index] = routes
 
         return routes
 
     def clipPath(
             self,
-            index: multiverse.SectorIndex
+            index: astronomer.SectorIndex
             ) -> cartographer.AbstractPath:
         clipPath = self._clipCache.get(index)
         if clipPath:
             return clipPath
 
-        absoluteOriginX, absoluteOriginY = multiverse.relativeSpaceToAbsoluteSpace(
+        absoluteOriginX, absoluteOriginY = astronomer.relativeSpaceToAbsoluteSpace(
             (index.sectorX(), index.sectorY(), 1, 1))
 
         points = []
 
         count = len(SectorCache._TopClipOffsets)
         y = 0
-        for x in range(0, multiverse.SectorWidth, 2):
+        for x in range(0, astronomer.SectorWidth, 2):
             for i in range(count):
                 offsetX, offsetY = SectorCache._TopClipOffsets[i]
                 points.append(cartographer.PointF(
                     x=((absoluteOriginX + x) - 0.5) + offsetX,
                     y=((absoluteOriginY + y) - 0.5) + offsetY))
 
-        last = multiverse.SectorHeight - 2
+        last = astronomer.SectorHeight - 2
         count = len(SectorCache._RightClipOffsets)
-        x = multiverse.SectorWidth - 1
-        for y in range(0, multiverse.SectorHeight, 2):
+        x = astronomer.SectorWidth - 1
+        for y in range(0, astronomer.SectorHeight, 2):
             if y == last:
                 count -= 1
             for i in range(count):
@@ -349,18 +320,18 @@ class SectorCache(object):
                     y=(absoluteOriginY + y) + offsetY))
 
         count = len(SectorCache._BottomClipOffsets)
-        y = multiverse.SectorHeight - 1
-        for x in range(multiverse.SectorWidth - 1, -1, -2):
+        y = astronomer.SectorHeight - 1
+        for x in range(astronomer.SectorWidth - 1, -1, -2):
             for i in range(count):
                 offsetX, offsetY = SectorCache._BottomClipOffsets[i]
                 points.append(cartographer.PointF(
                     x=((absoluteOriginX + x) - 0.5) + offsetX,
                     y=(absoluteOriginY + y) + offsetY))
 
-        last = multiverse.SectorHeight - 2
+        last = astronomer.SectorHeight - 2
         count = len(SectorCache._LeftClipOffsets)
         x = 0
-        for y in range(multiverse.SectorHeight - 1, -1, -2):
+        for y in range(astronomer.SectorHeight - 1, -1, -2):
             if y == last:
                 count -= 1
             for i in range(count):
@@ -382,36 +353,29 @@ class SectorCache(object):
 
     def _createOutline(
             self,
-            source: typing.Union[multiverse.Region, multiverse.Border]
+            source: typing.Union[astronomer.Region, astronomer.Border]
             ) -> SectorPath:
         colour = source.colour()
         style = None
 
-        if isinstance(source, multiverse.Border):
-            if source.style() is multiverse.Border.Style.Solid:
+        if isinstance(source, astronomer.Border):
+            style = source.style()
+
+            allegiance = source.allegiance()
+            if allegiance:
+                if colour is None:
+                    colour = allegiance.borderColour()
+                if style is None:
+                    style = allegiance.borderStyle()
+
+            if style is astronomer.LineStyle.Solid:
                 style = cartographer.LineStyle.Solid
-            elif source.style() is multiverse.Border.Style.Dashed:
+            elif style is astronomer.LineStyle.Dashed:
                 style = cartographer.LineStyle.Dash
-            elif source.style() is multiverse.Border.Style.Dotted:
+            elif style is astronomer.LineStyle.Dotted:
                 style = cartographer.LineStyle.Dot
-
-            if not colour or not style:
-                # This code is intended to mimic the behaviour of code from
-                # Traveller Map DrawMicroBorders
-                allegiance = source.allegiance()
-                precedence = []
-                if allegiance:
-                    precedence.append(allegiance)
-                precedence.append(None)
-
-                for key in precedence:
-                    if self._styleStore.hasBorderStyle(key):
-                        defaultColour, defaultStyle = self._styleStore.borderStyle(key)
-                        if not colour:
-                            colour = defaultColour
-                        if not style:
-                            style = defaultStyle
-                        break
+            else:
+                style = None
 
         outline = source.worldOutline()
         drawPath = []
@@ -434,13 +398,13 @@ class SectorCache(object):
             endPoint: cartographer.PointF,
             offset: float
             ) -> None:
-        dx = (endPoint.x() - startPoint.x()) * multiverse.ParsecScaleX
-        dy = (endPoint.y() - startPoint.y()) * multiverse.ParsecScaleY
+        dx = (endPoint.x() - startPoint.x()) * astronomer.ParsecScaleX
+        dy = (endPoint.y() - startPoint.y()) * astronomer.ParsecScaleY
         length = math.sqrt(dx * dx + dy * dy)
         if not length:
             return # No offset
-        ddx = (dx * offset / length) / multiverse.ParsecScaleX
-        ddy = (dy * offset / length) / multiverse.ParsecScaleY
+        ddx = (dx * offset / length) / astronomer.ParsecScaleX
+        ddy = (dy * offset / length) / astronomer.ParsecScaleY
         startPoint.setX(startPoint.x() + ddx)
         startPoint.setY(startPoint.y() + ddy)
         endPoint.setX(endPoint.x() - ddx)
