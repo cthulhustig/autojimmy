@@ -1,0 +1,100 @@
+import logging
+import multiverse
+import survey
+import typing
+
+# This returns true if the universe snapshot from the snapshot manager
+# is newer than the stock universe database (or if there is no stock
+# universe database)
+def isStockUniverseSnapshotNewer() -> bool:
+    snapshotTimestamp = multiverse.SnapshotManager.instance().snapshotTimestamp()
+    if not snapshotTimestamp:
+        return False
+    return multiverse.UniverseManager.instance().checkStockUniverseTimestamp(
+        snapshotTimestamp=snapshotTimestamp)
+
+def importStockUniverseSnapshot(
+        progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+        ) -> None:
+    importTimestamp = multiverse.SnapshotManager.instance().snapshotTimestamp()
+    isSnapshotNewer = multiverse.UniverseManager.instance().checkStockUniverseTimestamp(
+        snapshotTimestamp=importTimestamp)
+    if not isSnapshotNewer:
+        return # Nothing to do
+
+    rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
+    rawStockSophonts = multiverse.readSnapshotStockSophonts()
+    rawStockStyleSheet = multiverse.readSnapshotStyleSheet()
+
+    milieuSectors: typing.List[typing.Tuple[
+        str, # Milieu
+        typing.List[str] # List of sector names in the milieu
+    ]] = []
+    totalSectorCount = 0
+    for milieu in multiverse.SnapshotManager.instance().listMilieu():
+        universeInfo = multiverse.SnapshotManager.instance().loadUniverseInfo(milieu=milieu)
+
+        sectorNames = []
+        for sectorInfo in universeInfo.sectorInfos():
+            nameInfos = sectorInfo.nameInfos()
+            canonicalName = nameInfos[0].name() if nameInfos else None
+            if not canonicalName:
+                logging.warning(f'Default universe import ignoring sector with no name in milieu {milieu}')
+                continue
+            sectorNames.append(canonicalName)
+            totalSectorCount += 1
+
+        milieuSectors.append((milieu, sectorNames))
+
+    rawData: typing.List[typing.Tuple[
+        str, # Milieu
+        survey.RawMetadata,
+        typing.Collection[survey.RawWorld]
+        ]] = []
+    progressCount = 0
+    for milieu, sectorNames in milieuSectors:
+        for sectorName in sectorNames:
+            if progressCallback:
+                try:
+                    progressCallback(
+                        f'Reading: {milieu} - {sectorName}',
+                        progressCount,
+                        totalSectorCount)
+                    progressCount += 1
+                except Exception as ex:
+                    logging.warning('Default universe import progress callback threw an exception', exc_info=ex)
+
+            try:
+                rawMetadata = multiverse.SnapshotManager.instance().loadSectorMetadata(
+                    milieu=milieu,
+                    sector=sectorName)
+                rawSystems = multiverse.SnapshotManager.instance().loadSectorWorlds(
+                    milieu=milieu,
+                    sector=sectorName)
+                rawData.append((milieu, rawMetadata, rawSystems))
+            except Exception as ex:
+                logging.error(f'Default universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
+
+    if progressCallback:
+        try:
+            progressCallback(
+                f'Reading: Complete!',
+                totalSectorCount,
+                totalSectorCount)
+        except Exception as ex:
+            logging.warning('Default universe import progress callback threw an exception', exc_info=ex)
+
+    dbUniverse = multiverse.convertRawUniverseToDbUniverse(
+        universeId='Blah', # TODO: This shouldn't be needed
+        universeName='Default Universe',
+        isCustom=False,
+        rawSectors=rawData,
+        rawStockAllegiances=rawStockAllegiances,
+        rawStockSophonts=rawStockSophonts,
+        rawStockStyleSheet=rawStockStyleSheet,
+        progressCallback=progressCallback)
+
+    multiverse.UniverseManager.instance().updateStockUniverse(
+        sectors=dbUniverse.sectors(),
+        snapshotTimestamp=importTimestamp,
+        progressCallback=progressCallback)

@@ -53,9 +53,6 @@ class DbUniverseObject(DbObject):
         if universeId == self._universeId:
             return # Nothing to do
 
-        if self._universeId is not None:
-            raise RuntimeError(f'Object {self._id} of type {type(self)} is already attached to a universe')
-
         self._universeId = universeId
 
 class DbSectorObject(DbObject):
@@ -1846,20 +1843,21 @@ class DbSector(DbUniverseObject):
                 raise ValueError(f'{name} contains products that are already attached to a sector')
 
 # TODO: This needs updated to be immutable like the other db objects
+# TODO: I think I should be able to get rid of this (or drastically change it) as part of the multi file work
 class DbUniverse(DbObject):
     def __init__(
             self,
             name: str,
             description: typing.Optional[str] = None,
             sectors: typing.Optional[typing.Collection[DbSector]] = None,
-            notes: typing.Optional[str] = None,
+            notes: typing.Optional[str] = None, # TODO: I'm not going to have universe notes when using multiple files
             id: typing.Optional[str] = None, # None means allocate an id
             ) -> None:
         super().__init__(id=id)
 
         common.validateMandatoryStr(name='name', value=name)
         common.validateOptionalStr(name='description', value=description)
-        DbUniverse._validateSectors(name='sectors', value=sectors, universeId=id)
+        DbUniverse._validateSectors(name='sectors', value=sectors)
         common.validateOptionalStr(name='notes', value=notes)
 
         self._sectorByMilieuPosition: typing.Dict[typing.Tuple[str, int, int], DbSector] = {}
@@ -1935,8 +1933,7 @@ class DbUniverse(DbObject):
     @staticmethod
     def _validateSectors(
             name: str,
-            value: typing.Optional[typing.Collection[DbSector]],
-            universeId: typing.Optional[str]
+            value: typing.Optional[typing.Collection[DbSector]]
             ) -> None:
         if value is None:
             return
@@ -1945,10 +1942,6 @@ class DbUniverse(DbObject):
 
         seen = set()
         for sector in value:
-            currentSectorId = sector.universeId()
-            if currentSectorId is not None and currentSectorId != universeId:
-                raise ValueError(f'{name} contains sectors that are already attached to a universe')
-
             key = (sector.sectorX(), sector.sectorY(), sector.milieu())
             if key in seen:
                 raise ValueError(f'{name} contains multiple systems with the same location and milieu')

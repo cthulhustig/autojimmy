@@ -182,7 +182,7 @@ class RawRoute(object):
 class RawBorder(object):
     def __init__(
             self,
-            hexList: typing.Collection[str],
+            hexList: typing.Sequence[str],
             allegiance: typing.Optional[str],
             showLabel: typing.Optional[bool],
             wrapLabel: typing.Optional[bool],
@@ -205,7 +205,7 @@ class RawBorder(object):
         self._style = style
         self._colour = colour
 
-    def hexList(self) -> typing.Collection[str]:
+    def hexList(self) -> typing.Sequence[str]:
         return self._hexList
 
     def allegiance(self) -> typing.Optional[str]:
@@ -281,7 +281,7 @@ class RawLabel(object):
 class RawRegion(object):
     def __init__(
             self,
-            hexList: typing.Collection[str],
+            hexList: typing.Sequence[str],
             showLabel: typing.Optional[bool],
             wrapLabel: typing.Optional[bool],
             labelHex: typing.Optional[str],
@@ -300,7 +300,7 @@ class RawRegion(object):
         self._label = label
         self._colour = colour
 
-    def hexList(self) -> typing.Collection[str]:
+    def hexList(self) -> typing.Sequence[str]:
         return self._hexList
 
     def showLabel(self) -> typing.Optional[bool]:
@@ -355,7 +355,7 @@ class RawSources(object):
             self,
             credits: typing.Optional[str],
             primary: typing.Optional[RawSource],
-            products: typing.Optional[typing.Collection[RawSource]]
+            products: typing.Optional[typing.Sequence[RawSource]]
             ) -> None:
         super().__init__()
         self._credits = credits
@@ -368,14 +368,14 @@ class RawSources(object):
     def primary(self) -> typing.Optional[RawSource]:
         return self._primary
 
-    def products(self) -> typing.Optional[typing.Collection[RawSource]]:
+    def products(self) -> typing.Optional[typing.Sequence[RawSource]]:
         return self._products
 
 class RawMetadata(object):
     def __init__(
             self,
-            canonicalName: typing.Collection[str],
-            alternateNames: typing.Optional[typing.Collection[str]],
+            canonicalName: typing.Sequence[str],
+            alternateNames: typing.Optional[typing.Sequence[str]],
             nameLanguages: typing.Optional[typing.Mapping[str, str]], # Maps names to languages
             abbreviation: typing.Optional[str],
             sectorLabel: typing.Optional[str],
@@ -384,11 +384,11 @@ class RawMetadata(object):
             y: int,
             selected: typing.Optional[bool],
             tags: typing.Optional[str],
-            allegiances: typing.Optional[typing.Collection[RawAllegiance]],
-            routes: typing.Optional[typing.Collection[RawRoute]],
-            borders: typing.Optional[typing.Collection[RawBorder]],
-            labels: typing.Optional[typing.Collection[RawLabel]],
-            regions: typing.Optional[typing.Collection[RawRegion]],
+            allegiances: typing.Optional[typing.Sequence[RawAllegiance]],
+            routes: typing.Optional[typing.Sequence[RawRoute]],
+            borders: typing.Optional[typing.Sequence[RawBorder]],
+            labels: typing.Optional[typing.Sequence[RawLabel]],
+            regions: typing.Optional[typing.Sequence[RawRegion]],
             sources: typing.Optional[RawSources],
             styleSheet: typing.Optional[str]
             ) -> None:
@@ -414,10 +414,10 @@ class RawMetadata(object):
     def canonicalName(self) -> str:
         return self._canonicalName
 
-    def alternateNames(self) -> typing.Optional[typing.Collection[str]]:
+    def alternateNames(self) -> typing.Optional[typing.Sequence[str]]:
         return self._alternateNames
 
-    def names(self) -> typing.Collection[str]:
+    def names(self) -> typing.Sequence[str]:
         names = [self._canonicalName]
         if self._alternateNames:
             names.extend(self._alternateNames)
@@ -452,19 +452,19 @@ class RawMetadata(object):
     def tags(self) -> typing.Optional[str]:
         return self._tags
 
-    def allegiances(self) -> typing.Optional[typing.Collection[RawAllegiance]]:
+    def allegiances(self) -> typing.Optional[typing.Sequence[RawAllegiance]]:
         return self._allegiances
 
-    def routes(self) -> typing.Optional[typing.Collection[RawRoute]]:
+    def routes(self) -> typing.Optional[typing.Sequence[RawRoute]]:
         return self._routes
 
-    def borders(self) -> typing.Optional[typing.Collection[RawBorder]]:
+    def borders(self) -> typing.Optional[typing.Sequence[RawBorder]]:
         return self._borders
 
-    def labels(self) -> typing.Optional[typing.Collection[RawLabel]]:
+    def labels(self) -> typing.Optional[typing.Sequence[RawLabel]]:
         return self._labels
 
-    def regions(self) -> typing.Optional[typing.Collection[RawRegion]]:
+    def regions(self) -> typing.Optional[typing.Sequence[RawRegion]]:
         return self._regions
 
     def sources(self) -> typing.Optional[RawSources]:
@@ -502,7 +502,7 @@ class RawSectorInfo(object):
             milieu: str,
             abbreviation: typing.Optional[str],
             tags: typing.Optional[str],
-            nameInfos: typing.Optional[typing.Collection[RawNameInfo]],
+            nameInfos: typing.Optional[typing.Sequence[RawNameInfo]],
             ) -> None:
         super().__init__()
         self._x = x
@@ -527,18 +527,18 @@ class RawSectorInfo(object):
     def tags(self) -> typing.Optional[str]:
         return self._tags
 
-    def nameInfos(self) -> typing.Optional[typing.Collection[RawNameInfo]]:
+    def nameInfos(self) -> typing.Optional[typing.Sequence[RawNameInfo]]:
         return self._nameInfos
 
 class RawUniverseInfo(object):
     def __init__(
             self,
-            sectorInfos: typing.Collection[RawSectorInfo]
+            sectorInfos: typing.Sequence[RawSectorInfo]
             ) -> None:
         super().__init__()
         self._sectorInfos = sectorInfos
 
-    def sectorInfos(self) -> typing.Collection[RawSectorInfo]:
+    def sectorInfos(self) -> typing.Sequence[RawSectorInfo]:
         return self._sectorInfos
 
 class RawStockAllegiance(object):
@@ -643,15 +643,15 @@ class RawBorderStyle(object):
 class RawStyleSheet(object):
     def __init__(
             self,
-            routeStyles: typing.Collection[RawRouteStyle],
-            borderStyles: typing.Collection[RawBorderStyle],
+            routeStyles: typing.Sequence[RawRouteStyle],
+            borderStyles: typing.Sequence[RawBorderStyle],
             ) -> None:
         super().__init__()
         self._routeStyles = routeStyles
         self._borderStyles = borderStyles
 
-    def routeStyles(self) -> typing.Collection[RawRouteStyle]:
+    def routeStyles(self) -> typing.Sequence[RawRouteStyle]:
         return self._routeStyles
 
-    def borderStyles(self) -> typing.Collection[RawBorderStyle]:
+    def borderStyles(self) -> typing.Sequence[RawBorderStyle]:
         return self._borderStyles

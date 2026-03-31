@@ -46,3 +46,26 @@ def createMultiColumnIndex(
     else:
         sql = f'CREATE INDEX IF NOT EXISTS {indexName} ON {table}({columns});'
     cursor.execute(sql)
+
+def copyDatabase(
+        src: typing.Union[sqlite3.Connection, str],
+        dst: typing.Union[sqlite3.Connection, str]
+        ) -> None:
+    localSrc = None
+    if not isinstance(src, sqlite3.Connection):
+        localSrc = sqlite3.connect(src)
+        src = localSrc
+
+    localDst = None
+    if not isinstance(dst, sqlite3.Connection):
+        localDst = sqlite3.connect(dst)
+        dst = localDst
+
+    try:
+        with dst:
+            src.backup(dst)
+    finally:
+        if localSrc is not None:
+            localSrc.close()
+        if localDst is not None:
+            localDst.close()

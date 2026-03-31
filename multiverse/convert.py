@@ -2116,7 +2116,7 @@ def _createDbProducts(
 
     return dbProducts
 
-# TODO: Not sure where this should live
+# TODO: Not sure where this should live (probably SnapshotManager)
 _T5OfficialAllegiancesPath = 't5ss/allegiance_codes.tab'
 def readSnapshotStockAllegiances() -> typing.List[survey.RawStockAllegiance]:
     return survey.parseTabStockAllegiances(

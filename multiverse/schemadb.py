@@ -277,12 +277,20 @@ class SchemaDb(object):
 
         self._initDatabase()
 
+    def createConnection(self) -> sqlite3.Connection:
+        connection = sqlite3.connect(self._dbPath)
+        logging.debug(f'MultiverseDb created new connection {connection} to \'{self._dbPath}\'')
+        connection.executescript(SchemaDb._PragmaScript)
+        # Uncomment this to have sqlite print the SQL that it executes
+        #connection.set_trace_callback(print)
+        return connection
+
     def createTransaction(
             self,
             onCommitCallback: typing.Optional[typing.Callable[[], None]] = None,
             onRollbackCallback: typing.Optional[typing.Callable[[], None]] = None
             ) -> Transaction:
-        connection = self._createConnection()
+        connection = self.createConnection()
         return Transaction(
             connection=connection,
             onCommitCallback=onCommitCallback,
@@ -435,22 +443,29 @@ class SchemaDb(object):
             version=requiredSchemaVersion,
             cursor=cursor)
 
-    def vacuumDatabase(self) -> None:
+    def vacuum(self) -> None:
         logging.debug('MultiverseDb vacuuming database')
 
         # NOTE: VACUUM can't be performed inside a transaction
-        connection = self._createConnection()
+        connection = self.createConnection()
         try:
             cursor = connection.cursor()
             cursor.execute('VACUUM;')
         finally:
             connection.close()
 
+    def copyTo(self, targetPath: str) -> None:
+        srcConnection = self.createConnection()
+        try:
+            database.copyDatabase(src=srcConnection, dst=targetPath)
+        finally:
+            srcConnection.close()
+
     def _initDatabase(self) -> None:
         connection = None
         cursor = None
         try:
-            connection = self._createConnection()
+            connection = self.createConnection()
             cursor = connection.cursor()
             cursor.execute('BEGIN;')
 
@@ -477,14 +492,6 @@ class SchemaDb(object):
             if connection:
                 connection.close()
             raise
-
-    def _createConnection(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self._dbPath)
-        logging.debug(f'MultiverseDb created new connection {connection} to \'{self._dbPath}\'')
-        connection.executescript(SchemaDb._PragmaScript)
-        # Uncomment this to have sqlite print the SQL that it executes
-        #connection.set_trace_callback(print)
-        return connection
 
     def _writeSchemaVersion(
             self,

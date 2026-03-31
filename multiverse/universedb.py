@@ -1,102 +1,31 @@
-import common
-import datetime
 import logging
 import multiverse
-import os
 import sqlite3
-import survey
-import threading
 import typing
 
-# TODO: When updating snapshot I'll need to do something to make sure notes
-# are preserved on systems/sectors. I could split notes in a separate table
-# but it's probably easiest to just read the existing notes and set the
-# notes on the new object before writing it to the db.
-# TODO: I think I want to drop the overlay system and have custom universes
-# create a complete copy of the stock universe. The stock universe would
-# update with new snapshots but the custom universes would remain as they
-# were when you created them (barring any edits). This avoids a lot of
-# problems with having to create custom versions of sectors when you want
-# to edit them in your custom universe.
-# IMPORTANT: If I do this it probably also makes sense to move to a seperate
-# database file for each universe. This would make it easier for people to
-# share just one universe.
-# TODO: When I switch to making a copy of the entire universe for custom
-# universes, I need to add an option to regenerate the trade codes for
-# the entire universe based on a specified rule set. It should default to
-# the current selected rules but also have the option to use the trade
-# codes as they appear on Traveller Map (explain the difference in a tooltip).
-# The default universe will always use the Traveller Map trade codes.
-# This will replace the ability to switch between modes dynamically which
-# I removed as it complicated the code for generating remarks.
-# Part of this work will probably need to be converting calculateMongooseTradeCodes
-# to use string trade codes rather than traveller.TradeCode as the converter
-# code doesn't have access to that logic.
-# Alternatively it might be the time to convert DbObjects to use enums for things.
-# It would make sense if it was the same ones as the traveller/astronomer code, so
-# maybe I need some kind of low level basic type namespace.
-# I've left the _RegenerateTradeCodesToolTip text as it could be a basis for the
-# option when I add it to the custom universe creation dialog
-# TODO: For the problem of how to notify the user of non-critical errors at the
-# point they import a custom sector. If I have a list of the issues, I could
-# display them to the user after I've converted to DbObjects but before I write
-# it to the DB
+# TODO: All log messages need updated to say UniverseDb and include the file name
 
-class DbUniverseInfo(object):
-    def __init__(
-            self,
-            universeId: str,
-            name: str
-            ) -> None:
-        self._universeId = universeId
-        self._name = name
-
-        self._hash = None
-
-    def id(self) -> str:
-        return self._universeId
-
-    def name(self) -> str:
-        return self._name
-
-    def __eq__(self, other: typing.Any) -> bool:
-        if not isinstance(other, DbUniverseInfo):
-            return NotImplemented
-        return self._universeId == other._universeId and self._name == other._name
-
-    def __hash__(self) -> int:
-        if self._hash is None:
-            self._hash = hash((self._universeId, self._name))
-        return self._hash
-
-class DbSectorInfo(object):
+class SectorInfo(object):
     def __init__(
             self,
             id: str,
-            universeId: str,
             milieu: str,
             name: str,
             sectorX: int,
             sectorY: int,
-            isCustom: bool,
             abbreviation: typing.Optional[str]
             ) -> None:
         self._id = id
-        self._universeId = universeId
         self._milieu = milieu
         self._name = name
         self._sectorX = sectorX
         self._sectorY = sectorY
-        self._isCustom = isCustom
         self._abbreviation = abbreviation
 
         self._hash = None
 
     def id(self) -> str:
         return self._id
-
-    def universeId(self) -> str:
-        return self._universeId
 
     def milieu(self) -> str:
         return self._milieu
@@ -110,32 +39,10 @@ class DbSectorInfo(object):
     def sectorY(self) -> int:
         return self._sectorY
 
-    def isCustom(self) -> bool:
-        return self._isCustom
-
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
 
-    def __eq__(self, other: typing.Any) -> bool:
-        if not isinstance(other, DbSectorInfo):
-            return NotImplemented
-        return self._id == other._id and self._name == other._name and \
-            self._sectorX == other._sectorX and self._sectorY == other._sectorY and \
-            self._isCustom == self._isCustom and self._abbreviation == other._abbreviation
-
-    def __hash__(self) -> int:
-        if self._hash is None:
-            self._hash = hash((self._id, self._name, self._sectorX, self._sectorY,
-                               self._isCustom, self._abbreviation))
-        return self._hash
-
-class MultiverseDb(object):
-    _MetadataTableName = 'metadata'
-    _MetadataTableSchema = 1
-
-    _UniversesTableName = 'universes'
-    _UniversesTableSchema = 1
-
+class UniverseDb(object):
     _SectorsTableName = 'sectors'
     _SectorsTableSchema = 1
 
@@ -220,45 +127,15 @@ class MultiverseDb(object):
     _ProductsTableName = 'products'
     _ProductsTableSchema = 1
 
-    _DefaultUniverseId = 'default'
-    _DefaultUniverseTimestampKey = 'default_universe_timestamp'
-
-    _SnapshotTimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
-
-    _lock = threading.RLock() # Recursive lock
-    _instance = None # Singleton instance
-    _initialised = False
     _database = None
-    _appVersion = None
 
-    def __init__(self) -> None:
-        raise RuntimeError('Call instance() instead')
-
-    @classmethod
-    def instance(cls):
-        if not cls._instance:
-            with cls._lock:
-                # Recheck instance as another thread could have created it between the
-                # first check adn the lock
-                if not cls._instance:
-                    cls._instance = cls.__new__(cls)
-        return cls._instance
-
-    def initialise(
-            self,
-            appVersion: str,
-            databasePath: str
-            ) -> None:
-        if self._initialised:
-            raise RuntimeError('The MultiverseDb singleton has already been initialised')
-
-        MultiverseDb._database = multiverse.SchemaDb(
-            dbPath=databasePath)
-        MultiverseDb._appVersion = appVersion
-
+    def __init__(self, universePath: str) -> None:
+        self._universePath = universePath
+        self._database = multiverse.SchemaDb(dbPath=universePath)
         self._initTables()
 
-        MultiverseDb._initialised = True
+    def createConnection(self) -> None:
+        return self._database.createConnection()
 
     def createTransaction(
             self,
@@ -269,155 +146,35 @@ class MultiverseDb(object):
             onCommitCallback=onCommitCallback,
             onRollbackCallback=onRollbackCallback)
 
-    def hasDefaultUniverse(self) -> bool:
-        try:
-            with self.createTransaction() as transaction:
-                connection = transaction.connection()
-                return self._getMetadata(
-                    key=MultiverseDb._DefaultUniverseTimestampKey,
-                    cursor=connection.cursor()) is not None
-        except Exception as ex:
-            logging.debug('MultiverseDb failed to query default universe timestamp', exc_info=ex)
-            return False
-
-    # This returns true if the universe snapshot in the specified directory is
-    # newer than the default universe currently in the database (or if there is
-    # no default universe in the database)
-    def isDefaultUniverseSnapshotNewer(
+    def listSectors(
             self,
-            directoryPath: str
-            ) -> bool:
-        with self.createTransaction() as transaction:
-            connection = transaction.connection()
-
-            importTimestamp = MultiverseDb._readSnapshotTimestamp(
-                directoryPath=directoryPath)
-
-            currentTimestamp = self._getMetadata(
-                key=MultiverseDb._DefaultUniverseTimestampKey,
-                cursor=connection.cursor())
-            if not currentTimestamp:
-                # No timestamp means there is no default universe so the supplied
-                # universe is "newer"
-                return True
-
-            try:
-                currentTimestamp = datetime.datetime.fromisoformat(currentTimestamp)
-            except Exception as ex:
-                logging.warning(
-                    f'MultiverseDb failed to parse default universe timestamp "{currentTimestamp}"',
-                    exc_info=ex)
-                return True
-
-            return importTimestamp > currentTimestamp
-
-    def importDefaultUniverse(
-            self,
-            directoryPath: str,
-            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
-            ) -> None:
-        logging.info(f'MultiverseDb importing default universe from "{directoryPath}"')
-
-        onCommit = onRollback = None
-        if progressCallback:
-            onCommit = lambda: progressCallback('Saving!', 0, 0)
-            onRollback = lambda: progressCallback('Rolling Back!', 0, 0)
-        with self.createTransaction(onCommitCallback=onCommit, onRollbackCallback=onRollback) as transaction:
-            connection = transaction.connection()
-            self._importDefaultUniverse(
-                directoryPath=directoryPath,
-                cursor=connection.cursor(),
-                progressCallback=progressCallback)
-
-    def saveUniverse(
-            self,
-            universe: multiverse.DbUniverse,
-            transaction: typing.Optional[multiverse.Transaction] = None,
-            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
-            ) -> None:
-        logging.debug(f'MultiverseDb saving universe {universe.id()}')
-
-        if universe.id() == MultiverseDb._DefaultUniverseId:
-            raise RuntimeError('Saving the default universe is not allowed')
-
-        insertProgressCallback = None
-        if progressCallback:
-            insertProgressCallback = lambda milieu, name, progress, total: progressCallback(f'Saving: {milieu} - {name}' if progress != total else 'Saving: Complete!', progress, total)
+            milieu: typing.Optional[str] = None,
+            transaction: typing.Optional[multiverse.Transaction] = None
+            ) -> typing.List[SectorInfo]:
+        logging.debug(f'UniverseDb listing {milieu if milieu else "all"} sectors in universe {self._universePath}')
 
         if transaction != None:
             connection = transaction.connection()
-
-            self._deleteUniverse(
-                universeId=universe.id(),
+            return self._listSectors(
+                milieu=milieu,
                 cursor=connection.cursor())
-
-            self._insertUniverse(
-                universe=universe,
-                cursor=connection.cursor(),
-                progressCallback=insertProgressCallback)
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
-
-                self._deleteUniverse(
-                    universeId=universe.id(),
+                return self._listSectors(
+                    milieu=milieu,
                     cursor=connection.cursor())
-
-                self._insertUniverse(
-                    universe=universe,
-                    cursor=connection.cursor(),
-                    progressCallback=insertProgressCallback)
-
-    def loadUniverse(
-            self,
-            universeId: str,
-            includeDefaultSectors: bool = True,
-            transaction: typing.Optional[multiverse.Transaction] = None,
-            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
-            ) -> typing.Optional[multiverse.DbUniverse]:
-        logging.debug(f'MultiverseDb loading universe {universeId}')
-
-        readProgressCallback = None
-        if progressCallback:
-            readProgressCallback = lambda milieu, name, progress, total: progressCallback(f'Loading: {milieu} - {name}' if progress != total else 'Loading: Complete!', progress, total)
-
-        if transaction != None:
-            connection = transaction.connection()
-            return self._readUniverse(
-                universeId=universeId,
-                includeDefaultSectors=includeDefaultSectors,
-                cursor=connection.cursor(),
-                progressCallback=readProgressCallback)
-        else:
-            with self.createTransaction() as transaction:
-                connection = transaction.connection()
-                return self._readUniverse(
-                    universeId=universeId,
-                    includeDefaultSectors=includeDefaultSectors,
-                    cursor=connection.cursor(),
-                    progressCallback=readProgressCallback)
 
     def saveSector(
             self,
             sector: multiverse.DbSector,
             transaction: typing.Optional[multiverse.Transaction] = None
             ) -> None:
-        logging.debug(f'MultiverseDb saving sector {sector.id()}')
-
-        if not sector.id():
-            raise RuntimeError('Sector cannot be saved as has no id')
-
-        if not sector.universeId():
-            raise RuntimeError('Sector cannot be saved as has no universe id')
-
-        if sector.universeId() == MultiverseDb._DefaultUniverseId:
-            raise RuntimeError('Saving default sectors is not allowed')
-
-        if not sector.isCustom():
-            raise RuntimeError('Saving non-custom sectors is not allowed')
+        logging.debug(f'UniverseDb saving sector {sector.id()} to universe {self._universePath}')
 
         if transaction != None:
             connection = transaction.connection()
+            cursor = connection.cursor()
             # Delete any old version of the sector and any sector that has at the
             # same time and place as the new sector
             self._deleteSector(
@@ -425,13 +182,14 @@ class MultiverseDb(object):
                 milieu=sector.milieu(),
                 sectorX=sector.sectorX(),
                 sectorY=sector.sectorY(),
-                cursor=connection.cursor())
+                cursor=cursor)
             self._insertSector(
                 sector=sector,
-                cursor=connection.cursor())
+                cursor=cursor)
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
+                cursor = connection.cursor()
                 # Delete any old version of the sector and any sector that has at the
                 # same time and place as the new sector
                 self._deleteSector(
@@ -439,17 +197,18 @@ class MultiverseDb(object):
                     milieu=sector.milieu(),
                     sectorX=sector.sectorX(),
                     sectorY=sector.sectorY(),
-                    cursor=connection.cursor())
+                    cursor=cursor)
                 self._insertSector(
                     sector=sector,
-                    cursor=connection.cursor())
+                    cursor=cursor)
 
     def loadSector(
             self,
             sectorId: str,
             transaction: typing.Optional[multiverse.Transaction] = None
             ) -> multiverse.DbSector:
-        logging.debug(f'MultiverseDb reading sector {sectorId}')
+        logging.debug(f'UniverseDb loading sector {sectorId} from universe {self._universePath}')
+
         if transaction != None:
             connection = transaction.connection()
             return self._readSector(
@@ -462,150 +221,75 @@ class MultiverseDb(object):
                     sectorId=sectorId,
                     cursor=connection.cursor())
 
+    def loadSectors(
+            self,
+            transaction: typing.Optional[multiverse.Transaction] = None
+            ) -> typing.List[multiverse.DbSector]:
+        logging.debug(f'UniverseDb loading sector from universe {self._universePath}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._loadSectors(
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._loadSectors(
+                    cursor=connection.cursor())
+
     def deleteSector(
             self,
             sectorId: str,
             transaction: typing.Optional[multiverse.Transaction] = None
             ) -> None:
-        logging.debug(f'MultiverseDb deleting sector {sectorId}')
+        logging.debug(f'UniverseDb deleting sector {sectorId} from universe {self._universePath}')
 
         if transaction != None:
             connection = transaction.connection()
-
-            sectorInfo = self._sectorInfoById(
-                sectorId=sectorId,
-                cursor=connection.cursor())
-            if not sectorInfo:
-                return # Nothing to delete
-            if not sectorInfo.isCustom():
-                raise RuntimeError('Deleting default sectors is not allowed')
-
             self._deleteSector(
                 sectorId=sectorId,
                 cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
-
-                sectorInfo = self._sectorInfoById(
-                    sectorId=sectorId,
-                    cursor=connection.cursor())
-                if not sectorInfo:
-                    return # Nothing to delete
-                if not sectorInfo.isCustom():
-                    raise RuntimeError('Deleting default sectors is not allowed')
-
                 self._deleteSector(
                     sectorId=sectorId,
                     cursor=connection.cursor())
 
-    def universeInfoById(
+    def clearSectors(
             self,
-            universeId: str,
             transaction: typing.Optional[multiverse.Transaction] = None
-            ) -> typing.Optional[DbUniverseInfo]:
-        logging.debug(
-            f'MultiverseDb retrieving info for sector with id "{universeId}"')
+            ) -> None:
+        logging.debug(f'UniverseDb clearing sectors in universe {self._universePath}')
+
         if transaction != None:
             connection = transaction.connection()
-            return self._universeInfoById(
-                universeId=universeId,
+            # Delete any old version of the sector and any sector that has at the
+            # same time and place as the new sector
+            self._clearSectors(
                 cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
-                return self._universeInfoById(
-                    universeId=universeId,
+                # Delete any old version of the sector and any sector that has at the
+                # same time and place as the new sector
+                self._clearSectors(
                     cursor=connection.cursor())
 
-    def listSectorInfo(
-            self,
-            universeId: str,
-            milieu: typing.Optional[str] = None,
-            includeDefaultSectors: bool = True,
-            transaction: typing.Optional[multiverse.Transaction] = None
-            ) -> typing.List[DbSectorInfo]:
-        logging.debug(
-            'MultiverseDb listing sector info' + ('' if universeId is None else f' for universe {universeId}'))
-        if transaction != None:
-            connection = transaction.connection()
-            return self._listSectorInfo(
-                universeId=universeId,
-                milieu=milieu,
-                includeDefaultSectors=includeDefaultSectors,
-                cursor=connection.cursor())
-        else:
-            with self.createTransaction() as transaction:
-                connection = transaction.connection()
-                return self._listSectorInfo(
-                    universeId=universeId,
-                    milieu=milieu,
-                    includeDefaultSectors=includeDefaultSectors,
-                    cursor=connection.cursor())
-
-    def sectorInfoByPosition(
-            self,
-            universeId: str,
-            milieu: str,
-            sectorX: int,
-            sectorY: int,
-            transaction: typing.Optional[multiverse.Transaction] = None
-            ) -> typing.Optional[DbSectorInfo]:
-        logging.debug(
-            f'MultiverseDb retrieving info for sector at ({sectorX}, {sectorY}) for universe {universeId} from {milieu}')
-        if transaction != None:
-            connection = transaction.connection()
-            return self._sectorInfoByPosition(
-                universeId=universeId,
-                milieu=milieu,
-                sectorX=sectorX,
-                sectorY=sectorY,
-                cursor=connection.cursor())
-        else:
-            with self.createTransaction() as transaction:
-                connection = transaction.connection()
-                return self._sectorInfoByPosition(
-                    universeId=universeId,
-                    milieu=milieu,
-                    sectorX=sectorX,
-                    sectorY=sectorY,
-                    cursor=connection.cursor())
+    def copyTo(self, targetPath: str) -> None:
+        self._database.copyTo(targetPath=targetPath)
 
     def _initTables(self) -> None:
         with self.createTransaction() as transaction:
             connection = transaction.connection()
             cursor = connection.cursor()
 
-            # Create metadata table
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._MetadataTableName,
-                requiredSchemaVersion=MultiverseDb._MetadataTableSchema,
-                columns=[
-                    multiverse.ColumnDef(columnName='key', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='value', columnType=multiverse.ColumnDef.ColumnType.Text)])
-
-            # TODO: This table shouldn't be needed when I've finished moving to a per-file universe
-            self._database.createTable(
-                cursor=cursor,
-                tableName=MultiverseDb._UniversesTableName,
-                requiredSchemaVersion=MultiverseDb._UniversesTableSchema,
+                tableName=UniverseDb._SectorsTableName,
+                requiredSchemaVersion=UniverseDb._SectorsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False, isUnique=True),
-                    multiverse.ColumnDef(columnName='description', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='notes', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=MultiverseDb._SectorsTableName,
-                requiredSchemaVersion=MultiverseDb._SectorsTableSchema,
-                columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    # TODO: This column shouldn't be needed when I've finished moving to a per-file universe
-                    multiverse.ColumnDef(columnName='universe_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._UniversesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='milieu', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
                     multiverse.ColumnDef(columnName='sector_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
                     multiverse.ColumnDef(columnName='sector_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
@@ -621,28 +305,28 @@ class MultiverseDb(object):
                     multiverse.ColumnDef(columnName='reference', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
                     multiverse.ColumnDef(columnName='notes', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['universe_id', 'milieu', 'sector_x', 'sector_y'])])
+                    multiverse.UniqueConstraintDef(columnNames=['milieu', 'sector_x', 'sector_y'])])
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._AlternateNamesTableName,
-                requiredSchemaVersion=MultiverseDb._AlternateNamesTableSchema,
+                tableName=UniverseDb._AlternateNamesTableName,
+                requiredSchemaVersion=UniverseDb._AlternateNamesTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
                     multiverse.ColumnDef(columnName='language', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)])
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._SubsectorNamesTableName,
-                requiredSchemaVersion=MultiverseDb._SubsectorNamesTableSchema,
+                tableName=UniverseDb._SubsectorNamesTableName,
+                requiredSchemaVersion=UniverseDb._SubsectorNamesTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
                               minValue='A', maxValue='P'),
@@ -652,12 +336,12 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._AllegiancesTableName,
-                requiredSchemaVersion=MultiverseDb._AllegiancesTableSchema,
+                tableName=UniverseDb._AllegiancesTableName,
+                requiredSchemaVersion=UniverseDb._AllegiancesTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
                     multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
@@ -673,12 +357,12 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._SophontsTableName,
-                requiredSchemaVersion=MultiverseDb._SophontsTableSchema,
+                tableName=UniverseDb._SophontsTableName,
+                requiredSchemaVersion=UniverseDb._SophontsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
                     multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
@@ -693,12 +377,12 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._SystemsTableName,
-                requiredSchemaVersion=MultiverseDb._SystemsTableSchema,
+                tableName=UniverseDb._SystemsTableName,
+                requiredSchemaVersion=UniverseDb._SystemsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
                     multiverse.ColumnDef(columnName='hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
@@ -710,7 +394,7 @@ class MultiverseDb(object):
                     multiverse.ColumnDef(columnName='other_world_count', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
                     multiverse.ColumnDef(columnName='zone', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
                     multiverse.ColumnDef(columnName='allegiance_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True,
-                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.SetNull),
                     multiverse.ColumnDef(columnName='notes', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
@@ -718,12 +402,12 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._BodiesTableName,
-                requiredSchemaVersion=MultiverseDb._BodiesTableSchema,
+                tableName=UniverseDb._BodiesTableName,
+                requiredSchemaVersion=UniverseDb._BodiesTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='system_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SystemsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='orbit_index', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
                     multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
@@ -731,12 +415,12 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._StarsTableName,
-                requiredSchemaVersion=MultiverseDb._StarsTableSchema,
+                tableName=UniverseDb._StarsTableName,
+                requiredSchemaVersion=UniverseDb._StarsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='system_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SystemsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='luminosity_class', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
                     multiverse.ColumnDef(columnName='spectral_class', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
@@ -749,11 +433,11 @@ class MultiverseDb(object):
             # table to identify which bodies are worlds
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._WorldsTableName,
-                requiredSchemaVersion=MultiverseDb._WorldsTableSchema,
+                tableName=UniverseDb._WorldsTableName,
+                requiredSchemaVersion=UniverseDb._WorldsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='body_id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True,
-                                foreignTableName=MultiverseDb._BodiesTableName, foreignColumnName='id',
+                                foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                                 foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='is_main_world', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False),
                     multiverse.ColumnDef(columnName='starport', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
@@ -776,12 +460,12 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._NobilitiesTableName,
-                requiredSchemaVersion=MultiverseDb._NobilitiesTableSchema,
+                tableName=UniverseDb._NobilitiesTableName,
+                requiredSchemaVersion=UniverseDb._NobilitiesTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._BodiesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
@@ -789,12 +473,12 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._TradeCodesTableName,
-                requiredSchemaVersion=MultiverseDb._TradeCodesTableSchema,
+                tableName=UniverseDb._TradeCodesTableName,
+                requiredSchemaVersion=UniverseDb._TradeCodesTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._BodiesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
@@ -802,15 +486,15 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._SophontPopulationsTableName,
-                requiredSchemaVersion=MultiverseDb._SophontPopulationsTableSchema,
+                tableName=UniverseDb._SophontPopulationsTableName,
+                requiredSchemaVersion=UniverseDb._SophontPopulationsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._BodiesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='sophont_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SophontsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SophontsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='percentage', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0, maxValue=100),
                     multiverse.ColumnDef(columnName='is_home_world', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False),
@@ -820,27 +504,27 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._RulingAllegiancesTableName,
-                requiredSchemaVersion=MultiverseDb._RulingAllegiancesTableSchema,
+                tableName=UniverseDb._RulingAllegiancesTableName,
+                requiredSchemaVersion=UniverseDb._RulingAllegiancesTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._BodiesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='allegiance_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade)],
                 uniqueConstraints=[
                     multiverse.UniqueConstraintDef(columnNames=['world_id', 'allegiance_id'])])
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._OwningSystemsTableName,
-                requiredSchemaVersion=MultiverseDb._OwningSystemsTableSchema,
+                tableName=UniverseDb._OwningSystemsTableName,
+                requiredSchemaVersion=UniverseDb._OwningSystemsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._BodiesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
                     multiverse.ColumnDef(columnName='hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
@@ -858,12 +542,12 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._ColonySystemsTableName,
-                requiredSchemaVersion=MultiverseDb._ColonySystemsTableSchema,
+                tableName=UniverseDb._ColonySystemsTableName,
+                requiredSchemaVersion=UniverseDb._ColonySystemsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._BodiesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
                     multiverse.ColumnDef(columnName='hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
@@ -875,12 +559,12 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._ResearchStationTableName,
-                requiredSchemaVersion=MultiverseDb._ResearchStationTableSchema,
+                tableName=UniverseDb._ResearchStationTableName,
+                requiredSchemaVersion=UniverseDb._ResearchStationTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._BodiesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
@@ -888,23 +572,23 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._CustomRemarksTableName,
-                requiredSchemaVersion=MultiverseDb._CustomRemarksTableSchema,
+                tableName=UniverseDb._CustomRemarksTableName,
+                requiredSchemaVersion=UniverseDb._CustomRemarksTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._BodiesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='remark', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._BasesTableName,
-                requiredSchemaVersion=MultiverseDb._BasesTableSchema,
+                tableName=UniverseDb._BasesTableName,
+                requiredSchemaVersion=UniverseDb._BasesTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._BodiesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
@@ -912,12 +596,12 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._RoutesTableName,
-                requiredSchemaVersion=MultiverseDb._RoutesTableSchema,
+                tableName=UniverseDb._RoutesTableName,
+                requiredSchemaVersion=UniverseDb._RoutesTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='start_hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
                     multiverse.ColumnDef(columnName='start_hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
@@ -932,20 +616,20 @@ class MultiverseDb(object):
                     multiverse.ColumnDef(columnName='colour', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
                     multiverse.ColumnDef(columnName='width', columnType=multiverse.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
                     multiverse.ColumnDef(columnName='allegiance_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True,
-                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.SetNull)])
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._BordersTableName,
-                requiredSchemaVersion=MultiverseDb._BordersTableSchema,
+                tableName=UniverseDb._BordersTableName,
+                requiredSchemaVersion=UniverseDb._BordersTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='allegiance_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True,
-                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.SetNull),
                     multiverse.ColumnDef(columnName='style', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
                     multiverse.ColumnDef(columnName='colour', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
@@ -961,23 +645,23 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._BorderHexesTableName,
-                requiredSchemaVersion=MultiverseDb._BorderHexesTableSchema,
+                tableName=UniverseDb._BorderHexesTableName,
+                requiredSchemaVersion=UniverseDb._BorderHexesTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='border_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._BordersTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._BordersTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
                     multiverse.ColumnDef(columnName='hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._RegionsTableName,
-                requiredSchemaVersion=MultiverseDb._RegionsTableSchema,
+                tableName=UniverseDb._RegionsTableName,
+                requiredSchemaVersion=UniverseDb._RegionsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='colour', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
                     multiverse.ColumnDef(columnName='label', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
@@ -989,23 +673,23 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._RegionHexesTableName,
-                requiredSchemaVersion=MultiverseDb._RegionHexesTableSchema,
+                tableName=UniverseDb._RegionHexesTableName,
+                requiredSchemaVersion=UniverseDb._RegionHexesTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='region_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._RegionsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._RegionsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
                     multiverse.ColumnDef(columnName='hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._LabelsTableName,
-                requiredSchemaVersion=MultiverseDb._LabelsTableSchema,
+                tableName=UniverseDb._LabelsTableName,
+                requiredSchemaVersion=UniverseDb._LabelsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='text', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
                     multiverse.ColumnDef(columnName='x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
@@ -1016,12 +700,12 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._SectorTagsTableName,
-                requiredSchemaVersion=MultiverseDb._SectorTagsTableSchema,
+                tableName=UniverseDb._SectorTagsTableName,
+                requiredSchemaVersion=UniverseDb._SectorTagsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='tag', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
@@ -1029,318 +713,120 @@ class MultiverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=MultiverseDb._ProductsTableName,
-                requiredSchemaVersion=MultiverseDb._ProductsTableSchema,
+                tableName=UniverseDb._ProductsTableName,
+                requiredSchemaVersion=UniverseDb._ProductsTableSchema,
                 columns=[
                     multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     multiverse.ColumnDef(columnName='publication', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
                     multiverse.ColumnDef(columnName='author', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
                     multiverse.ColumnDef(columnName='publisher', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
                     multiverse.ColumnDef(columnName='reference', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)])
 
-    def _setMetadata(
+    def _listSectors(
             self,
             cursor: sqlite3.Cursor,
-            key: str,
-            value: str
-            ) -> None:
-        logging.debug(f'MultiverseDb setting metadata \'{key}\' to {value}')
+            milieu: typing.Optional[str]
+            ) -> typing.List[SectorInfo]:
         sql = """
-            INSERT INTO {table} (key, value)
-            VALUES (:key, :value)
-            ON CONFLICT(key) DO UPDATE SET
-                value = excluded.value;
-            """.format(table=MultiverseDb._MetadataTableName)
-        rowData = {
-            'key': key,
-            'value': value}
-        cursor.execute(sql, rowData)
-
-    def _getMetadata(
-            self,
-            cursor: sqlite3.Cursor,
-            key: str
-            ) -> typing.Optional[str]:
-        sql = """
-            SELECT value
+            SELECT id, milieu, primary_name, sector_x, sector_y, abbreviation
             FROM {table}
-            WHERE key = :key
-            LIMIT 1;
-            """.format(table=MultiverseDb._MetadataTableName)
-        cursor.execute(sql, {'key': key})
-        rowData = cursor.fetchone()
-        return rowData[0] if rowData else None
+            """.format(table=UniverseDb._SectorsTableName)
+        parameters = {}
 
-    # This function returns True if imported or False if nothing was
-    # done due to the snapshot being older than the current snapshot.
-    # If forceImport is true the snapshot will be imported even if
-    # it is older
-    # TODO: I'm not sure if this should live here or be separate like
-    # the custom sector code. It feels like the two types of operation
-    # should be handled consistently
-    def _importDefaultUniverse(
-            self,
-            cursor: sqlite3.Cursor,
-            directoryPath: str,
-            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
-            ) -> None:
-        importTimestamp = MultiverseDb._readSnapshotTimestamp(
-            directoryPath=directoryPath)
+        if milieu:
+            sql += 'AND milieu = :milieu'
+            parameters['milieu'] = milieu
 
-        rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
-        rawStockSophonts = multiverse.readSnapshotStockSophonts()
-        rawStockStyleSheet = multiverse.readSnapshotStyleSheet()
-
-        universePath = os.path.join(directoryPath, 'milieu')
-        milieuSectors: typing.List[typing.Tuple[
-            str, # Milieu
-            typing.List[str] # List of sector names in the milieu
-        ]] = []
-        totalSectorCount = 0
-        for milieu in [d for d in os.listdir(universePath) if os.path.isdir(os.path.join(universePath, d))]:
-            milieuPath = os.path.join(universePath, milieu)
-            universeInfoPath = os.path.join(milieuPath, 'universe.json')
-            with open(universeInfoPath, 'r', encoding='utf-8-sig') as file:
-                universeInfoContent = file.read()
-            universeInfo = survey.parseUniverseInfo(content=universeInfoContent)
-
-            sectorNames = []
-            for sectorInfo in universeInfo.sectorInfos():
-                nameInfos = sectorInfo.nameInfos()
-                canonicalName = nameInfos[0].name() if nameInfos else None
-                if not canonicalName:
-                    logging.warning(f'Default universe import ignoring sector with no name in {universeInfoPath}')
-                    continue
-                sectorNames.append(canonicalName)
-                totalSectorCount += 1
-
-            milieuSectors.append((milieu, sectorNames))
-
-        rawData: typing.List[typing.Tuple[
-            str, # Milieu
-            survey.RawMetadata,
-            typing.Collection[survey.RawWorld]
-            ]] = []
-        progressCount = 0
-        for milieu, sectorNames in milieuSectors:
-            milieuPath = os.path.join(universePath, milieu)
-            for sectorName in sectorNames:
-                if progressCallback:
-                    try:
-                        progressCallback(
-                            f'Reading: {milieu} - {sectorName}',
-                            progressCount,
-                            totalSectorCount)
-                        progressCount += 1
-                    except Exception as ex:
-                        logging.warning('Default universe import progress callback threw an exception', exc_info=ex)
-
-                try:
-                    escapedName = common.encodeFileName(rawFileName=sectorName)
-
-                    metadataPath = os.path.join(milieuPath, escapedName + '.xml')
-                    with open(metadataPath, 'r', encoding='utf-8-sig') as file:
-                        rawMetadata = survey.parseXMLMetadata(content=file.read())
-
-                    sectorPath = os.path.join(milieuPath, escapedName + '.sec')
-                    with open(sectorPath, 'r', encoding='utf-8-sig') as file:
-                        rawSystems = survey.parseT5ColumnSector(content=file.read())
-                    rawData.append((milieu, rawMetadata, rawSystems))
-                except Exception as ex:
-                    logging.error(f'Default universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
-
-        if progressCallback:
-            try:
-                progressCallback(
-                    f'Reading: Complete!',
-                    totalSectorCount,
-                    totalSectorCount)
-            except Exception as ex:
-                logging.warning('Default universe import progress callback threw an exception', exc_info=ex)
-
-        dbUniverse = multiverse.convertRawUniverseToDbUniverse(
-            universeId=MultiverseDb._DefaultUniverseId,
-            universeName='Default Universe',
-            isCustom=False,
-            rawSectors=rawData,
-            rawStockAllegiances=rawStockAllegiances,
-            rawStockSophonts=rawStockSophonts,
-            rawStockStyleSheet=rawStockStyleSheet,
-            progressCallback=progressCallback)
-
-        self._deleteUniverse(
-            universeId=MultiverseDb._DefaultUniverseId,
-            cursor=cursor)
-
-        insertProgressCallback = None
-        if progressCallback:
-            insertProgressCallback = \
-                lambda milieu, name, progress, total: progressCallback(f'Importing: {milieu} - {name}' if progress != total else 'Importing: Complete!', progress, total)
-        self._insertUniverse(
-            universe=dbUniverse,
-            updateDefault=True,
-            cursor=cursor,
-            progressCallback=insertProgressCallback)
-
-        self._setMetadata(
-            key=MultiverseDb._DefaultUniverseTimestampKey,
-            value=importTimestamp.isoformat(),
-            cursor=cursor)
-
-    def _insertUniverse(
-            self,
-            cursor: sqlite3.Cursor,
-            universe: multiverse.DbUniverse,
-            updateDefault: bool = False,
-            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], typing.Optional[str], int, int], typing.Any]] = None
-            ) -> None:
-        sql = """
-            INSERT INTO {table} (id, name, description, notes)
-            VALUES (:id, :name, :description, :notes);
-            """.format(table=MultiverseDb._UniversesTableName)
-        rowData = {
-            'id': universe.id(),
-            'name': universe.name(),
-            'description': universe.description(),
-            'notes': universe.notes()}
-        cursor.execute(sql, rowData)
-
-        sectors = universe.sectors()
-        totalSectorCount = len(sectors) if sectors else 0
-        if sectors:
-            for progressCount, sector in enumerate(sectors):
-                if progressCallback:
-                    try:
-                        progressCallback(
-                            sector.milieu(),
-                            sector.primaryName(),
-                            progressCount,
-                            totalSectorCount)
-                    except Exception as ex:
-                        logging.warning('MultiverseDb universe insert progress callback threw an exception', exc_info=ex)
-
-                if not updateDefault and not sector.isCustom():
-                    continue # Only write custom sectors
-
-                self._insertSector(
-                    sector=sector,
-                    cursor=cursor)
-
-        if progressCallback:
-            try:
-                progressCallback(
-                    None,
-                    None,
-                    totalSectorCount,
-                    totalSectorCount)
-            except Exception as ex:
-                logging.warning('MultiverseDb universe insert progress callback threw an exception', exc_info=ex)
-
-    def _readUniverse(
-            self,
-            cursor: sqlite3.Cursor,
-            universeId: str,
-            includeDefaultSectors: bool,
-            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], typing.Optional[str], int, int], typing.Any]] = None
-            ) -> typing.Optional[multiverse.DbUniverse]:
-        sql = """
-            SELECT name, description, notes
-            FROM {table}
-            WHERE id = :id
-            LIMIT 1;
-            """.format(table=MultiverseDb._UniversesTableName)
-        cursor.execute(sql, {'id': universeId})
-        row = cursor.fetchone()
-        if not row:
-            return None
-        name = row[0]
-        description = row[1]
-        notes = row[2]
-
-        sql = """
-            SELECT id, primary_name, milieu
-            FROM {table}
-            WHERE universe_id = :id
-            """.format(table=MultiverseDb._SectorsTableName)
-        parameters = {'id': universeId}
-        if includeDefaultSectors:
-            sql += """
-                UNION ALL
-
-                SELECT d.id, d.primary_name, d.milieu
-                FROM {table} d
-                WHERE d.universe_id = :default_id
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM {table} u
-                    WHERE u.universe_id = :id
-                        AND u.milieu = d.milieu
-                        AND u.sector_x = d.sector_x
-                        AND u.sector_y = d.sector_y
-                )
-                """.format(table=MultiverseDb._SectorsTableName)
-            parameters['default_id'] = MultiverseDb._DefaultUniverseId
         sql += ';'
 
         cursor.execute(sql, parameters)
-        resultData = cursor.fetchall()
-        totalSectorCount = len(resultData)
-        sectors = []
-        for progressCount, row in enumerate(resultData):
-            sectorId = row[0]
-            sectorName = row[1]
-            sectorMilieu = row[2]
 
-            if progressCallback:
-                try:
-                    progressCallback(
-                        sectorMilieu,
-                        sectorName,
-                        progressCount,
-                        totalSectorCount)
-                except Exception as ex:
-                    logging.warning('MultiverseDb universe read progress callback threw an exception', exc_info=ex)
+        sectorList = []
+        for row in cursor.fetchall():
+            sectorList.append(SectorInfo(
+                id=row[0],
+                milieu=row[1],
+                name=row[2],
+                sectorX=row[3],
+                sectorY=row[4],
+                abbreviation=row[5]))
+        return sectorList
 
-            try:
-                sector = self._readSector(
-                    sectorId=sectorId,
-                    cursor=cursor)
-                sectors.append(sector)
-            except Exception as ex:
-                # Log error but continue loading
-                logging.error('MultiverseDb failed to read sector {sectorId}', exc_info=ex)
-
-        if progressCallback:
-            try:
-                progressCallback(
-                    None,
-                    None,
-                    totalSectorCount,
-                    totalSectorCount)
-            except Exception as ex:
-                logging.warning('MultiverseDb universe read progress callback threw an exception', exc_info=ex)
-
-        return multiverse.DbUniverse(
-            id=universeId,
-            name=name,
-            description=description,
-            sectors=sectors,
-            notes=notes)
-
-    def _deleteUniverse(
+    def _loadSectors(
             self,
-            cursor: sqlite3.Cursor,
-            universeId: str
-            ) -> typing.Optional[multiverse.DbUniverse]:
+            cursor: sqlite3.Cursor
+            ) -> typing.List[multiverse.DbSector]:
+        sectorAlternateNamesMap = self._readAlternateNames(
+            cursor=cursor)
+        sectorSubsectorNamesMap = self._readSubsectorNames(
+            cursor=cursor)
+        sectorAllegiancesMap = self._readAllegiances(
+            cursor=cursor)
+        sectorSophontsMap = self._readSophonts(
+            cursor=cursor)
+        sectorSystemsMap = self._readSystems(
+            cursor=cursor)
+        sectorRoutesMap = self._readRoutes(
+            cursor=cursor)
+        sectorBordersMap = self._readBorders(
+            cursor=cursor)
+        sectorRegionsMap = self._readRegions(
+            cursor=cursor)
+        sectorLabelsMap = self._readLabels(
+            cursor=cursor)
+        sectorTagsMap = self._readTags(
+            cursor=cursor)
+        sectorProductsMap = self._readProducts(
+            cursor=cursor)
+
         sql = """
-            DELETE FROM {table}
-            WHERE id = :id
-            """.format(
-            table=MultiverseDb._UniversesTableName)
-        cursor.execute(sql, {'id': universeId})
+            SELECT id, milieu, sector_x, sector_y,
+                primary_name, primary_language, abbreviation, sector_label, selected,
+                credits, publication, author, publisher, reference, notes
+            FROM {table};
+            """.format(table=UniverseDb._SectorsTableName)
+        cursor.execute(sql)
+        sectors = []
+        for row in cursor.fetchall():
+            sectorId = row[0]
+
+            try:
+                sectors.append(multiverse.DbSector(
+                    id=sectorId,
+                    universeId='BLAH', # TODO: This should be removed from DbSector
+                    isCustom=False, # TODO: This should be held at the universe level rather than the sector level
+                    milieu=row[1],
+                    sectorX=row[2],
+                    sectorY=row[3],
+                    primaryName=row[4],
+                    primaryLanguage=row[5],
+                    abbreviation=row[6],
+                    sectorLabel=row[7],
+                    selected=True if row[8] else False,
+                    credits=row[9],
+                    publication=row[10],
+                    author=row[11],
+                    publisher=row[12],
+                    reference=row[13],
+                    notes=row[14],
+                    alternateNames=sectorAlternateNamesMap.get(sectorId),
+                    subsectorNames=sectorSubsectorNamesMap.get(sectorId),
+                    allegiances=sectorAllegiancesMap.get(sectorId),
+                    sophonts=sectorSophontsMap.get(sectorId),
+                    systems=sectorSystemsMap.get(sectorId),
+                    routes=sectorRoutesMap.get(sectorId),
+                    borders=sectorBordersMap.get(sectorId),
+                    regions=sectorRegionsMap.get(sectorId),
+                    labels=sectorLabelsMap.get(sectorId),
+                    tags=sectorTagsMap.get(sectorId),
+                    products=sectorProductsMap.get(sectorId)))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct sector {sectorId}', exc_info=ex)
+
+        return sectors
 
     def _insertSector(
             self,
@@ -1348,18 +834,15 @@ class MultiverseDb(object):
             sector: multiverse.DbSector
             ) -> None:
         sql = """
-            INSERT INTO {table} (id, universe_id, milieu,
-                sector_x, sector_y, primary_name, primary_language,
-                abbreviation, sector_label, selected,
+            INSERT INTO {table} (id, milieu, sector_x, sector_y,
+                primary_name, primary_language, abbreviation, sector_label, selected,
                 credits, publication, author, publisher, reference, notes)
-            VALUES (:id, :universe_id, :milieu,
-                :sector_x, :sector_y, :primary_name, :primary_language,
-                :abbreviation, :sector_label, :selected,
+            VALUES (:id, :milieu, :sector_x, :sector_y,
+                :primary_name, :primary_language, :abbreviation, :sector_label, :selected,
                 :credits, :publication, :author, :publisher, :reference, :notes);
-            """.format(table=MultiverseDb._SectorsTableName)
+            """.format(table=UniverseDb._SectorsTableName)
         rows = {
             'id': sector.id(),
-            'universe_id': sector.universeId(),
             'milieu': sector.milieu(),
             'sector_x': sector.sectorX(),
             'sector_y': sector.sectorY(),
@@ -1415,48 +898,48 @@ class MultiverseDb(object):
             cursor: sqlite3.Cursor,
             sectorId: str
             ) -> multiverse.DbSector:
-        alternateNames = self._readSectorAlternateNames(
+        sectorAlternateNamesMap = self._readAlternateNames(
             cursor=cursor,
             sectorId=sectorId)
-        subsectorNames = self._readSectorSubsectorNames(
+        sectorSubsectorNamesMap = self._readSubsectorNames(
             cursor=cursor,
             sectorId=sectorId)
-        allegiances = self._readSectorAllegiances(
+        sectorAllegiancesMap = self._readAllegiances(
             cursor=cursor,
             sectorId=sectorId)
-        sophonts = self._readSectorSophonts(
+        sectorSophontsMap = self._readSophonts(
             cursor=cursor,
             sectorId=sectorId)
-        systems = self._readSectorSystems(
+        sectorSystemsMap = self._readSystems(
             cursor=cursor,
             sectorId=sectorId)
-        routes = self._readSectorRoutes(
+        sectorRoutesMap = self._readRoutes(
             cursor=cursor,
             sectorId=sectorId)
-        borders = self._readSectorBorders(
+        sectorBordersMap = self._readBorders(
             cursor=cursor,
             sectorId=sectorId)
-        regions = self._readSectorRegions(
+        sectorRegionsMap = self._readRegions(
             cursor=cursor,
             sectorId=sectorId)
-        labels = self._readSectorLabels(
+        sectorLabelsMap = self._readLabels(
             cursor=cursor,
             sectorId=sectorId)
-        tags = self._readSectorTags(
+        sectorTagsMap = self._readTags(
             cursor=cursor,
             sectorId=sectorId)
-        products = self._readSectorProducts(
+        sectorProductsMap = self._readProducts(
             cursor=cursor,
             sectorId=sectorId)
 
         sql = """
-            SELECT universe_id, milieu, sector_x, sector_y,
+            SELECT milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label, selected,
                 credits, publication, author, publisher, reference, notes
             FROM {table}
             WHERE id = :id
             LIMIT 1;
-            """.format(table=MultiverseDb._SectorsTableName)
+            """.format(table=UniverseDb._SectorsTableName)
         cursor.execute(sql, {'id': sectorId})
         row = cursor.fetchone()
         if not row:
@@ -1464,33 +947,33 @@ class MultiverseDb(object):
 
         return multiverse.DbSector(
             id=sectorId,
-            universeId=row[0],
-            isCustom=row[0] != MultiverseDb._DefaultUniverseId,
-            milieu=row[1],
-            sectorX=row[2],
-            sectorY=row[3],
-            primaryName=row[4],
-            primaryLanguage=row[5],
-            abbreviation=row[6],
-            sectorLabel=row[7],
-            selected=True if row[8] else False,
-            credits=row[9],
-            publication=row[10],
-            author=row[11],
-            publisher=row[12],
-            reference=row[13],
-            notes=row[14],
-            alternateNames=alternateNames,
-            subsectorNames=subsectorNames,
-            allegiances=allegiances,
-            sophonts=sophonts,
-            systems=systems,
-            routes=routes,
-            borders=borders,
-            regions=regions,
-            labels=labels,
-            tags=tags,
-            products=products)
+            universeId='BLAH', # TODO: This should be removed from DbSector
+            isCustom=False, # TODO: This should be held at the universe level rather than the sector level
+            milieu=row[0],
+            sectorX=row[1],
+            sectorY=row[2],
+            primaryName=row[3],
+            primaryLanguage=row[4],
+            abbreviation=row[5],
+            sectorLabel=row[6],
+            selected=True if row[7] else False,
+            credits=row[8],
+            publication=row[9],
+            author=row[10],
+            publisher=row[11],
+            reference=row[12],
+            notes=row[13],
+            alternateNames=sectorAlternateNamesMap.get(sectorId),
+            subsectorNames=sectorSubsectorNamesMap.get(sectorId),
+            allegiances=sectorAllegiancesMap.get(sectorId),
+            sophonts=sectorSophontsMap.get(sectorId),
+            systems=sectorSystemsMap.get(sectorId),
+            routes=sectorRoutesMap.get(sectorId),
+            borders=sectorBordersMap.get(sectorId),
+            regions=sectorRegionsMap.get(sectorId),
+            labels=sectorLabelsMap.get(sectorId),
+            tags=sectorTagsMap.get(sectorId),
+            products=sectorProductsMap.get(sectorId))
 
     def _insertSectorAlternateNames(
             self,
@@ -1503,7 +986,7 @@ class MultiverseDb(object):
         sql = """
             INSERT INTO {table} (id, sector_id, name, language)
             VALUES (:id, :sector_id, :name, :language);
-            """.format(table=MultiverseDb._AlternateNamesTableName)
+            """.format(table=UniverseDb._AlternateNamesTableName)
         rows = []
         for alternateName in sector.alternateNames():
             rows.append({
@@ -1513,29 +996,45 @@ class MultiverseDb(object):
                 'language': alternateName.language()})
         cursor.executemany(sql, rows)
 
-    def _readSectorAlternateNames(
+    def _readAlternateNames(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> typing.List[multiverse.DbAlternateName]:
+            sectorId: typing.Optional[str] = None
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbAlternateName]]:
         sql = """
-            SELECT id, name, language
+            SELECT id, sector_id, name, language
             FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._AlternateNamesTableName)
-        cursor.execute(sql, {'id': sectorId})
-        names = []
+            {where};
+            """.format(
+                table=UniverseDb._AlternateNamesTableName,
+                where='WHERE sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
+        sectorNamesMap = {}
         for row in cursor.fetchall():
             nameId = row[0]
+            sectorId = row[1]
+            names = sectorNamesMap.get(sectorId)
+            if names is None:
+                names = []
+                sectorNamesMap[sectorId] = names
+
             try:
                 names.append(multiverse.DbAlternateName(
                     id=nameId,
-                    name=row[1],
-                    language=row[2]))
+                    sectorId=sectorId,
+                    name=row[2],
+                    language=row[3]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct alternate name {nameId}', exc_info=ex)
 
-        return names
+        return sectorNamesMap
 
     def _insertSectorSubsectorNames(
             self,
@@ -1548,7 +1047,7 @@ class MultiverseDb(object):
         sql = """
             INSERT INTO {table} (id, sector_id, code, name)
             VALUES (:id, :sector_id, :code, :name);
-            """.format(table=MultiverseDb._SubsectorNamesTableName)
+            """.format(table=UniverseDb._SubsectorNamesTableName)
         rows = []
         for subsectorName in sector.subsectorNames():
             rows.append({
@@ -1558,29 +1057,45 @@ class MultiverseDb(object):
                 'name': subsectorName.name()})
         cursor.executemany(sql, rows)
 
-    def _readSectorSubsectorNames(
+    def _readSubsectorNames(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> typing.List[multiverse.DbSubsectorName]:
+            sectorId: typing.Optional[str] = None
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbSubsectorName]]:
         sql = """
-            SELECT id, code, name
+            SELECT id, sector_id, code, name
             FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._SubsectorNamesTableName)
-        cursor.execute(sql, {'id': sectorId})
-        names = []
+            {where};
+            """.format(
+                table=UniverseDb._SubsectorNamesTableName,
+                where='WHERE sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
+        sectorNamesMap = {}
         for row in cursor.fetchall():
             nameId = row[0]
+            sectorId = row[1]
+            names = sectorNamesMap.get(sectorId)
+            if names is None:
+                names = []
+                sectorNamesMap[sectorId] = names
+
             try:
                 names.append(multiverse.DbSubsectorName(
                     id=nameId,
-                    code=row[1],
-                    name=row[2]))
+                    sectorId=sectorId,
+                    code=row[2],
+                    name=row[3]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct subsector name {nameId}', exc_info=ex)
 
-        return names
+        return sectorNamesMap
 
     def _insertSectorAllegiances(
             self,
@@ -1597,7 +1112,7 @@ class MultiverseDb(object):
             VALUES (:id, :sector_id, :code, :name, :legacy, :base,
                 :route_colour, :route_style, :route_width,
                 :border_colour, :border_style);
-            """.format(table=MultiverseDb._AllegiancesTableName)
+            """.format(table=UniverseDb._AllegiancesTableName)
         rows = []
         for allegiance in sector.allegiances():
             rows.append({
@@ -1614,39 +1129,54 @@ class MultiverseDb(object):
                 'border_style': allegiance.borderStyle()})
         cursor.executemany(sql, rows)
 
-    def _readSectorAllegiances(
+    def _readAllegiances(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> typing.List[multiverse.DbAllegiance]:
+            sectorId: typing.Optional[str] = None
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbAllegiance]]:
         sql = """
-            SELECT id, code, name, legacy, base,
+            SELECT id, sector_id, code, name, legacy, base,
                 route_colour, route_style, route_width,
                 border_colour, border_style
             FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._AllegiancesTableName)
-        cursor.execute(sql, {'id': sectorId})
-        allegiances = []
+            {where};
+            """.format(
+                table=UniverseDb._AllegiancesTableName,
+                where='WHERE sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
+        sectorAllegiancesMap = {}
         for row in cursor.fetchall():
             allegianceId = row[0]
+            sectorId = row[1]
+            allegiances = sectorAllegiancesMap.get(sectorId)
+            if allegiances is None:
+                allegiances = []
+                sectorAllegiancesMap[sectorId] = allegiances
+
             try:
                 allegiances.append(multiverse.DbAllegiance(
                     id=allegianceId,
                     sectorId=sectorId,
-                    code=row[1],
-                    name=row[2],
-                    legacy=row[3],
-                    base=row[4],
-                    routeColour=row[5],
-                    routeStyle=row[6],
-                    routeWidth=row[7],
-                    borderColour=row[8],
-                    borderStyle=row[9]))
+                    code=row[2],
+                    name=row[3],
+                    legacy=row[4],
+                    base=row[5],
+                    routeColour=row[6],
+                    routeStyle=row[7],
+                    routeWidth=row[8],
+                    borderColour=row[9],
+                    borderStyle=row[10]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct allegiance {allegianceId}', exc_info=ex)
+                logging.error(f'UniverseDb failed to construct allegiance {allegianceId}', exc_info=ex)
 
-        return allegiances
+        return sectorAllegiancesMap
 
     def _insertSectorSophonts(
             self,
@@ -1659,7 +1189,7 @@ class MultiverseDb(object):
         sql = """
             INSERT INTO {table} (id, sector_id, code, name, is_major)
             VALUES (:id, :sector_id, :code, :name, :is_major);
-            """.format(table=MultiverseDb._SophontsTableName)
+            """.format(table=UniverseDb._SophontsTableName)
         rows = []
         for sophont in sector.sophonts():
             rows.append({
@@ -1670,31 +1200,46 @@ class MultiverseDb(object):
                 'is_major': 1 if sophont.isMajor() else 0})
         cursor.executemany(sql, rows)
 
-    def _readSectorSophonts(
+    def _readSophonts(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> typing.List[multiverse.DbSophont]:
+            sectorId: typing.Optional[str] = None
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbSophont]]:
         sql = """
-            SELECT id, code, name, is_major
+            SELECT id, sector_id, code, name, is_major
             FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._SophontsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        sophonts = []
+            {where};
+            """.format(
+                table=UniverseDb._SophontsTableName,
+                where='WHERE sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
+        sectorSophontsMap = {}
         for row in cursor.fetchall():
             sophontId = row[0]
+            sectorId = row[1]
+            sophonts = sectorSophontsMap.get(sectorId)
+            if sophonts is None:
+                sophonts = []
+                sectorSophontsMap[sectorId] = sophonts
+
             try:
                 sophonts.append(multiverse.DbSophont(
                     id=sophontId,
                     sectorId=sectorId,
-                    code=row[1],
-                    name=row[2],
-                    isMajor=True if row[3] else False))
+                    code=row[2],
+                    name=row[3],
+                    isMajor=True if row[4] else False))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct sophont {sophontId}', exc_info=ex)
 
-        return sophonts
+        return sectorSophontsMap
 
     def _insertSectorSystems(
             self,
@@ -1711,7 +1256,7 @@ class MultiverseDb(object):
             VALUES (:id, :sector_id, :hex_x, :hex_y, :name,
                 :planetoid_belt_count, :gas_giant_count, :other_world_count,
                 :zone, :allegiance_id, :notes);
-            """.format(table=MultiverseDb._SystemsTableName)
+            """.format(table=UniverseDb._SystemsTableName)
         rows = []
         for system in sector.systems():
             rows.append({
@@ -1735,47 +1280,63 @@ class MultiverseDb(object):
             cursor=cursor,
             sector=sector)
 
-    def _readSectorSystems(
+    def _readSystems(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> typing.List[multiverse.DbSystem]:
-        systemStarsMap = self._readSectorStars(
+            sectorId: typing.Optional[str] = None
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbSystem]]:
+        systemStarsMap = self._readStars(
             cursor=cursor,
             sectorId=sectorId)
-        systemBodiesMap = self._readSectorBodies(
+        systemBodiesMap = self._readBodies(
             cursor=cursor,
             sectorId=sectorId)
 
         sql = """
-            SELECT id, hex_x, hex_y, name,
+            SELECT id, sector_id, hex_x, hex_y, name,
                 planetoid_belt_count, gas_giant_count, other_world_count,
                 zone, allegiance_id, notes
             FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        systems = []
+            {where};
+            """.format(
+                table=UniverseDb._SystemsTableName,
+                where='WHERE sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
+        sectorSystemsMap = {}
         for row in cursor.fetchall():
             systemId = row[0]
+            sectorId = row[1]
+            systems = sectorSystemsMap.get(sectorId)
+            if systems is None:
+                systems = []
+                sectorSystemsMap[sectorId] = systems
+
             try:
                 systems.append(multiverse.DbSystem(
                     id=systemId,
-                    hexX=row[1],
-                    hexY=row[2],
-                    name=row[3],
-                    planetoidBeltCount=row[4],
-                    gasGiantCount=row[5],
-                    otherWorldCount=row[6],
-                    zone=row[7],
-                    allegianceId=row[8],
-                    notes=row[9],
+                    sectorId=sectorId,
+                    hexX=row[2],
+                    hexY=row[3],
+                    name=row[4],
+                    planetoidBeltCount=row[5],
+                    gasGiantCount=row[6],
+                    otherWorldCount=row[7],
+                    zone=row[8],
+                    allegianceId=row[9],
+                    notes=row[10],
                     stars=systemStarsMap.get(systemId),
                     bodies=systemBodiesMap.get(systemId)))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct system {systemId}', exc_info=ex)
 
-        return systems
+        return sectorSystemsMap
 
     def _insertSectorRoutes(
             self,
@@ -1792,7 +1353,7 @@ class MultiverseDb(object):
             VALUES (:id, :sector_id, :start_hex_x, :start_hex_y, :end_hex_x, :end_hex_y,
                 :start_offset_x, :start_offset_y, :end_offset_x, :end_offset_y, :type, :style,
                 :colour, :width, :allegiance_id);
-            """.format(table=MultiverseDb._RoutesTableName)
+            """.format(table=UniverseDb._RoutesTableName)
         rows = []
         for route in sector.routes():
             rows.append({
@@ -1813,42 +1374,58 @@ class MultiverseDb(object):
                 'allegiance_id': route.allegianceId()})
         cursor.executemany(sql, rows)
 
-    def _readSectorRoutes(
+    def _readRoutes(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str,
-            ) -> typing.List[multiverse.DbRoute]:
+            sectorId: typing.Optional[str] = None
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbRoute]]:
         sql = """
-            SELECT id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
+            SELECT id, sector_id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
                 start_offset_x, start_offset_y, end_offset_x, end_offset_y,
                 type, style, colour, width, allegiance_id
             FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._RoutesTableName)
-        cursor.execute(sql, {'id': sectorId})
-        routes = []
+            {where};
+            """.format(
+                table=UniverseDb._RoutesTableName,
+                where='WHERE sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
+        sectorRoutesMap = {}
         for row in cursor.fetchall():
             routeId = row[0]
+            sectorId = row[1]
+            routes = sectorRoutesMap.get(sectorId)
+            if routes is None:
+                routes = []
+                sectorRoutesMap[sectorId] = routes
+
             try:
                 routes.append(multiverse.DbRoute(
                     id=routeId,
-                    startHexX=row[1],
-                    startHexY=row[2],
-                    endHexX=row[3],
-                    endHexY=row[4],
-                    startOffsetX=row[5],
-                    startOffsetY=row[6],
-                    endOffsetX=row[7],
-                    endOffsetY=row[8],
-                    type=row[9],
-                    style=row[10],
-                    colour=row[11],
-                    width=row[12],
-                    allegianceId=row[13]))
+                    sectorId=sectorId,
+                    startHexX=row[2],
+                    startHexY=row[3],
+                    endHexX=row[4],
+                    endHexY=row[5],
+                    startOffsetX=row[6],
+                    startOffsetY=row[7],
+                    endOffsetX=row[8],
+                    endOffsetY=row[9],
+                    type=row[10],
+                    style=row[11],
+                    colour=row[12],
+                    width=row[13],
+                    allegianceId=row[14]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct route {routeId}', exc_info=ex)
 
-        return routes
+        return sectorRoutesMap
 
     def _insertSectorBorders(
             self,
@@ -1863,11 +1440,11 @@ class MultiverseDb(object):
                 label, label_x, label_y, show_label, wrap_label)
             VALUES (:id, :sector_id, :allegiance_id, :style, :colour,
                 :label, :label_x, :label_y, :show_label, :wrap_label);
-            """.format(table=MultiverseDb._BordersTableName)
+            """.format(table=UniverseDb._BordersTableName)
         hexesSql =  """
             INSERT INTO {table} (border_id, hex_x, hex_y)
             VALUES (:border_id, :hex_x, :hex_y);
-            """.format(table=MultiverseDb._BorderHexesTableName)
+            """.format(table=UniverseDb._BorderHexesTableName)
         borderRows = []
         hexRows = []
         for border in sector.borders():
@@ -1890,27 +1467,42 @@ class MultiverseDb(object):
         cursor.executemany(bordersSql, borderRows)
         cursor.executemany(hexesSql, hexRows)
 
-    def _readSectorBorders(
+    def _readBorders(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> typing.List[multiverse.DbBorder]:
-        bordersSql = """
-            SELECT id, allegiance_id, style, colour, label,
+            sectorId: typing.Optional[str] = None
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbBorder]]:
+        sql = """
+            SELECT id, sector_id, allegiance_id, style, colour, label,
                 label_x, label_y, show_label, wrap_label
             FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._BordersTableName)
-        hexesSql = """
+            {where};
+            """.format(
+                table=UniverseDb._BordersTableName,
+                where='WHERE sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
+        sql = """
             SELECT hex_x, hex_y
             FROM {table}
             WHERE border_id = :id;
-            """.format(table=MultiverseDb._BorderHexesTableName)
-        cursor.execute(bordersSql, {'id': sectorId})
-        borders = []
+            """.format(table=UniverseDb._BorderHexesTableName)
+        sectorBordersMap = {}
         for row in cursor.fetchall():
             borderId = row[0]
-            cursor.execute(hexesSql, {'id': borderId})
+            sectorId = row[1]
+            borders = sectorBordersMap.get(sectorId)
+            if borders is None:
+                borders = []
+                sectorBordersMap[sectorId] = borders
+
+            cursor.execute(sql, {'id': borderId})
             hexes = []
             for hexRow in cursor.fetchall():
                 hexes.append((hexRow[0], hexRow[1]))
@@ -1918,19 +1510,20 @@ class MultiverseDb(object):
             try:
                 borders.append(multiverse.DbBorder(
                     id=borderId,
-                    hexes=hexes,
-                    allegianceId=row[1],
-                    style=row[2],
-                    colour=row[3],
-                    label=row[4],
-                    labelWorldX=row[5],
-                    labelWorldY=row[6],
-                    showLabel=True if row[7] else False,
-                    wrapLabel=True if row[8] else False))
+                    sectorId=sectorId,
+                    allegianceId=row[2],
+                    style=row[3],
+                    colour=row[4],
+                    label=row[5],
+                    labelWorldX=row[6],
+                    labelWorldY=row[7],
+                    showLabel=True if row[8] else False,
+                    wrapLabel=True if row[9] else False,
+                    hexes=hexes))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct border {borderId}', exc_info=ex)
 
-        return borders
+        return sectorBordersMap
 
     def _insertSectorRegions(
             self,
@@ -1945,11 +1538,11 @@ class MultiverseDb(object):
                 label_x, label_y, show_label, wrap_label)
             VALUES (:id, :sector_id, :colour, :label,
                 :label_x, :label_y, :show_label, :wrap_label);
-            """.format(table=MultiverseDb._RegionsTableName)
+            """.format(table=UniverseDb._RegionsTableName)
         hexesSql =  """
             INSERT INTO {table} (region_id, hex_x, hex_y)
             VALUES (:region_id, :hex_x, :hex_y);
-            """.format(table=MultiverseDb._RegionHexesTableName)
+            """.format(table=UniverseDb._RegionHexesTableName)
         regionsRows = []
         hexRows = []
         for region in sector.regions():
@@ -1970,26 +1563,41 @@ class MultiverseDb(object):
         cursor.executemany(regionsSql, regionsRows)
         cursor.executemany(hexesSql, hexRows)
 
-    def _readSectorRegions(
+    def _readRegions(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> typing.List[multiverse.DbRegion]:
-        regionsSql = """
-            SELECT id, colour, label, label_x, label_y, show_label, wrap_label
+            sectorId: typing.Optional[str] = None
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbRegion]]:
+        sql = """
+            SELECT id, sector_id, colour, label, label_x, label_y, show_label, wrap_label
             FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._RegionsTableName)
-        hexesSql = """
+            {where};
+            """.format(
+                table=UniverseDb._RegionsTableName,
+                where='WHERE sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
+        sql = """
             SELECT hex_x, hex_y
             FROM {table}
             WHERE region_id = :id;
-            """.format(table=MultiverseDb._RegionHexesTableName)
-        cursor.execute(regionsSql, {'id': sectorId})
-        regions = []
+            """.format(table=UniverseDb._RegionHexesTableName)
+        sectorRegionsMap = {}
         for row in cursor.fetchall():
             regionId = row[0]
-            cursor.execute(hexesSql, {'id': regionId})
+            sectorId = row[1]
+            regions = sectorRegionsMap.get(sectorId)
+            if regions is None:
+                regions = []
+                sectorRegionsMap[sectorId] = regions
+
+            cursor.execute(sql, {'id': regionId})
             hexes = []
             for hexRow in cursor.fetchall():
                 hexes.append((hexRow[0], hexRow[1]))
@@ -1997,17 +1605,18 @@ class MultiverseDb(object):
             try:
                 regions.append(multiverse.DbRegion(
                     id=regionId,
-                    hexes=hexes,
-                    colour=row[1],
-                    label=row[2],
-                    labelWorldX=row[3],
-                    labelWorldY=row[4],
-                    showLabel=True if row[5] else False,
-                    wrapLabel=True if row[6] else False))
+                    sectorId=sectorId,
+                    colour=row[2],
+                    label=row[3],
+                    labelWorldX=row[4],
+                    labelWorldY=row[5],
+                    showLabel=True if row[6] else False,
+                    wrapLabel=True if row[7] else False,
+                    hexes=hexes))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct region {regionId}', exc_info=ex)
 
-        return regions
+        return sectorRegionsMap
 
     def _insertSectorLabels(
             self,
@@ -2022,7 +1631,7 @@ class MultiverseDb(object):
                 colour, size, wrap)
             VALUES (:id, :sector_id, :text, :x, :y,
                 :colour, :size, :wrap);
-            """.format(table=MultiverseDb._LabelsTableName)
+            """.format(table=UniverseDb._LabelsTableName)
         rows = []
         for label in sector.labels():
             rows.append({
@@ -2036,33 +1645,49 @@ class MultiverseDb(object):
                 'wrap': 1 if label.wrap() else 0})
         cursor.executemany(sql, rows)
 
-    def _readSectorLabels(
+    def _readLabels(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> typing.List[multiverse.DbLabel]:
+            sectorId: typing.Optional[str] = None
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbLabel]]:
         sql = """
-            SELECT id, text, x, y, colour, size, wrap
+            SELECT id, sector_id, text, x, y, colour, size, wrap
             FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._LabelsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        labels = []
+            {where};
+            """.format(
+                table=UniverseDb._LabelsTableName,
+                where='WHERE sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
+        sectorLabelsMap = {}
         for row in cursor.fetchall():
             labelId = row[0]
+            sectorId = row[1]
+            labels = sectorLabelsMap.get(sectorId)
+            if labels is None:
+                labels = []
+                sectorLabelsMap[sectorId] = labels
+
             try:
                 labels.append(multiverse.DbLabel(
                     id=labelId,
-                    text=row[1],
-                    worldX=row[2],
-                    worldY=row[3],
-                    colour=row[4],
-                    size=row[5],
-                    wrap=True if row[6] else False))
+                    sectorId=sectorId,
+                    text=row[2],
+                    worldX=row[3],
+                    worldY=row[4],
+                    colour=row[5],
+                    size=row[6],
+                    wrap=True if row[7] else False))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct label {labelId}', exc_info=ex)
 
-        return labels
+        return sectorLabelsMap
 
     def _insertSectorTags(
             self,
@@ -2075,7 +1700,7 @@ class MultiverseDb(object):
         sql = """
             INSERT INTO {table} (id, sector_id, tag)
             VALUES (:id, :sector_id, :tag);
-            """.format(table=MultiverseDb._SectorTagsTableName)
+            """.format(table=UniverseDb._SectorTagsTableName)
         rows = []
         for tag in sector.tags():
             rows.append({
@@ -2084,28 +1709,44 @@ class MultiverseDb(object):
                 'tag': tag.tag()})
         cursor.executemany(sql, rows)
 
-    def _readSectorTags(
+    def _readTags(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> typing.List[multiverse.DbTag]:
+            sectorId: typing.Optional[str] = None
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbTag]]:
         sql = """
-            SELECT id, tag
+            SELECT id, sector_id, tag
             FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._SectorTagsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        tags = []
+            {where};
+            """.format(
+                table=UniverseDb._SectorTagsTableName,
+                where='WHERE sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
+        sectorTagsMap = {}
         for row in cursor.fetchall():
             tagId = row[0]
+            sectorId = row[1]
+            tags = sectorTagsMap.get(sectorId)
+            if tags is None:
+                tags = []
+                sectorTagsMap[sectorId] = tags
+
             try:
                 tags.append(multiverse.DbTag(
                     id=tagId,
-                    tag=row[1]))
+                    sectorId=sectorId,
+                    tag=row[2]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct tag {tagId}', exc_info=ex)
 
-        return tags
+        return sectorTagsMap
 
     def _insertSectorProducts(
             self,
@@ -2120,7 +1761,7 @@ class MultiverseDb(object):
                 publisher, reference)
             VALUES (:id, :sector_id, :publication, :author,
                 :publisher, :reference);
-            """.format(table=MultiverseDb._ProductsTableName)
+            """.format(table=UniverseDb._ProductsTableName)
         rows = []
         for product in sector.products():
             rows.append({
@@ -2132,31 +1773,47 @@ class MultiverseDb(object):
                 'reference': product.reference()})
         cursor.executemany(sql, rows)
 
-    def _readSectorProducts(
+    def _readProducts(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> typing.List[multiverse.DbTag]:
+            sectorId: typing.Optional[str] = None
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbTag]]:
         sql = """
-            SELECT id, publication, author, publisher, reference
+            SELECT id, sector_id, publication, author, publisher, reference
             FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._ProductsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        products = []
+            {where};
+            """.format(
+                table=UniverseDb._ProductsTableName,
+                where='WHERE sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
+        sectorProductsMap = {}
         for row in cursor.fetchall():
             productId = row[0]
+            sectorId = row[1]
+            products = sectorProductsMap.get(sectorId)
+            if products is None:
+                products = []
+                sectorProductsMap[sectorId] = products
+
             try:
                 products.append(multiverse.DbProduct(
                     id=productId,
-                    publication=row[1],
-                    author=row[2],
-                    publisher=row[3],
-                    reference=row[4]))
+                    sectorId=sectorId,
+                    publication=row[2],
+                    author=row[3],
+                    publisher=row[4],
+                    reference=row[5]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct product {productId}', exc_info=ex)
 
-        return products
+        return sectorProductsMap
 
     def _insertSectorStars(
             self,
@@ -2183,13 +1840,13 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, system_id, luminosity_class, spectral_class, spectral_scale)
                 VALUES (:id, :system_id, :luminosity_class, :spectral_class, :spectral_scale);
-                """.format(table=MultiverseDb._StarsTableName)
+                """.format(table=UniverseDb._StarsTableName)
             cursor.executemany(sql, rows)
 
-    def _readSectorStars(
+    def _readStars(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # System Id
                 typing.List[multiverse.DbStar]]:
@@ -2197,11 +1854,17 @@ class MultiverseDb(object):
             SELECT t.id, t.system_id, t.luminosity_class, t.spectral_class, t.spectral_scale
             FROM {starsTable} AS t
             JOIN {systemsTable} AS s ON s.id = t.system_id
-            WHERE s.sector_id = :id;
+            {where};
             """.format(
-                starsTable=MultiverseDb._StarsTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+                starsTable=UniverseDb._StarsTableName,
+                systemsTable=UniverseDb._SystemsTableName,
+                where='WHERE s.sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
         systemStarsMap: typing.Dict[str, typing.List[multiverse.DbStar]] = {}
         for row in cursor.fetchall():
             starId = row[0]
@@ -2214,6 +1877,7 @@ class MultiverseDb(object):
             try:
                 stars.append(multiverse.DbStar(
                     id=starId,
+                    systemId=systemId,
                     luminosityClass=row[2],
                     spectralClass=row[3],
                     spectralScale=row[4]))
@@ -2270,7 +1934,7 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, system_id, orbit_index, name, notes)
                 VALUES (:id, :system_id, :orbit_index, :name, :notes)
-                """.format(table=MultiverseDb._BodiesTableName)
+                """.format(table=UniverseDb._BodiesTableName)
             cursor.executemany(sql, bodiesRows)
         if worldsRows:
             sql = """
@@ -2284,7 +1948,7 @@ class MultiverseDb(object):
                     :resources, :labour, :infrastructure, :efficiency,
                     :heterogeneity, :acceptance, :strangeness, :symbols,
                     :population_multiplier);
-                """.format(table=MultiverseDb._WorldsTableName)
+                """.format(table=UniverseDb._WorldsTableName)
             cursor.executemany(sql, worldsRows)
 
         self._insertSectorNobilities(
@@ -2315,38 +1979,38 @@ class MultiverseDb(object):
             cursor=cursor,
             sector=sector)
 
-    def _readSectorBodies(
+    def _readBodies(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # System Id
                 typing.List[multiverse.DbBody]]:
-        worldNobilitiesMap = self._readSectorNobilities(
+        worldNobilitiesMap = self._readNobilities(
             cursor=cursor,
             sectorId=sectorId)
-        worldBasesMap = self._readSectorBases(
+        worldBasesMap = self._readBases(
             cursor=cursor,
             sectorId=sectorId)
-        worldTradeCodesMap = self._readSectorTradeCodes(
+        worldTradeCodesMap = self._readTradeCodes(
             cursor=cursor,
             sectorId=sectorId)
-        worldPopulationsMap = self._readSectorSophontPopulations(
+        worldPopulationsMap = self._readSophontPopulations(
             cursor=cursor,
             sectorId=sectorId)
-        worldRulingAllegianceMap = self._readSectorRulingAllegiances(
+        worldRulingAllegianceMap = self._readRulingAllegiances(
             cursor=cursor,
             sectorId=sectorId)
-        worldOwnersMap = self._readSectorOwningSystems(
+        worldOwnersMap = self._readOwningSystems(
             cursor=cursor,
             sectorId=sectorId)
-        worldColoniesMap = self._readSectorColonySystems(
+        worldColoniesMap = self._readColonySystems(
             cursor=cursor,
             sectorId=sectorId)
-        worldResearchStationsMap = self._readSectorResearchStations(
+        worldResearchStationsMap = self._readResearchStations(
             cursor=cursor,
             sectorId=sectorId)
-        worldRemarksMap = self._readSectorCustomRemarks(
+        worldRemarksMap = self._readCustomRemarks(
             cursor=cursor,
             sectorId=sectorId)
 
@@ -2363,12 +2027,18 @@ class MultiverseDb(object):
             FROM {worldsTable} w
             JOIN {bodiesTable} b ON b.id = w.body_id
             JOIN {systemsTable} s ON s.id = b.system_id
-            WHERE s.sector_id = :id;
+            {where};
             """.format(
-                worldsTable=MultiverseDb._WorldsTableName,
-                bodiesTable=MultiverseDb._BodiesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName,
+                systemsTable=UniverseDb._SystemsTableName,
+                where='WHERE s.sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
         for row in cursor.fetchall():
             bodyId = row[0]
             systemId = row[1]
@@ -2380,6 +2050,7 @@ class MultiverseDb(object):
             try:
                 bodies.append(multiverse.DbWorld(
                     id=bodyId,
+                    systemId=systemId,
                     orbitIndex=row[2],
                     name=row[3],
                     isMainWorld=True if row[4] else False,
@@ -2445,13 +2116,13 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, world_id, code)
                 VALUES (:id, :world_id, :code)
-                """.format(table=MultiverseDb._NobilitiesTableName)
+                """.format(table=UniverseDb._NobilitiesTableName)
             cursor.executemany(sql, rows)
 
-    def _readSectorNobilities(
+    def _readNobilities(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # World Id
                 typing.List[multiverse.DbNobility]]:
@@ -2461,13 +2132,19 @@ class MultiverseDb(object):
             JOIN {worldsTable} AS w ON w.body_id = t.world_id
             JOIN {bodiesTable} AS b ON b.id = w.body_id
             JOIN {systemsTable} AS s ON s.id = b.system_id
-            WHERE s.sector_id = :id;
+            {where};
             """.format(
-                nobilitiesTable=MultiverseDb._NobilitiesTableName,
-                worldsTable=MultiverseDb._WorldsTableName,
-                bodiesTable=MultiverseDb._BodiesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+                nobilitiesTable=UniverseDb._NobilitiesTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName,
+                systemsTable=UniverseDb._SystemsTableName,
+                where='WHERE s.sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
         systemNobilitiesMap: typing.Dict[str, typing.List[multiverse.DbNobility]] = {}
         for row in cursor.fetchall():
             nobilityId = row[0]
@@ -2480,6 +2157,7 @@ class MultiverseDb(object):
             try:
                 nobilities.append(multiverse.DbNobility(
                     id=nobilityId,
+                    worldId=worldId,
                     code=row[2]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct nobility {nobilityId}', exc_info=ex)
@@ -2516,13 +2194,13 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, world_id, code)
                 VALUES (:id, :world_id, :code);
-                """.format(table=MultiverseDb._BasesTableName)
+                """.format(table=UniverseDb._BasesTableName)
             cursor.executemany(sql, rows)
 
-    def _readSectorBases(
+    def _readBases(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # World Id
                 typing.List[multiverse.DbBase]]:
@@ -2532,13 +2210,19 @@ class MultiverseDb(object):
             JOIN {worldsTable} AS w ON w.body_id = t.world_id
             JOIN {bodiesTable} AS b ON b.id = w.body_id
             JOIN {systemsTable} AS s ON s.id = b.system_id
-            WHERE s.sector_id = :id;
+            {where};
             """.format(
-                basesTable=MultiverseDb._BasesTableName,
-                worldsTable=MultiverseDb._WorldsTableName,
-                bodiesTable=MultiverseDb._BodiesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+                basesTable=UniverseDb._BasesTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName,
+                systemsTable=UniverseDb._SystemsTableName,
+                where='WHERE s.sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
         systemBasesMap: typing.Dict[str, typing.List[multiverse.DbBase]] = {}
         for row in cursor.fetchall():
             baseId = row[0]
@@ -2551,6 +2235,7 @@ class MultiverseDb(object):
             try:
                 bases.append(multiverse.DbBase(
                     id=baseId,
+                    worldId=worldId,
                     code=row[2]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct base {baseId}', exc_info=ex)
@@ -2587,13 +2272,13 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, world_id, code)
                 VALUES (:id, :world_id, :code)
-                """.format(table=MultiverseDb._TradeCodesTableName)
+                """.format(table=UniverseDb._TradeCodesTableName)
             cursor.executemany(sql, rows)
 
-    def _readSectorTradeCodes(
+    def _readTradeCodes(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # World Id
                 typing.List[multiverse.DbTradeCode]]:
@@ -2603,13 +2288,19 @@ class MultiverseDb(object):
             JOIN {worldsTable} AS w ON w.body_id = t.world_id
             JOIN {bodiesTable} AS b ON b.id = w.body_id
             JOIN {systemsTable} AS s ON s.id = b.system_id
-            WHERE s.sector_id = :id;
+            {where};
             """.format(
-                tradeTable=MultiverseDb._TradeCodesTableName,
-                worldsTable=MultiverseDb._WorldsTableName,
-                bodiesTable=MultiverseDb._BodiesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+                tradeTable=UniverseDb._TradeCodesTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName,
+                systemsTable=UniverseDb._SystemsTableName,
+                where='WHERE s.sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
         systemTradeCodesMap: typing.Dict[str, typing.List[multiverse.DbTradeCode]] = {}
         for row in cursor.fetchall():
             tradeCodeId = row[0]
@@ -2622,6 +2313,7 @@ class MultiverseDb(object):
             try:
                 tradeCodes.append(multiverse.DbTradeCode(
                     id=tradeCodeId,
+                    worldId=worldId,
                     code=row[2]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct trade code {tradeCodeId}', exc_info=ex)
@@ -2661,13 +2353,13 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, world_id, sophont_id, percentage, is_home_world, is_die_back)
                 VALUES (:id, :world_id, :sophont_id, :percentage, :is_home_world, :is_die_back)
-                """.format(table=MultiverseDb._SophontPopulationsTableName)
+                """.format(table=UniverseDb._SophontPopulationsTableName)
             cursor.executemany(sql, rows)
 
-    def _readSectorSophontPopulations(
+    def _readSophontPopulations(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # World Id
                 typing.List[multiverse.DbSophontPopulation]]:
@@ -2677,13 +2369,19 @@ class MultiverseDb(object):
             JOIN {worldsTable} AS w ON w.body_id = t.world_id
             JOIN {bodiesTable} AS b ON b.id = w.body_id
             JOIN {systemsTable} AS s ON s.id = b.system_id
-            WHERE s.sector_id = :id;
+            {where};
             """.format(
-                populationsTable=MultiverseDb._SophontPopulationsTableName,
-                worldsTable=MultiverseDb._WorldsTableName,
-                bodiesTable=MultiverseDb._BodiesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+                populationsTable=UniverseDb._SophontPopulationsTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName,
+                systemsTable=UniverseDb._SystemsTableName,
+                where='WHERE s.sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
         systemPopulationsMap: typing.Dict[str, typing.List[multiverse.DbSophontPopulation]] = {}
         for row in cursor.fetchall():
             populationId = row[0]
@@ -2696,6 +2394,7 @@ class MultiverseDb(object):
             try:
                 populations.append(multiverse.DbSophontPopulation(
                     id=populationId,
+                    worldId=worldId,
                     sophontId=row[2],
                     percentage=row[3],
                     isHomeWorld=True if row[4] else False,
@@ -2735,13 +2434,13 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, world_id, allegiance_id)
                 VALUES (:id, :world_id, :allegiance_id)
-                """.format(table=MultiverseDb._RulingAllegiancesTableName)
+                """.format(table=UniverseDb._RulingAllegiancesTableName)
             cursor.executemany(sql, rows)
 
-    def _readSectorRulingAllegiances(
+    def _readRulingAllegiances(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # World Id
                 typing.List[multiverse.DbRulingAllegiance]]:
@@ -2751,13 +2450,19 @@ class MultiverseDb(object):
             JOIN {worldsTable} AS w ON w.body_id = t.world_id
             JOIN {bodiesTable} AS b ON b.id = w.body_id
             JOIN {systemsTable} AS s ON s.id = b.system_id
-            WHERE s.sector_id = :id;
+            {where};
             """.format(
-                rulingTable=MultiverseDb._RulingAllegiancesTableName,
-                worldsTable=MultiverseDb._WorldsTableName,
-                bodiesTable=MultiverseDb._BodiesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+                rulingTable=UniverseDb._RulingAllegiancesTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName,
+                systemsTable=UniverseDb._SystemsTableName,
+                where='WHERE s.sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
         systemRulingAllegianceMap: typing.Dict[str, typing.List[multiverse.DbRulingAllegiance]] = {}
         for row in cursor.fetchall():
             rulerId = row[0]
@@ -2770,6 +2475,7 @@ class MultiverseDb(object):
             try:
                 rulers.append(multiverse.DbRulingAllegiance(
                     id=rulerId,
+                    worldId=worldId,
                     allegianceId=row[2]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct ruling allegiance {rulerId}', exc_info=ex)
@@ -2808,13 +2514,13 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, world_id, hex_x, hex_y, sector_abbreviation)
                 VALUES (:id, :world_id, :hex_x, :hex_y, :sector_abbreviation)
-                """.format(table=MultiverseDb._OwningSystemsTableName)
+                """.format(table=UniverseDb._OwningSystemsTableName)
             cursor.executemany(sql, rows)
 
-    def _readSectorOwningSystems(
+    def _readOwningSystems(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # World Id
                 typing.List[multiverse.DbOwningSystem]]:
@@ -2824,13 +2530,19 @@ class MultiverseDb(object):
             JOIN {worldsTable} AS w ON w.body_id = t.world_id
             JOIN {bodiesTable} AS b ON b.id = w.body_id
             JOIN {systemsTable} AS s ON s.id = b.system_id
-            WHERE s.sector_id = :id;
+            {where};
             """.format(
-                ownersTable=MultiverseDb._OwningSystemsTableName,
-                worldsTable=MultiverseDb._WorldsTableName,
-                bodiesTable=MultiverseDb._BodiesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+                ownersTable=UniverseDb._OwningSystemsTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName,
+                systemsTable=UniverseDb._SystemsTableName,
+                where='WHERE s.sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
         systemOwnersMap: typing.Dict[str, typing.List[multiverse.DbOwningSystem]] = {}
         for row in cursor.fetchall():
             ownerId = row[0]
@@ -2843,6 +2555,7 @@ class MultiverseDb(object):
             try:
                 owners.append(multiverse.DbOwningSystem(
                     id=ownerId,
+                    worldId=worldId,
                     hexX=row[2],
                     hexY=row[3],
                     sectorAbbreviation=row[4]))
@@ -2883,13 +2596,13 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, world_id, hex_x, hex_y, sector_abbreviation)
                 VALUES (:id, :world_id, :hex_x, :hex_y, :sector_abbreviation)
-                """.format(table=MultiverseDb._ColonySystemsTableName)
+                """.format(table=UniverseDb._ColonySystemsTableName)
             cursor.executemany(sql, rows)
 
-    def _readSectorColonySystems(
+    def _readColonySystems(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # World Id
                 typing.List[multiverse.DbColonySystem]]:
@@ -2899,13 +2612,19 @@ class MultiverseDb(object):
             JOIN {worldsTable} AS w ON w.body_id = t.world_id
             JOIN {bodiesTable} AS b ON b.id = w.body_id
             JOIN {systemsTable} AS s ON s.id = b.system_id
-            WHERE s.sector_id = :id;
+            {where};
             """.format(
-                coloniesTable=MultiverseDb._ColonySystemsTableName,
-                worldsTable=MultiverseDb._WorldsTableName,
-                bodiesTable=MultiverseDb._BodiesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+                coloniesTable=UniverseDb._ColonySystemsTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName,
+                systemsTable=UniverseDb._SystemsTableName,
+                where='WHERE s.sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
         systemColoniesMap: typing.Dict[str, typing.List[multiverse.DbColonySystem]] = {}
         for row in cursor.fetchall():
             colonyId = row[0]
@@ -2918,6 +2637,7 @@ class MultiverseDb(object):
             try:
                 colonies.append(multiverse.DbColonySystem(
                     id=colonyId,
+                    worldId=worldId,
                     hexX=row[2],
                     hexY=row[3],
                     sectorAbbreviation=row[4]))
@@ -2956,13 +2676,13 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, world_id, code)
                 VALUES (:id, :world_id, :code);
-                """.format(table=MultiverseDb._ResearchStationTableName)
+                """.format(table=UniverseDb._ResearchStationTableName)
             cursor.executemany(sql, rows)
 
-    def _readSectorResearchStations(
+    def _readResearchStations(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # World Id
                 typing.List[multiverse.DbResearchStation]]:
@@ -2972,13 +2692,19 @@ class MultiverseDb(object):
             JOIN {worldsTable} AS w ON w.body_id = t.world_id
             JOIN {bodiesTable} AS b ON b.id = w.body_id
             JOIN {systemsTable} AS s ON s.id = b.system_id
-            WHERE s.sector_id = :id;
+            {where};
             """.format(
-                stationsTable=MultiverseDb._ResearchStationTableName,
-                worldsTable=MultiverseDb._WorldsTableName,
-                bodiesTable=MultiverseDb._BodiesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+                stationsTable=UniverseDb._ResearchStationTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName,
+                systemsTable=UniverseDb._SystemsTableName,
+                where='WHERE s.sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
         systemResearchStationsMap: typing.Dict[str, typing.List[multiverse.DbResearchStation]] = {}
         for row in cursor.fetchall():
             stationId = row[0]
@@ -2991,6 +2717,7 @@ class MultiverseDb(object):
             try:
                 stations.append(multiverse.DbResearchStation(
                     id=stationId,
+                    worldId=worldId,
                     code=row[2]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct research station {stationId}', exc_info=ex)
@@ -3027,13 +2754,13 @@ class MultiverseDb(object):
             sql = """
                 INSERT INTO {table} (id, world_id, remark)
                 VALUES (:id, :world_id, :remark)
-                """.format(table=MultiverseDb._CustomRemarksTableName)
+                """.format(table=UniverseDb._CustomRemarksTableName)
             cursor.executemany(sql, rows)
 
-    def _readSectorCustomRemarks(
+    def _readCustomRemarks(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # World Id
                 typing.List[multiverse.DbCustomRemark]]:
@@ -3043,13 +2770,19 @@ class MultiverseDb(object):
             JOIN {worldsTable} AS w ON w.body_id = t.world_id
             JOIN {bodiesTable} AS b ON b.id = w.body_id
             JOIN {systemsTable} AS s ON s.id = b.system_id
-            WHERE s.sector_id = :id;
+            {where};
             """.format(
-                remarksTable=MultiverseDb._CustomRemarksTableName,
-                worldsTable=MultiverseDb._WorldsTableName,
-                bodiesTable=MultiverseDb._BodiesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+                remarksTable=UniverseDb._CustomRemarksTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName,
+                systemsTable=UniverseDb._SystemsTableName,
+                where='WHERE s.sector_id = :id' if sectorId else '')
+
+        parameters = {}
+        if sectorId:
+            parameters['id'] = sectorId
+        cursor.execute(sql, parameters)
+
         systemRemarksMap: typing.Dict[str, typing.List[multiverse.DbCustomRemark]] = {}
         for row in cursor.fetchall():
             remarkId = row[0]
@@ -3062,6 +2795,7 @@ class MultiverseDb(object):
             try:
                 remarks.append(multiverse.DbCustomRemark(
                     id=remarkId,
+                    worldId=worldId,
                     remark=row[2]))
             except Exception as ex:
                 logging.error(f'MultiverseDb failed to construct custom remark {remarkId}', exc_info=ex)
@@ -3075,12 +2809,12 @@ class MultiverseDb(object):
             milieu: typing.Optional[str] = None,
             sectorX: typing.Optional[int] = None,
             sectorY: typing.Optional[int] = None,
-            ) -> typing.Optional[multiverse.DbUniverse]:
+            ) -> None:
         sql = """
             DELETE FROM {table}
             WHERE id = :id
             """.format(
-            table=MultiverseDb._SectorsTableName)
+            table=UniverseDb._SectorsTableName)
         queryData = {'id': sectorId}
 
         if milieu is not None and sectorX is not None and sectorY is not None:
@@ -3092,208 +2826,18 @@ class MultiverseDb(object):
         sql += ';'
         cursor.execute(sql, queryData)
 
-    def _listUniverseInfo(
-            self,
-            cursor: sqlite3.Cursor
-            ) -> typing.List[DbUniverseInfo]:
+    def _clearSectors(self, cursor: sqlite3.Cursor) -> None:
         sql = """
-            SELECT id, name
-            FROM {table}
-            WHERE id != :defaultId;
+            DELETE FROM {table};
             """.format(
-            table=MultiverseDb._UniversesTableName)
-        cursor.execute(sql, {'defaultId': MultiverseDb._DefaultUniverseId})
+            table=UniverseDb._SectorsTableName)
+        cursor.execute(sql)
 
-        universeList = []
-        for row in cursor.fetchall():
-            universeList.append(DbUniverseInfo(
-                universeId=row[0],
-                name=row[1]))
-        return universeList
-
-    def _universeInfoById(
+    def _replaceSectors(
             self,
             cursor: sqlite3.Cursor,
-            universeId: str
-            ) -> typing.List[DbUniverseInfo]:
-        sql = """
-            SELECT name
-            FROM {table}
-            WHERE id = :id
-            LIMIT 1;
-            """.format(
-            table=MultiverseDb._UniversesTableName)
-        cursor.execute(sql, {'id': universeId})
-
-        row = cursor.fetchone()
-        if not row:
-            return None
-
-        return DbUniverseInfo(
-            universeId=universeId,
-            name=row[0])
-
-    def _universeInfoByName(
-            self,
-            cursor: sqlite3.Cursor,
-            name: str
-            ) -> typing.List[DbUniverseInfo]:
-        sql = """
-            SELECT id
-            FROM {table}
-            WHERE name = :name
-            LIMIT 1;
-            """.format(
-            table=MultiverseDb._UniversesTableName)
-        cursor.execute(sql, {'name': name})
-
-        row = cursor.fetchone()
-        if not row:
-            return None
-
-        return DbUniverseInfo(
-            universeId=row[0],
-            name=name)
-
-    def _listSectorInfo(
-            self,
-            cursor: sqlite3.Cursor,
-            universeId: str,
-            milieu: typing.Optional[str],
-            includeDefaultSectors: bool
-            ) -> typing.List[DbSectorInfo]:
-        sql = """
-            SELECT id, universe_id, milieu, primary_name, sector_x, sector_y, abbreviation
-            FROM {table}
-            WHERE universe_id = :id
-            """.format(table=MultiverseDb._SectorsTableName)
-        parameters = {'id': universeId}
-
-        if milieu:
-            sql += 'AND milieu = :milieu'
-            parameters['milieu'] = milieu
-
-        if includeDefaultSectors:
-            sql += """
-                UNION ALL
-                SELECT d.id, d.universe_id, d.milieu, d.primary_name, d.sector_x, d.sector_y, abbreviation
-                FROM {table} d
-                WHERE d.universe_id = :default_id
-                """.format(table=MultiverseDb._SectorsTableName)
-            parameters['default_id'] = MultiverseDb._DefaultUniverseId
-
-            if milieu:
-                sql += 'AND milieu = :milieu'
-
-            sql += """
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM {table} u
-                    WHERE u.universe_id = :id
-                        AND u.milieu = d.milieu
-                        AND u.sector_x = d.sector_x
-                        AND u.sector_y = d.sector_y
-                )
-                """.format(table=MultiverseDb._SectorsTableName)
-
-        sql += ';'
-
-        cursor.execute(sql, parameters)
-
-        sectorList = []
-        for row in cursor.fetchall():
-            sectorList.append(DbSectorInfo(
-                id=row[0],
-                universeId=row[1],
-                isCustom=row[1] != MultiverseDb._DefaultUniverseId,
-                milieu=row[2],
-                name=row[3],
-                sectorX=row[4],
-                sectorY=row[5],
-                abbreviation=row[6]))
-        return sectorList
-
-    def _sectorInfoById(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> typing.Optional[DbSectorInfo]:
-        sql = """
-            SELECT universe_id, milieu, primary_name, sector_x, sector_y, abbreviation
-            FROM {table}
-            WHERE id = :id
-            LIMIT 1;
-            """.format(table=MultiverseDb._SectorsTableName)
-        selectData = {'id': sectorId}
-
-        cursor.execute(sql, selectData)
-        row = cursor.fetchone()
-        if not row:
-            return None
-
-        return DbSectorInfo(
-            id=sectorId,
-            universeId=row[0],
-            isCustom=row[0] != MultiverseDb._DefaultUniverseId,
-            milieu=row[1],
-            name=row[2],
-            sectorX=row[3],
-            sectorY=row[4],
-            abbreviation=row[5])
-
-    def _sectorInfoByPosition(
-            self,
-            cursor: sqlite3.Cursor,
-            universeId: str,
-            milieu: str,
-            sectorX: int,
-            sectorY: int
-            # NOTE: Returned sector may be from default universe rather than the
-            # one specified by universeId
-            ) -> typing.Optional[DbSectorInfo]:
-        sql = """
-            SELECT id, universe_id, primary_name, abbreviation
-            FROM {table}
-            WHERE (universe_id = :id OR universe_id = :default_id)
-                AND milieu = :milieu
-                AND sector_x = :sector_x
-                AND sector_y = :sector_y
-            ORDER BY
-                CASE WHEN universe_id = :id THEN 0 ELSE 1 END
-            LIMIT 1;
-            """.format(table=MultiverseDb._SectorsTableName)
-        selectData = {
-            'id': universeId,
-            'milieu': milieu,
-            'sector_x': sectorX,
-            'sector_y': sectorY,
-            'default_id': MultiverseDb._DefaultUniverseId}
-
-        cursor.execute(sql, selectData)
-        row = cursor.fetchone()
-        if not row:
-            return None
-
-        return DbSectorInfo(
-            id=row[0],
-            # NOTE: Use returned row as it may be the default universe rather than universeId
-            universeId=row[1],
-            isCustom=row[1] != MultiverseDb._DefaultUniverseId,
-            milieu=milieu,
-            name=row[2],
-            sectorX=sectorX,
-            sectorY=sectorY,
-            abbreviation=row[3])
-
-    @staticmethod
-    def _readSnapshotTimestamp(directoryPath: str) -> datetime.datetime:
-        timestampPath = os.path.join(directoryPath, 'timestamp.txt')
-        with open(timestampPath, 'r', encoding='utf-8-sig') as file:
-            return MultiverseDb._parseSnapshotTimestamp(content=file.read())
-
-    @staticmethod
-    def _parseSnapshotTimestamp(content: str) -> datetime.datetime:
-        timestamp = datetime.datetime.strptime(
-            content,
-            MultiverseDb._SnapshotTimestampFormat)
-        return timestamp.replace(tzinfo=datetime.timezone.utc)
+            sectors: typing.Collection[multiverse.DbSector]
+            ) -> None:
+        self._clearSectors(cursor=cursor)
+        for sector in sectors:
+            self._insertSector(cursor=cursor, sector=sector)

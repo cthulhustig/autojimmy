@@ -1,3 +1,4 @@
+import common
 import datetime
 import enum
 import io
@@ -6,6 +7,7 @@ import os
 import re
 import requests
 import shutil
+import survey
 import threading
 import typing
 import zipfile
@@ -92,6 +94,8 @@ class SnapshotManager(object):
     _DataVersionPattern = re.compile(r'^(\d+)(?:\.(\d+))?\s*$')
     _MinDataFormatVersion = SnapshotDataFormat(4, 1)
 
+    _UniverseInfoFileName = 'universe.json'
+
     _instance = None # Singleton instance
     _lock = threading.RLock() # Recursive lock
     _installDir = None
@@ -131,6 +135,37 @@ class SnapshotManager(object):
     def loadTextResource(self, filePath: str) -> bytes:
         return self._bytesToString(bytes=self._readResourceFile(
             relativeFilePath=filePath))
+
+    def listMilieu(self) -> typing.List[str]:
+        basePath = self._mapBasePath()
+        milieux = []
+        for path in os.listdir(basePath):
+            if os.path.isfile(os.path.join(basePath, path, SnapshotManager._UniverseInfoFileName)):
+                milieux.append(path)
+        return milieux
+
+    def loadUniverseInfo(self, milieu: str) -> survey.RawUniverseInfo:
+        universeInfoPath = self._universeInfoPath(milieu=milieu)
+        content = self.loadTextResource(filePath=universeInfoPath)
+        return survey.parseUniverseInfo(content=content)
+
+    def loadSectorWorlds(self, milieu: str, sector: str) -> typing.Collection[survey.RawWorld]:
+        escapedName = common.encodeFileName(rawFileName=sector)
+        sectorPath = os.path.join(
+            self._mapBasePath(),
+            milieu,
+            escapedName + '.sec')
+        content = self.loadTextResource(filePath=sectorPath)
+        return survey.parseT5ColumnSector(content=content)
+
+    def loadSectorMetadata(self, milieu: str, sector: str) -> survey.RawMetadata:
+        escapedName = common.encodeFileName(rawFileName=sector)
+        metadataPath = os.path.join(
+            self._mapBasePath(),
+            milieu,
+            escapedName + '.xml')
+        content = self.loadTextResource(filePath=metadataPath)
+        return survey.parseXMLMetadata(content=content)
 
     def snapshotTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:
@@ -278,6 +313,20 @@ class SnapshotManager(object):
             SnapshotManager._replaceDir(
                 workingDirPath=workingDirPath,
                 currentDirPath=self._overlayDir)
+
+    def _mapBasePath(self) -> str:
+        return os.path.join(
+            self._overlayDir if os.path.isdir(self._overlayDir) else self._installDir,
+            'milieu')
+
+    def _universeInfoPath(
+            self,
+            milieu: str
+            ) -> str:
+        return os.path.join(
+            self._mapBasePath(),
+            milieu,
+            SnapshotManager._UniverseInfoFileName)
 
     def _checkOverlayDataFormat(self) -> None:
         if not os.path.exists(self._overlayDir):
