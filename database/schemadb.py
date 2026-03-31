@@ -193,7 +193,7 @@ class Transaction(object):
     def connection(self) -> sqlite3.Connection:
         return self._connection
 
-    def begin(self) -> 'SchemaDb.Transaction':
+    def begin(self) -> 'Transaction':
         if self._hasBegun:
             raise RuntimeError('Invalid state to begin transaction')
 

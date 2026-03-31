@@ -1,6 +1,5 @@
 from .snapshotmanager import *
 from .dbobjects import *
-from .schemadb import *
 from .universeregistry import *
 from .universedb import *
 from .universemanager import *

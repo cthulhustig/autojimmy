@@ -1,4 +1,5 @@
 import common
+import database
 import datetime
 import logging
 import multiverse
@@ -46,10 +47,10 @@ class UniverseRegistry(object):
     _UniversesTableSchema = 1
 
     def __init__(self, registryPath: str) -> None:
-        self._database = multiverse.SchemaDb(dbPath=registryPath)
+        self._database = database.SchemaDb(dbPath=registryPath)
         self._initDatabase()
 
-    def createTransaction(self) -> multiverse.Transaction:
+    def createTransaction(self) -> database.Transaction:
         return self._database.createTransaction()
 
     # TODO: Need to check that this prevents multiple universes with the same
@@ -61,7 +62,7 @@ class UniverseRegistry(object):
             description: str = '',
             stock: bool = False,
             snapshotTimestamp: typing.Optional[datetime.datetime] = None,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> None:
         logging.debug(f'UniverseRegister adding universe {id} ({name})')
 
@@ -88,25 +89,25 @@ class UniverseRegistry(object):
     def removeUniverse(
             self,
             id: str,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> None:
         logging.debug(f'UniverseRegister removing universe {id}')
 
         if transaction != None:
             connection = transaction.connection()
-            return self._removeUniverse(
+            self._removeUniverse(
                 id=id,
                 cursor=connection.cursor())
         else:
             with self._database.createTransaction() as transaction:
                 connection = transaction.connection()
-                return self._removeUniverse(
+                self._removeUniverse(
                     id=id,
                     cursor=connection.cursor())
 
     def listUniverses(
             self,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> typing.List[UniverseInfo]:
         logging.debug(f'UniverseRegister listing universes')
 
@@ -122,7 +123,7 @@ class UniverseRegistry(object):
 
     def stockUniverse(
             self,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> typing.Optional[UniverseInfo]:
         logging.debug('UniverseRegister retrieving default universe')
 
@@ -139,7 +140,7 @@ class UniverseRegistry(object):
     def universeById(
             self,
             id: str,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> typing.Optional[UniverseInfo]:
         logging.debug(
             f'UniverseRegister retrieving info for universe with id {id}')
@@ -159,7 +160,7 @@ class UniverseRegistry(object):
     def universeByName(
             self,
             name: str,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> typing.Optional[UniverseInfo]:
         logging.debug(
             f'UniverseRegister retrieving info for universe with name "{name}"')
@@ -180,7 +181,7 @@ class UniverseRegistry(object):
             self,
             id: str,
             name: str,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> None:
         logging.debug(f'UniverseRegister setting name of universe {id} to "{name}"')
 
@@ -202,7 +203,7 @@ class UniverseRegistry(object):
             self,
             id: str,
             description: str,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> None:
         logging.debug(f'UniverseRegister setting description for universe {id} to "{description}"')
 
@@ -223,7 +224,7 @@ class UniverseRegistry(object):
     def setSnapshotTimestamp(
             self,
             timestamp: datetime.datetime,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> None:
         logging.debug(f'UniverseRegister setting stock sector snapshot timestamp to {timestamp.isoformat()}')
 
@@ -249,13 +250,13 @@ class UniverseRegistry(object):
                 tableName=UniverseRegistry._UniversesTableName,
                 requiredSchemaVersion=UniverseRegistry._UniversesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False, isUnique=True),
-                    multiverse.ColumnDef(columnName='description', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False, isUnique=True),
+                    database.ColumnDef(columnName='description', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
                     # TODO: Is there a way I can enforce that there is only ever one entry with this set True
-                    multiverse.ColumnDef(columnName='is_stock', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False),
+                    database.ColumnDef(columnName='is_stock', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False),
                     # TODO: Is there a way I can enforce that the timestamp must be specified for the stock universes but never specified for custom universes
-                    multiverse.ColumnDef(columnName='snapshot_timestamp', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)])
+                    database.ColumnDef(columnName='snapshot_timestamp', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
     def _addUniverse(
             self,
@@ -288,7 +289,7 @@ class UniverseRegistry(object):
             self,
             cursor: sqlite3.Cursor,
             universeId: str
-            ) -> typing.Optional[multiverse.DbUniverse]:
+            ) -> None:
         sql = """
             DELETE FROM {table}
             WHERE id = :id

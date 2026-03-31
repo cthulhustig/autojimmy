@@ -1,3 +1,4 @@
+import database
 import logging
 import multiverse
 import sqlite3
@@ -131,7 +132,7 @@ class UniverseDb(object):
 
     def __init__(self, universePath: str) -> None:
         self._universePath = universePath
-        self._database = multiverse.SchemaDb(dbPath=universePath)
+        self._database = database.SchemaDb(dbPath=universePath)
         self._initTables()
 
     def createConnection(self) -> None:
@@ -141,7 +142,7 @@ class UniverseDb(object):
             self,
             onCommitCallback: typing.Optional[typing.Callable[[], None]] = None,
             onRollbackCallback: typing.Optional[typing.Callable[[], None]] = None
-            ) -> multiverse.Transaction:
+            ) -> database.Transaction:
         return self._database.createTransaction(
             onCommitCallback=onCommitCallback,
             onRollbackCallback=onRollbackCallback)
@@ -149,7 +150,7 @@ class UniverseDb(object):
     def listSectors(
             self,
             milieu: typing.Optional[str] = None,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> typing.List[SectorInfo]:
         logging.debug(f'UniverseDb listing {milieu if milieu else "all"} sectors in universe {self._universePath}')
 
@@ -168,7 +169,7 @@ class UniverseDb(object):
     def saveSector(
             self,
             sector: multiverse.DbSector,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> None:
         logging.debug(f'UniverseDb saving sector {sector.id()} to universe {self._universePath}')
 
@@ -205,7 +206,7 @@ class UniverseDb(object):
     def loadSector(
             self,
             sectorId: str,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> multiverse.DbSector:
         logging.debug(f'UniverseDb loading sector {sectorId} from universe {self._universePath}')
 
@@ -223,7 +224,7 @@ class UniverseDb(object):
 
     def loadSectors(
             self,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> typing.List[multiverse.DbSector]:
         logging.debug(f'UniverseDb loading sector from universe {self._universePath}')
 
@@ -240,7 +241,7 @@ class UniverseDb(object):
     def deleteSector(
             self,
             sectorId: str,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> None:
         logging.debug(f'UniverseDb deleting sector {sectorId} from universe {self._universePath}')
 
@@ -258,7 +259,7 @@ class UniverseDb(object):
 
     def clearSectors(
             self,
-            transaction: typing.Optional[multiverse.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None
             ) -> None:
         logging.debug(f'UniverseDb clearing sectors in universe {self._universePath}')
 
@@ -289,142 +290,142 @@ class UniverseDb(object):
                 tableName=UniverseDb._SectorsTableName,
                 requiredSchemaVersion=UniverseDb._SectorsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='milieu', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
-                    multiverse.ColumnDef(columnName='sector_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='sector_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='primary_name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
-                    multiverse.ColumnDef(columnName='primary_language', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='abbreviation', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='sector_label', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='selected', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False),
-                    multiverse.ColumnDef(columnName='credits', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='publication', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='author', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='publisher', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='reference', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='notes', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)],
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='milieu', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='sector_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='sector_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='primary_name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='primary_language', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='abbreviation', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='sector_label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='selected', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False),
+                    database.ColumnDef(columnName='credits', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='publication', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='author', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['milieu', 'sector_x', 'sector_y'])])
+                    database.UniqueConstraintDef(columnNames=['milieu', 'sector_x', 'sector_y'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._AlternateNamesTableName,
                 requiredSchemaVersion=UniverseDb._AlternateNamesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
-                    multiverse.ColumnDef(columnName='language', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)])
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='language', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._SubsectorNamesTableName,
                 requiredSchemaVersion=UniverseDb._SubsectorNamesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               minValue='A', maxValue='P'),
-                    multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)],
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['sector_id', 'code'])])
+                    database.UniqueConstraintDef(columnNames=['sector_id', 'code'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._AllegiancesTableName,
                 requiredSchemaVersion=UniverseDb._AllegiancesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
-                    multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
-                    multiverse.ColumnDef(columnName='legacy', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='base', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='route_colour', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='route_style', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='route_width', columnType=multiverse.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
-                    multiverse.ColumnDef(columnName='border_colour', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='border_style', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)],
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='legacy', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='base', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='route_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='route_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='route_width', columnType=database.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
+                    database.ColumnDef(columnName='border_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='border_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['sector_id', 'code'])])
+                    database.UniqueConstraintDef(columnNames=['sector_id', 'code'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._SophontsTableName,
                 requiredSchemaVersion=UniverseDb._SophontsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
-                    multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
-                    multiverse.ColumnDef(columnName='is_major', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False)],
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='is_major', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['sector_id', 'code']),
+                    database.UniqueConstraintDef(columnNames=['sector_id', 'code']),
                     # NOTE: Unlike most entities (e.g. allegiances) the sophont name must be unique
                     # for a given sector. This is because remarks such as major/minor race and dieback
                     # refer to the sophont by name rather than code so it needs to be unique to prevent
                     # ambiguity
-                    multiverse.UniqueConstraintDef(columnNames=['sector_id', 'name'])])
+                    database.UniqueConstraintDef(columnNames=['sector_id', 'name'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._SystemsTableName,
                 requiredSchemaVersion=UniverseDb._SystemsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='planetoid_belt_count', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
-                    multiverse.ColumnDef(columnName='gas_giant_count', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='planetoid_belt_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
+                    database.ColumnDef(columnName='gas_giant_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
                     # TODO: I wonder if this needs to be world_count and include the main world so I
                     # can allow for systems where there is no main world (e.g. just a star)
-                    multiverse.ColumnDef(columnName='other_world_count', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
-                    multiverse.ColumnDef(columnName='zone', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='allegiance_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True,
+                    database.ColumnDef(columnName='other_world_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
+                    database.ColumnDef(columnName='zone', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
                               foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.SetNull),
-                    multiverse.ColumnDef(columnName='notes', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)],
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
+                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['sector_id', 'hex_x', 'hex_y'])])
+                    database.UniqueConstraintDef(columnNames=['sector_id', 'hex_x', 'hex_y'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._BodiesTableName,
                 requiredSchemaVersion=UniverseDb._BodiesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='system_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='system_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SystemsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='orbit_index', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='name', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='notes', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)])
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='orbit_index', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._StarsTableName,
                 requiredSchemaVersion=UniverseDb._StarsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='system_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='system_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SystemsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='luminosity_class', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
-                    multiverse.ColumnDef(columnName='spectral_class', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='spectral_scale', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)])
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='luminosity_class', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='spectral_class', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='spectral_scale', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
             # TODO: Also create giants and belts tables. Even if they don't have any extra data I need
             # to store the body_id so in the future when the user can create them, the code knows which
@@ -436,98 +437,98 @@ class UniverseDb(object):
                 tableName=UniverseDb._WorldsTableName,
                 requiredSchemaVersion=UniverseDb._WorldsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='body_id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True,
+                    database.ColumnDef(columnName='body_id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True,
                                 foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                                foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='is_main_world', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False),
-                    multiverse.ColumnDef(columnName='starport', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='world_size', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='atmosphere', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='hydrographics', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='population', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='government', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='law_level', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='tech_level', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='resources', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='labour', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='infrastructure', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='efficiency', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='heterogeneity', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='acceptance', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='strangeness', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='symbols', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='population_multiplier', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)])
+                                foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='is_main_world', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False),
+                    database.ColumnDef(columnName='starport', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='world_size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='atmosphere', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='hydrographics', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='population', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='government', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='law_level', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='tech_level', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='resources', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='labour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='infrastructure', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='efficiency', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='heterogeneity', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='acceptance', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='strangeness', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='symbols', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='population_multiplier', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._NobilitiesTableName,
                 requiredSchemaVersion=UniverseDb._NobilitiesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)],
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['world_id', 'code'])])
+                    database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._TradeCodesTableName,
                 requiredSchemaVersion=UniverseDb._TradeCodesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)],
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['world_id', 'code'])])
+                    database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._SophontPopulationsTableName,
                 requiredSchemaVersion=UniverseDb._SophontPopulationsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='sophont_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='sophont_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SophontsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='percentage', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0, maxValue=100),
-                    multiverse.ColumnDef(columnName='is_home_world', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False),
-                    multiverse.ColumnDef(columnName='is_die_back', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False)],
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='percentage', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0, maxValue=100),
+                    database.ColumnDef(columnName='is_home_world', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False),
+                    database.ColumnDef(columnName='is_die_back', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['world_id', 'sophont_id'])])
+                    database.UniqueConstraintDef(columnNames=['world_id', 'sophont_id'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._RulingAllegiancesTableName,
                 requiredSchemaVersion=UniverseDb._RulingAllegiancesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='allegiance_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade)],
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['world_id', 'allegiance_id'])])
+                    database.UniqueConstraintDef(columnNames=['world_id', 'allegiance_id'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._OwningSystemsTableName,
                 requiredSchemaVersion=UniverseDb._OwningSystemsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     # NOTE: This intentionally stores the abbreviation rather
                     # than the sector id so that the referenced sector doesn't
                     # need to exist in the DB at the point this sector was
@@ -536,194 +537,194 @@ class UniverseDb(object):
                     # reference each other as which ever was imported first
                     # would need the sector id of a sector that hasn't been
                     # imported yet.
-                    multiverse.ColumnDef(columnName='sector_abbreviation', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)],
+                    database.ColumnDef(columnName='sector_abbreviation', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['world_id', 'hex_x', 'hex_y', 'sector_abbreviation'])])
+                    database.UniqueConstraintDef(columnNames=['world_id', 'hex_x', 'hex_y', 'sector_abbreviation'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._ColonySystemsTableName,
                 requiredSchemaVersion=UniverseDb._ColonySystemsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     # NOTE: See comment on owning systems as to why this is the
                     # abbreviation rather than the sector id
-                    multiverse.ColumnDef(columnName='sector_abbreviation', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)],
+                    database.ColumnDef(columnName='sector_abbreviation', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['world_id', 'hex_x', 'hex_y', 'sector_abbreviation'])])
+                    database.UniqueConstraintDef(columnNames=['world_id', 'hex_x', 'hex_y', 'sector_abbreviation'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._ResearchStationTableName,
                 requiredSchemaVersion=UniverseDb._ResearchStationTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)],
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['world_id', 'code'])])
+                    database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._CustomRemarksTableName,
                 requiredSchemaVersion=UniverseDb._CustomRemarksTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='remark', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)])
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='remark', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._BasesTableName,
                 requiredSchemaVersion=UniverseDb._BasesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='world_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='code', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)],
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['world_id', 'code'])])
+                    database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._RoutesTableName,
                 requiredSchemaVersion=UniverseDb._RoutesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='start_hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='start_hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='end_hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='end_hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='start_offset_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='start_offset_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='end_offset_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='end_offset_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='type', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='style', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='colour', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='width', columnType=multiverse.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
-                    multiverse.ColumnDef(columnName='allegiance_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True,
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='start_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='start_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='end_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='end_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='start_offset_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='start_offset_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='end_offset_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='end_offset_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='type', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='width', columnType=database.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
+                    database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
                               foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.SetNull)])
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull)])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._BordersTableName,
                 requiredSchemaVersion=UniverseDb._BordersTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='allegiance_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True,
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
                               foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.SetNull),
-                    multiverse.ColumnDef(columnName='style', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='colour', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='label', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
+                    database.ColumnDef(columnName='style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     # NOTE: The label position is stored as an offset in world space from the
                     # origin of the sector (top, left). An offset is used rather than storing
                     # world space coordinates to keep sector data relative to the sector. It
                     # will make it easier if we ever want to move a sector
-                    multiverse.ColumnDef(columnName='label_x', columnType=multiverse.ColumnDef.ColumnType.Real, isNullable=True),
-                    multiverse.ColumnDef(columnName='label_y', columnType=multiverse.ColumnDef.ColumnType.Real, isNullable=True),
-                    multiverse.ColumnDef(columnName='show_label', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False),
-                    multiverse.ColumnDef(columnName='wrap_label', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False)])
+                    database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                    database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                    database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False),
+                    database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._BorderHexesTableName,
                 requiredSchemaVersion=UniverseDb._BorderHexesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='border_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='border_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BordersTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False)])
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._RegionsTableName,
                 requiredSchemaVersion=UniverseDb._RegionsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='colour', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='label', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     # NOTE: See note on borders about coordinate space used for world x/y
-                    multiverse.ColumnDef(columnName='label_x', columnType=multiverse.ColumnDef.ColumnType.Real, isNullable=True),
-                    multiverse.ColumnDef(columnName='label_y', columnType=multiverse.ColumnDef.ColumnType.Real, isNullable=True),
-                    multiverse.ColumnDef(columnName='show_label', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False),
-                    multiverse.ColumnDef(columnName='wrap_label', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False)])
+                    database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                    database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                    database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False),
+                    database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._RegionHexesTableName,
                 requiredSchemaVersion=UniverseDb._RegionHexesTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='region_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='region_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._RegionsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='hex_x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='hex_y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False)])
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._LabelsTableName,
                 requiredSchemaVersion=UniverseDb._LabelsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='text', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False),
-                    multiverse.ColumnDef(columnName='x', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='y', columnType=multiverse.ColumnDef.ColumnType.Integer, isNullable=False),
-                    multiverse.ColumnDef(columnName='colour', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='size', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='wrap', columnType=multiverse.ColumnDef.ColumnType.Boolean, isNullable=False)])
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='wrap', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._SectorTagsTableName,
                 requiredSchemaVersion=UniverseDb._SectorTagsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='tag', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False)],
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='tag', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
-                    multiverse.UniqueConstraintDef(columnNames=['sector_id', 'tag'])])
+                    database.UniqueConstraintDef(columnNames=['sector_id', 'tag'])])
 
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._ProductsTableName,
                 requiredSchemaVersion=UniverseDb._ProductsTableSchema,
                 columns=[
-                    multiverse.ColumnDef(columnName='id', columnType=multiverse.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    multiverse.ColumnDef(columnName='sector_id', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=False,
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=multiverse.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    multiverse.ColumnDef(columnName='publication', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='author', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='publisher', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True),
-                    multiverse.ColumnDef(columnName='reference', columnType=multiverse.ColumnDef.ColumnType.Text, isNullable=True)])
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='publication', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='author', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
     def _listSectors(
             self,

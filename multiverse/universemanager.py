@@ -280,19 +280,25 @@ class UniverseManager(object):
             ) -> None:
         UniverseManager._registry.setUniverseDescription(id=id, description=description)
 
-    def loadUniverseData(
+    def universeSectors(
             self,
             id: str,
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
-            ) -> typing.Optional[multiverse.DbUniverse]:
+            ) -> typing.List[multiverse.DbSector]:
+        return list(self.yieldUniverseSectors(id=id, progressCallback=progressCallback))
+
+    def yieldUniverseSectors(
+            self,
+            id: str,
+            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
+            ) -> typing.Generator[multiverse.DbSector, None, None]:
         universeInfo = UniverseManager._registry.universeById(id=id)
         if not universeInfo:
-            return None # TODO: Shold this throw instead
+            raise ValueError(f'Unknown universe {id}')
 
         dbPath = UniverseManager._universeDbFilePath(id=id)
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
-        sectors = []
         with universeDb.createTransaction() as transaction:
             sectorInfos = universeDb.listSectors()
             sectorCount = len(sectorInfos)
@@ -307,9 +313,10 @@ class UniverseManager(object):
                         logging.warning('UniverseManager universe read progress callback threw an exception', exc_info=ex)
 
                 try:
-                    sectors.append(universeDb.loadSector(
+                    sector = universeDb.loadSector(
                         sectorId=sectorInfo.id(),
-                        transaction=transaction))
+                        transaction=transaction)
+                    yield sector
                 except Exception as ex:
                     # Log error but continue loading
                     logging.error('UniverseManager failed to read sector {sectorId}', exc_info=ex)
@@ -323,20 +330,21 @@ class UniverseManager(object):
                 except Exception as ex:
                     logging.warning('UniverseManager universe read progress callback threw an exception', exc_info=ex)
 
-        return multiverse.DbUniverse(
-            id=universeInfo.id(),
-            name=universeInfo.name(),
-            description=universeInfo.description(),
-            sectors=sectors)
-
-    def loadStockUniverseData(
+    def stockUniverseSectors(
             self,
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
-            ) -> typing.Optional[multiverse.DbUniverse]:
+            ) -> typing.List[multiverse.DbSector]:
+        return list(self.yieldStockUniverseSectors(progressCallback=progressCallback))
+
+    def yieldStockUniverseSectors(
+            self,
+            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None            
+            ) -> typing.Generator[multiverse.DbSector, None, None]:
         info = UniverseManager._registry.stockUniverse()
         if not info:
             raise RuntimeError('No stock universe defined')
-        return self.loadUniverseData(id=info.id(), progressCallback=progressCallback)
+        for sector in self.yieldUniverseSectors(id=info.id(), progressCallback=progressCallback):
+            yield sector
 
     # NOTE: When copyStock is true the stock database is copied as-is. This is
     # done for speed (3 seconds vs > 30 seconds when loaded then saved). The
