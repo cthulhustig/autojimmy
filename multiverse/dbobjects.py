@@ -22,39 +22,6 @@ class DbObject(object):
     def id(self) -> str:
         return self._id
 
-class DbUniverseObject(DbObject):
-    def __init__(
-            self,
-            id: typing.Optional[str] = None, # None means allocate an id
-            universeId: typing.Optional[str] = None
-            ) -> None:
-        super().__init__(id=id)
-
-        common.validateOptionalStr(name='universeId', value=universeId, allowEmpty=False)
-
-        self._universeId = universeId
-
-    def universeId(self) -> None:
-        return self._universeId
-
-    # NOTE: Setting the id back to None is intentionally disallowed as the only
-    # reason to do so would be to remove an object from its parent and it's not
-    # safe to do that as the object may hold references to other objects owned
-    # by the parent. If the object was removed from the parent and attached to
-    # another object, it would still refer to objects owned by its old parent.
-    # An example of this would be sophont populations. They're attached to a
-    # system but hold references to the sophont which is owned by the sector. If
-    # the system was removed from one sector and added to another, it would still
-    # reference the sophont from its old sector which would result in horrible
-    # bugs and the mangled data being written back to the database.
-    def setUniverseId(self, universeId: str) -> None:
-        common.validateMandatoryStr(name='universeId', value=universeId, allowEmpty=False)
-
-        if universeId == self._universeId:
-            return # Nothing to do
-
-        self._universeId = universeId
-
 class DbSectorObject(DbObject):
     def __init__(
             self,
@@ -1418,10 +1385,9 @@ class DbTag(DbSectorObject):
     def tag(self) -> str:
         return self._string
 
-class DbSector(DbUniverseObject):
+class DbSector(DbObject):
     def __init__(
             self,
-            isCustom: bool,
             milieu: str,
             sectorX: int,
             sectorY: int,
@@ -1448,11 +1414,9 @@ class DbSector(DbUniverseObject):
             products: typing.Optional[typing.Collection[DbProduct]] = None,
             notes: typing.Optional[str] = None,
             id: typing.Optional[str] = None, # None means allocate an id
-            universeId: typing.Optional[str] = None
             ) -> None:
-        super().__init__(id=id, universeId=universeId)
+        super().__init__(id=id)
 
-        common.validateMandatoryBool(name='isCustom', value=isCustom)
         common.validateMandatoryStr(name='milieu', value=milieu, allowed=_ValidMilieu)
         common.validateMandatoryInt(name='sectorX', value=sectorX)
         common.validateMandatoryInt(name='sectorY', value=sectorY)
@@ -1479,7 +1443,6 @@ class DbSector(DbUniverseObject):
         DbSector._validateProducts(name='products', value=products, sectorId=id)
         common.validateOptionalStr(name='notes', value=notes)
 
-        self._isCustom = isCustom
         self._milieu = milieu
         self._sectorX = sectorX
         self._sectorY = sectorY
@@ -1517,9 +1480,6 @@ class DbSector(DbUniverseObject):
         self._attachObjects(self._tags)
         self._products = list(products) if products else None
         self._attachObjects(self._products)
-
-    def isCustom(self) -> bool:
-        return self._isCustom
 
     def milieu(self) -> str:
         return self._milieu
@@ -1841,108 +1801,3 @@ class DbSector(DbUniverseObject):
             currentSectorId = tag.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
                 raise ValueError(f'{name} contains products that are already attached to a sector')
-
-# TODO: This needs updated to be immutable like the other db objects
-# TODO: I think I should be able to get rid of this (or drastically change it) as part of the multi file work
-class DbUniverse(DbObject):
-    def __init__(
-            self,
-            name: str,
-            description: typing.Optional[str] = None,
-            sectors: typing.Optional[typing.Collection[DbSector]] = None,
-            notes: typing.Optional[str] = None, # TODO: I'm not going to have universe notes when using multiple files
-            id: typing.Optional[str] = None, # None means allocate an id
-            ) -> None:
-        super().__init__(id=id)
-
-        common.validateMandatoryStr(name='name', value=name)
-        common.validateOptionalStr(name='description', value=description)
-        DbUniverse._validateSectors(name='sectors', value=sectors)
-        common.validateOptionalStr(name='notes', value=notes)
-
-        self._sectorByMilieuPosition: typing.Dict[typing.Tuple[str, int, int], DbSector] = {}
-
-        self.setName(name)
-        self.setDescription(description)
-        self.setNotes(notes)
-        self.setSectors(sectors)
-
-    def name(self) -> str:
-        return self._name
-
-    def setName(self, name: str) -> None:
-        self._name = name
-
-    def description(self) -> typing.Optional[str]:
-        return self._description
-
-    def setDescription(self, description: typing.Optional[str]) -> None:
-        self._description = description
-
-    def notes(self) -> typing.Optional[str]:
-        return self._notes
-
-    def setNotes(self, notes: typing.Optional[str]) -> None:
-        self._notes = notes
-
-    def sectors(self) -> typing.Optional[typing.Collection[DbSector]]:
-        return self._sectors
-
-    def sector(
-            self,
-            milieu: str,
-            sectorX: int,
-            sectorY: int
-            ) -> typing.Optional[DbSector]:
-        key = (milieu, sectorX, sectorY)
-        return self._sectorByMilieuPosition.get(key)
-
-    def setSectors(self, sectors: typing.Optional[typing.Collection[DbSector]]) -> None:
-        if sectors is not None:
-            self._sectors = []
-            for sector in sectors:
-                self.addSector(sector=sector)
-        else:
-            self._sectors = None
-
-    def addSector(self, sector: DbSector) -> None:
-        if self._sectors is None:
-            self._sectors: typing.List[DbSector] = []
-
-        key = (sector.milieu(), sector.sectorX(), sector.sectorY())
-
-        oldSector = self._sectorByMilieuPosition.get(key)
-        if oldSector:
-            self._sectors.remove(oldSector)
-
-        self._sectors.append(sector)
-        self._sectorByMilieuPosition[key] = sector
-
-        sector.setUniverseId(self._id)
-
-    def removeSector(self, sectorId: str) -> None:
-        if self._sectors is None:
-            return
-        for i in range(self._sectors):
-            sector = self._sectors[i]
-            if sector.id() == sectorId:
-                del self._sectorByMilieuPosition[(sector.milieu(), sector.sectorX(), sector.sectorY())]
-                del self._sectors[i]
-                return
-
-    @staticmethod
-    def _validateSectors(
-            name: str,
-            value: typing.Optional[typing.Collection[DbSector]]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateOptionalCollection(name=name, value=value, type=DbSector)
-
-        seen = set()
-        for sector in value:
-            key = (sector.sectorX(), sector.sectorY(), sector.milieu())
-            if key in seen:
-                raise ValueError(f'{name} contains multiple systems with the same location and milieu')
-            seen.add(key)

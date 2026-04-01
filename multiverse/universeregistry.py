@@ -125,7 +125,7 @@ class UniverseRegistry(object):
             self,
             transaction: typing.Optional[database.Transaction] = None
             ) -> typing.Optional[UniverseInfo]:
-        logging.debug('UniverseRegister retrieving default universe')
+        logging.debug('UniverseRegister retrieving stock universe')
 
         if transaction != None:
             connection = transaction.connection()

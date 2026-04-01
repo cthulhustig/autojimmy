@@ -5,6 +5,21 @@ import sqlite3
 import typing
 
 # TODO: All log messages need updated to say UniverseDb and include the file name
+# TODO: I think I want to store something at the sector level that allows me to tell
+# if a sector in a custom universe has been modified since it was imported from the
+# stock universe. This could be a simple flag.
+# Alternatively, it might be better store a hash of the metadata and sector data file
+# that a sector was imported from when creating the stock universe (and update the
+# hashes every time a new snapshot is imported). When a custom universe is created
+# the hashes would be copied as part of the DB. The important bit would be they should
+# be cleared whenever the sector is saved after the universe was created. If these
+# hashes are present for a sector in a custom universe it means that sector is "stock",
+# and if they're not present it means the sector is custom. The hashes could also come in
+# useful to speed up import of stock data (only need to import sectors where the hash
+# in the new snapshot is different) _and_ to tell which sectors in a custom universe are
+# different to the equivalent sector in the stock universe (useful if I ever want to give
+# the user a list of what sectors have changed in the stock universe so they can choose
+# to manually sync them across as a whole sector)
 
 class SectorInfo(object):
     def __init__(
@@ -797,8 +812,6 @@ class UniverseDb(object):
             try:
                 sectors.append(multiverse.DbSector(
                     id=sectorId,
-                    universeId='BLAH', # TODO: This should be removed from DbSector
-                    isCustom=False, # TODO: This should be held at the universe level rather than the sector level
                     milieu=row[1],
                     sectorX=row[2],
                     sectorY=row[3],
@@ -948,8 +961,6 @@ class UniverseDb(object):
 
         return multiverse.DbSector(
             id=sectorId,
-            universeId='BLAH', # TODO: This should be removed from DbSector
-            isCustom=False, # TODO: This should be held at the universe level rather than the sector level
             milieu=row[0],
             sectorX=row[1],
             sectorY=row[2],

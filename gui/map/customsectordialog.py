@@ -12,6 +12,9 @@ import survey
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+# TODO: The custom sector dialog needs updated to handle the new custom universe model
+# TODO: The welcome message needs updated to explain how things work now
+
 _WelcomeMessage = """
     <html>
     <p>The Custom Sectors dialog allows you to add your own sectors to {name}.
@@ -495,9 +498,7 @@ class _NewSectorDialog(gui.DialogEx):
                 rawSystems=rawWorlds,
                 rawStockAllegiances=rawStockAllegiances,
                 rawStockSophonts=rawStockSophonts,
-                rawStockStyleSheet=rawStyleSheet,
-                isCustom=True,
-                universeId=multiverse.customUniverseId())
+                rawStockStyleSheet=rawStyleSheet)
             multiverse.MultiverseDb.instance().saveSector(sector=dbSector)
         except Exception as ex:
             message = 'Failed to add custom sector to data store'
@@ -617,13 +618,13 @@ class _CustomSectorTable(gui.ListTable):
 
         self.synchronise()
 
-    def sectorInfo(self, row: int) -> typing.Optional[multiverse.DbSectorInfo]:
+    def sectorInfo(self, row: int) -> typing.Optional[multiverse.SectorInfo]:
         tableItem = self.item(row, 0)
         if not tableItem:
             return None
         return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)
 
-    def sectorInfoRow(self, sector: multiverse.DbSectorInfo) -> int:
+    def sectorInfoRow(self, sector: multiverse.SectorInfo) -> int:
         for row in range(self.rowCount()):
             if sector == self.sectorInfo(row):
                 return row
@@ -635,7 +636,7 @@ class _CustomSectorTable(gui.ListTable):
             if sectorId == sectorInfo.id():
                 return row
 
-    def currentSectorInfo(self) -> typing.Optional[multiverse.DbSectorInfo]:
+    def currentSectorInfo(self) -> typing.Optional[multiverse.SectorInfo]:
         row = self.currentRow()
         if row < 0:
             return None
@@ -643,7 +644,7 @@ class _CustomSectorTable(gui.ListTable):
 
     def setCurrentSectorInfo(
             self,
-            sector: typing.Optional[multiverse.DbSectorInfo]
+            sector: typing.Optional[multiverse.SectorInfo]
             ) -> None:
         if sector:
             row = self.sectorInfoRow(sector)
@@ -731,7 +732,7 @@ class _CustomSectorTable(gui.ListTable):
     def _fillRow(
             self,
             row: int,
-            sector: multiverse.DbSectorInfo
+            sector: multiverse.SectorInfo
             ) -> int:
         # Workaround for the issue covered here, re-enabled after setting items
         # https://stackoverflow.com/questions/7960505/strange-qtablewidget-behavior-not-all-cells-populated-after-sorting-followed-b
@@ -891,7 +892,7 @@ class CustomSectorDialog(gui.DialogEx):
 
     def _syncSectorDataControls(
             self,
-            sectorInfo: typing.Optional[multiverse.DbSectorInfo]
+            sectorInfo: typing.Optional[multiverse.SectorInfo]
             ) -> None:
         if not sectorInfo:
             self._sectorMapWidget.setUniverse(universe=astronomer.Universe(sectors=[]))

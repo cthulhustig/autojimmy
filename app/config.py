@@ -27,9 +27,10 @@ class ConfigOption(enum.Enum):
     LogLevel = 100
 
     # Map
-    Milieu = 200
-    MapStyle = 201
-    MapOptions = 202
+    Universe = 200
+    Milieu = 201
+    MapStyle = 202
+    MapOptions = 203
     MapRendering = 204
     MapAnimations = 205
 
@@ -1062,6 +1063,18 @@ class Config(QtCore.QObject):
                 'debug': logging.DEBUG,
                 'dbg': logging.DEBUG}))
 
+        # TODO: Something (probably the main app) needs to initialise
+        # this on startup (or handle the case where it's not set). It
+        # needs to be done after the legacy custom universe has been imported
+        # if there is any as it should default to the legacy custom universe
+        # if there is one and the stock universe if there isn't
+        # TODO: This needs exposed somewhere so the user can change it
+        self._addConfigItem(StringConfigItem(
+            option=ConfigOption.Universe,
+            key='TravellerMap/Universe',
+            restart=True,
+            default='')) # TODO: This default doesn't seem right
+
         self._addConfigItem(EnumConfigItem(
             option=ConfigOption.Milieu,
             key='TravellerMap/Milieu',
@@ -1362,6 +1375,8 @@ class Config(QtCore.QObject):
 
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.LogLevel], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.Universe], futureValue: bool = False) -> str: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.Milieu], futureValue: bool = False) -> astronomer.Milieu: ...
     @typing.overload

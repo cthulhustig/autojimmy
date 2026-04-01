@@ -19,6 +19,7 @@ class WorldManager(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _universe: astronomer.Universe = None
+    _initialised = False
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -32,6 +33,17 @@ class WorldManager(object):
                 if not cls._instance:
                     cls._instance = cls.__new__(cls)
         return cls._instance
+
+    @staticmethod
+    def initialise(
+            self,
+            universeId: str
+            ) -> None:
+        if WorldManager._initialised:
+            raise RuntimeError('The WorldManager singleton has already been initialised')
+
+        WorldManager._universeId = universeId
+        WorldManager._initialised = True
 
     def loadSectors(
             self,
@@ -52,70 +64,60 @@ class WorldManager(object):
                 # weren't loaded and the point it acquired the mutex.
                 return
 
-            with multiverse.MultiverseDb.instance().createTransaction() as transaction:
-                if progressCallback:
-                    stage = f'Enumerating Sectors'
-                    try:
-                        progressCallback(stage, 0, 0)
-                    except Exception as ex:
-                        logging.warning(f'Sector loading progress callback threw an exception', exc_info=ex)
+            # TODO: This is a horrible hack that needs updated to support multiple
+            # custom universes and changing which universe is loaded based on which
+            # one the user has configured
+            universeInfo = None
+            for universeInfo in multiverse.UniverseManager.instance().universeInfos():
+                # Use custom universe if one is found, if not continue looking
+                if not universeInfo.isStock():
+                    break
+            if not universeInfo:
+                raise RuntimeError('No stock universe found')
 
-                dbSectorInfos = multiverse.MultiverseDb.instance().listSectorInfo(
-                    universeId=multiverse.customUniverseId(),
-                    transaction=transaction)
-
-                totalSectorCount = len(dbSectorInfos)
-                maxProgress = totalSectorCount
-                currentProgress = 0
-                sectors = []
-                for dbSectorInfo in dbSectorInfos:
-                    sectorX = dbSectorInfo.sectorX()
-                    sectorY = dbSectorInfo.sectorY()
-                    canonicalName = dbSectorInfo.name()
-                    milieu = WorldManager._mapMilieu(dbSectorInfo.milieu())
-
-                    if not milieu:
-                        logging.warning(
-                            f'Ignoring sector with unknown milieu "{dbSectorInfo.milieu()}" at ({sectorX}, {sectorY})')
-                        continue
-
-                    logging.debug(f'Loading sector {canonicalName} at ({sectorX}, {sectorY}) from {milieu.value}')
-
-                    if progressCallback:
-                        stage = f'Loading: {milieu.value} - {canonicalName}'
-                        currentProgress += 1
-                        try:
-                            progressCallback(stage, currentProgress, maxProgress)
-                        except Exception as ex:
-                            logging.warning(f'Sector loading progress callback threw an exception', exc_info=ex)
-
-                    try:
-                        dbSector = multiverse.MultiverseDb.instance().loadSector(
-                            sectorId=dbSectorInfo.id(),
-                            transaction=transaction)
-                        sector = self._convertDbSector(dbSector=dbSector)
-                    except Exception as ex:
-                        logging.error(f'Failed to load sector {canonicalName} at ({sectorX}, {sectorY}) from {milieu.value}', exc_info=ex)
-                        continue
-
-                    worldCount = sector.worldCount()
-                    logging.debug(f'Loaded {worldCount} worlds for sector {canonicalName} at ({sectorX}, {sectorY}) from {milieu.value}')
+            sectorGenerator = multiverse.UniverseManager.instance().yieldUniverseSectors(
+                universeId=universeInfo.id(),
+                progressCallback=progressCallback)
+            sectors = []
+            for dbSector in sectorGenerator:
+                try:
+                    sector = self._convertDbSector(
+                        dbSector=dbSector,
+                        # TODO: This isCustom is used when constructing the astrometrics
+                        # sector and was used when shading unofficial sectors so that any
+                        # official sectors that were overridden were shaded. With things
+                        # work now it's not an issue for the stock universe as it will
+                        # always be false and only the it will use the tags to determine
+                        # if it's official/unofficial. The problem is when the custom
+                        # universe is used as all sectors will be custom and therefore
+                        # unofficial, even the ones that haven't actually been modified.
+                        # To fix this I need a way to determine if the sector has been
+                        # modified since it was created from the stock data. This also
+                        # needs to take into account some universes won't be created from
+                        # the stock data.
+                        isCustom=not universeInfo.isStock())
                     sectors.append(sector)
 
-                self._universe = astronomer.Universe(
-                    sectors=sectors,
-                    placeholderMilieu=WorldManager._PlaceholderMilieu)
+                    logging.debug(
+                        'Loaded {worlds} worlds for sector {name} at ({x}, {y}) from {milieu}'.format(
+                            worlds=sector.worldCount(),
+                            name=sector.name(),
+                            x=sector.index().sectorX(),
+                            y=sector.index().sectorY(),
+                            milieu=sector.milieu().value))
+                except Exception as ex:
+                    logging.error(
+                        'Failed to load sector {name} at ({x}, {y}) from {milieu.value}'.format(
+                            name=sector.name(),
+                            x=sector.index().sectorX(),
+                            y=sector.index().sectorY(),
+                            milieu=sector.milieu().value),
+                        exc_info=ex)
+                    continue
 
-    # TODO: This function probably shouldn't be dealing with dbSectorIds
-    # _or_ the higher level astronomer Sector needs to use the same id
-    def createSectorUniverse(
-            self,
-            dbSectorId: str
-            ) -> typing.Tuple[astronomer.Universe, astronomer.Sector]:
-        dbSector = multiverse.MultiverseDb.instance().loadSector(
-            sectorId=dbSectorId)
-        sector = self._convertDbSector(dbSector=dbSector)
-        return (astronomer.Universe(sectors=[sector]), sector)
+            self._universe = astronomer.Universe(
+                sectors=sectors,
+                placeholderMilieu=WorldManager._PlaceholderMilieu)
 
     def universe(self) -> astronomer.Universe:
         return self._universe
@@ -487,7 +489,8 @@ class WorldManager(object):
 
     @staticmethod
     def _convertDbSector(
-            dbSector: multiverse.DbSector
+            dbSector: multiverse.DbSector,
+            isCustom: bool
             ) -> astronomer.Sector:
         sectorName = dbSector.primaryName()
         sectorX = dbSector.sectorX()
@@ -1267,7 +1270,7 @@ class WorldManager(object):
                     exc_info=ex)
 
         return astronomer.Sector(
-            isCustom=dbSector.isCustom(),
+            isCustom=isCustom,
             name=sectorName,
             milieu=milieu,
             index=astronomer.SectorIndex(sectorX=sectorX, sectorY=sectorY),

@@ -2135,9 +2135,7 @@ def readSnapshotStyleSheet() -> survey.RawStyleSheet:
         content=multiverse.SnapshotManager.instance().loadTextResource(
             filePath=_OTUStyleSheet))
 
-def convertRawUniverseToDbUniverse(
-        universeName: str,
-        isCustom: bool,
+def convertRawSectorsToDbSectors(
         rawSectors: typing.Collection[typing.Tuple[
             str, # Milieu
             survey.RawMetadata,
@@ -2150,9 +2148,8 @@ def convertRawUniverseToDbUniverse(
             survey.RawStockSophont
             ]] = None,
         rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
-        universeId: typing.Optional[str] = None,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
-        ) -> multiverse.DbUniverse:
+        ) -> typing.List[multiverse.DbSector]:
     totalSectorCount = len(rawSectors)
     dbSectors = []
     for progressCount, (milieu, rawMetadata, rawSystems) in enumerate(rawSectors):
@@ -2171,8 +2168,7 @@ def convertRawUniverseToDbUniverse(
             rawSystems=rawSystems,
             rawStockAllegiances=rawStockAllegiances,
             rawStockSophonts=rawStockSophonts,
-            rawStockStyleSheet=rawStockStyleSheet,
-            isCustom=isCustom))
+            rawStockStyleSheet=rawStockStyleSheet))
 
     if progressCallback:
         try:
@@ -2183,16 +2179,12 @@ def convertRawUniverseToDbUniverse(
         except Exception as ex:
             logging.warning('Raw to database universe conversion progress callback threw an exception', exc_info=ex)
 
-    return multiverse.DbUniverse(
-        id=universeId,
-        name=universeName,
-        sectors=dbSectors)
+    return dbSectors
 
 def convertRawSectorToDbSector(
         milieu: str,
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld],
-        isCustom: bool,
         rawStockAllegiances: typing.Optional[typing.Collection[
             survey.RawStockAllegiance
             ]] = None,
@@ -2200,9 +2192,8 @@ def convertRawSectorToDbSector(
             survey.RawStockSophont
             ]] = None,
         rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
-        sectorId: typing.Optional[str] = None,
-        universeId: typing.Optional[str] = None,
-        ) -> multiverse.DbUniverse:
+        sectorId: typing.Optional[str] = None
+        ) -> multiverse.DbSector:
     dbSectorX = rawMetadata.x()
     dbSectorY = rawMetadata.y()
     dbPrimaryName = rawMetadata.canonicalName()
@@ -2305,8 +2296,6 @@ def convertRawSectorToDbSector(
 
     return multiverse.DbSector(
         id=sectorId,
-        universeId=universeId,
-        isCustom=isCustom,
         milieu=milieu,
         sectorX=dbSectorX,
         sectorY=dbSectorY,

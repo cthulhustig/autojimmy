@@ -29,26 +29,7 @@ _MetadataFormatExtensions = {
 def customUniverseId() -> str:
     return _CustomUniverseId
 
-def hasCustomUniverseBeenCreated() -> bool:
-    universeInfo = multiverse.MultiverseDb.instance().universeInfoById(
-        universeId=_CustomUniverseId)
-    return universeInfo is not None
-
-def createCustomUniverse(
-        progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
-        ) -> None:
-    if progressCallback:
-        progressCallback(f'Creating: Custom Universe', 0, 1)
-
-    universe = multiverse.DbUniverse(
-        id=_CustomUniverseId,
-        name=_CustomUniverseName)
-    multiverse.MultiverseDb.instance().saveUniverse(universe=universe)
-
-    if progressCallback:
-        progressCallback(f'Creating: Custom Universe', 1, 1)
-
-def haveCustomSectorsBeenImported(directoryPath: str) -> bool:
+def haveLegacyCustomSectorsBeenImported(directoryPath: str) -> bool:
     if not os.path.isdir(directoryPath):
         return False # No directory means nothing to import
 
@@ -60,7 +41,7 @@ def importLegacyCustomSectors(
         appVersion: str,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
         ) -> None:
-    if haveCustomSectorsBeenImported(directoryPath):
+    if haveLegacyCustomSectorsBeenImported(directoryPath):
         raise RuntimeError('Legacy custom sectors have already been imported')
 
     rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
@@ -136,11 +117,15 @@ def importLegacyCustomSectors(
                 f'Legacy custom sector import failed to process "{universeInfoPath}"',
                 exc_info=ex)
 
-    rawData: typing.List[typing.Tuple[
-        str, # Milieu
-        survey.RawMetadata,
-        typing.Collection[survey.RawWorld]
-        ]] = []
+    if not totalSectorCount:
+        # No legacy custom sectors to load but still create the flag file to indicate
+        # custom sectors have been imported to avoid going through this process again
+        _createLegacySectorsImportedFlagFile(
+            directoryPath=directoryPath,
+            appVersion=appVersion)
+        return
+
+    dbSectors: typing.List[multiverse.DbSector] = []
     progressCount = 0
     for milieu, sectorNames in milieuSectors:
         milieuPath = os.path.join(universePath, milieu)
@@ -170,7 +155,15 @@ def importLegacyCustomSectors(
                     rawSystems = survey.parseSector(
                         content=file.read(),
                         format=sectorFormat)
-                rawData.append((milieu, rawMetadata, rawSystems))
+
+                dbSector = multiverse.convertRawSectorToDbSector(
+                    milieu=milieu,
+                    rawMetadata=rawMetadata,
+                    rawSystems=rawSystems,
+                    rawStockAllegiances=rawStockAllegiances,
+                    rawStockSophonts=rawStockSophonts,
+                    rawStockStyleSheet=rawStockStyleSheet)
+                dbSectors.append(dbSector)
             except Exception as ex:
                 # TODO: Log something but continue
                 continue
@@ -181,52 +174,34 @@ def importLegacyCustomSectors(
             totalSectorCount,
             totalSectorCount)
 
-    dbUniverse = multiverse.MultiverseDb.instance().loadUniverse(
+    if not dbSectors:
+        # There were legacy custom sectors but none of the could be loaded.
+        # Still create the flag file to indicate custom sectors have been
+        # imported to avoid going through this process again
+        _createLegacySectorsImportedFlagFile(
+            directoryPath=directoryPath,
+            appVersion=appVersion)
+        return
+
+    # TODO: Need to handle the case where the custom universe with this name
+    # already exists.
+    multiverse.UniverseManager.instance().createCustomUniverse(
         universeId=_CustomUniverseId,
-        includeDefaultSectors=False,
-        progressCallback=progressCallback)
-    if not dbUniverse:
-        raise RuntimeError('No custom universe to import legacy custom sectors into')
-
-    totalSectorCount = len(rawData)
-    for progressCount, (milieu, rawMetadata, rawSystems) in enumerate(rawData):
-        existingSector = dbUniverse.sector(
-            milieu=milieu,
-            sectorX=rawMetadata.x(),
-            sectorY=rawMetadata.y())
-        if existingSector and existingSector.isCustom():
-            logging.warning(
-                f'Skipping import of legacy custom sector {rawMetadata.canonicalName()} at ({rawMetadata.x()}, {rawMetadata.y()}) from {milieu} as a custom sector already exists at that location')
-            continue
-
-        if progressCallback:
-            progressCallback(
-                f'Converting: {milieu} - {rawMetadata.canonicalName()}',
-                progressCount,
-                totalSectorCount)
-
-        logging.info(
-            f'Converting legacy custom sector {rawMetadata.canonicalName()} at ({rawMetadata.x()}, {rawMetadata.y()}) from {milieu}')
-        dbUniverse.addSector(multiverse.convertRawSectorToDbSector(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            rawSystems=rawSystems,
-            rawStockAllegiances=rawStockAllegiances,
-            rawStockSophonts=rawStockSophonts,
-            rawStockStyleSheet=rawStockStyleSheet,
-            isCustom=True))
-
-    if progressCallback:
-        progressCallback(
-            f'Converting: Complete!',
-            totalSectorCount,
-            totalSectorCount)
-
-    multiverse.MultiverseDb.instance().saveUniverse(
-        universe=dbUniverse,
+        name=_CustomUniverseName,
+        description='',
+        copyStock=True,
+        sectors=dbSectors,
         progressCallback=progressCallback)
 
     # Create flag file to indicate custom sectors have already been imported.
+    _createLegacySectorsImportedFlagFile(
+        directoryPath=directoryPath,
+        appVersion=appVersion)
+
+def _createLegacySectorsImportedFlagFile(
+        directoryPath: str,
+        appVersion: str
+        ) -> None:
     flagFilePath = os.path.join(directoryPath, _ImportFlagFileName)
     with open(flagFilePath, 'w') as file:
         file.write(appVersion)

@@ -4,6 +4,5 @@ from .universeregistry import *
 from .universedb import *
 from .universemanager import *
 from .convert import *
-from .multiversedb import *
 from .customuniverse import *
 from .stockuniverse import *

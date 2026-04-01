@@ -39,7 +39,7 @@ def importStockUniverseSnapshot(
             nameInfos = sectorInfo.nameInfos()
             canonicalName = nameInfos[0].name() if nameInfos else None
             if not canonicalName:
-                logging.warning(f'Default universe import ignoring sector with no name in milieu {milieu}')
+                logging.warning(f'Stock universe import ignoring sector with no name in milieu {milieu}')
                 continue
             sectorNames.append(canonicalName)
             totalSectorCount += 1
@@ -62,7 +62,7 @@ def importStockUniverseSnapshot(
                         totalSectorCount)
                     progressCount += 1
                 except Exception as ex:
-                    logging.warning('Default universe import progress callback threw an exception', exc_info=ex)
+                    logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
 
             try:
                 rawMetadata = multiverse.SnapshotManager.instance().loadSectorMetadata(
@@ -73,7 +73,7 @@ def importStockUniverseSnapshot(
                     sector=sectorName)
                 rawData.append((milieu, rawMetadata, rawSystems))
             except Exception as ex:
-                logging.error(f'Default universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
+                logging.error(f'Stock universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
 
     if progressCallback:
         try:
@@ -82,12 +82,9 @@ def importStockUniverseSnapshot(
                 totalSectorCount,
                 totalSectorCount)
         except Exception as ex:
-            logging.warning('Default universe import progress callback threw an exception', exc_info=ex)
+            logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
 
-    dbUniverse = multiverse.convertRawUniverseToDbUniverse(
-        universeId='Blah', # TODO: This shouldn't be needed
-        universeName='Default Universe',
-        isCustom=False,
+    dbSectors = multiverse.convertRawSectorsToDbSectors(
         rawSectors=rawData,
         rawStockAllegiances=rawStockAllegiances,
         rawStockSophonts=rawStockSophonts,
@@ -95,6 +92,6 @@ def importStockUniverseSnapshot(
         progressCallback=progressCallback)
 
     multiverse.UniverseManager.instance().updateStockUniverse(
-        sectors=dbUniverse.sectors(),
+        sectors=dbSectors,
         snapshotTimestamp=importTimestamp,
         progressCallback=progressCallback)

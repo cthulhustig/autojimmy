@@ -410,44 +410,33 @@ def main() -> None:
                 stateKey='UniverseUpdateErrorWhenChecking')
             # Continue loading the app with the existing data
 
-        multiverseDbPath = multiverseDbPath = os.path.join(appDir, 'multiverse.db')
-        multiverse.MultiverseDb.instance().initialise(
-            appVersion=app.AppVersion,
-            databasePath=multiverseDbPath)
+        multiversePath = os.path.join(appDir, 'multiverse')
+        multiverse.UniverseManager.initialise(multiversePath=multiversePath)
 
-        multiverseSyncDir = overlayMapsDir if os.path.isdir(overlayMapsDir) else installMapsDir
-        hasDefaultUniverse = multiverse.MultiverseDb.instance().hasDefaultUniverse()
-        shouldSyncMultiverse = not hasDefaultUniverse
+        shouldSyncStockUniverse = False
         try:
-            shouldSyncMultiverse = multiverse.MultiverseDb.instance().isDefaultUniverseSnapshotNewer(
-                directoryPath=multiverseSyncDir)
+            shouldSyncStockUniverse = multiverse.isStockUniverseSnapshotNewer()
         except Exception as ex:
-            logging.warning('Failed to compare default universe snapshot age.', exc_info=ex)
+            logging.warning('Failed to compare stock universe snapshot age.', exc_info=ex)
 
-        shouldCreateCustomUniverse = not multiverse.hasCustomUniverseBeenCreated()
-
-        customSectorsDir = os.path.join(appDir, 'custom_map')
-        shouldImportCustomSectors = False
+        # Check if we need to import legacy custom sectors
+        # TODO: At some point in the future I should be able to remove ths
+        legacyCustomSectorsDir = os.path.join(appDir, 'custom_map')
+        shouldImportLegacyCustomSectors = False
         try:
-            if os.path.isdir(customSectorsDir):
-                shouldImportCustomSectors = not multiverse.haveCustomSectorsBeenImported(
-                    directoryPath=customSectorsDir)
+            shouldImportLegacyCustomSectors = not multiverse.haveLegacyCustomSectorsBeenImported(
+                directoryPath=legacyCustomSectorsDir)
         except Exception as ex:
-            logging.warning('Failed to check for imported custom sectors.', exc_info=ex)
+            logging.warning('Failed to check for imported legacy custom sectors.', exc_info=ex)
 
         startupProgressDlg = gui.StartupProgressDialog()
 
-        if shouldSyncMultiverse:
-            startupProgressDlg.addJob(job=startup.ImportDefaultUniverseJob(
-                directoryPath=multiverseSyncDir,
-                isInitialImport=not hasDefaultUniverse))
+        if shouldSyncStockUniverse:
+            startupProgressDlg.addJob(job=startup.ImportStockUniverseJob())
 
-        if shouldCreateCustomUniverse:
-            startupProgressDlg.addJob(job=startup.CreateCustomUniverseJob())
-
-        if shouldImportCustomSectors:
-            startupProgressDlg.addJob(job=startup.ImportCustomSectorsJob(
-                directoryPath=customSectorsDir))
+        if shouldImportLegacyCustomSectors:
+            startupProgressDlg.addJob(job=startup.ImportLegacyCustomSectorsJob(
+                directoryPath=legacyCustomSectorsDir))
 
         startupProgressDlg.addJob(job=startup.LoadSectorsJob())
         startupProgressDlg.addJob(job=startup.LoadWeaponsJob())
