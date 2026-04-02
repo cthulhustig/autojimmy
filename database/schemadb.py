@@ -163,7 +163,7 @@ class TableVersionException(Exception):
             required: int,
             current: typing.Optional[int]
             ) -> None:
-        super().__init__(f'"{table}" table in "{path}" has schema version {current} when version {required} is required')
+        super().__init__(f'\'{table}\' table in \'{path}\' has schema version {current} when version {required} is required')
         self._table = table
         self._path = path
         self._required = required
