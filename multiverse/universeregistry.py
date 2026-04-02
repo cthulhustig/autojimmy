@@ -2,7 +2,6 @@ import common
 import database
 import datetime
 import logging
-import multiverse
 import sqlite3
 import typing
 

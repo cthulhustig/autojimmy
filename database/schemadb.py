@@ -4,8 +4,6 @@ import logging
 import sqlite3
 import typing
 
-# TODO: Log messages etc need updated to not reference MultiverseDb
-
 class ColumnDef(object):
     class ColumnType(enum.Enum):
         Text = 0
@@ -161,16 +159,21 @@ class TableVersionException(Exception):
     def __init__(
             self,
             table: str,
+            path: str,
             required: int,
             current: typing.Optional[int]
             ) -> None:
-        super().__init__(f'MultiverseDb "{table}" table has schema version {current} when version {required} is required')
+        super().__init__(f'"{table}" table in "{path}" has schema version {current} when version {required} is required')
         self._table = table
+        self._path = path
         self._required = required
         self._current = current
 
     def table(self) -> str:
         return self._table
+
+    def path(self) -> str:
+        return self._path
 
     def required(self) -> int:
         return self._required
@@ -215,7 +218,7 @@ class Transaction(object):
             try:
                 self._onCommitCallback()
             except Exception as ex:
-                logging.error('MultiverseDb transaction commit callback threw exception')
+                logging.error('SchemaDb transaction commit callback threw exception')
 
         cursor = self._connection.cursor()
         try:
@@ -231,7 +234,7 @@ class Transaction(object):
             try:
                 self._onRollbackCallback()
             except Exception as ex:
-                logging.error('MultiverseDb transaction rollback callback threw exception')
+                logging.error('SchemaDb transaction rollback callback threw exception')
 
         cursor = self._connection.cursor()
         try:
@@ -279,7 +282,7 @@ class SchemaDb(object):
 
     def createConnection(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self._dbPath)
-        logging.debug(f'MultiverseDb created new connection {connection} to \'{self._dbPath}\'')
+        logging.debug(f'SchemaDb created new connection {connection} to \'{self._dbPath}\'')
         connection.executescript(SchemaDb._PragmaScript)
         # Uncomment this to have sqlite print the SQL that it executes
         #connection.set_trace_callback(print)
@@ -319,6 +322,7 @@ class SchemaDb(object):
             if currentSchemaVersion is None or currentSchemaVersion != requiredSchemaVersion:
                 raise TableVersionException(
                     table=tableName,
+                    path=self._dbPath,
                     required=requiredSchemaVersion,
                     current=currentSchemaVersion)
 
@@ -339,10 +343,11 @@ class SchemaDb(object):
             elif column.columnType() == ColumnDef.ColumnType.Boolean:
                 sql += ' INTEGER'
             else:
-                raise RuntimeError('Unsupported column type {type} for column \'{column}\' when creating table \'{table}\''.format(
+                raise RuntimeError('Unsupported column type {type} for column \'{column}\' when creating table \'{table}\' in \'{path}\''.format(
                     type=column.columnType(),
                     column=column.columnName(),
-                    table=tableName))
+                    table=tableName,
+                    path=self._dbPath))
 
             if column.isPrimaryKey():
                 sql += ' PRIMARY KEY'
@@ -362,10 +367,11 @@ class SchemaDb(object):
                 elif column.foreignDeleteOp() is ColumnDef.ForeignKeyDeleteOp.SetNull:
                     deleteOp = 'SET NULL'
                 else:
-                    raise RuntimeError('Unsupported foreign key operation {op} for column \'{column}\' when creating table \'{table}\''.format(
+                    raise RuntimeError('Unsupported foreign key operation {op} for column \'{column}\' when creating table \'{table}\' in \'{path}\''.format(
                         type=column.foreignDeleteOp(),
                         column=column.columnName(),
-                        table=tableName))
+                        table=tableName,
+                        path=self._dbPath))
 
                 sql += '  FOREIGN KEY({column}) REFERENCES {foreignTable}({foreignColumn}) ON DELETE {deleteOp},\n'.format(
                     column=column.columnName(),
@@ -404,7 +410,7 @@ class SchemaDb(object):
         sql = sql.rstrip(',\n')
         sql += '\n);'
 
-        logging.info(f'MultiverseDb creating table \'{tableName}\'')
+        logging.info(f'SchemaDb creating table \'{tableName}\' in \'{self._dbPath}\'')
         cursor.execute(sql)
 
         # Create index on foreign key columns and columns where an index has explicitly
@@ -444,7 +450,7 @@ class SchemaDb(object):
             cursor=cursor)
 
     def vacuum(self) -> None:
-        logging.debug('MultiverseDb vacuuming database')
+        logging.debug(f'SchemaDb vacuuming database \'{self._dbPath}\'')
 
         # NOTE: VACUUM can't be performed inside a transaction
         connection = self.createConnection()
@@ -479,7 +485,7 @@ class SchemaDb(object):
                         version INTEGER NOT NULL
                     );
                     """.format(table=SchemaDb._TableSchemaTableName)
-                logging.info(f'MultiverseDb creating \'{SchemaDb._TableSchemaTableName}\' table')
+                logging.info(f'SchemaDb creating \'{SchemaDb._TableSchemaTableName}\' table in \'{self._dbPath}\'')
                 cursor.execute(sql)
 
             cursor.execute('END;')
@@ -499,7 +505,7 @@ class SchemaDb(object):
             table: str,
             version: int
             ) -> None:
-        logging.debug(f'MultiverseDb setting schema for \'{table}\' table to {version}')
+        logging.debug(f'SchemaDb setting schema for \'{table}\' table in \'{self._dbPath}\' to {version}')
         sql = """
             INSERT INTO {table} (name, version)
             VALUES (:name, :version)
@@ -516,7 +522,7 @@ class SchemaDb(object):
             cursor: sqlite3.Cursor,
             table: str
             ) -> typing.Optional[int]:
-        logging.debug(f'MultiverseDb reading schema for \'{table}\' table')
+        logging.debug(f'SchemaDb reading schema for \'{table}\' table from \'{self._dbPath}\'')
         sql = """
             SELECT version
             FROM {table}
@@ -534,7 +540,7 @@ class SchemaDb(object):
             column: str,
             unique: bool
             ) -> None:
-        logging.debug(f'MultiverseDb creating index for \'{column}\' in table \'{table}\'')
+        logging.debug(f'SchemaDb creating index for \'{column}\' in table \'{table}\' in \'{self._dbPath}\'')
         database.createColumnIndex(table=table, column=column, unique=unique, cursor=cursor)
 
     def _createMultiColumnIndex(
@@ -544,5 +550,5 @@ class SchemaDb(object):
             columns: typing.Collection[str],
             unique: bool
             ) -> None:
-        logging.debug(f'MultiverseDb creating index for \'{','.join(columns)}\' in table \'{table}\'')
+        logging.debug(f'SchemaDb creating index for \'{','.join(columns)}\' in table \'{table}\' in \'{self._dbPath}\'')
         database.createMultiColumnIndex(table=table, columns=columns, unique=unique, cursor=cursor)

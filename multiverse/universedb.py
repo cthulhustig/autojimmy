@@ -4,7 +4,6 @@ import multiverse
 import sqlite3
 import typing
 
-# TODO: All log messages need updated to say UniverseDb and include the file name
 # TODO: I think I want to store something at the sector level that allows me to tell
 # if a sector in a custom universe has been modified since it was imported from the
 # stock universe. This could be a simple flag.
@@ -167,7 +166,7 @@ class UniverseDb(object):
             milieu: typing.Optional[str] = None,
             transaction: typing.Optional[database.Transaction] = None
             ) -> typing.List[SectorInfo]:
-        logging.debug(f'UniverseDb listing {milieu if milieu else "all"} sectors in universe {self._universePath}')
+        logging.debug(f'UniverseDb listing {milieu if milieu else "all"} sectors in universe \'{self._universePath}\'')
 
         if transaction != None:
             connection = transaction.connection()
@@ -186,7 +185,7 @@ class UniverseDb(object):
             sector: multiverse.DbSector,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseDb saving sector {sector.id()} to universe {self._universePath}')
+        logging.debug(f'UniverseDb saving sector {sector.id()} to universe \'{self._universePath}\'')
 
         if transaction != None:
             connection = transaction.connection()
@@ -223,7 +222,7 @@ class UniverseDb(object):
             sectorId: str,
             transaction: typing.Optional[database.Transaction] = None
             ) -> multiverse.DbSector:
-        logging.debug(f'UniverseDb loading sector {sectorId} from universe {self._universePath}')
+        logging.debug(f'UniverseDb loading sector {sectorId} from universe \'{self._universePath}\'')
 
         if transaction != None:
             connection = transaction.connection()
@@ -241,7 +240,7 @@ class UniverseDb(object):
             self,
             transaction: typing.Optional[database.Transaction] = None
             ) -> typing.List[multiverse.DbSector]:
-        logging.debug(f'UniverseDb loading sector from universe {self._universePath}')
+        logging.debug(f'UniverseDb loading sector from universe \'{self._universePath}\'')
 
         if transaction != None:
             connection = transaction.connection()
@@ -258,7 +257,7 @@ class UniverseDb(object):
             sectorId: str,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseDb deleting sector {sectorId} from universe {self._universePath}')
+        logging.debug(f'UniverseDb deleting sector {sectorId} from universe \'{self._universePath}\'')
 
         if transaction != None:
             connection = transaction.connection()
@@ -276,7 +275,7 @@ class UniverseDb(object):
             self,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseDb clearing sectors in universe {self._universePath}')
+        logging.debug(f'UniverseDb clearing sectors in universe \'{self._universePath}\'')
 
         if transaction != None:
             connection = transaction.connection()
@@ -838,7 +837,9 @@ class UniverseDb(object):
                     tags=sectorTagsMap.get(sectorId),
                     products=sectorProductsMap.get(sectorId)))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct sector {sectorId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct sector {sectorId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectors
 
@@ -957,7 +958,7 @@ class UniverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         row = cursor.fetchone()
         if not row:
-            raise ValueError(f'Unknown sector {sectorId}')
+            raise ValueError(f'Unknown sector {sectorId} in universe \'{self._universePath}\'')
 
         return multiverse.DbSector(
             id=sectorId,
@@ -1044,7 +1045,9 @@ class UniverseDb(object):
                     name=row[2],
                     language=row[3]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct alternate name {nameId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct alternate name {nameId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectorNamesMap
 
@@ -1105,7 +1108,9 @@ class UniverseDb(object):
                     code=row[2],
                     name=row[3]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct subsector name {nameId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct subsector name {nameId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectorNamesMap
 
@@ -1186,7 +1191,9 @@ class UniverseDb(object):
                     borderColour=row[9],
                     borderStyle=row[10]))
             except Exception as ex:
-                logging.error(f'UniverseDb failed to construct allegiance {allegianceId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct allegiance {allegianceId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectorAllegiancesMap
 
@@ -1249,7 +1256,9 @@ class UniverseDb(object):
                     name=row[3],
                     isMajor=True if row[4] else False))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct sophont {sophontId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct sophont {sophontId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectorSophontsMap
 
@@ -1346,7 +1355,9 @@ class UniverseDb(object):
                     stars=systemStarsMap.get(systemId),
                     bodies=systemBodiesMap.get(systemId)))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct system {systemId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct system {systemId} from \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectorSystemsMap
 
@@ -1435,7 +1446,9 @@ class UniverseDb(object):
                     width=row[13],
                     allegianceId=row[14]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct route {routeId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct route {routeId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectorRoutesMap
 
@@ -1533,7 +1546,9 @@ class UniverseDb(object):
                     wrapLabel=True if row[9] else False,
                     hexes=hexes))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct border {borderId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct border {borderId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectorBordersMap
 
@@ -1626,7 +1641,9 @@ class UniverseDb(object):
                     wrapLabel=True if row[7] else False,
                     hexes=hexes))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct region {regionId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct region {regionId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectorRegionsMap
 
@@ -1697,7 +1714,9 @@ class UniverseDb(object):
                     size=row[6],
                     wrap=True if row[7] else False))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct label {labelId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct label {labelId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectorLabelsMap
 
@@ -1756,7 +1775,9 @@ class UniverseDb(object):
                     sectorId=sectorId,
                     tag=row[2]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct tag {tagId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct tag {tagId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectorTagsMap
 
@@ -1823,7 +1844,9 @@ class UniverseDb(object):
                     publisher=row[4],
                     reference=row[5]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct product {productId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct product {productId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return sectorProductsMap
 
@@ -1894,7 +1917,9 @@ class UniverseDb(object):
                     spectralClass=row[3],
                     spectralScale=row[4]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct star {starId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct star {starId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return systemStarsMap
 
@@ -2094,7 +2119,9 @@ class UniverseDb(object):
                     researchStations=worldResearchStationsMap.get(bodyId),
                     customRemarks=worldRemarksMap.get(bodyId)))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct body {bodyId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct body {bodyId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return systemBodiesMap
 
@@ -2172,7 +2199,9 @@ class UniverseDb(object):
                     worldId=worldId,
                     code=row[2]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct nobility {nobilityId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct nobility {nobilityId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return systemNobilitiesMap
 
@@ -2250,7 +2279,9 @@ class UniverseDb(object):
                     worldId=worldId,
                     code=row[2]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct base {baseId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct base {baseId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return systemBasesMap
 
@@ -2328,7 +2359,9 @@ class UniverseDb(object):
                     worldId=worldId,
                     code=row[2]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct trade code {tradeCodeId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct trade code {tradeCodeId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return systemTradeCodesMap
 
@@ -2412,7 +2445,9 @@ class UniverseDb(object):
                     isHomeWorld=True if row[4] else False,
                     isDieBack=True if row[5] else False))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct sophont population {populationId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct sophont population {populationId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return systemPopulationsMap
 
@@ -2490,7 +2525,9 @@ class UniverseDb(object):
                     worldId=worldId,
                     allegianceId=row[2]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct ruling allegiance {rulerId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct ruling allegiance {rulerId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return systemRulingAllegianceMap
 
@@ -2572,7 +2609,9 @@ class UniverseDb(object):
                     hexY=row[3],
                     sectorAbbreviation=row[4]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct owning system {ownerId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct owning system {ownerId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return systemOwnersMap
 
@@ -2654,7 +2693,9 @@ class UniverseDb(object):
                     hexY=row[3],
                     sectorAbbreviation=row[4]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct colony system {colonyId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct colony system {colonyId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return systemColoniesMap
 
@@ -2732,7 +2773,9 @@ class UniverseDb(object):
                     worldId=worldId,
                     code=row[2]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct research station {stationId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct research station {stationId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return systemResearchStationsMap
 
@@ -2810,7 +2853,9 @@ class UniverseDb(object):
                     worldId=worldId,
                     remark=row[2]))
             except Exception as ex:
-                logging.error(f'MultiverseDb failed to construct custom remark {remarkId}', exc_info=ex)
+                logging.error(
+                    f'UniverseDb failed to construct custom remark {remarkId} from universe \'{self._universePath}\'',
+                    exc_info=ex)
 
         return systemRemarksMap
 
