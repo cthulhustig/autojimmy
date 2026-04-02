@@ -54,12 +54,12 @@ class LabelStore(object):
 
         if LabelStore._cachedMinorLabels is None:
             LabelStore._cachedMinorLabels = self._parseMapLabels(
-                multiverse.SnapshotManager.instance().loadTextResource(
+                multiverse.SnapshotManager.instance().readTextResource(
                     filePath=LabelStore._MinorLabelsPath))
 
         if LabelStore._cachedMegaLabels is None:
             LabelStore._cachedMegaLabels = self._parseMapLabels(
-                multiverse.SnapshotManager.instance().loadTextResource(
+                multiverse.SnapshotManager.instance().readTextResource(
                     filePath=LabelStore._MegaLabelsPath))
 
         self._worldLabels = self._loadWorldLabels(self._universe)
@@ -87,7 +87,7 @@ class LabelStore(object):
     @staticmethod
     def _loadWorldLabels(universe: astronomer.Universe) -> typing.List[WorldLabel]:
         if LabelStore._cachedWorldLabelsXml is None:
-            content = multiverse.SnapshotManager.instance().loadTextResource(
+            content = multiverse.SnapshotManager.instance().readTextResource(
                 filePath=LabelStore._WorldLabelPath)
             LabelStore._cachedWorldLabelsXml = xml.etree.ElementTree.fromstring(content)
 

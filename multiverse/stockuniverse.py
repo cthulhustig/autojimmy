@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import multiverse
 import survey
@@ -22,9 +23,12 @@ def importStockUniverseSnapshot(
     if not isSnapshotNewer:
         return # Nothing to do
 
-    rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
-    rawStockSophonts = multiverse.readSnapshotStockSophonts()
-    rawStockStyleSheet = multiverse.readSnapshotStyleSheet()
+    rawStockAllegiances = survey.parseStockAllegiances(
+        content=multiverse.SnapshotManager.instance().readSnapshotStockAllegiances())
+    rawStockSophonts = survey.parseStockSophonts(
+        content=multiverse.SnapshotManager.instance().readSnapshotStockSophonts())
+    rawStockStyleSheet = survey.parseStyleSheet(
+        content=multiverse.SnapshotManager.instance().readSnapshotStyleSheet())
 
     milieuSectors: typing.List[typing.Tuple[
         str, # Milieu
@@ -32,7 +36,8 @@ def importStockUniverseSnapshot(
     ]] = []
     totalSectorCount = 0
     for milieu in multiverse.SnapshotManager.instance().listMilieu():
-        universeInfo = multiverse.SnapshotManager.instance().loadUniverseInfo(milieu=milieu)
+        universeInfo = survey.parseUniverseInfo(
+            content=multiverse.SnapshotManager.instance().readUniverseInfo(milieu=milieu))
 
         sectorNames = []
         for sectorInfo in universeInfo.sectorInfos():
@@ -46,18 +51,14 @@ def importStockUniverseSnapshot(
 
         milieuSectors.append((milieu, sectorNames))
 
-    rawData: typing.List[typing.Tuple[
-        str, # Milieu
-        survey.RawMetadata,
-        typing.Collection[survey.RawWorld]
-        ]] = []
+    dbSectors = []
     progressCount = 0
     for milieu, sectorNames in milieuSectors:
         for sectorName in sectorNames:
             if progressCallback:
                 try:
                     progressCallback(
-                        f'Reading: {milieu} - {sectorName}',
+                        f'Converting: {milieu} - {sectorName}',
                         progressCount,
                         totalSectorCount)
                     progressCount += 1
@@ -65,31 +66,33 @@ def importStockUniverseSnapshot(
                     logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
 
             try:
-                rawMetadata = multiverse.SnapshotManager.instance().loadSectorMetadata(
+                sectorMetadata = multiverse.SnapshotManager.instance().readSectorMetadata(
                     milieu=milieu,
                     sector=sectorName)
-                rawSystems = multiverse.SnapshotManager.instance().loadSectorWorlds(
+                sectorContent = multiverse.SnapshotManager.instance().readSectorContent(
                     milieu=milieu,
                     sector=sectorName)
-                rawData.append((milieu, rawMetadata, rawSystems))
+
+                dbSectors.append(multiverse.convertRawSectorToDbSector(
+                    milieu=milieu,
+                    rawMetadata=survey.parseMetadata(sectorMetadata),
+                    rawSystems=survey.parseSector(sectorContent),
+                    rawStockAllegiances=rawStockAllegiances,
+                    rawStockSophonts=rawStockSophonts,
+                    rawStockStyleSheet=rawStockStyleSheet,
+                    srcMetadataHash=hashlib.sha256(sectorMetadata.encode()).hexdigest(),
+                    srcSectorHash=hashlib.sha256(sectorContent.encode()).hexdigest()))
             except Exception as ex:
                 logging.error(f'Stock universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
 
     if progressCallback:
         try:
             progressCallback(
-                f'Reading: Complete!',
+                f'Converting: Complete!',
                 totalSectorCount,
                 totalSectorCount)
         except Exception as ex:
             logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
-
-    dbSectors = multiverse.convertRawSectorsToDbSectors(
-        rawSectors=rawData,
-        rawStockAllegiances=rawStockAllegiances,
-        rawStockSophonts=rawStockSophonts,
-        rawStockStyleSheet=rawStockStyleSheet,
-        progressCallback=progressCallback)
 
     multiverse.UniverseManager.instance().updateStockUniverse(
         sectors=dbSectors,

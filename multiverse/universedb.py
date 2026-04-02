@@ -7,18 +7,7 @@ import typing
 # TODO: I think I want to store something at the sector level that allows me to tell
 # if a sector in a custom universe has been modified since it was imported from the
 # stock universe. This could be a simple flag.
-# Alternatively, it might be better store a hash of the metadata and sector data file
-# that a sector was imported from when creating the stock universe (and update the
-# hashes every time a new snapshot is imported). When a custom universe is created
-# the hashes would be copied as part of the DB. The important bit would be they should
-# be cleared whenever the sector is saved after the universe was created. If these
-# hashes are present for a sector in a custom universe it means that sector is "stock",
-# and if they're not present it means the sector is custom. The hashes could also come in
-# useful to speed up import of stock data (only need to import sectors where the hash
-# in the new snapshot is different) _and_ to tell which sectors in a custom universe are
-# different to the equivalent sector in the stock universe (useful if I ever want to give
-# the user a list of what sectors have changed in the stock universe so they can choose
-# to manually sync them across as a whole sector)
+
 
 class SectorInfo(object):
     def __init__(
@@ -28,7 +17,9 @@ class SectorInfo(object):
             name: str,
             sectorX: int,
             sectorY: int,
-            abbreviation: typing.Optional[str]
+            abbreviation: typing.Optional[str] = None,
+            sectorHash: typing.Optional[str] = None,
+            metadataHash: typing.Optional[str] = None
             ) -> None:
         self._id = id
         self._milieu = milieu
@@ -36,6 +27,8 @@ class SectorInfo(object):
         self._sectorX = sectorX
         self._sectorY = sectorY
         self._abbreviation = abbreviation
+        self._sectorHash = sectorHash
+        self._metadataHash = metadataHash
 
         self._hash = None
 
@@ -56,6 +49,12 @@ class SectorInfo(object):
 
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
+
+    def sectorHash(self) -> typing.Optional[str]:
+        return self._sectorHash
+
+    def metadataHash(self) -> typing.Optional[str]:
+        return self._metadataHash
 
 class UniverseDb(object):
     _SectorsTableName = 'sectors'
@@ -318,7 +317,9 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='author', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
+                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='sector_hash', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='metadata_hash', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
                     database.UniqueConstraintDef(columnNames=['milieu', 'sector_x', 'sector_y'])])
 
@@ -746,7 +747,7 @@ class UniverseDb(object):
             milieu: typing.Optional[str]
             ) -> typing.List[SectorInfo]:
         sql = """
-            SELECT id, milieu, primary_name, sector_x, sector_y, abbreviation
+            SELECT id, milieu, primary_name, sector_x, sector_y, abbreviation, sector_hash, metadata_hash
             FROM {table}
             """.format(table=UniverseDb._SectorsTableName)
         parameters = {}
@@ -767,7 +768,9 @@ class UniverseDb(object):
                 name=row[2],
                 sectorX=row[3],
                 sectorY=row[4],
-                abbreviation=row[5]))
+                abbreviation=row[5],
+                sectorHash=row[6],
+                metadataHash=row[7]))
         return sectorList
 
     def _loadSectors(
@@ -800,7 +803,8 @@ class UniverseDb(object):
         sql = """
             SELECT id, milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label, selected,
-                credits, publication, author, publisher, reference, notes
+                credits, publication, author, publisher, reference, notes,
+                sector_hash, metadata_hash
             FROM {table};
             """.format(table=UniverseDb._SectorsTableName)
         cursor.execute(sql)
@@ -825,6 +829,8 @@ class UniverseDb(object):
                     publisher=row[12],
                     reference=row[13],
                     notes=row[14],
+                    sectorHash=row[15],
+                    metadataHash=row[16],
                     alternateNames=sectorAlternateNamesMap.get(sectorId),
                     subsectorNames=sectorSubsectorNamesMap.get(sectorId),
                     allegiances=sectorAllegiancesMap.get(sectorId),
@@ -851,10 +857,12 @@ class UniverseDb(object):
         sql = """
             INSERT INTO {table} (id, milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label, selected,
-                credits, publication, author, publisher, reference, notes)
+                credits, publication, author, publisher, reference, notes,
+                sector_hash, metadata_hash)
             VALUES (:id, :milieu, :sector_x, :sector_y,
                 :primary_name, :primary_language, :abbreviation, :sector_label, :selected,
-                :credits, :publication, :author, :publisher, :reference, :notes);
+                :credits, :publication, :author, :publisher, :reference, :notes,
+                :sector_hash, :metadata_hash);
             """.format(table=UniverseDb._SectorsTableName)
         rows = {
             'id': sector.id(),
@@ -871,7 +879,9 @@ class UniverseDb(object):
             'author': sector.author(),
             'publisher': sector.publisher(),
             'reference': sector.reference(),
-            'notes': sector.notes()}
+            'notes': sector.notes(),
+            'sector_hash': sector.sectorHash(),
+            'metadata_hash': sector.metadataHash()}
         cursor.execute(sql, rows)
 
         self._insertSectorAlternateNames(
@@ -950,7 +960,8 @@ class UniverseDb(object):
         sql = """
             SELECT milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label, selected,
-                credits, publication, author, publisher, reference, notes
+                credits, publication, author, publisher, reference, notes,
+                sector_hash, metadata_hash
             FROM {table}
             WHERE id = :id
             LIMIT 1;
@@ -976,6 +987,8 @@ class UniverseDb(object):
             publisher=row[11],
             reference=row[12],
             notes=row[13],
+            sectorHash=row[14],
+            metadataHash=row[15],
             alternateNames=sectorAlternateNamesMap.get(sectorId),
             subsectorNames=sectorSubsectorNamesMap.get(sectorId),
             allegiances=sectorAllegiancesMap.get(sectorId),

@@ -1,4 +1,5 @@
 import common
+import hashlib
 import json
 import logging
 import multiverse
@@ -44,9 +45,12 @@ def importLegacyCustomSectors(
     if haveLegacyCustomSectorsBeenImported(directoryPath):
         raise RuntimeError('Legacy custom sectors have already been imported')
 
-    rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
-    rawStockSophonts = multiverse.readSnapshotStockSophonts()
-    rawStockStyleSheet = multiverse.readSnapshotStyleSheet()
+    rawStockAllegiances = survey.parseStockAllegiances(
+        content=multiverse.SnapshotManager.instance().readSnapshotStockAllegiances())
+    rawStockSophonts = survey.parseStockSophonts(
+        content=multiverse.SnapshotManager.instance().readSnapshotStockSophonts())
+    rawStockStyleSheet = survey.parseStyleSheet(
+        content=multiverse.SnapshotManager.instance().readSnapshotStyleSheet())
 
     universePath = os.path.join(directoryPath, 'milieu')
     milieuSectors: typing.List[typing.Tuple[
@@ -105,7 +109,7 @@ def importLegacyCustomSectors(
                         str(sectorFormatTag),
                         sectorFormat)
 
-                sectorNames.append((str(sectorName), metadataFormat, sectorFormat))
+                sectorNames.append((sectorName, metadataFormat, sectorFormat))
                 totalSectorCount += 1
 
             milieuSectors.append((milieu, sectorNames))
@@ -133,7 +137,7 @@ def importLegacyCustomSectors(
             try:
                 if progressCallback:
                     progressCallback(
-                        f'Reading: {milieu} - {sectorName}',
+                        f'Converting: {milieu} - {sectorName}',
                         progressCount,
                         totalSectorCount)
                     progressCount += 1
@@ -144,25 +148,23 @@ def importLegacyCustomSectors(
                 metadataPath = os.path.join(milieuPath, f'{escapedName}.{metadataExtension}')
                 logging.info(f'Loading legacy custom metadata file {metadataPath}')
                 with open(metadataPath, 'r', encoding='utf-8-sig') as file:
-                    rawMetadata = survey.parseMetadata(
-                        content=file.read(),
-                        format=metadataFormat)
+                    metadataContent = file.read()
 
                 sectorExtension = _SectorFormatExtensions[sectorFormat]
                 sectorPath = os.path.join(milieuPath, f'{escapedName}.{sectorExtension}')
                 logging.info(f'Loading legacy custom sector file {sectorPath}')
                 with open(sectorPath, 'r', encoding='utf-8-sig') as file:
-                    rawSystems = survey.parseSector(
-                        content=file.read(),
-                        format=sectorFormat)
+                    sectorContent = file.read()
 
                 dbSector = multiverse.convertRawSectorToDbSector(
                     milieu=milieu,
-                    rawMetadata=rawMetadata,
-                    rawSystems=rawSystems,
+                    rawMetadata=survey.parseMetadata(content=metadataContent, format=metadataFormat),
+                    rawSystems=survey.parseSector(content=sectorContent, format=sectorFormat),
                     rawStockAllegiances=rawStockAllegiances,
                     rawStockSophonts=rawStockSophonts,
-                    rawStockStyleSheet=rawStockStyleSheet)
+                    rawStockStyleSheet=rawStockStyleSheet,
+                    srcMetadataHash=hashlib.sha256(metadataContent.encode()).hexdigest(),
+                    srcSectorHash=hashlib.sha256(sectorContent.encode()).hexdigest())
                 dbSectors.append(dbSector)
             except Exception as ex:
                 # TODO: Log something but continue
@@ -170,7 +172,7 @@ def importLegacyCustomSectors(
 
     if progressCallback:
         progressCallback(
-            f'Reading: Complete!',
+            f'Converting: Complete!',
             totalSectorCount,
             totalSectorCount)
 

@@ -2120,66 +2120,20 @@ def _createDbProducts(
 _T5OfficialAllegiancesPath = 't5ss/allegiance_codes.tab'
 def readSnapshotStockAllegiances() -> typing.List[survey.RawStockAllegiance]:
     return survey.parseTabStockAllegiances(
-        content=multiverse.SnapshotManager.instance().loadTextResource(
+        content=multiverse.SnapshotManager.instance().readTextResource(
             filePath=_T5OfficialAllegiancesPath))
 
 _T5OfficialSophontsPath = 't5ss/sophont_codes.tab'
 def readSnapshotStockSophonts() -> typing.List[survey.RawStockSophont]:
     return survey.parseTabStockSophonts(
-        content=multiverse.SnapshotManager.instance().loadTextResource(
+        content=multiverse.SnapshotManager.instance().readTextResource(
             filePath=_T5OfficialSophontsPath))
 
 _OTUStyleSheet = 'styles/otu.css'
 def readSnapshotStyleSheet() -> survey.RawStyleSheet:
     return survey.parseStyleSheet(
-        content=multiverse.SnapshotManager.instance().loadTextResource(
+        content=multiverse.SnapshotManager.instance().readTextResource(
             filePath=_OTUStyleSheet))
-
-def convertRawSectorsToDbSectors(
-        rawSectors: typing.Collection[typing.Tuple[
-            str, # Milieu
-            survey.RawMetadata,
-            typing.Collection[survey.RawWorld]
-            ]],
-        rawStockAllegiances: typing.Optional[typing.Collection[
-            survey.RawStockAllegiance
-            ]] = None,
-        rawStockSophonts: typing.Optional[typing.Collection[
-            survey.RawStockSophont
-            ]] = None,
-        rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
-        progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
-        ) -> typing.List[multiverse.DbSector]:
-    totalSectorCount = len(rawSectors)
-    dbSectors = []
-    for progressCount, (milieu, rawMetadata, rawSystems) in enumerate(rawSectors):
-        if progressCallback:
-            try:
-                progressCallback(
-                    f'Converting: {milieu} - {rawMetadata.canonicalName()}',
-                    progressCount,
-                    totalSectorCount)
-            except Exception as ex:
-                logging.warning('Raw to database universe conversion progress callback threw an exception', exc_info=ex)
-
-        dbSectors.append(convertRawSectorToDbSector(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            rawSystems=rawSystems,
-            rawStockAllegiances=rawStockAllegiances,
-            rawStockSophonts=rawStockSophonts,
-            rawStockStyleSheet=rawStockStyleSheet))
-
-    if progressCallback:
-        try:
-            progressCallback(
-                f'Converting: Complete!',
-                totalSectorCount,
-                totalSectorCount)
-        except Exception as ex:
-            logging.warning('Raw to database universe conversion progress callback threw an exception', exc_info=ex)
-
-    return dbSectors
 
 def convertRawSectorToDbSector(
         milieu: str,
@@ -2192,6 +2146,8 @@ def convertRawSectorToDbSector(
             survey.RawStockSophont
             ]] = None,
         rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
+        srcMetadataHash: typing.Optional[str] = None,
+        srcSectorHash: typing.Optional[str] = None,
         sectorId: typing.Optional[str] = None
         ) -> multiverse.DbSector:
     dbSectorX = rawMetadata.x()
@@ -2319,4 +2275,6 @@ def convertRawSectorToDbSector(
         author=dbAuthor,
         publisher=dbPublisher,
         reference=dbReference,
-        products=dbProducts)
+        products=dbProducts,
+        sectorHash=srcSectorHash,
+        metadataHash=srcMetadataHash)

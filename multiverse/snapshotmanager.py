@@ -7,7 +7,6 @@ import os
 import re
 import requests
 import shutil
-import survey
 import threading
 import typing
 import zipfile
@@ -96,6 +95,10 @@ class SnapshotManager(object):
 
     _UniverseInfoFileName = 'universe.json'
 
+    _T5OfficialAllegiancesPath = 't5ss/allegiance_codes.tab'
+    _T5OfficialSophontsPath = 't5ss/sophont_codes.tab'
+    _OTUStyleSheet = 'styles/otu.css'
+
     _instance = None # Singleton instance
     _lock = threading.RLock() # Recursive lock
     _installDir = None
@@ -128,11 +131,11 @@ class SnapshotManager(object):
         SnapshotManager._installDir = installDir
         SnapshotManager._overlayDir = overlayDir
 
-    def loadBinaryResource(self, filePath: str) -> bytes:
+    def readBinaryResource(self, filePath: str) -> bytes:
         return self._readResourceFile(
             relativeFilePath=filePath)
 
-    def loadTextResource(self, filePath: str) -> bytes:
+    def readTextResource(self, filePath: str) -> str:
         return self._bytesToString(bytes=self._readResourceFile(
             relativeFilePath=filePath))
 
@@ -144,28 +147,34 @@ class SnapshotManager(object):
                 milieux.append(path)
         return milieux
 
-    def loadUniverseInfo(self, milieu: str) -> survey.RawUniverseInfo:
+    def readUniverseInfo(self, milieu: str) -> str:
         universeInfoPath = self._universeInfoPath(milieu=milieu)
-        content = self.loadTextResource(filePath=universeInfoPath)
-        return survey.parseUniverseInfo(content=content)
+        return self.readTextResource(filePath=universeInfoPath)
 
-    def loadSectorWorlds(self, milieu: str, sector: str) -> typing.Collection[survey.RawWorld]:
+    def readSectorContent(self, milieu: str, sector: str) -> str:
         escapedName = common.encodeFileName(rawFileName=sector)
         sectorPath = os.path.join(
             self._mapBasePath(),
             milieu,
             escapedName + '.sec')
-        content = self.loadTextResource(filePath=sectorPath)
-        return survey.parseT5ColumnSector(content=content)
+        return self.readTextResource(filePath=sectorPath)
 
-    def loadSectorMetadata(self, milieu: str, sector: str) -> survey.RawMetadata:
+    def readSectorMetadata(self, milieu: str, sector: str) -> str:
         escapedName = common.encodeFileName(rawFileName=sector)
         metadataPath = os.path.join(
             self._mapBasePath(),
             milieu,
             escapedName + '.xml')
-        content = self.loadTextResource(filePath=metadataPath)
-        return survey.parseXMLMetadata(content=content)
+        return self.readTextResource(filePath=metadataPath)
+
+    def readSnapshotStockAllegiances(self) -> str:
+        return self.readTextResource(filePath=SnapshotManager._T5OfficialAllegiancesPath)
+
+    def readSnapshotStockSophonts(self) -> str:
+        return self.readTextResource(filePath=SnapshotManager._T5OfficialSophontsPath)
+
+    def readSnapshotStyleSheet(self) -> str:
+        return self.readTextResource(filePath=SnapshotManager._OTUStyleSheet)
 
     def snapshotTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:

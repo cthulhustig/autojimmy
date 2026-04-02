@@ -1413,6 +1413,8 @@ class DbSector(DbObject):
             reference: typing.Optional[str] = None,
             products: typing.Optional[typing.Collection[DbProduct]] = None,
             notes: typing.Optional[str] = None,
+            sectorHash: typing.Optional[str] = None,
+            metadataHash: typing.Optional[str] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             ) -> None:
         super().__init__(id=id)
@@ -1442,6 +1444,8 @@ class DbSector(DbObject):
         common.validateOptionalStr(name='reference', value=reference, allowEmpty=False)
         DbSector._validateProducts(name='products', value=products, sectorId=id)
         common.validateOptionalStr(name='notes', value=notes)
+        common.validateOptionalStr(name='sectorHash', value=sectorHash, allowEmpty=False)
+        common.validateOptionalStr(name='metadataHash', value=metadataHash, allowEmpty=False)
 
         self._milieu = milieu
         self._sectorX = sectorX
@@ -1457,6 +1461,8 @@ class DbSector(DbObject):
         self._publisher = publisher
         self._reference = reference
         self._notes = notes
+        self._sectorHash = sectorHash
+        self._metadataHash = metadataHash
 
         self._alternateNames = list(alternateNames) if alternateNames else None
         self._attachObjects(self._alternateNames)
@@ -1555,6 +1561,12 @@ class DbSector(DbObject):
 
     def notes(self) -> typing.Optional[str]:
         return self._notes
+
+    def sectorHash(self) -> typing.Optional[str]:
+        return self._sectorHash
+
+    def metadataHash(self) -> typing.Optional[str]:
+        return self._metadataHash
 
     def _attachObjects(
             self,
