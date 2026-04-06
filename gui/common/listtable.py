@@ -372,6 +372,12 @@ class ListTable(gui.TableWidgetEx):
         if columnIndex >= 0:
             self.sortByColumn(columnIndex, order)
 
+    def currentSortColumnIndex(self) -> int:
+        header = self.horizontalHeader()
+        if not header:
+            return -1
+        return header.sortIndicatorSection()
+
     def setIconSize(self, size: QtCore.QSize) -> None:
         self._headerStyle.setIconSize(size)
         super().setIconSize(size)
@@ -763,6 +769,14 @@ class ListTable(gui.TableWidgetEx):
 
             menu.addAction(action)
 
+        if self.isSortingEnabled():
+            menu.addSeparator()
+
+            action = QtWidgets.QAction('Clear Sorting', self)
+            action.triggered.connect(self._clearSortingAction)
+            action.setEnabled(self.currentSortColumnIndex() >= 0)
+            menu.addAction(action)
+
         menu.exec(self.mapToGlobal(point))
 
     def _userHideColumnAction(self, action: QtWidgets.QAction) -> None:
@@ -773,6 +787,9 @@ class ListTable(gui.TableWidgetEx):
 
         if not shouldHide:
             self._restoreColumnWidth(columnIndex)
+
+    def _clearSortingAction(self) -> None:
+        self.sortByColumn(-1, QtCore.Qt.SortOrder.AscendingOrder)
 
     def _columnWidthChanged(
             self,
