@@ -162,9 +162,7 @@ def importLegacyCustomSectors(
                     rawSystems=survey.parseSector(content=sectorContent, format=sectorFormat),
                     rawStockAllegiances=rawStockAllegiances,
                     rawStockSophonts=rawStockSophonts,
-                    rawStockStyleSheet=rawStockStyleSheet,
-                    srcMetadataHash=hashlib.sha256(metadataContent.encode()).hexdigest(),
-                    srcSectorHash=hashlib.sha256(sectorContent.encode()).hexdigest())
+                    rawStockStyleSheet=rawStockStyleSheet)
                 dbSectors.append(dbSector)
             except Exception as ex:
                 # TODO: Log something but continue

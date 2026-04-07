@@ -1,4 +1,6 @@
+import common
 import database
+import datetime
 import logging
 import multiverse
 import sqlite3
@@ -17,20 +19,29 @@ class SectorInfo(object):
             name: str,
             sectorX: int,
             sectorY: int,
-            abbreviation: typing.Optional[str] = None,
-            sectorHash: typing.Optional[str] = None,
-            metadataHash: typing.Optional[str] = None
+            abbreviation: typing.Optional[str],
+            createdTimestamp: datetime.datetime,
+            modifiedTimestamp: typing.Optional[datetime.datetime],
+            stockDataHash: typing.Optional[str]
             ) -> None:
+        common.validateMandatoryStr(name='id', value=id, allowEmpty=False)
+        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
+        common.validateMandatoryInt(name='sectorX', value=sectorX)
+        common.validateMandatoryInt(name='sectorY', value=sectorY)
+        common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
+        common.validateMandatoryObject(name='createdTimestamp', value=createdTimestamp, type=datetime.datetime)
+        common.validateOptionalObject(name='modifiedTimestamp', value=modifiedTimestamp, type=datetime.datetime)
+        common.validateOptionalStr(name='stockDataHash', value=stockDataHash, allowEmpty=False)
+
         self._id = id
         self._milieu = milieu
         self._name = name
         self._sectorX = sectorX
         self._sectorY = sectorY
         self._abbreviation = abbreviation
-        self._sectorHash = sectorHash
-        self._metadataHash = metadataHash
-
-        self._hash = None
+        self._createdTimestamp = createdTimestamp
+        self._modifiedTimestamp = modifiedTimestamp
+        self._stockDataHash = stockDataHash
 
     def id(self) -> str:
         return self._id
@@ -50,15 +61,21 @@ class SectorInfo(object):
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
 
-    def sectorHash(self) -> typing.Optional[str]:
-        return self._sectorHash
+    def createdTimestamp(self) -> datetime.datetime:
+        return self._createdTimestamp
 
-    def metadataHash(self) -> typing.Optional[str]:
-        return self._metadataHash
+    def modifiedTimestamp(self) -> typing.Optional[datetime.datetime]:
+        return self._modifiedTimestamp
+
+    def stockDataHash(self) -> typing.Optional[str]:
+        return self._stockDataHash
 
 class UniverseDb(object):
     _SectorsTableName = 'sectors'
     _SectorsTableSchema = 1
+
+    _SectorMetadataTableName = 'sector_metadata'
+    _SectorMetadataTableSchema = 1
 
     _AlternateNamesTableName = 'alternate_names'
     _AlternateNamesTableSchema = 1
@@ -182,6 +199,7 @@ class UniverseDb(object):
     def saveSector(
             self,
             sector: multiverse.DbSector,
+            stockDataHash: typing.Optional[str] = None,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
         logging.debug(f'UniverseDb saving sector {sector.id()} to universe \'{self._universePath}\'')
@@ -189,32 +207,12 @@ class UniverseDb(object):
         if transaction != None:
             connection = transaction.connection()
             cursor = connection.cursor()
-            # Delete any old version of the sector and any sector that has at the
-            # same time and place as the new sector
-            self._deleteSector(
-                sectorId=sector.id(),
-                milieu=sector.milieu(),
-                sectorX=sector.sectorX(),
-                sectorY=sector.sectorY(),
-                cursor=cursor)
-            self._insertSector(
-                sector=sector,
-                cursor=cursor)
+            self._saveSector(cursor=cursor, sector=sector, stockDataHash=stockDataHash)
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
                 cursor = connection.cursor()
-                # Delete any old version of the sector and any sector that has at the
-                # same time and place as the new sector
-                self._deleteSector(
-                    sectorId=sector.id(),
-                    milieu=sector.milieu(),
-                    sectorX=sector.sectorX(),
-                    sectorY=sector.sectorY(),
-                    cursor=cursor)
-                self._insertSector(
-                    sector=sector,
-                    cursor=cursor)
+                self._saveSector(cursor=cursor, sector=sector, stockDataHash=stockDataHash)
 
     def loadSector(
             self,
@@ -317,11 +315,24 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='author', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='sector_hash', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='metadata_hash', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
+                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
                     database.UniqueConstraintDef(columnNames=['milieu', 'sector_x', 'sector_y'])])
+
+            self._database.createTable(
+                cursor=cursor,
+                tableName=UniverseDb._SectorMetadataTableName,
+                requiredSchemaVersion=UniverseDb._SectorMetadataTableSchema,
+                columns=[
+                    # NOTE: It's very important that if I ever add anything to this table I also
+                    # update _saveSector so, it's maintained when the old sector data is deleted
+                    # and the new sector data is added.
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='created_timestamp', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='modified_timestamp', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='stock_data_hash', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
             self._database.createTable(
                 cursor=cursor,
@@ -747,13 +758,17 @@ class UniverseDb(object):
             milieu: typing.Optional[str]
             ) -> typing.List[SectorInfo]:
         sql = """
-            SELECT id, milieu, primary_name, sector_x, sector_y, abbreviation, sector_hash, metadata_hash
-            FROM {table}
-            """.format(table=UniverseDb._SectorsTableName)
+            SELECT s.id, s.milieu, s.primary_name, s.sector_x, s.sector_y, s.abbreviation,
+                m.created_timestamp, m.modified_timestamp, m.stock_data_hash
+            FROM {sectorsTable} AS s
+            JOIN {metadataTable} AS m ON m.sector_id = s.id
+            """.format(
+                sectorsTable=UniverseDb._SectorsTableName,
+                metadataTable=UniverseDb._SectorMetadataTableName)
         parameters = {}
 
         if milieu:
-            sql += 'AND milieu = :milieu'
+            sql += 'AND s.milieu = :milieu'
             parameters['milieu'] = milieu
 
         sql += ';'
@@ -769,8 +784,9 @@ class UniverseDb(object):
                 sectorX=row[3],
                 sectorY=row[4],
                 abbreviation=row[5],
-                sectorHash=row[6],
-                metadataHash=row[7]))
+                createdTimestamp=UniverseDb._parseTimestampString(content=row[6]),
+                modifiedTimestamp=UniverseDb._parseTimestampString(content=row[7]),
+                stockDataHash=row[8]))
         return sectorList
 
     def _loadSectors(
@@ -803,8 +819,7 @@ class UniverseDb(object):
         sql = """
             SELECT id, milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label, selected,
-                credits, publication, author, publisher, reference, notes,
-                sector_hash, metadata_hash
+                credits, publication, author, publisher, reference, notes
             FROM {table};
             """.format(table=UniverseDb._SectorsTableName)
         cursor.execute(sql)
@@ -829,8 +844,6 @@ class UniverseDb(object):
                     publisher=row[12],
                     reference=row[13],
                     notes=row[14],
-                    sectorHash=row[15],
-                    metadataHash=row[16],
                     alternateNames=sectorAlternateNamesMap.get(sectorId),
                     subsectorNames=sectorSubsectorNamesMap.get(sectorId),
                     allegiances=sectorAllegiancesMap.get(sectorId),
@@ -857,12 +870,10 @@ class UniverseDb(object):
         sql = """
             INSERT INTO {table} (id, milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label, selected,
-                credits, publication, author, publisher, reference, notes,
-                sector_hash, metadata_hash)
+                credits, publication, author, publisher, reference, notes)
             VALUES (:id, :milieu, :sector_x, :sector_y,
                 :primary_name, :primary_language, :abbreviation, :sector_label, :selected,
-                :credits, :publication, :author, :publisher, :reference, :notes,
-                :sector_hash, :metadata_hash);
+                :credits, :publication, :author, :publisher, :reference, :notes);
             """.format(table=UniverseDb._SectorsTableName)
         rows = {
             'id': sector.id(),
@@ -879,9 +890,7 @@ class UniverseDb(object):
             'author': sector.author(),
             'publisher': sector.publisher(),
             'reference': sector.reference(),
-            'notes': sector.notes(),
-            'sector_hash': sector.sectorHash(),
-            'metadata_hash': sector.metadataHash()}
+            'notes': sector.notes()}
         cursor.execute(sql, rows)
 
         self._insertSectorAlternateNames(
@@ -960,8 +969,7 @@ class UniverseDb(object):
         sql = """
             SELECT milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label, selected,
-                credits, publication, author, publisher, reference, notes,
-                sector_hash, metadata_hash
+                credits, publication, author, publisher, reference, notes
             FROM {table}
             WHERE id = :id
             LIMIT 1;
@@ -987,8 +995,6 @@ class UniverseDb(object):
             publisher=row[11],
             reference=row[12],
             notes=row[13],
-            sectorHash=row[14],
-            metadataHash=row[15],
             alternateNames=sectorAlternateNamesMap.get(sectorId),
             subsectorNames=sectorSubsectorNamesMap.get(sectorId),
             allegiances=sectorAllegiancesMap.get(sectorId),
@@ -2872,6 +2878,68 @@ class UniverseDb(object):
 
         return systemRemarksMap
 
+    def _saveSector(
+            self,
+            cursor: sqlite3.Cursor,
+            sector: multiverse.DbSector,
+            stockDataHash: typing.Optional[str] = None
+            ) -> None:
+        # Query any current metadata so it can be re-added after saving. This
+        # is needed as the metadata is set to cascade delete when the sector
+        # is deleted and the sector will be removed before it's reinserted when
+        # saving
+        sql = """
+            SELECT created_timestamp, stock_data_hash
+            FROM {table}
+            WHERE sector_id = :id
+            LIMIT 1;
+            """.format(table=UniverseDb._SectorMetadataTableName)
+        cursor.execute(sql, {'id': sector.id()})
+        row = cursor.fetchone()
+        createdTimestamp = None
+        if row:
+            createdTimestamp = UniverseDb._parseTimestampString(content=row[0])
+
+            # If the stock data has was supplied as an argument then ignore
+            # the current one read from the metadata
+            if not stockDataHash:
+                stockDataHash = row[1]
+
+        # Delete any old version of the sector and any sector that has at the
+        # same time and place as the new sector
+        self._deleteSector(
+            sectorId=sector.id(),
+            milieu=sector.milieu(),
+            sectorX=sector.sectorX(),
+            sectorY=sector.sectorY(),
+            cursor=cursor)
+        self._insertSector(
+            sector=sector,
+            cursor=cursor)
+
+        # Reinsert old metadata and set modified time if sector is being updated
+        # rather than created
+        modifiedTimestamp = None
+        if createdTimestamp is None:
+            # A new sector is being created (no modified time is set)
+            createdTimestamp = common.utcnow()
+        else:
+            # An existing sector is being updated so set the modified timestamp
+            # TODO: Need to test modified time is being written to the database once I
+            # add some kind of editing
+            modifiedTimestamp = common.utcnow()
+
+        sql = """
+            INSERT INTO {table} (sector_id, created_timestamp, modified_timestamp, stock_data_hash)
+            VALUES (:sector_id, :created_timestamp, :modified_timestamp, :stock_data_hash);
+            """.format(table=UniverseDb._SectorMetadataTableName)
+        rowData = {
+            'sector_id': sector.id(),
+            'created_timestamp': UniverseDb._formatTimestampString(timestamp=createdTimestamp),
+            'modified_timestamp': UniverseDb._formatTimestampString(timestamp=modifiedTimestamp),
+            'stock_data_hash': stockDataHash}
+        cursor.execute(sql, rowData)
+
     def _deleteSector(
             self,
             cursor: sqlite3.Cursor,
@@ -2911,3 +2979,20 @@ class UniverseDb(object):
         self._clearSectors(cursor=cursor)
         for sector in sectors:
             self._insertSector(cursor=cursor, sector=sector)
+
+    @staticmethod
+    def _parseTimestampString(content: typing.Optional[str]) -> typing.Optional[datetime.datetime]:
+        if content is None:
+            return None
+
+        return datetime.datetime.fromisoformat(content)
+
+    @staticmethod
+    def _formatTimestampString(timestamp: typing.Optional[datetime.datetime]) -> typing.Optional[str]:
+        if timestamp is None:
+            return None
+
+        if timestamp.tzinfo is None:
+            # Assume timestamps without a timezone are in UTC
+            timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
+        return timestamp.astimezone(datetime.timezone.utc).isoformat()

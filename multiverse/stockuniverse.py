@@ -52,6 +52,7 @@ def importStockUniverseSnapshot(
         milieuSectors.append((milieu, sectorNames))
 
     dbSectors = []
+    sourceDataHashes: typing.Dict[multiverse.DbSector, str] = {}
     progressCount = 0
     for milieu, sectorNames in milieuSectors:
         for sectorName in sectorNames:
@@ -73,15 +74,19 @@ def importStockUniverseSnapshot(
                     milieu=milieu,
                     sector=sectorName)
 
-                dbSectors.append(multiverse.convertRawSectorToDbSector(
+                dbSector = multiverse.convertRawSectorToDbSector(
                     milieu=milieu,
                     rawMetadata=survey.parseMetadata(sectorMetadata),
                     rawSystems=survey.parseSector(sectorContent),
                     rawStockAllegiances=rawStockAllegiances,
                     rawStockSophonts=rawStockSophonts,
-                    rawStockStyleSheet=rawStockStyleSheet,
-                    srcMetadataHash=hashlib.sha256(sectorMetadata.encode()).hexdigest(),
-                    srcSectorHash=hashlib.sha256(sectorContent.encode()).hexdigest()))
+                    rawStockStyleSheet=rawStockStyleSheet)
+                dbSectors.append(dbSector)
+
+                hash = hashlib.sha256()
+                hash.update(hashlib.sha256(sectorMetadata.encode()).digest())
+                hash.update(hashlib.sha256(sectorContent.encode()).digest())
+                sourceDataHashes[dbSector] = hash.hexdigest()
             except Exception as ex:
                 logging.error(f'Stock universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
 
@@ -97,4 +102,5 @@ def importStockUniverseSnapshot(
     multiverse.UniverseManager.instance().updateStockUniverse(
         sectors=dbSectors,
         snapshotTimestamp=importTimestamp,
-        progressCallback=progressCallback)
+        progressCallback=progressCallback,
+        sourceDataHashes=sourceDataHashes)

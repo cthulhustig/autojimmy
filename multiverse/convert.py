@@ -2146,8 +2146,6 @@ def convertRawSectorToDbSector(
             survey.RawStockSophont
             ]] = None,
         rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
-        srcMetadataHash: typing.Optional[str] = None,
-        srcSectorHash: typing.Optional[str] = None,
         sectorId: typing.Optional[str] = None
         ) -> multiverse.DbSector:
     dbSectorX = rawMetadata.x()
@@ -2275,6 +2273,4 @@ def convertRawSectorToDbSector(
         author=dbAuthor,
         publisher=dbPublisher,
         reference=dbReference,
-        products=dbProducts,
-        sectorHash=srcSectorHash,
-        metadataHash=srcMetadataHash)
+        products=dbProducts)

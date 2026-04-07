@@ -107,6 +107,7 @@ class UniverseManager(object):
             self,
             sectors: typing.Collection[multiverse.DbSector],
             snapshotTimestamp: datetime.datetime,
+            sourceDataHashes: typing.Mapping[multiverse.DbSector, str],
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
             ) -> None:
         existingInfo = UniverseManager._registry.stockUniverse()
@@ -136,7 +137,10 @@ class UniverseManager(object):
                     except Exception as ex:
                         logging.warning('UniverseManager stock universe update progress callback threw an exception', exc_info=ex)
 
-                database.saveSector(sector=sector, transaction=transaction)
+                database.saveSector(
+                    sector=sector,
+                    stockDataHash=sourceDataHashes.get(sector),
+                    transaction=transaction)
 
             if progressCallback:
                 try:
