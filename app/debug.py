@@ -88,6 +88,13 @@ def debugCheckForTypeCycles(
                 writeToFile=file)
             return
 
+        count = len(results)
+        _writeMessage(
+            message=f'Found {count} type cycles',
+            writeToTerminal=writeToTerminal,
+            writeToLogLevel=writeToLogLevel,
+            writeToFile=file)
+
         for cycle in results:
             _writeMessage(
                 message='Cycle:',

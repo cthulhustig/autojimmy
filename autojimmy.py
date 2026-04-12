@@ -158,8 +158,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle(f'{app.AppName} v{app.AppVersion}')
         self.statusBar().setSizeGripEnabled(False)
         self.statusBar().showMessage('Status: Ready')
-        self.statusBar().setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self.statusBar().customContextMenuRequested.connect(self._showDebugMenu)
 
         self._compareWorldsButton = QtWidgets.QPushButton('Compare Worlds...', self)
         self._compareWorldsButton.clicked.connect(gui.WindowManager.instance().showWorldComparisonWindow)
@@ -224,6 +222,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._aboutButton = QtWidgets.QPushButton('About...', self)
         self._aboutButton.clicked.connect(self._showAbout)
+        # Add debug context menu to about button
+        self._aboutButton.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._aboutButton.customContextMenuRequested.connect(self._showDebugMenu)
 
         systemLayout = QtWidgets.QVBoxLayout()
         systemLayout.addWidget(self._customSectorsButton)
