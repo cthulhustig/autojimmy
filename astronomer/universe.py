@@ -41,9 +41,11 @@ class Universe(object):
 
     def __init__(
             self,
+            id: str,
             sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
             placeholderMilieu: typing.Optional[astronomer.Milieu] = None
             ) -> None:
+        self._id = id
         self._milieuDataMap: typing.Dict[astronomer.Milieu, Universe._MilieuData] = {}
         self._placeholderMilieu = placeholderMilieu
 
@@ -105,6 +107,9 @@ class Universe(object):
                         endpoints = []
                         milieuData.hexRoutesMap[hex] = endpoints
                     endpoints.append(route)
+
+    def id(self) -> str:
+        return self._id
 
     def sectorNames(
             self,

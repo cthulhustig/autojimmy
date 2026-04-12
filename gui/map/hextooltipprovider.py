@@ -9,6 +9,7 @@ import typing
 class HexTooltipProvider(object):
     def __init__(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
@@ -18,12 +19,19 @@ class HexTooltipProvider(object):
             ) -> None:
         super().__init__()
 
+        self._universe = universe
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._mapStyle = mapStyle
         self._mapOptions = set(mapOptions)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
+
+    def universe(self) -> astronomer.Universe:
+        return self._universe
+
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        self._universe = universe
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
@@ -63,7 +71,7 @@ class HexTooltipProvider(object):
 
     def tooltip(self, hex: astronomer.HexPosition) -> str:
         return gui.createHexToolTip(
-            universe=astronomer.WorldManager.instance().universe(),
+            universe=self._universe,
             milieu=self._milieu,
             hex=hex,
             rules=self._rules,

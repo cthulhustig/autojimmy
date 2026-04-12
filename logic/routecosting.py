@@ -277,13 +277,14 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 class StrictXBoatCostCalculator(logic.JumpCostCalculatorInterface):
     def __init__(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             shipJumpRating: int
             ) -> None:
         super().__init__()
+        self._universe = universe
         self._milieu = milieu
         self._shipJumpRating = shipJumpRating
-        self._universe = astronomer.WorldManager.instance().universe()
 
     def initialise(
             self,
@@ -322,13 +323,14 @@ class StrictXBoatCostCalculator(logic.JumpCostCalculatorInterface):
 class LooseXBoatCostCalculator(logic.JumpCostCalculatorInterface):
     def __init__(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             shipJumpRating: int
             ) -> None:
         super().__init__()
+        self._universe = universe
         self._milieu = milieu
         self._shipJumpRating = shipJumpRating
-        self._universe = astronomer.WorldManager.instance().universe()
 
     def initialise(
             self,

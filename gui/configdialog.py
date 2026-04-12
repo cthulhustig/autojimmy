@@ -5,6 +5,7 @@ import enum
 import gui
 import logging
 import logic
+import multiverse
 import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -102,6 +103,52 @@ _RegenerateTradeCodesToolTip = gui.createStringToolTip(
     'Pz': TradeCode.PuzzleWorld,
     'Rs': TradeCode.ResearchStation,
 """
+
+class _UniverseComboBox(gui.ComboBoxEx):
+    def __init__(
+            self,
+            universeId: typing.Optional[str] = None,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self.syncUniverseList()
+
+        if universeId is not None:
+            self.setCurrentUniverse(universeId)
+
+    def syncUniverseList(self) -> None:
+        oldSelectedIndex = self.currentIndex()
+        oldSelectedText = self.currentText()
+        oldSelectedUniverseId = self.currentUniverse()
+
+        # Block signals while we update. Signal will be manually generated if the
+        # selection actually changes
+        with gui.SignalBlocker(widget=self):
+            self.clear()
+
+            universes = multiverse.UniverseManager.instance().universeInfos()
+            for universe in universes:
+                self.addItem(universe.name(), universe.id())
+
+            self.setCurrentUniverse(oldSelectedUniverseId)
+
+        newSelectedIndex = self.currentIndex()
+        if newSelectedIndex != oldSelectedIndex:
+            self.currentIndexChanged.emit(newSelectedIndex)
+
+        newSelectedText = self.currentText()
+        if newSelectedText != oldSelectedText:
+            self.currentTextChanged.emit(newSelectedText)
+
+    def setCurrentUniverse(self, universeId: str) -> None:
+        for index in range(self.count()):
+            if universeId == self.itemData(index, QtCore.Qt.ItemDataRole.UserRole):
+                self.setCurrentIndex(index)
+                return
+
+    def currentUniverse(self) -> typing.Optional[str]:
+        return self.currentUserData()
 
 class _InPlaceComboBoxWrapper(QtWidgets.QWidget):
     def __init__(self, colours, parent=None, value=None):
@@ -358,6 +405,14 @@ class ConfigDialog(gui.DialogEx):
         ColourButtonWidth = 75
 
         # Traveller widgets
+        self._universeComboBox = _UniverseComboBox(
+            universeId=app.Config.instance().value(
+                option=app.ConfigOption.Universe,
+                futureValue=True))
+        self._universeComboBox.setToolTip(gui.createStringToolTip(
+            '<p>The universe to load at startup.</p>',
+            escape=False))
+
         self._milieuComboBox = gui.EnumComboBox(
             type=astronomer.Milieu,
             value=app.Config.instance().value(
@@ -365,11 +420,14 @@ class ConfigDialog(gui.DialogEx):
                 futureValue=True),
             textMap={milieu: astronomer.milieuDescription(milieu) for milieu in  astronomer.Milieu})
         self._milieuComboBox.setToolTip(gui.createStringToolTip(
-            '<p>The milieu to use when determining sector and world information</p>',
+            '<p>The universe time period used for sector information.</p>',
             escape=False))
         self._milieuComboBox.currentIndexChanged.connect(self._milieuChanged)
 
         travellerLayout = gui.FormLayoutEx()
+        travellerLayout.addRow(
+            'Universe:',
+            self._universeComboBox)
         travellerLayout.addRow(
             'Milieu:',
             self._milieuComboBox)
@@ -714,6 +772,9 @@ class ConfigDialog(gui.DialogEx):
 
     def _saveConfig(self) -> None:
         try:
+            app.Config.instance().setValue(
+                option=app.ConfigOption.Universe,
+                value=self._universeComboBox.currentUniverse())
             app.Config.instance().setValue(
                 option=app.ConfigOption.Milieu,
                 value=self._milieuComboBox.currentEnum())

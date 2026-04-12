@@ -21,9 +21,13 @@ def setupLogger(
     consoleHandler = logging.StreamHandler(sys.stdout)
     logger = logging.getLogger()
     logger.addHandler(fileHandler)
-    logger.addHandler(consoleHandler)
+    #logger.addHandler(consoleHandler)
     logger.setLevel(logging.INFO)
 
 def setLogLevel(logLevel: int) -> None:
     logger = logging.getLogger()
     logger.setLevel(logLevel)
+
+def currentLogLevel() -> int:
+    logger = logging.getLogger()
+    return logger.level

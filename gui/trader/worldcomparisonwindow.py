@@ -174,6 +174,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._scoredGoodGroupBox.setLayout(groupLayout)
 
     def _setupWorldControls(self) -> None:
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
@@ -184,6 +185,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
+            universe=universe,
             milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
@@ -192,11 +194,13 @@ class WorldComparisonWindow(gui.WindowWidget):
             taggingColours=taggingColours)
 
         self._worldTable = gui.WorldTradeScoreTable(
+            universe=universe,
             milieu=milieu,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
         self._worldManagementWidget = gui.HexTableManagerWidget(
+            universe=universe,
             milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
@@ -233,7 +237,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             showAllOnMapAction)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=astronomer.WorldManager.instance().universe(),
+            universe=universe,
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -331,7 +335,12 @@ class WorldComparisonWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._hexTooltipProvider.setUniverse(universe=universe)
+            self._worldManagementWidget.setUniverse(universe=universe)
+            self._mapWidget.setUniverse(universe=universe)
+        elif option is app.ConfigOption.Milieu:
             self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._worldManagementWidget.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)

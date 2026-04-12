@@ -120,6 +120,7 @@ class SimulatorWindow(gui.WindowWidget):
         self._simulatorJob = None
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
+            universe=astronomer.WorldManager.instance().universe(),
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
@@ -386,6 +387,7 @@ class SimulatorWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupConfigControls(self) -> None:
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
@@ -396,6 +398,7 @@ class SimulatorWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._startWorldWidget = gui.HexSelectToolWidget(
+            universe=universe,
             milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
@@ -574,6 +577,7 @@ class SimulatorWindow(gui.WindowWidget):
         labelLayout.addWidget(self._simulationFundsLabel)
         labelLayout.addWidget(self._simulationTravelledLabel)
 
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
@@ -584,7 +588,7 @@ class SimulatorWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=astronomer.WorldManager.instance().universe(),
+            universe=universe,
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -637,14 +641,28 @@ class SimulatorWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._hexTooltipProvider.setUniverse(universe=universe)
+            self._startWorldWidget.setUniverse(universe=universe)
+            self._mapWidget.setUniverse(universe=universe)
+            # Stop the simulator if the universe changes as it invalidates
+            # the existing simulation state
+            self._stopSimulator()
+        elif option is app.ConfigOption.Milieu:
             self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._startWorldWidget.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
+            # Stop the simulator if the milieu changes as it invalidates
+            # the existing simulation state
+            self._stopSimulator()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._startWorldWidget.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)
+            # Stop the simulator if the rules changes as it invalidates
+            # the existing simulation state
+            self._stopSimulator()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._startWorldWidget.setMapStyle(style=newValue)
@@ -736,6 +754,7 @@ class SimulatorWindow(gui.WindowWidget):
                 text='Ship\'s combined fuel and cargo capacities can\'t be larger than its total tonnage')
             return
 
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
@@ -768,10 +787,12 @@ class SimulatorWindow(gui.WindowWidget):
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.StrictXBoat:
             jumpCostCalculator = logic.StrictXBoatCostCalculator(
+                universe=universe,
                 milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LooseXBoat:
             jumpCostCalculator = logic.LooseXBoatCostCalculator(
+                universe=universe,
                 milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         else:
@@ -788,8 +809,9 @@ class SimulatorWindow(gui.WindowWidget):
         try:
             self._simulatorJob = jobs.SimulatorJob(
                 parent=self,
-                rules=rules,
+                universe=universe,
                 milieu=milieu,
+                rules=rules,
                 startHex=startWorld.hex(),
                 startingFunds=self._startingFundsSpinBox.value(),
                 shipTonnage=self._shipTonnageSpinBox.value(),

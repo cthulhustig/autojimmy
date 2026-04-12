@@ -990,13 +990,14 @@ class WorldSearch(object):
 
     def search(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
             maxResults: int = 1000
             ) -> typing.Iterable[astronomer.World]:
         results = []
-        for sector in astronomer.WorldManager.instance().yieldSectors(milieu=milieu):
+        for sector in universe.yieldSectors(milieu=milieu):
             self._searchWorlds(
                 worlds=sector.yieldWorlds(),
                 rules=rules,
@@ -1009,6 +1010,7 @@ class WorldSearch(object):
 
     def searchRegion(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
@@ -1016,9 +1018,7 @@ class WorldSearch(object):
             subsectorName: typing.Optional[str] = None,
             maxResults: int = 1000
             ) -> typing.Iterable[astronomer.World]:
-        sector = astronomer.WorldManager.instance().sectorByName(
-            milieu=milieu,
-            name=sectorName)
+        sector = universe.sectorByName(milieu=milieu, name=sectorName)
         if not sector:
             raise RuntimeError(f'Sector "{sectorName}" for found')
 
@@ -1040,13 +1040,14 @@ class WorldSearch(object):
 
     def searchRadius(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
             centerHex: astronomer.HexPosition,
             searchRadius: int
             ) -> typing.Iterable[astronomer.World]:
-        return astronomer.WorldManager.instance().worldsInRadius(
+        return universe.worldsInRadius(
             milieu=milieu,
             center=centerHex,
             searchRadius=searchRadius,

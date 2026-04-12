@@ -126,6 +126,28 @@ def _snapshotUpdateCheck(
         if result == QtWidgets.QDialog.DialogCode.Accepted else \
         _SnapshotCheckResult.Cancelled
 
+def _pushConfigChangeToWorldManager(
+        option: app.ConfigOption,
+        oldValue: typing.Any,
+        newValue: typing.Any
+        ) -> None:
+    if option is app.ConfigOption.Universe:
+        startupProgressDlg = gui.StartupProgressDialog()
+
+        # TODO: I don't like the fact this is reinitialising the whole
+        # world manager. Should probably have it's own job rather than
+        # reusing
+        startupProgressDlg.addJob(job=startup.InitWorldManager())
+
+        if startupProgressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            # TODO: Not sure how best to handle errors
+            pass
+
+        # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
+        # when exec is called on the application
+        # https://doc.qt.io/qt-6/qobject.html#deleteLater
+        startupProgressDlg.deleteLater()
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
         super(MainWindow, self).__init__()
@@ -136,6 +158,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle(f'{app.AppName} v{app.AppVersion}')
         self.statusBar().setSizeGripEnabled(False)
         self.statusBar().showMessage('Status: Ready')
+        self.statusBar().setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.statusBar().customContextMenuRequested.connect(self._showDebugMenu)
 
         self._compareWorldsButton = QtWidgets.QPushButton('Compare Worlds...', self)
         self._compareWorldsButton.clicked.connect(gui.WindowManager.instance().showWorldComparisonWindow)
@@ -329,6 +353,44 @@ class MainWindow(QtWidgets.QMainWindow):
     def _showRestartRequiredStatus(self) -> None:
         self.statusBar().showMessage('Status: Restart Required')
 
+    # TODO: Why does the status bar disappear after I show this menu
+    def _showDebugMenu(
+            self,
+            point: QtCore.QPoint
+            ) -> None:
+        if not gui.isShiftKeyDown(exclusive=False) or not gui.isCtrlKeyDown(exclusive=False):
+            # Only show menu if you hold down shift and ctrl
+            return
+
+        forceGarbageCollectionAction = QtWidgets.QAction('Force Garbage Collector', self)
+        forceGarbageCollectionAction.triggered.connect(self._debugForceGarbageCollector)
+
+        checkForTypeCyclesAction = QtWidgets.QAction('Check For Type Cycles', self)
+        checkForTypeCyclesAction.triggered.connect(self._debugCheckForTypeCycles)
+
+        menu = QtWidgets.QMenu(self)
+        menu.addAction(forceGarbageCollectionAction)
+        menu.addAction(checkForTypeCyclesAction)
+        # NOTE: The passed in point isn't used to make showing the menu independent
+        # of whatever control it's attached to
+        menu.exec(QtGui.QCursor.pos())
+
+    def _debugForceGarbageCollector(self):
+        try:
+            logLevel = app.currentLogLevel()
+            app.debugWriteGarbageCollectorStats(writeToLogLevel=logLevel)
+            app.debugForceGarbageCollection(writeToLogLevel=logLevel)
+            app.debugWriteGarbageCollectorStats(writeToLogLevel=logLevel)
+        except Exception as ex:
+            logging.error('Failed to force garbage collection', exc_info=ex)
+
+    def _debugCheckForTypeCycles(self):
+        try:
+            logLevel = app.currentLogLevel()
+            app.debugCheckForTypeCycles(writeToLogLevel=logLevel)
+        except Exception as ex:
+            logging.error('Failed to check for type cycles', exc_info=ex)
+
 def main() -> None:
     QtWidgets.QApplication.setAttribute(
         QtCore.Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
@@ -384,6 +446,9 @@ def main() -> None:
 
         gunsmith.WeaponStore.setWeaponDirs(
             userDir=os.path.join(appDir, 'weapons'),
+            # TODO: Why is this using __file__, shouldn't it (and the code below)
+            # be using installDir? It looks like it basically does the whole
+            # __file__ shenanigans
             exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
 
         robots.RobotStore.setRobotDirs(
@@ -438,7 +503,7 @@ def main() -> None:
             startupProgressDlg.addJob(job=startup.ImportLegacyCustomSectorsJob(
                 directoryPath=legacyCustomSectorsDir))
 
-        startupProgressDlg.addJob(job=startup.LoadSectorsJob())
+        startupProgressDlg.addJob(job=startup.InitWorldManager())
         startupProgressDlg.addJob(job=startup.LoadWeaponsJob())
         startupProgressDlg.addJob(job=startup.LoadRobotsJob())
 
@@ -449,6 +514,15 @@ def main() -> None:
         # when exec is called on the application
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
         startupProgressDlg.deleteLater()
+
+        # Register a callback that will push config changes (i.e. switching universe) to
+        # the world manager
+        # NOTE: It is VERY important that this is registered early as we need the world
+        # manager to be the first thing that is notified of a change in universe as other
+        # subscribers may assume it's been updated
+        # TODO: Doing this here feels wrong
+        app.Config.instance().configChanged.connect(
+            _pushConfigChangeToWorldManager)
 
         with qasync.QEventLoop() as asyncEventLoop:
             window = MainWindow()

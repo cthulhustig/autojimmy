@@ -232,7 +232,12 @@ Mgt2022LocalBrokerToolTip = gui.createStringToolTip(
     'broker you hired is some kind of informant and hilarity ensues.</p>',
     escape=False)
 
+# TODO: I really don't like the fact the universe is passed in but the milieu
+# comes from the route logistics. Changing it would have implications for the
+# serialisation of logistics but it might be worth breaking backwards compatibility
+# as long as older versions of the app handle attempts to load newer files gracefully
 def createLogisticsToolTip(
+        universe: astronomer.Universe,
         routeLogistics: logic.RouteLogistics,
         worldTagging: typing.Optional[logic.WorldTagging] = None,
         taggingColours: typing.Optional[app.TaggingColours] = None
@@ -241,10 +246,10 @@ def createLogisticsToolTip(
     jumpRoute = routeLogistics.jumpRoute()
     startHex = jumpRoute.startNode()
     finishHex = jumpRoute.finishNode()
-    startString = html.escape(astronomer.WorldManager.instance().canonicalHexName(
+    startString = html.escape(universe.canonicalHexName(
         milieu=milieu,
         hex=startHex))
-    finishString = html.escape(astronomer.WorldManager.instance().canonicalHexName(
+    finishString = html.escape(universe.canonicalHexName(
         milieu=milieu,
         hex=finishHex))
 
@@ -308,12 +313,12 @@ def createLogisticsToolTip(
             pitStopMap[pitStop.routeIndex()] = pitStop
 
     for index, nodePos in enumerate(jumpRoute):
-        world = astronomer.WorldManager.instance().worldByPosition(
+        world = universe.worldByPosition(
             milieu=milieu,
             hex=nodePos)
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
-            name=astronomer.WorldManager.instance().canonicalHexName(milieu=milieu, hex=nodePos)))
+            name=universe.canonicalHexName(milieu=milieu, hex=nodePos)))
 
         tagLevel = logic.TagLevel.Danger # Dead space is tagged as danger
         if world and worldTagging:

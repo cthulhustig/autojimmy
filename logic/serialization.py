@@ -440,7 +440,8 @@ def _serialiseLogistics(
 
 def _deserialiseLogistics(
         jsonData: typing.Mapping[str, typing.Any],
-        route: logic.JumpRoute
+        route: logic.JumpRoute,
+        universe: astronomer.Universe
         ) -> logic.RouteLogistics:
     milieu = jsonData.get('milieu')
     if milieu is None:
@@ -495,7 +496,7 @@ def _deserialiseLogistics(
             if berthingCost is not None:
                 berthingCost = common.deserialiseCalculation(jsonData=berthingCost)
 
-            world = astronomer.WorldManager.instance().worldByPosition(
+            world = universe.worldByPosition(
                 milieu=milieu,
                 hex=route.nodeAt(routeIndex))
 
@@ -554,7 +555,8 @@ def serialiseJumpRoute(
     return jsonData
 
 def deserialiseJumpRoute(
-        jsonData: typing.Mapping[str, typing.Any]
+        jsonData: typing.Mapping[str, typing.Any],
+        universe: astronomer.Universe
         ) -> typing.Union[logic.JumpRoute, logic.RouteLogistics]:
     jsonVersion = jsonData.get('version')
     if jsonVersion is None:
@@ -629,7 +631,10 @@ def deserialiseJumpRoute(
     jsonLogistics: typing.Mapping[str, typing.Any] = jsonData.get('logistics')
     logistics = None
     if jsonLogistics:
-        logistics = _deserialiseLogistics(jsonData=jsonLogistics, route=route)
+        logistics = _deserialiseLogistics(
+            jsonData=jsonLogistics,
+            route=route,
+            universe=universe)
 
     return logistics if logistics else route
 
@@ -641,6 +646,9 @@ def writeJumpRoute(
     with open(path, 'w', encoding='UTF8') as file:
         json.dump(serialiseJumpRoute(route=route, includeCalculations=includeCalculations), file, indent=4)
 
-def readJumpRoute(path: str) -> typing.Union[logic.JumpRoute, logic.RouteLogistics]:
+def readJumpRoute(
+        path: str,
+        universe: astronomer.Universe
+        ) -> typing.Union[logic.JumpRoute, logic.RouteLogistics]:
     with open(path, 'r') as file:
-        return deserialiseJumpRoute(jsonData=json.load(file))
+        return deserialiseJumpRoute(jsonData=json.load(file), universe=universe)

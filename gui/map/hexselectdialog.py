@@ -10,6 +10,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 class HexSelectDialog(gui.DialogEx):
     def __init__(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
@@ -26,7 +27,7 @@ class HexSelectDialog(gui.DialogEx):
             parent=parent)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=astronomer.WorldManager.instance().universe(),
+            universe=universe,
             milieu=milieu,
             rules=rules,
             style=mapStyle,

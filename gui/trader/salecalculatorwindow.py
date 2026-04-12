@@ -1,4 +1,5 @@
 import app
+import astronomer
 import common
 import enum
 import gui
@@ -100,6 +101,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._randomGenerator = common.RandomGenerator()
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
+            universe=astronomer.WorldManager.instance().universe(),
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
@@ -276,6 +278,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         return super().eventFilter(object, event)
 
     def _setupWorldSelectControls(self) -> None:
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
@@ -286,6 +289,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._saleWorldWidget = gui.HexSelectToolWidget(
+            universe=universe,
             milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
@@ -527,7 +531,11 @@ class SaleCalculatorWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._hexTooltipProvider.setUniverse(universe=universe)
+            self._saleWorldWidget.setUniverse(universe=universe)
+        elif option is app.ConfigOption.Milieu:
             self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._saleWorldWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:

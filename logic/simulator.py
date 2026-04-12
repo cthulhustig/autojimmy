@@ -67,6 +67,7 @@ class Simulator(object):
 
     def run(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             startHex: astronomer.HexPosition,
             startingFunds: int,
@@ -90,6 +91,7 @@ class Simulator(object):
             randomSeed: typing.Optional[int] = None,
             simulationLength: typing.Optional[int] = None # Length in simulated hours
             ) -> None:
+        self._universe = universe
         self._milieu = milieu
         self._shipTonnage = shipTonnage
         self._shipJumpRating = shipJumpRating
@@ -137,7 +139,7 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
-        currentWorld = astronomer.WorldManager.instance().worldByPosition(
+        currentWorld = self._universe.worldByPosition(
             milieu=self._milieu,
             hex=self._currentHex)
 
@@ -147,7 +149,7 @@ class Simulator(object):
 
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
             worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
-            self._nearbyWorlds = astronomer.WorldManager.instance().worldsInRadius(
+            self._nearbyWorlds = self._universe.worldsInRadius(
                 milieu=self._milieu,
                 center=self._currentHex,
                 searchRadius=self._searchRadius,
@@ -220,13 +222,13 @@ class Simulator(object):
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex = jumpRoute.nodeAt(self._jumpRouteIndex)
-                nextWorld = astronomer.WorldManager.instance().worldByPosition(
+                nextWorld = self._universe.worldByPosition(
                     milieu=self._milieu,
                     hex=nextHex)
-                currentString = astronomer.WorldManager.instance().canonicalHexName(
+                currentString = self._universe.canonicalHexName(
                     milieu=self._milieu,
                     hex=self._currentHex)
-                nextString = astronomer.WorldManager.instance().canonicalHexName(
+                nextString = self._universe.canonicalHexName(
                     milieu=self._milieu,
                     hex=nextHex)
                 self._logMessage(
@@ -333,8 +335,9 @@ class Simulator(object):
         infoMessages = []
 
         trader = logic.Trader(
-            rules=self._rules,
+            universe=self._universe,
             milieu=self._milieu,
+            rules=self._rules,
             tradeOptionCallback=lambda tradeOption: tradeOptions.append(tradeOption),
             traderInfoCallback=lambda infoMessage: infoMessages.append(infoMessage),
             isCancelledCallback=self._isCancelledCallback)

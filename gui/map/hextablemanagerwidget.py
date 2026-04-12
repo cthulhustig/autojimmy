@@ -22,6 +22,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
@@ -37,6 +38,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__()
 
+        self._universe = universe
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._mapStyle = mapStyle
@@ -58,11 +60,13 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._hexTable = hexTable
         if not self._hexTable:
             self._hexTable = gui.HexTable(
+                universe=self._universe,
                 milieu=self._milieu,
                 rules=self._rules,
                 worldTagging=self._worldTagging,
                 taggingColours=self._taggingColours)
         else:
+            self._hexTable.setUniverse(universe=self._universe)
             self._hexTable.setMilieu(milieu=self._milieu)
             self._hexTable.setRules(rules=self._rules)
             self._hexTable.setWorldTagging(tagging=self._worldTagging)
@@ -174,6 +178,15 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self.setLayout(widgetLayout)
         self.installEventFilter(self)
+
+    def universe(self) -> astronomer.Universe:
+        return self._universe
+
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        if universe is self._universe:
+            return
+        self._universe = universe
+        self._hexTable.setUniverse(universe=self._universe)
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
@@ -447,7 +460,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             # the table
             contentChanged = False
             for row in range(self._hexTable.rowCount() - 1, -1, -1):
-                world = astronomer.WorldManager.instance().worldByPosition(
+                world = self._universe.worldByPosition(
                     milieu=self._milieu,
                     hex=self.hex(row=row))
                 if not world:
@@ -463,6 +476,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         currentHexes = self.hexes()
 
         dlg = gui.HexSelectDialog(
+            universe=self._universe,
             milieu=self._milieu,
             rules=self._rules,
             mapStyle=self._mapStyle,
@@ -531,6 +545,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             centerHex = self._relativeHex
 
         dlg = gui.HexRadiusSelectDialog(
+            universe=self._universe,
             milieu=self._milieu,
             rules=self._rules,
             mapStyle=self._mapStyle,

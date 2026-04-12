@@ -39,6 +39,7 @@ class WorldTradeScoreTable(gui.HexTable):
 
     def __init__(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -46,6 +47,7 @@ class WorldTradeScoreTable(gui.HexTable):
             columns: typing.Iterable[typing.Union[WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
         super().__init__(
+            universe=universe,
             milieu=milieu,
             rules=rules,
             worldTagging=worldTagging,
@@ -173,7 +175,7 @@ class WorldTradeScoreTable(gui.HexTable):
             row: int,
             hex: astronomer.HexPosition
             ) -> int:
-        world = astronomer.WorldManager.instance().worldByPosition(
+        world = self._universe.worldByPosition(
             milieu=self._milieu,
             hex=hex)
 

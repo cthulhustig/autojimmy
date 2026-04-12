@@ -1,3 +1,5 @@
+from .memory import *
+from .debug import *
 from .constants import *
 from .appdetails import *
 from .logger import *

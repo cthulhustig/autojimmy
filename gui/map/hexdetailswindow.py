@@ -10,6 +10,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 class _CustomLabel(QtWidgets.QLabel):
     def __init__(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
@@ -20,6 +21,7 @@ class _CustomLabel(QtWidgets.QLabel):
             ) -> None:
         super().__init__(parent)
 
+        self._universe = universe
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._mapStyle = mapStyle
@@ -34,6 +36,13 @@ class _CustomLabel(QtWidgets.QLabel):
         self.setOpenExternalLinks(True)
         self.setWordWrap(True)
         self.linkHovered.connect(self._linkHovered)
+
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        if universe is self._universe:
+            return
+
+        self._universe = universe
+        self._updateContent()
 
     def setMilieu(self, milieu: astronomer.Milieu) -> None:
         if milieu is self._milieu:
@@ -95,7 +104,7 @@ class _CustomLabel(QtWidgets.QLabel):
     def _updateContent(self) -> None:
         if self._hex:
             self.setText(gui.createHexToolTip(
-                universe=astronomer.WorldManager.instance().universe(),
+                universe=self._universe,
                 milieu=self._milieu,
                 hex=self._hex,
                 rules=self._rules,
@@ -128,6 +137,7 @@ class HexDetailsWindow(gui.WindowWidget):
         self._tabBar.selectionChanged.connect(self._tabChanged)
 
         self._hexLabel = _CustomLabel(
+            universe=astronomer.WorldManager.instance().universe(),
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
@@ -158,7 +168,8 @@ class HexDetailsWindow(gui.WindowWidget):
                 self._hexLabel.setHex(hex)
                 return
 
-        tabName = astronomer.WorldManager.instance().canonicalHexName(
+        universe = astronomer.WorldManager.instance().universe()
+        tabName = universe.canonicalHexName(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             hex=hex)
         self._hexes.append(hex)
@@ -173,11 +184,12 @@ class HexDetailsWindow(gui.WindowWidget):
         if not hexes:
             return
 
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         currentHexes = set(self._hexes)
         for hex in hexes:
             if hex not in currentHexes:
-                tabName = astronomer.WorldManager.instance().canonicalHexName(
+                tabName = universe.canonicalHexName(
                     milieu=milieu,
                     hex=hex)
                 self._hexes.append(hex)
@@ -228,11 +240,17 @@ class HexDetailsWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            milieu = app.Config.instance().value(app.ConfigOption.Milieu)
             for index, hex in enumerate(self._hexes):
-                tabName = astronomer.WorldManager.instance().canonicalHexName(
-                    milieu=newValue,
-                    hex=hex)
+                tabName = universe.canonicalHexName(milieu=milieu, hex=hex)
+                self._tabBar.setTabText(index, tabName)
+            self._hexLabel.setUniverse(universe=universe)
+        elif option is app.ConfigOption.Milieu:
+            universe = astronomer.WorldManager.instance().universe()
+            for index, hex in enumerate(self._hexes):
+                tabName = universe.canonicalHexName(milieu=newValue, hex=hex)
                 self._tabBar.setTabText(index, tabName)
             self._hexLabel.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:

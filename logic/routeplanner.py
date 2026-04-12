@@ -124,6 +124,7 @@ class RoutePlanner(object):
     def calculateDirectRoute(
             self,
             routingType: RoutingType,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             startHex: astronomer.HexPosition,
             finishHex: astronomer.HexPosition,
@@ -157,6 +158,7 @@ class RoutePlanner(object):
 
         return self._calculateRoute(
             routingType=routingType,
+            universe=universe,
             milieu=milieu,
             hexSequence=hexSequence,
             shipTonnage=shipTonnage,
@@ -174,6 +176,7 @@ class RoutePlanner(object):
     def calculateSequenceRoute(
             self,
             routingType: RoutingType,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             hexSequence: typing.Sequence[astronomer.HexPosition],
             shipTonnage: typing.Union[int, common.ScalarCalculation],
@@ -210,6 +213,7 @@ class RoutePlanner(object):
 
         return self._calculateRoute(
             routingType=routingType,
+            universe=universe,
             milieu=milieu,
             hexSequence=processedHexSequence,
             shipTonnage=shipTonnage,
@@ -236,6 +240,7 @@ class RoutePlanner(object):
     def _calculateRoute(
             self,
             routingType: RoutingType,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             hexSequence: typing.Sequence[astronomer.HexPosition], # This code assumes sequences of the same hex have already been removed
             shipTonnage: typing.Union[int, common.ScalarCalculation],
@@ -275,17 +280,14 @@ class RoutePlanner(object):
         if shipParsecsWithoutRefuelling < 1:
             raise ValueError('Ship\'s fuel capacity doesn\'t allow for jump-1')
 
-        # Take a local reference to the WorldManager singleton to avoid repeated calls to instance()
-        worldManager = astronomer.WorldManager.instance()
-
         sequenceLength = len(hexSequence)
         finishWorldIndex = sequenceLength - 1
 
         startHex = hexSequence[0]
-        startWorld = worldManager.worldByPosition(milieu=milieu, hex=startHex)
+        startWorld = universe.worldByPosition(milieu=milieu, hex=startHex)
 
         finishHex = hexSequence[finishWorldIndex]
-        finishWorld = worldManager.worldByPosition(milieu=milieu, hex=finishHex)
+        finishWorld = universe.worldByPosition(milieu=milieu, hex=finishHex)
 
         startWorldFuelType = None
         if routingType is RoutingType.Basic:
@@ -468,6 +470,7 @@ class RoutePlanner(object):
 
             potentialsIterator = self._yieldPotentialHexes(
                 routingType=routingType,
+                universe=universe,
                 milieu=milieu,
                 currentNode=currentNode,
                 targetHex=targetHex,
@@ -475,7 +478,6 @@ class RoutePlanner(object):
                 shipParsecsWithoutRefuelling=shipParsecsWithoutRefuelling,
                 closedSet=targetClosedSet,
                 hexData=targetHexData,
-                worldManager=worldManager,
                 pitCostCalculator=pitCostCalculator,
                 hexFilter=hexFilter,
                 filterResultCache=filterResultCache)
@@ -549,6 +551,7 @@ class RoutePlanner(object):
     def _yieldPotentialHexes(
             self,
             routingType: RoutingType,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             currentNode: _RouteNode,
             targetHex: astronomer.HexPosition,
@@ -562,7 +565,6 @@ class RoutePlanner(object):
                     int, # Best remaining fuel for a route reaching this hex
                     int # Parsecs from hex to target (note target not necessarily finish)
                 ]],
-            worldManager: astronomer.WorldManager,
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator],
             hexFilter: typing.Optional[HexFilterInterface] = None,
             filterResultCache: typing.Optional[typing.Dict[astronomer.HexPosition, bool]] = None
@@ -616,7 +618,7 @@ class RoutePlanner(object):
         if routingType is RoutingType.DeadSpace:
             alreadyProcessed = set()
 
-        worldList = worldManager.yieldWorldsInRadius(
+        worldList = universe.yieldWorldsInRadius(
             milieu=milieu,
             center=currentHex,
             radius=searchRadius)

@@ -782,20 +782,12 @@ class MapWidget(QtWidgets.QWidget):
     # structure didn't change
     _StateVersion = 'LocalMapWidget_v1'
 
-    # NOTE: Using the universe as part of the key isn't ideal as it means the
-    # tile cache can keep old universes in memory until all tiles for it have
-    # been evicted from the cache. I don't think it's really an issue at the
-    # moment but could become more of a problem depending on how I end up
-    # implementing universe editing. Solutions could be
-    # - Give each universe a unique id and use that in the key
-    # - Use a weakref.WeakKeyDictionary to map weak references to the universe
-    # to a LRUCache per universe
     _sharedTileCache = common.LRUCache[
         typing.Tuple[
             int, # Tile X
             int, # Tile Y
             int,
-            astronomer.Universe,
+            str, # Universe id
             astronomer.Milieu,
             cartographer.MapStyle,
             int], # MapOptions as an int
@@ -2221,7 +2213,7 @@ class MapWidget(QtWidgets.QWidget):
             tileX,
             tileY,
             tileScale,
-            self._universe,
+            self._universe.id(),
             self._milieu,
             self._renderer.style(),
             int(self._renderer.options()))
@@ -2321,7 +2313,7 @@ class MapWidget(QtWidgets.QWidget):
                     x,
                     y,
                     placeholderScale,
-                    self._universe,
+                    self._universe.id(),
                     self._milieu,
                     self._renderer.style(),
                     int(self._renderer.options()))
@@ -2414,7 +2406,7 @@ class MapWidget(QtWidgets.QWidget):
             tileX,
             tileY,
             tileScale,
-            self._universe,
+            self._universe.id(),
             self._milieu,
             # Use the settings for the renderer that is going to render the
             # tile to make sure the key is accurate

@@ -8,15 +8,17 @@ import typing
 class Trader(object):
     def __init__(
             self,
-            rules: traveller.Rules,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
+            rules: traveller.Rules,
             tradeOptionCallback: typing.Callable[[logic.TradeOption], typing.Any],
             traderInfoCallback: typing.Optional[typing.Callable[[str], typing.Any]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
-        self._rules = rules
+        self._universe = universe
         self._milieu = milieu
+        self._rules = rules
         self._tradeOptionCallback = tradeOptionCallback
         self._traderInfoCallback = traderInfoCallback
         self._progressCallback = progressCallback
@@ -145,6 +147,7 @@ class Trader(object):
         self._currentProgress = 0
 
         self._calculateTradeOptions(
+            universe=self._universe,
             milieu=self._milieu,
             purchaseWorld=purchaseWorld,
             saleWorlds=saleWorlds,
@@ -335,6 +338,7 @@ class Trader(object):
                 continue
 
             self._calculateTradeOptions(
+                universe=self._universe,
                 milieu=self._milieu,
                 purchaseWorld=purchaseWorld,
                 saleWorlds=saleWorlds,
@@ -362,6 +366,7 @@ class Trader(object):
 
     def _calculateTradeOptions(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             purchaseWorld: astronomer.World,
             saleWorlds: typing.Iterable[astronomer.World],
@@ -392,6 +397,7 @@ class Trader(object):
         for saleWorld in saleWorlds:
             jumpRoute = routePlanner.calculateDirectRoute(
                 routingType=routingType,
+                universe=universe,
                 milieu=milieu,
                 startHex=purchaseWorld.hex(),
                 finishHex=saleWorld.hex(),
@@ -422,6 +428,7 @@ class Trader(object):
                 continue
 
             routeLogistics = logic.calculateRouteLogistics(
+                universe=universe,
                 milieu=milieu,
                 jumpRoute=jumpRoute,
                 shipTonnage=shipTonnage,

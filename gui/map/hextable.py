@@ -251,6 +251,7 @@ class HexTable(gui.FrozenColumnListTable):
 
     def __init__(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -260,6 +261,7 @@ class HexTable(gui.FrozenColumnListTable):
             ) -> None:
         super().__init__(parent)
 
+        self._universe = universe
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
@@ -297,6 +299,16 @@ class HexTable(gui.FrozenColumnListTable):
                     column == self.ColumnType.Sector or \
                     column == self.ColumnType.Subsector:
                 self.setColumnWidth(index, 100)
+
+    def universe(self) -> astronomer.Universe:
+        return self._universe
+
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        if universe is self._universe:
+            return
+
+        self._universe = universe
+        self._syncContent()
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
@@ -616,9 +628,7 @@ class HexTable(gui.FrozenColumnListTable):
         try:
             uwp = economics = culture = pbg = worldTagColour = None
 
-            world = astronomer.WorldManager.instance().worldByPosition(
-                milieu=self._milieu,
-                hex=hex)
+            world = self._universe.worldByPosition(milieu=self._milieu, hex=hex)
             if world:
                 uwp = world.uwp()
                 economics = world.economics()
@@ -656,7 +666,7 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.sectorName())
                         tagColour = worldTagColour
                     else:
-                        sector = astronomer.WorldManager.instance().sectorByPosition(
+                        sector = self._universe.sectorByPosition(
                             milieu=self._milieu,
                             hex=hex)
                         tableItem.setData(
@@ -670,7 +680,7 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.subsectorName())
                         tagColour = worldTagColour
                     else:
-                        subsector = astronomer.WorldManager.instance().subsectorByPosition(
+                        subsector = self._universe.subsectorByPosition(
                             milieu=self._milieu,
                             hex=hex)
                         tableItem.setData(
@@ -959,13 +969,13 @@ class HexTable(gui.FrozenColumnListTable):
                             for ownerWorldRef in world.ownerWorldReferences():
                                 ownerSector = None
                                 if ownerWorldRef.sectorAbbreviation():
-                                    matchSectors = astronomer.WorldManager.instance().sectorByAbbreviation(
+                                    matchSectors = self._universe.sectorsByAbbreviation(
                                         milieu=self._milieu,
                                         abbreviation=ownerWorldRef.sectorAbbreviation())
                                     if matchSectors:
                                         ownerSector = matchSectors[0]
                                 else:
-                                    ownerSector = astronomer.WorldManager.instance().sectorBySectorIndex(
+                                    ownerSector = self._universe.sectorBySectorIndex(
                                         milieu=self._milieu,
                                         index=hex.sectorIndex())
 
@@ -975,7 +985,7 @@ class HexTable(gui.FrozenColumnListTable):
                                         sectorIndex=ownerSector.index(),
                                         offsetX=ownerWorldRef.hexX(),
                                         offsetY=ownerWorldRef.hexY())
-                                    ownerWorld = astronomer.WorldManager.instance().worldByPosition(
+                                    ownerWorld = self._universe.worldByPosition(
                                         milieu=self._milieu,
                                         hex=ownerHex)
 
@@ -997,13 +1007,13 @@ class HexTable(gui.FrozenColumnListTable):
                             for colonyWorldRef in world.colonyWorldReferences():
                                 colonySector = None
                                 if colonyWorldRef.sectorAbbreviation():
-                                    matchSectors = astronomer.WorldManager.instance().sectorByAbbreviation(
+                                    matchSectors = self._universe.sectorsByAbbreviation(
                                         milieu=self._milieu,
                                         abbreviation=colonyWorldRef.sectorAbbreviation())
                                     if matchSectors:
                                         colonySector = matchSectors[0]
                                 else:
-                                    colonySector = astronomer.WorldManager.instance().sectorBySectorIndex(
+                                    colonySector = self._universe.sectorBySectorIndex(
                                         milieu=self._milieu,
                                         index=hex.sectorIndex())
 
@@ -1013,7 +1023,7 @@ class HexTable(gui.FrozenColumnListTable):
                                         sectorIndex=colonySector.index(),
                                         offsetX=colonyWorldRef.hexX(),
                                         offsetY=colonyWorldRef.hexY())
-                                    colonyWorld = astronomer.WorldManager.instance().worldByPosition(
+                                    colonyWorld = self._universe.worldByPosition(
                                         milieu=self._milieu,
                                         hex=colonyHex)
 
@@ -1068,8 +1078,8 @@ class HexTable(gui.FrozenColumnListTable):
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=hex)
             elif world:
-                return astronomer.WorldManager.instance().canonicalHexName(
-                    milieu=world.milieu(),
+                return self._universe.canonicalHexName(
+                    milieu=self._milieu,
                     hex=world.hex())
 
         if world == None:
@@ -1241,13 +1251,13 @@ class HexTable(gui.FrozenColumnListTable):
                 for ownerWorldRef in world.ownerWorldReferences():
                     ownerSector = None
                     if ownerWorldRef.sectorAbbreviation():
-                        matchSectors = astronomer.WorldManager.instance().sectorByAbbreviation(
+                        matchSectors = self._universe.sectorsByAbbreviation(
                             milieu=self._milieu,
                             abbreviation=ownerWorldRef.sectorAbbreviation())
                         if matchSectors:
                             ownerSector = matchSectors[0]
                     else:
-                        ownerSector = astronomer.WorldManager.instance().sectorBySectorIndex(
+                        ownerSector = self._universe.sectorBySectorIndex(
                             milieu=self._milieu,
                             index=hex.sectorIndex())
 
@@ -1257,7 +1267,7 @@ class HexTable(gui.FrozenColumnListTable):
                             sectorIndex=ownerSector.index(),
                             offsetX=ownerWorldRef.hexX(),
                             offsetY=ownerWorldRef.hexY())
-                        ownerWorld = astronomer.WorldManager.instance().worldByPosition(
+                        ownerWorld = self._universe.worldByPosition(
                             milieu=self._milieu,
                             hex=ownerHex)
 
@@ -1287,13 +1297,13 @@ class HexTable(gui.FrozenColumnListTable):
                 for colonyWorldRef in world.colonyWorldReferences():
                     colonySector = None
                     if colonyWorldRef.sectorAbbreviation():
-                        matchSectors = astronomer.WorldManager.instance().sectorByAbbreviation(
+                        matchSectors = self._universe.sectorsByAbbreviation(
                             milieu=self._milieu,
                             abbreviation=colonyWorldRef.sectorAbbreviation())
                         if matchSectors:
                             colonySector = matchSectors[0]
                     else:
-                        colonySector = astronomer.WorldManager.instance().sectorBySectorIndex(
+                        colonySector = self._universe.sectorBySectorIndex(
                             milieu=self._milieu,
                             index=hex.sectorIndex())
 
@@ -1303,7 +1313,7 @@ class HexTable(gui.FrozenColumnListTable):
                             sectorIndex=colonySector.index(),
                             offsetX=colonyWorldRef.hexX(),
                             offsetY=colonyWorldRef.hexY())
-                        colonyWorld = astronomer.WorldManager.instance().worldByPosition(
+                        colonyWorld = self._universe.worldByPosition(
                             milieu=self._milieu,
                             hex=colonyHex)
 

@@ -165,13 +165,13 @@ def createHexToolTip(
             for ownerWorldRef in world.ownerWorldReferences():
                 ownerSector = None
                 if ownerWorldRef.sectorAbbreviation():
-                    matchSectors = astronomer.WorldManager.instance().sectorByAbbreviation(
+                    matchSectors = universe.sectorsByAbbreviation(
                         milieu=milieu,
                         abbreviation=ownerWorldRef.sectorAbbreviation())
                     if matchSectors:
                         ownerSector = matchSectors[0]
                 else:
-                    ownerSector = astronomer.WorldManager.instance().sectorBySectorIndex(
+                    ownerSector = universe.sectorBySectorIndex(
                         milieu=milieu,
                         index=hex.sectorIndex())
 
@@ -181,7 +181,7 @@ def createHexToolTip(
                         sectorIndex=ownerSector.index(),
                         offsetX=ownerWorldRef.hexX(),
                         offsetY=ownerWorldRef.hexY())
-                    ownerWorld = astronomer.WorldManager.instance().worldByPosition(
+                    ownerWorld = universe.worldByPosition(
                         milieu=milieu,
                         hex=ownerHex)
 
@@ -422,13 +422,13 @@ def createHexToolTip(
             for colonyWorldRef in world.colonyWorldReferences():
                 colonySector = None
                 if colonyWorldRef.sectorAbbreviation():
-                    matchSectors = astronomer.WorldManager.instance().sectorByAbbreviation(
+                    matchSectors = universe.sectorsByAbbreviation(
                         milieu=milieu,
                         abbreviation=colonyWorldRef.sectorAbbreviation())
                     if matchSectors:
                         colonySector = matchSectors[0]
                 else:
-                    colonySector = astronomer.WorldManager.instance().sectorBySectorIndex(
+                    colonySector = universe.sectorBySectorIndex(
                         milieu=milieu,
                         index=hex.sectorIndex())
 
@@ -438,7 +438,7 @@ def createHexToolTip(
                         sectorIndex=colonySector.index(),
                         offsetX=colonyWorldRef.hexX(),
                         offsetY=colonyWorldRef.hexY())
-                    colonyWorld = astronomer.WorldManager.instance().worldByPosition(
+                    colonyWorld = universe.worldByPosition(
                         milieu=milieu,
                         hex=colonyHex)
 

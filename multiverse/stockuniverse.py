@@ -104,3 +104,4 @@ def importStockUniverseSnapshot(
         snapshotTimestamp=importTimestamp,
         progressCallback=progressCallback,
         sourceDataHashes=sourceDataHashes)
+

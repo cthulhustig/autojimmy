@@ -553,6 +553,7 @@ class _CalculationContext:
         return isBetter
 
 def calculateRefuellingPlan(
+        universe: astronomer.Universe,
         milieu: astronomer.Milieu,
         jumpRoute: logic.JumpRoute,
         shipTonnage: typing.Union[int, common.ScalarCalculation],
@@ -606,6 +607,7 @@ def calculateRefuellingPlan(
     assert(parsecsWithoutRefuelling > 0)
 
     calculationContext = _processRoute(
+        universe=universe,
         milieu=milieu,
         jumpRoute=jumpRoute,
         shipFuelCapacity=shipFuelCapacity,
@@ -624,6 +626,7 @@ def calculateRefuellingPlan(
         diceRoller=diceRoller)
 
 def _processRoute(
+        universe: astronomer.Universe,
         milieu: astronomer.Milieu,
         jumpRoute: logic.JumpRoute,
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -650,9 +653,7 @@ def _processRoute(
         while reachableNodeIndex <= finishNodeIndex:
             fromHex = jumpRoute.nodeAt(reachableNodeIndex - 1)
             toHex = jumpRoute.nodeAt(reachableNodeIndex)
-            toWorld = astronomer.WorldManager.instance().worldByPosition(
-                milieu=milieu,
-                hex=toHex)
+            toWorld = universe.worldByPosition(milieu=milieu, hex=toHex)
             parsecs = fromHex.parsecsTo(toHex)
             totalParsecs += parsecs
             if parsecsToNextWorld == None:
@@ -669,9 +670,7 @@ def _processRoute(
             reachableNodeIndex += 1
 
         nodePos = jumpRoute.nodeAt(index=nodeIndex)
-        world = astronomer.WorldManager.instance().worldByPosition(
-            milieu=milieu,
-            hex=nodePos)
+        world = universe.worldByPosition(milieu=milieu, hex=nodePos)
         refuellingType = None
         fuelCostPerTon = None
         berthingCost = None

@@ -82,6 +82,9 @@ class UniverseManager(object):
     def universeInfos(self) -> typing.List[multiverse.UniverseInfo]:
         return UniverseManager._registry.listUniverses()
 
+    def universeInfo(self, universeId: str) -> typing.Optional[multiverse.UniverseInfo]:
+        return UniverseManager._registry.universeById(id=universeId)
+
     def stockUniverseInfo(self) -> typing.Optional[multiverse.UniverseInfo]:
         return UniverseManager._registry.stockUniverse()
 

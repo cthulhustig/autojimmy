@@ -6,11 +6,12 @@ import logging
 import logic
 import traveller
 import typing
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 
 class HexRadiusSelectDialog(gui.DialogEx):
     def __init__(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
@@ -47,7 +48,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
         selectionRadiusLayout.addStretch()
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=astronomer.WorldManager.instance().universe(),
+            universe=universe,
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -235,7 +236,8 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 self._overlays.append(handle)
             else:
                 try:
-                    worlds = astronomer.WorldManager.instance().worldsInRadius(
+                    universe = self._mapWidget.universe()
+                    worlds = universe.worldsInRadius(
                         milieu=self._mapWidget.milieu(),
                         center=centerHex,
                         searchRadius=searchRadius)

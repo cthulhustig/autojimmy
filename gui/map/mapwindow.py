@@ -12,6 +12,7 @@ class MapWindow(gui.WindowWidget):
             title='Universe Map',
             configSection='MapWindow')
 
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
@@ -23,7 +24,7 @@ class MapWindow(gui.WindowWidget):
         app.Config.instance().configChanged.connect(self._appConfigChanged)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=astronomer.WorldManager.instance().universe(),
+            universe=universe,
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -130,7 +131,10 @@ class MapWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
+        if option is app.ConfigOption.Universe:
+            self._mapWidget.setUniverse(
+                universe=astronomer.WorldManager.instance().universe())
+        elif option is app.ConfigOption.Milieu:
             self._mapWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._mapWidget.setRules(rules=newValue)

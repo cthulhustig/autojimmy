@@ -45,6 +45,8 @@ class World(object):
         self._isAnomaly = self._remarks.hasCustomRemark('{Anomaly}')
         self._isFuelCache = self._remarks.hasCustomRemark('{Fuel}')
 
+    # TODO: I suspect anything accessing this method isn't handling changing universe
+    # correctly. Should probably try to get rid of it
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
 

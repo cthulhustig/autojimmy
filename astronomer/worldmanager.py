@@ -7,6 +7,13 @@ import threading
 import traveller
 import typing
 
+# TODO: I think when I'm finished WorldManager should only be used for
+# setting the current universe and retrieving the current universe. All
+# other calls should be updated to be calls against a universe object
+# TODO: When I'm finished switching universe with ALL windows open should
+# not cause memory to bloat (i.e. nothing should be keeping the old universe
+# alive after the switch)
+
 # This object is thread safe, however the world objects are only thread safe
 # as they are currently read only (i.e. once loaded they never change).
 class WorldManager(object):
@@ -19,7 +26,6 @@ class WorldManager(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _universe: astronomer.Universe = None
-    _initialised = False
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -34,49 +40,21 @@ class WorldManager(object):
                     cls._instance = cls.__new__(cls)
         return cls._instance
 
-    @staticmethod
-    def initialise(
+    def setCurrentUniverse(
             self,
-            universeId: str
-            ) -> None:
-        if WorldManager._initialised:
-            raise RuntimeError('The WorldManager singleton has already been initialised')
-
-        WorldManager._universeId = universeId
-        WorldManager._initialised = True
-
-    def loadSectors(
-            self,
+            universeId: str,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> None:
-        # Check if the sectors are already loaded. For speed we don't lock the mutex, this
-        # works on the basis that checking the size of a dict is thread safe. This approach
-        # means, if the sectors are found to not be loaded, we need to check again after we've
-        # acquired the lock as another thread could sneak in and load the sectors between this
-        # point and the point where we acquire the lock
-        if self._universe:
-            return # Sector map already loaded
-
-        # Acquire lock while loading sectors
+        # Acquire lock while loading universe
         with self._lock:
-            if self._universe:
-                # Another thread already loaded the sectors between the point we found they
-                # weren't loaded and the point it acquired the mutex.
-                return
-
-            # TODO: This is a horrible hack that needs updated to support multiple
-            # custom universes and changing which universe is loaded based on which
-            # one the user has configured
-            universeInfo = None
-            for universeInfo in multiverse.UniverseManager.instance().universeInfos():
-                # Use custom universe if one is found, if not continue looking
-                if not universeInfo.isStock():
-                    break
+            universeInfo = multiverse.UniverseManager.instance().universeInfo(
+                universeId=universeId)
             if not universeInfo:
-                raise RuntimeError('No stock universe found')
+                raise ValueError(f'Unknown universe "{universeId}"')
 
+            logging.info(f'Loaded universe {universeId} ({universeInfo.name()})')
             sectorGenerator = multiverse.UniverseManager.instance().yieldUniverseSectors(
-                universeId=universeInfo.id(),
+                universeId=universeId,
                 progressCallback=progressCallback)
             sectors = []
             for dbSector in sectorGenerator:
@@ -116,376 +94,12 @@ class WorldManager(object):
                     continue
 
             self._universe = astronomer.Universe(
+                id=universeId,
                 sectors=sectors,
                 placeholderMilieu=WorldManager._PlaceholderMilieu)
 
     def universe(self) -> astronomer.Universe:
         return self._universe
-
-    def sectorNames(
-            self,
-            milieu: astronomer.Milieu
-            ) -> typing.Iterable[str]:
-        return self._universe.sectorNames(milieu=milieu)
-
-    def sectorByName(
-            self,
-            milieu: astronomer.Milieu,
-            name: str
-            ) -> astronomer.Sector:
-        return self._universe.sectorByName(milieu=milieu, name=name)
-
-    def sectorByAbbreviation(
-            self,
-            milieu: astronomer.Milieu,
-            abbreviation: str,
-            ) -> typing.List[astronomer.Sector]:
-        return self._universe.sectorsByAbbreviation(milieu=milieu, abbreviation=abbreviation)
-
-    def sectors(
-            self,
-            milieu: astronomer.Milieu,
-            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.List[astronomer.Sector]:
-        return self._universe.sectors(
-            milieu=milieu,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def subsectors(
-            self,
-            milieu: astronomer.Milieu,
-            filterCallback: typing.Callable[[astronomer.Subsector], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.List[astronomer.Subsector]:
-        return self._universe.subsectors(
-            milieu=milieu,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def worldBySectorHex(
-            self,
-            milieu: astronomer.Milieu,
-            sectorHex: str,
-            ) -> typing.Optional[astronomer.World]:
-        return self._universe.worldBySectorHex(
-            milieu=milieu,
-            sectorHex=sectorHex)
-
-    def worldByPosition(
-            self,
-            milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition,
-            includePlaceholders: bool = False
-            ) -> typing.Optional[astronomer.World]:
-        return self._universe.worldByPosition(
-            milieu=milieu,
-            hex=hex,
-            includePlaceholders=includePlaceholders)
-
-    def sectorByPosition(
-            self,
-            milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition,
-            includePlaceholders: bool = False
-            ) -> typing.Optional[astronomer.Sector]:
-        return self._universe.sectorByPosition(
-            milieu=milieu,
-            hex=hex,
-            includePlaceholders=includePlaceholders)
-
-    def sectorBySectorIndex(
-            self,
-            milieu: astronomer.Milieu,
-            index: astronomer.SectorIndex,
-            includePlaceholders: bool = False
-            ) -> typing.Optional[astronomer.Sector]:
-        return self._universe.sectorBySectorIndex(
-            milieu=milieu,
-            index=index,
-            includePlaceholders=includePlaceholders)
-
-    def subsectorByPosition(
-            self,
-            milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition,
-            includePlaceholders: bool = False
-            ) -> typing.Optional[astronomer.Subsector]:
-        return self._universe.subsectorByPosition(
-            milieu=milieu,
-            hex=hex,
-            includePlaceholders=includePlaceholders)
-
-    def sectorsInArea(
-            self,
-            milieu: astronomer.Milieu,
-            upperLeft: astronomer.HexPosition,
-            lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.List[astronomer.Sector]:
-        return self._universe.sectorsInArea(
-            milieu=milieu,
-            upperLeft=upperLeft,
-            lowerRight=lowerRight,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def subsectorsInArea(
-            self,
-            milieu: astronomer.Milieu,
-            upperLeft: astronomer.HexPosition,
-            lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.Subsector], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.List[astronomer.Subsector]:
-        return self._universe.subsectorsInArea(
-            milieu=milieu,
-            upperLeft=upperLeft,
-            lowerRight=lowerRight,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def worlds(
-            self,
-            milieu: astronomer.Milieu,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.List[astronomer.World]:
-        return self._universe.worlds(
-            milieu=milieu,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def worldsInArea(
-            self,
-            milieu: astronomer.Milieu,
-            upperLeft: astronomer.HexPosition,
-            lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.List[astronomer.World]:
-        return self._universe.worldsInArea(
-            milieu=milieu,
-            upperLeft=upperLeft,
-            lowerRight=lowerRight,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def worldsInRadius(
-            self,
-            milieu: astronomer.Milieu,
-            center: astronomer.HexPosition,
-            searchRadius: int,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.List[astronomer.World]:
-        return self._universe.worldsInRadius(
-            milieu=milieu,
-            center=center,
-            searchRadius=searchRadius,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def worldsInFlood(
-            self,
-            milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.List[astronomer.World]:
-        return self._universe.worldsInFlood(
-            milieu=milieu,
-            hex=hex,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def positionToSectorHex(
-            self,
-            milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition,
-            includePlaceholders: bool = False
-            ) -> str:
-        return self._universe.positionToSectorHex(
-            milieu=milieu,
-            hex=hex,
-            includePlaceholders=includePlaceholders)
-
-    def sectorHexToPosition(
-            self,
-            milieu: astronomer.Milieu,
-            sectorHex: str
-            ) -> typing.Optional[astronomer.HexPosition]:
-        return self._universe.sectorHexToPosition(
-            milieu=milieu,
-            sectorHex=sectorHex)
-
-    def stringToPosition(
-            self,
-            milieu: astronomer.Milieu,
-            string: str,
-            ) -> astronomer.HexPosition:
-        return self._universe.stringToPosition(
-            milieu=milieu,
-            string=string)
-
-    def canonicalHexName(
-            self,
-            milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition,
-            ) -> str:
-        return self._universe.canonicalHexName(
-            milieu=milieu,
-            hex=hex)
-
-    def mainByPosition(
-            self,
-            milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition
-            ) -> typing.Optional[astronomer.Main]:
-        return self._universe.mainByPosition(
-            milieu=milieu,
-            hex=hex)
-
-    def yieldSectors(
-            self,
-            milieu: astronomer.Milieu,
-            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.Generator[astronomer.Sector, None, None]:
-        return self._universe.yieldSectors(
-            milieu=milieu,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def yieldSectorsInArea(
-            self,
-            milieu: astronomer.Milieu,
-            upperLeft: astronomer.HexPosition,
-            lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.Generator[astronomer.Sector, None, None]:
-        return self._universe.yieldSectorsInArea(
-            milieu=milieu,
-            upperLeft=upperLeft,
-            lowerRight=lowerRight,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def yieldSubsectors(
-            self,
-            milieu: astronomer.Milieu,
-            filterCallback: typing.Callable[[astronomer.Subsector], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.Generator[astronomer.Subsector, None, None]:
-        return self._universe.yieldSubsectors(
-            milieu=milieu,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def yieldSubsectorsInArea(
-            self,
-            milieu: astronomer.Milieu,
-            upperLeft: astronomer.HexPosition,
-            lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.Subsector], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.Generator[astronomer.Subsector, None, None]:
-        return self._universe.yieldSubsectorsInArea(
-            milieu=milieu,
-            upperLeft=upperLeft,
-            lowerRight=lowerRight,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def yieldWorlds(
-            self,
-            milieu: astronomer.Milieu,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.Generator[astronomer.World, None, None]:
-        return self._universe.yieldWorlds(
-            milieu=milieu,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def yieldWorldsInArea(
-            self,
-            milieu: astronomer.Milieu,
-            upperLeft: astronomer.HexPosition,
-            lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.Generator[astronomer.World, None, None]:
-        return self._universe.yieldWorldsInArea(
-            milieu=milieu,
-            upperLeft=upperLeft,
-            lowerRight=lowerRight,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def yieldWorldsInRadius(
-            self,
-            milieu: astronomer.Milieu,
-            center: astronomer.HexPosition,
-            radius: int,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.Generator[astronomer.World, None, None]:
-        return self._universe.yieldWorldsInRadius(
-            milieu=milieu,
-            center=center,
-            radius=radius,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def yieldWorldsInFlood(
-            self,
-            milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.Generator[astronomer.World, None, None]:
-        return self._universe.yieldWorldsInFlood(
-            milieu=milieu,
-            hex=hex,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders)
-
-    def searchForWorlds(
-            self,
-            milieu: astronomer.Milieu,
-            searchString: str,
-            maxResults: int = 0 # 0 means unlimited
-            ) -> typing.List[astronomer.World]:
-        return self._universe.searchForWorlds(
-            milieu=milieu,
-            searchString=searchString,
-            maxResults=maxResults)
-
-    def searchForSubsectors(
-            self,
-            milieu: astronomer.Milieu,
-            searchString: str,
-            maxResults: int = 0 # 0 means unlimited
-            ) -> typing.List[astronomer.Subsector]:
-        return self._universe.searchForSubsectors(
-            milieu=milieu,
-            searchString=searchString,
-            maxResults=maxResults)
-
-    def searchForSectors(
-            self,
-            milieu: astronomer.Milieu,
-            searchString: str,
-            maxResults: int = 0 # 0 means unlimited
-            ) -> typing.List[astronomer.Sector]:
-        return self._universe.searchForSectors(
-            milieu=milieu,
-            searchString=searchString,
-            maxResults=maxResults)
 
     @staticmethod
     def _convertDbSector(

@@ -5,7 +5,6 @@ import enum
 import gui
 import logging
 import logic
-import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -171,6 +170,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
     def __init__(
             self,
+            universe: astronomer.Universe,
             outcomeColours: app.OutcomeColours,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -178,6 +178,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             ) -> None:
         super().__init__()
 
+        self._universe = universe
         self._outcomeColours = app.OutcomeColours(outcomeColours)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
@@ -238,6 +239,15 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     columnType == self.ColumnType.SaleSector or \
                     columnType == self.ColumnType.SaleSubsector:
                 self.setColumnWidth(column, 100)
+
+    def universe(self) -> astronomer.Universe:
+        return self._universe
+
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        if universe is self._universe:
+            return
+        self._universe = universe
+        self._syncContent()
 
     def outcomeColours(self) -> app.OutcomeColours:
         return app.OutcomeColours(self._outcomeColours)
@@ -703,7 +713,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=purchaseWorld.hex())
             else:
-                return astronomer.WorldManager.instance().canonicalHexName(
+                return self._universe.canonicalHexName(
                     milieu=purchaseWorld.milieu(),
                     hex=purchaseWorld.hex())
         elif columnType == self.ColumnType.SaleWorld or columnType == self.ColumnType.SaleSector or \
@@ -712,7 +722,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=saleWorld.hex())
             else:
-                return astronomer.WorldManager.instance().canonicalHexName(
+                return self._universe.canonicalHexName(
                     milieu=saleWorld.milieu(),
                     hex=saleWorld.hex())
         elif columnType == self.ColumnType.Notes:
@@ -723,6 +733,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 return gui.createStringToolTip('No notes')
         elif columnType == self.ColumnType.Jumps:
             return gui.createLogisticsToolTip(
+                universe=self._universe,
                 routeLogistics=tradeOption.routeLogistics(),
                 worldTagging=self._worldTagging,
                 taggingColours=self._taggingColours)

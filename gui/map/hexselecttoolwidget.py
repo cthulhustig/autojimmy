@@ -26,6 +26,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            universe: astronomer.Universe,
             milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
@@ -39,6 +40,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
+        self._universe = universe
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._mapStyle = mapStyle
@@ -52,7 +54,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self._enableShowInfoButton = False
 
         self._searchComboBox = gui.HexSelectComboBox(
-            universe=astronomer.WorldManager.instance().universe(),
+            universe=self._universe,
             milieu=self._milieu)
         self._searchComboBox.enableAutoComplete(True)
         self._searchComboBox.setMinimumWidth(
@@ -100,6 +102,19 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         QtWidgets.QWidget.setTabOrder(self._searchComboBox, self._mapSelectButton)
         QtWidgets.QWidget.setTabOrder(self._mapSelectButton, self._showHexButton)
         QtWidgets.QWidget.setTabOrder(self._showHexButton, self._showInfoButton)
+
+    def universe(self) -> astronomer.Universe:
+        return self._universe
+
+    def setUniverse(
+            self,
+            universe: astronomer.Universe
+            ) -> None:
+        if universe is self._universe:
+            return
+
+        self._universe = universe
+        self._searchComboBox.setUniverse(universe=self._universe)
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
@@ -195,9 +210,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         hex = self.selectedHex()
         if not hex:
             return None
-        return astronomer.WorldManager.instance().worldByPosition(
-            milieu=self._milieu,
-            hex=hex)
+        return self._universe.worldByPosition(milieu=self._milieu, hex=hex)
 
     def enableMapSelectButton(self, enable: bool) -> None:
         self._enableMapSelectButton = enable
@@ -283,6 +296,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def _mapSelectClicked(self) -> None:
         dlg = gui.HexSelectDialog(
+            universe=self._universe,
             milieu=self._milieu,
             rules=self._rules,
             mapStyle=self._mapStyle,

@@ -11,7 +11,7 @@ class RenderContext(object):
         def __init__(
                 self,
                 id: cartographer.LayerId,
-                action: typing.Callable[[], typing.NoReturn]
+                action: typing.Callable[['RenderContext'], None]
                 ) -> None:
             self.id = id
             self.action = action
@@ -213,8 +213,9 @@ class RenderContext(object):
 
             for layer in self._layers:
                 #with common.DebugTimer(string=str(layer.action)):
-                if True:
-                    layer.action()
+                # See the comment where _layers is defined for why this call looks
+                # a bit odd
+                layer.action(self)
 
     def clearCaches(self) -> None:
         self._sectorCache.clear()
@@ -223,48 +224,57 @@ class RenderContext(object):
         self._starfieldCache.clear()
 
     def _createLayers(self) -> None:
+        # NOTE: It is VERY IMPORTANT that unbound functions are used in this array rather than
+        # bound ones (RenderContext._drawBackground rather than self._drawBackground) as using
+        # bound functions causes a reference loop where the RenderContext is holding a list that
+        # contains references to its self. This was an issue as it would keep the old universe
+        # alive when switching universes. Technically the garbage collector can detect these
+        # kind of loops and free the memory. However, the garbage collector doesn't run this
+        # loop detection automatically based on the amount of memory that is currently allocated,
+        # it runs it based on the number of allocations being made (which my memory usage doesn't
+        # seem to trigger very reliably)
         self._layers: typing.List[RenderContext.LayerAction] = [
-            RenderContext.LayerAction(cartographer.LayerId.Background_Solid, self._drawBackground),
+            RenderContext.LayerAction(cartographer.LayerId.Background_Solid, RenderContext._drawBackground),
 
-            RenderContext.LayerAction(cartographer.LayerId.Background_NebulaTexture, self._drawNebulaBackground),
-            RenderContext.LayerAction(cartographer.LayerId.Background_Galaxy, self._drawGalaxyBackground),
+            RenderContext.LayerAction(cartographer.LayerId.Background_NebulaTexture, RenderContext._drawNebulaBackground),
+            RenderContext.LayerAction(cartographer.LayerId.Background_Galaxy, RenderContext._drawGalaxyBackground),
 
-            RenderContext.LayerAction(cartographer.LayerId.Background_PseudoRandomStars, self._drawPseudoRandomStars),
-            RenderContext.LayerAction(cartographer.LayerId.Background_Rifts, self._drawRifts),
+            RenderContext.LayerAction(cartographer.LayerId.Background_PseudoRandomStars, RenderContext._drawPseudoRandomStars),
+            RenderContext.LayerAction(cartographer.LayerId.Background_Rifts, RenderContext._drawRifts),
 
             #------------------------------------------------------------
             # Foreground
             #------------------------------------------------------------
-            RenderContext.LayerAction(cartographer.LayerId.Macro_Borders, self._drawMacroBorders),
-            RenderContext.LayerAction(cartographer.LayerId.Macro_Routes, self._drawMacroRoutes),
+            RenderContext.LayerAction(cartographer.LayerId.Macro_Borders, RenderContext._drawMacroBorders),
+            RenderContext.LayerAction(cartographer.LayerId.Macro_Routes, RenderContext._drawMacroRoutes),
 
-            RenderContext.LayerAction(cartographer.LayerId.Grid_Sector, self._drawSectorGrid),
-            RenderContext.LayerAction(cartographer.LayerId.Grid_Subsector, self._drawSubsectorGrid),
-            RenderContext.LayerAction(cartographer.LayerId.Grid_Parsec, self._drawParsecGrid),
+            RenderContext.LayerAction(cartographer.LayerId.Grid_Sector, RenderContext._drawSectorGrid),
+            RenderContext.LayerAction(cartographer.LayerId.Grid_Subsector, RenderContext._drawSubsectorGrid),
+            RenderContext.LayerAction(cartographer.LayerId.Grid_Parsec, RenderContext._drawParsecGrid),
 
-            RenderContext.LayerAction(cartographer.LayerId.Names_Subsector, self._drawSubsectorNames),
+            RenderContext.LayerAction(cartographer.LayerId.Names_Subsector, RenderContext._drawSubsectorNames),
 
-            RenderContext.LayerAction(cartographer.LayerId.Micro_BordersBackground, self._drawMicroBordersBackground),
-            RenderContext.LayerAction(cartographer.LayerId.Micro_BordersForeground, self._drawMicroBordersForeground),
-            RenderContext.LayerAction(cartographer.LayerId.Micro_Routes, self._drawMicroRoutes),
-            RenderContext.LayerAction(cartographer.LayerId.Micro_BorderExplicitLabels, self._drawMicroLabels),
+            RenderContext.LayerAction(cartographer.LayerId.Micro_BordersBackground, RenderContext._drawMicroBordersBackground),
+            RenderContext.LayerAction(cartographer.LayerId.Micro_BordersForeground, RenderContext._drawMicroBordersForeground),
+            RenderContext.LayerAction(cartographer.LayerId.Micro_Routes, RenderContext._drawMicroRoutes),
+            RenderContext.LayerAction(cartographer.LayerId.Micro_BorderExplicitLabels, RenderContext._drawMicroLabels),
 
-            RenderContext.LayerAction(cartographer.LayerId.Names_Sector, self._drawSectorNames),
-            RenderContext.LayerAction(cartographer.LayerId.Macro_GovernmentRiftRouteNames, self._drawMacroNames),
-            RenderContext.LayerAction(cartographer.LayerId.Macro_CapitalsAndHomeWorlds, self._drawCapitalsAndHomeWorlds),
-            RenderContext.LayerAction(cartographer.LayerId.Mega_GalaxyScaleLabels, self._drawMegaLabels),
+            RenderContext.LayerAction(cartographer.LayerId.Names_Sector, RenderContext._drawSectorNames),
+            RenderContext.LayerAction(cartographer.LayerId.Macro_GovernmentRiftRouteNames, RenderContext._drawMacroNames),
+            RenderContext.LayerAction(cartographer.LayerId.Macro_CapitalsAndHomeWorlds, RenderContext._drawCapitalsAndHomeWorlds),
+            RenderContext.LayerAction(cartographer.LayerId.Mega_GalaxyScaleLabels, RenderContext._drawMegaLabels),
 
-            RenderContext.LayerAction(cartographer.LayerId.Worlds_Background, self._drawWorldsBackground),
-            RenderContext.LayerAction(cartographer.LayerId.Worlds_Foreground, self._drawWorldsForeground),
-            RenderContext.LayerAction(cartographer.LayerId.Worlds_Overlays, self._drawWorldsOverlay),
+            RenderContext.LayerAction(cartographer.LayerId.Worlds_Background, RenderContext._drawWorldsBackground),
+            RenderContext.LayerAction(cartographer.LayerId.Worlds_Foreground, RenderContext._drawWorldsForeground),
+            RenderContext.LayerAction(cartographer.LayerId.Worlds_Overlays, RenderContext._drawWorldsOverlay),
 
             #------------------------------------------------------------
             # Overlays
             #------------------------------------------------------------
-            RenderContext.LayerAction(cartographer.LayerId.Overlay_DroyneChirperWorlds, self._drawDroyneOverlay),
-            RenderContext.LayerAction(cartographer.LayerId.Overlay_MinorHomeworlds, self._drawMinorHomeworldOverlay),
-            RenderContext.LayerAction(cartographer.LayerId.Overlay_AncientsWorlds, self._drawAncientWorldsOverlay),
-            RenderContext.LayerAction(cartographer.LayerId.Overlay_ReviewStatus, self._drawSectorReviewStatusOverlay),
+            RenderContext.LayerAction(cartographer.LayerId.Overlay_DroyneChirperWorlds, RenderContext._drawDroyneOverlay),
+            RenderContext.LayerAction(cartographer.LayerId.Overlay_MinorHomeworlds, RenderContext._drawMinorHomeworldOverlay),
+            RenderContext.LayerAction(cartographer.LayerId.Overlay_AncientsWorlds, RenderContext._drawAncientWorldsOverlay),
+            RenderContext.LayerAction(cartographer.LayerId.Overlay_ReviewStatus, RenderContext._drawSectorReviewStatusOverlay),
         ]
 
         self._updateLayerOrder()
