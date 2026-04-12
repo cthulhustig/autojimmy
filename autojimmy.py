@@ -5,7 +5,6 @@
 import depschecker
 
 import app
-import astronomer
 import enum
 import gui
 import gunsmith
@@ -363,6 +362,9 @@ class MainWindow(QtWidgets.QMainWindow):
             # Only show menu if you hold down shift and ctrl
             return
 
+        writeGarbageCollectorStatsAction = QtWidgets.QAction('Write Garbage Collector Stats', self)
+        writeGarbageCollectorStatsAction.triggered.connect(self._debugWriteGarbageCollectorStats)
+
         forceGarbageCollectionAction = QtWidgets.QAction('Force Garbage Collector', self)
         forceGarbageCollectionAction.triggered.connect(self._debugForceGarbageCollector)
 
@@ -370,13 +372,18 @@ class MainWindow(QtWidgets.QMainWindow):
         checkForTypeCyclesAction.triggered.connect(self._debugCheckForTypeCycles)
 
         menu = QtWidgets.QMenu(self)
+        menu.addAction(writeGarbageCollectorStatsAction)
         menu.addAction(forceGarbageCollectionAction)
         menu.addAction(checkForTypeCyclesAction)
         # NOTE: The passed in point isn't used to make showing the menu independent
         # of whatever control it's attached to
         menu.exec(QtGui.QCursor.pos())
 
-    def _debugForceGarbageCollector(self):
+    def _debugWriteGarbageCollectorStats(self) -> None:
+        app.debugWriteGarbageCollectorStats(
+            writeToLogLevel=app.currentLogLevel())
+
+    def _debugForceGarbageCollector(self) -> None:
         try:
             logLevel = app.currentLogLevel()
             app.debugWriteGarbageCollectorStats(writeToLogLevel=logLevel)
@@ -385,7 +392,7 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as ex:
             logging.error('Failed to force garbage collection', exc_info=ex)
 
-    def _debugCheckForTypeCycles(self):
+    def _debugCheckForTypeCycles(self) -> None:
         try:
             logLevel = app.currentLogLevel()
             app.debugCheckForTypeCycles(writeToLogLevel=logLevel)

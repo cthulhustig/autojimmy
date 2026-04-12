@@ -38,6 +38,14 @@ def debugWriteGarbageCollectorStats(
                 writeToTerminal=writeToTerminal,
                 writeToLogLevel=writeToLogLevel,
                 writeToFile=file)
+
+            objectCount = len(gc.get_objects(index))
+            _writeMessage(
+                message=f'  objects: {objectCount}',
+                writeToTerminal=writeToTerminal,
+                writeToLogLevel=writeToLogLevel,
+                writeToFile=file)
+
             for key, value in generation.items():
                 _writeMessage(
                     message=f'  {key}: {value}',
@@ -95,9 +103,9 @@ def debugCheckForTypeCycles(
             writeToLogLevel=writeToLogLevel,
             writeToFile=file)
 
-        for cycle in results:
+        for cycle, occurrences in results:
             _writeMessage(
-                message='Cycle:',
+                message=f'Cycle ({occurrences}):',
                 writeToTerminal=writeToTerminal,
                 writeToLogLevel=writeToLogLevel,
                 writeToFile=file)

@@ -8,7 +8,8 @@ import typing
 def findObjectCycles(
         targetType: typing.Optional[typing.Type] = None
         ) -> typing.List[typing.List[typing.Any]]:
-    graph: typing.Dict[int, typing.Tuple[typing.Any, typing.List[int]]] = {}
+    graph: typing.Dict[int, typing.List[int]] = {}
+    objects: typing.Dict[int, typing.Any] = {}
     indices: typing.Dict[int, int] = {}
     lowLink: typing.Dict[int, int] = {}
     stack: typing.List[int] = []
@@ -45,7 +46,7 @@ def findObjectCycles(
         stack.append(objId)
         onStack.add(objId)
 
-        _, refs = graph[objId]
+        refs = graph[objId]
 
         if refs:
             for refId in refs:
@@ -75,34 +76,45 @@ def findObjectCycles(
                 if refId == objId:
                     break
 
-            if len(scc) > 1 or (len(scc) == 1 and objId in graph[objId][1]):
+            if len(scc) > 1 or (len(scc) == 1 and objId in graph[objId]):
                 sccs.append(scc)
 
-    for obj in gc.get_objects():
-        if _isInteresting(obj):
-            refs = _filteredReferents(obj)
-            graph[id(obj)] = (obj, [id(r) for r in refs if _isInteresting(r)])
+    try:
+        for obj in gc.get_objects():
+            if _isInteresting(obj):
+                objId = id(obj)
+                refs = _filteredReferents(obj)
+                graph[objId] = [id(r) for r in refs if _isInteresting(r)]
+                objects[objId] = obj
 
-    for objId, (obj, _) in graph.items():
-        if objId not in indices:
-            _strongConnect(objId)
+        for objId in graph.keys():
+            if objId not in indices:
+                _strongConnect(objId)
 
-    result = []
-    for scc in sccs:
-        objs = [graph[objId][0] for objId in scc if objId in graph]
-        if targetType is not None:
-            if not any(isinstance(o, targetType) for o in objs):
-                continue
-        result.append(objs)
-    return result
+        results = []
+        for scc in sccs:
+            objs = [objects[objId] for objId in scc if objId in objects]
+            if targetType is not None:
+                if not any(isinstance(o, targetType) for o in objs):
+                    continue
+            results.append(objs)
 
-def findTypeCycles(
-        objectCycles: typing.Optional[typing.Iterable[typing.Sequence[typing.Any]]] = None
-        ) -> typing.List[typing.List[typing.Type]]:
+        return results
+    finally:
+        # Explicitly clear all containers as they can be massive and it looks
+        # like they can result in lots of garbage which can then skew results
+        # if the code gets run again
+        graph.clear()
+        objects.clear()
+        indices.clear()
+        lowLink.clear()
+        stack.clear()
+        onStack.clear()
+        sccs.clear()
 
-    if objectCycles is None:
-        objectCycles = findObjectCycles()
-
+def findTypeCycles() -> typing.List[typing.Tuple[
+            typing.List[typing.Type], # Cycle
+            int]]: # Occurrence count
     def _canonicalize(types: typing.List[type]) -> typing.Tuple[int, ...]:
         ids = [id(t) for t in types]
         n = len(ids)
@@ -118,13 +130,21 @@ def findTypeCycles(
         return min(fwdRotations + revRotations)
 
     typeCycles: typing.List[typing.List[typing.Type]] = []
-    seen: typing.Set[typing.Tuple[int, ...]] = set()
+    seen: typing.Dict[typing.Tuple[int, ...], int] = {}
 
-    for objectCycle in objectCycles:
-        typeCycle = [type(o) for o in objectCycle]
-        key = _canonicalize(typeCycle)
-        if key not in seen:
-            seen.add(key)
-            typeCycles.append(typeCycle)
+    try:
+        for objectCycle in findObjectCycles():
+            typeCycle = [type(o) for o in objectCycle]
+            key = _canonicalize(typeCycle)
 
-    return typeCycles
+            seenCount = seen.get(key)
+            if seenCount is None:
+                seen[key] = 1
+                typeCycles.append(typeCycle)
+            else:
+                seen[key] = seenCount + 1
+
+        return [(c, seen[_canonicalize(c)]) for c in typeCycles]
+    finally:
+        typeCycles.clear()
+        seen.clear()
