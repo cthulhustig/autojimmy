@@ -6,11 +6,6 @@ import multiverse
 import sqlite3
 import typing
 
-# TODO: I think I want to store something at the sector level that allows me to tell
-# if a sector in a custom universe has been modified since it was imported from the
-# stock universe. This could be a simple flag.
-
-
 class SectorInfo(object):
     def __init__(
             self,

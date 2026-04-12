@@ -7,13 +7,6 @@ import threading
 import traveller
 import typing
 
-# TODO: I think when I'm finished WorldManager should only be used for
-# setting the current universe and retrieving the current universe. All
-# other calls should be updated to be calls against a universe object
-# TODO: When I'm finished switching universe with ALL windows open should
-# not cause memory to bloat (i.e. nothing should be keeping the old universe
-# alive after the switch)
-
 # This object is thread safe, however the world objects are only thread safe
 # as they are currently read only (i.e. once loaded they never change).
 class WorldManager(object):

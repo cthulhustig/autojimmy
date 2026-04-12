@@ -27,9 +27,6 @@ class ConfigOption(enum.Enum):
     LogLevel = 100
 
     # Map
-    # TODO: Update all the windows that listen for milieu updates so they handle
-    # universe updates as well. Basically anything they push a new milieu to should
-    # also get the new universe pushed to it
     Universe = 200
     Milieu = 201
     MapStyle = 202

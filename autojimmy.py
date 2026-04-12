@@ -353,7 +353,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def _showRestartRequiredStatus(self) -> None:
         self.statusBar().showMessage('Status: Restart Required')
 
-    # TODO: Why does the status bar disappear after I show this menu
     def _showDebugMenu(
             self,
             point: QtCore.QPoint
