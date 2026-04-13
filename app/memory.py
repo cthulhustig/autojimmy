@@ -2,6 +2,15 @@ import gc
 import types
 import typing
 
+# Ignore these types as they aren't useful for the kind of
+# ownership loops we're trying to find
+_IgnoreObjectTypes = (
+    type,
+    types.FunctionType,
+    types.ModuleType,
+    types.FrameType,
+    types.CodeType)
+
 # This uses Tarjan's SCC algorithm to find loops in object
 # references tracked by the garbage collector
 # https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
@@ -17,24 +26,16 @@ def findObjectCycles(
     sccs: typing.List[typing.List[int]] = []
     index = 0
 
-    def _filteredReferents(obj):
-        # Bound method → only follow the instance
+    def _filteredReferents(obj: typing.Any) -> typing.Optional[typing.List[int]]:
+        # Use instance for bound methods
         if isinstance(obj, types.MethodType):
-            return [obj.__self__]
+            return [id(obj.__self__)]
 
-        # Function → ignore completely (no useful ownership)
-        if isinstance(obj, types.FunctionType):
-            return []
+        # Ignore irrelevant types
+        if isinstance(obj, _IgnoreObjectTypes):
+            return None
 
-        # Class → ignore (prevents function/class/global cycles)
-        if isinstance(obj, type):
-            return []
-
-        # Default
-        return gc.get_referents(obj)
-
-    def _isInteresting(obj: typing.Any) -> bool:
-        return not isinstance(obj, (type, types.ModuleType, types.FrameType, types.CodeType))
+        return [id(r) for r in gc.get_referents(obj) if not isinstance(r, _IgnoreObjectTypes)]
 
     def _strongConnect(objId: int) -> None:
         nonlocal index
@@ -46,7 +47,7 @@ def findObjectCycles(
         stack.append(objId)
         onStack.add(objId)
 
-        refs = graph[objId]
+        refs = graph.get(objId)
 
         if refs:
             for refId in refs:
@@ -76,18 +77,20 @@ def findObjectCycles(
                 if refId == objId:
                     break
 
-            if len(scc) > 1 or (len(scc) == 1 and objId in graph[objId]):
+            length = len(scc)
+            if length > 1 or (length == 1 and refs and objId in refs):
                 sccs.append(scc)
 
     try:
         for obj in gc.get_objects():
-            if _isInteresting(obj):
-                objId = id(obj)
-                refs = _filteredReferents(obj)
-                graph[objId] = [id(r) for r in refs if _isInteresting(r)]
-                objects[objId] = obj
+            objId = id(obj)
+            refs = _filteredReferents(obj)
+            if not refs:
+                continue
+            graph[objId] = refs
+            objects[objId] = obj
 
-        for objId in graph.keys():
+        for objId in objects.keys():
             if objId not in indices:
                 _strongConnect(objId)
 
