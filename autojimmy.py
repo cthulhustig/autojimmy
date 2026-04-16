@@ -210,8 +210,8 @@ class MainWindow(QtWidgets.QMainWindow):
         refereeGroupBox = QtWidgets.QGroupBox('Referee Tools')
         refereeGroupBox.setLayout(refereeLayout)
 
-        self._customSectorsButton = QtWidgets.QPushButton('Custom Sectors...', self)
-        self._customSectorsButton.clicked.connect(self._showCustomSectorsWindow)
+        self._customUniverseButton = QtWidgets.QPushButton('Custom Universe...', self)
+        self._customUniverseButton.clicked.connect(gui.WindowManager.instance().showCustomUniverseWindow)
 
         self._downloadButton = QtWidgets.QPushButton('Download Universe Data...', self)
         self._downloadButton.clicked.connect(self._downloadUniverse)
@@ -226,7 +226,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._aboutButton.customContextMenuRequested.connect(self._showDebugMenu)
 
         systemLayout = QtWidgets.QVBoxLayout()
-        systemLayout.addWidget(self._customSectorsButton)
+        systemLayout.addWidget(self._customUniverseButton)
         systemLayout.addWidget(self._downloadButton)
         systemLayout.addWidget(self._configurationButton)
         systemLayout.addWidget(self._aboutButton)
@@ -286,23 +286,6 @@ class MainWindow(QtWidgets.QMainWindow):
             noShowAgainId='AppWelcome')
         message.exec()
 
-    def _showCustomSectorsWindow(self) -> None:
-        try:
-            sectorDialog = gui.CustomSectorDialog(parent=self)
-        except Exception as ex:
-            message = 'Failed to open custom sector dialog'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(parent=self, text=message, exception=ex)
-            return
-
-        sectorDialog.exec()
-
-        if sectorDialog.modified():
-            self._showRestartRequiredStatus()
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'{app.AppName} will load changes to custom sectors when next started.')
-
     def _showConfiguration(self) -> None:
         try:
             configDialog = gui.ConfigDialog(parent=self)
@@ -320,6 +303,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 parent=self,
                 text=f'Some changes will only be applied when {app.AppName} is restarted.')
 
+    # TODO: If the the current universe is a custom universe this should probably give
+    # a warning telling the user that their universe won't update.
     def _downloadUniverse(self) -> None:
         try:
             result = _snapshotUpdateCheck(isStartup=False, parent=self)
@@ -492,7 +477,7 @@ def main() -> None:
             logging.warning('Failed to compare stock universe snapshot age.', exc_info=ex)
 
         # Check if we need to import legacy custom sectors
-        # TODO: At some point in the future I should be able to remove ths
+        # TODO: At some point in the future I should be able to remove this
         legacyCustomSectorsDir = os.path.join(appDir, 'custom_map')
         shouldImportLegacyCustomSectors = False
         try:

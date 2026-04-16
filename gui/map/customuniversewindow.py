@@ -6,15 +6,33 @@ import logic
 import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 
-class MapWindow(gui.WindowWidget):
-    def __init__(
-            self,
-            parent: typing.Optional['QtWidgets.QWidget'] = None
-            ) -> None:
+# TODO: Welcome message
+# TODO: Check if current universe is custom when window first opens and, if it's not, prompt to create a new one
+# - Should close window if user chooses not to create one. Not sure how best to do this it should really be destroyed rather than just hidden like other windows
+# - Needs to have the option to create one from the traveller map data or an empty universe
+# - Need the option to regenerate trade codes for a rule system
+#   - It might be worth having this option when creating a universe from traveller map data _and_ when importing a sector file into a universe
+# TODO: Ability to select the sector to import the new sector to
+# - Not sure if I still need a way to have it use the position specified in the metadata file
+# TODO: When creating first universe need to make sure it explains that it won't auto update from traveller map
+# TODO: Something that causes other windows to update when new sectors are imported
+# TODO: A list of which sectors have been modified so the user can jump between them
+# TODO: If you delete a custom sector it could give the user the option to restore the equivalent sector from the stock database
+# TODO: Option to update unmodified sectors to the versions from the stock database
+
+# TODO: Sector selection
+# - Need to update MapWidgetEx to support selection of different types of object either hexes or sectors
+#   - Selected sectors will be identified by the sector index rather than the sector object
+# - Need to update MapWidgetEx to be able to draw something to indicate which sectors are selected
+#   - I think it might make sense to make the _MapOverlay class public so anything can implement
+#     overlays. Probably makes sense to add some kind of support for depth ordering at the same
+#     time
+
+class CustomUniverseWindow(gui.WindowWidget):
+    def __init__(self) -> None:
         super().__init__(
-            title='Universe Map',
-            configSection='MapWindow',
-            parent=parent)
+            title='Custom Universe',
+            configSection='CustomUniverseWindow')
 
         universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
@@ -47,50 +65,8 @@ class MapWindow(gui.WindowWidget):
         self.resize(640, 480)
         self.setLayout(windowLayout)
 
-    def centerOnHex(
-            self,
-            hex: astronomer.HexPosition,
-            scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=64), # None keeps current scale
-            ) -> None:
-        self._mapWidget.centerOnHex(
-            hex=hex,
-            scale=scale,
-            immediate=self.isHidden())
-
-    def centerOnHexes(
-            self,
-            hexes: astronomer.HexPosition
-            ) -> None:
-        self._mapWidget.centerOnHexes(
-            hexes=hexes,
-            immediate=self.isHidden())
-
-    def setJumpRoute(
-            self,
-            jumpRoute: typing.Optional[logic.JumpRoute],
-            refuellingPlan: typing.Optional[logic.RefuellingPlan] = None
-            ) -> None:
-        self._mapWidget.setJumpRoute(
-            jumpRoute=jumpRoute,
-            refuellingPlan=refuellingPlan)
-        self._mapWidget.centerOnJumpRoute(
-            immediate=self.isHidden())
-
-    def highlightHexes(
-            self,
-            hexes: typing.Iterable[astronomer.HexPosition],
-            radius: float = 0.5,
-            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
-            ) -> None:
-        overlay = gui.HexPointsMapOverlay(
-            hexes=hexes,
-            radius=radius,
-            colour=colour,
-            depth=gui.MapWidgetEx.userOverlayMinDepth())
-        self._mapWidget.addOverlay(overlay=overlay)
-        self._mapWidget.centerOnHexes(
-            hexes=hexes,
-            immediate=self.isHidden())
+    def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
+        super().firstShowEvent(e)
 
     def loadSettings(self) -> None:
         super().loadSettings()

@@ -703,6 +703,12 @@ class WorldSearchWindow(gui.WindowWidget):
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
         self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
+        self._searchResultsOverlay = gui.HexPointsMapOverlay(
+            radius=0.5,
+            colour=QtGui.QColor('#7F8080FF'),
+            depth=gui.MapWidgetEx.userOverlayMinDepth())
+        self._mapWidget.addOverlay(overlay=self._searchResultsOverlay)
+
         # HACK: This wrapper widget for the map is a hacky fix for what looks
         # like a bug in QTabWidget that is triggered if you make one of the
         # controls it contains full screen (true borderless full screen not
@@ -886,7 +892,8 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTable.setTradeGoods(
             tradeGoods=self._tradeGoodTable.checkedTradeGoods())
         self._resultsCountLabel.setText(common.formatNumber(0))
-        self._mapWidget.clearHexHighlights()
+        self._searchResultsOverlay.clearHexes()
+        self._mapWidget.update()
 
         foundWorlds = None
         try:
@@ -964,7 +971,8 @@ class WorldSearchWindow(gui.WindowWidget):
     def _clearResults(self) -> None:
         self._worldTable.removeAllRows()
         self._resultsCountLabel.clear()
-        self._mapWidget.clearHexHighlights()
+        self._searchResultsOverlay.clearHexes()
+        self._mapWidget.update()
 
     def _updateWorldTableColumns(self, index: int) -> None:
         self._worldTable.setActiveColumns(self._worldColumns())
@@ -1052,9 +1060,8 @@ class WorldSearchWindow(gui.WindowWidget):
                     self._mapWrapperWidget)
 
             if highlightHexes:
-                # Clear old highlight when highlighting new worlds
-                self._mapWidget.clearHexHighlights()
-                self._mapWidget.highlightHexes(hexes=hexes)
+                self._searchResultsOverlay.setHexes(hexes=hexes)
+                self._mapWidget.update()
             self._mapWidget.centerOnHexes(hexes=hexes)
         except Exception as ex:
             message = 'Failed to show world(s) on map'

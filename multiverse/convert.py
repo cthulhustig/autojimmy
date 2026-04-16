@@ -14,6 +14,8 @@ import typing
 # code that did it as it had bit rotted
 # TODO: A lot of places where I'm constructing DB objects, I should
 # wrap them in a try/except and log and continue if they throw.
+# TODO: I need away to export sectors to metadata/tab formats (i.e. convert
+# DbObjects back to RawObjects then save)
 
 # Useful Test Locations:
 # - Sector: Tsebntsiatldlants

@@ -27,6 +27,15 @@ class ConfigOption(enum.Enum):
     LogLevel = 100
 
     # Map
+    # TODO: It might be good if this returned the universe object when it was
+    # retrieved. It would probably mean brining updating of the universe in
+    # the world manager into the config, but that might be a good thing as it
+    # means that can be done internally first rather than having to have the
+    # world manager as the first subscriber in the universe changed event so
+    # it can update and then further subscribers can retrieve the unvierse from
+    # the singleton. If I made this change then all the places where I'm getting
+    # other config values but then making a special case to get the universe from
+    # the world manager could be updated to get everything from the config
     Universe = 200
     Milieu = 201
     MapStyle = 202

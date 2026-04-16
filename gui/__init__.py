@@ -54,6 +54,7 @@ from .map.tooltips import *
 from .map.hextooltipprovider import *
 from .map.hexselectcombobox import *
 from .map.mapwidget import *
+from .map.mapoverlays import *
 from .map.mapwidgetex import *
 from .map.mapwindow import *
 from .map.hexradiusselectdialog import *
@@ -63,6 +64,7 @@ from .map.hextable import *
 from .map.hextablemanagerwidget import *
 from .map.hexdetailswindow import *
 from .map.customsectordialog import *
+from .map.customuniversewindow import *
 from .trader.tooltips import *
 from .trader.skillspinbox import *
 from .trader.shipcontrols import *

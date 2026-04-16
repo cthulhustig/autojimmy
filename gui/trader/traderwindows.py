@@ -281,6 +281,7 @@ class _BaseTraderWindow(gui.WindowWidget):
 
     def _setupTradeOptionControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         outcomeColours = app.Config.instance().value(option=app.ConfigOption.OutcomeColours)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
@@ -303,6 +304,7 @@ class _BaseTraderWindow(gui.WindowWidget):
 
         self._tradeOptionsTable = gui.TradeOptionsTable(
             universe=universe,
+            milieu=milieu,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -352,6 +354,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             self._clearTradeOptions()
         elif option is app.ConfigOption.Milieu:
             self._hexTooltipProvider.setMilieu(milieu=newValue)
+            self._tradeOptionsTable.setMilieu(milieu=newValue)
             # Changing milieu invalidates existing trade options as the world
             # data they were generated from has changed
             self._clearTradeOptions()

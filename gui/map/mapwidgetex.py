@@ -959,6 +959,10 @@ class MapWidgetEx(QtWidgets.QWidget):
         SingleSelect = 1
         MultiSelect = 2
 
+    class SelectionType(enum.Enum):
+        HexSelect = 0
+        SectorSelect = 1
+
     class MenuAction(enum.Enum):
         ExportImage = 0
 
@@ -978,6 +982,15 @@ class MapWidgetEx(QtWidgets.QWidget):
     _DefaultHomeWorldX = -0.5
     _DefaultHomeWorldY = -0.5
     _DefaultHomeLinearScale = 1
+
+    # These are offsets applied to the user overlay min depth value
+    # specified by the map widget
+    _JumpRouteOverlayDepth = gui.MapWidget.userOverlayMinDepth() + 1
+    _HexSelectionOverlayDepth = gui.MapWidget.userOverlayMinDepth() + 2
+
+    # When creating overlays the owner is responsible for checking the user overlay min
+    # depth value and not creating overlays with a depth under that value
+    _UserOverlayMinDepth = gui.MapWidget.userOverlayMinDepth() + 100
 
     def __init__(
             self,
@@ -1011,12 +1024,10 @@ class MapWidgetEx(QtWidgets.QWidget):
             linear=MapWidgetEx._DefaultHomeLinearScale)
 
         self._selectionMode = MapWidgetEx.SelectionMode.NoSelect
+        self._selectionType = MapWidgetEx.SelectionType.HexSelect
         self._enableDeadSpaceSelection = False
-        self._selectedHexes: typing.Dict[
-            astronomer.HexPosition,
-            str # Overlay key
-            ] = {}
-        self._selectionOutlineHandle = None
+        self._selectedHexes: typing.Set[astronomer.HexPosition] = set()
+        self._selectionOverlay = None
         self._infoHex = None
 
         fontMetrics = QtGui.QFontMetrics(QtWidgets.QApplication.font())
@@ -1343,6 +1354,8 @@ class MapWidgetEx(QtWidgets.QWidget):
         action.triggered.connect(self.promptExportImage)
         self.setMenuAction(MapWidgetEx.MenuAction.ExportImage, action)
 
+        self._jumpRouteOverlay = None
+
     def universe(self) -> astronomer.Universe:
         return self._universe
 
@@ -1604,114 +1617,62 @@ class MapWidgetEx(QtWidgets.QWidget):
             immediate=immediate)
 
     def hasJumpRoute(self) -> bool:
-        return self._mapWidget.hasJumpRoute()
+        return self._jumpRouteOverlay is not None
 
     def setJumpRoute(
             self,
             jumpRoute: typing.Optional[logic.JumpRoute],
-            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
+            refuellingPlan: typing.Optional[logic.RefuellingPlan] = None
             ) -> None:
-        self._mapWidget.setJumpRoute(
+        if jumpRoute is None:
+            self.clearJumpRoute()
+            return
+
+        if self._jumpRouteOverlay is None:
+            self._jumpRouteOverlay = gui.JumpRouteMapOverlay(
+                depth=MapWidgetEx._JumpRouteOverlayDepth)
+            self._mapWidget.addOverlay(overlay=self._jumpRouteOverlay)
+
+        self._jumpRouteOverlay.setRoute(
             jumpRoute=jumpRoute,
             refuellingPlan=refuellingPlan)
+        self.update()
 
     def clearJumpRoute(self) -> None:
-        self._mapWidget.clearJumpRoute()
+        if self._jumpRouteOverlay is None:
+            return
+        self._mapWidget.removeOverlay(self._jumpRouteOverlay)
+        self._jumpRouteOverlay = None
+        self.update()
 
     def centerOnJumpRoute(
             self,
             immediate: bool = False
             ) -> None:
-        self._mapWidget.centerOnJumpRoute(immediate=immediate)
+        if not self._jumpRouteOverlay:
+            return
+        jumpRoute = self._jumpRouteOverlay.jumpRoute()
+        if not jumpRoute:
+            return
+        self.centerOnHexes(
+            hexes=jumpRoute.nodes(),
+            immediate=immediate)
 
-    def highlightHex(
+    @staticmethod
+    def userOverlayMinDepth() -> int:
+        return MapWidgetEx._UserOverlayMinDepth
+
+    def addOverlay(
             self,
-            hex: astronomer.HexPosition,
-            radius: float = 0.5,
-            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
+            overlay: gui.MapOverlay,
             ) -> None:
-        self._mapWidget.highlightHex(
-            hex=hex,
-            radius=radius,
-            colour=colour)
-
-    def highlightHexes(
-            self,
-            hexes: typing.Iterable[astronomer.HexPosition],
-            radius: float = 0.5,
-            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
-            ) -> None:
-        self._mapWidget.highlightHexes(
-            hexes=hexes,
-            radius=radius,
-            colour=colour)
-
-    def clearHexHighlight(
-            self,
-            hex: astronomer.HexPosition
-            ) -> None:
-        self._mapWidget.clearHexHighlight(hex=hex)
-
-    def clearHexHighlights(self) -> None:
-        self._mapWidget.clearHexHighlights()
-
-    # Create an overlay with a primitive at each hex
-    def createHexOverlay(
-            self,
-            hexes: typing.Iterable[astronomer.HexPosition],
-            primitive: gui.MapPrimitiveType,
-            fillColour: typing.Optional[QtGui.QColor] = None,
-            fillMap: typing.Optional[typing.Mapping[
-                astronomer.HexPosition,
-                QtGui.QColor
-            ]] = None,
-            radius: float = 0.5 # Only used for circle primitive
-            ) -> str:
-        return self._mapWidget.createHexOverlay(
-            hexes=hexes,
-            primitive=primitive,
-            fillColour=fillColour,
-            fillMap=fillMap,
-            radius=radius)
-
-    def createHexBordersOverlay(
-            self,
-            hexes: typing.Iterable[astronomer.HexPosition],
-            lineColour: typing.Optional[QtGui.QColor] = None,
-            lineWidth: typing.Optional[int] = None, # In pixels
-            fillColour: typing.Optional[QtGui.QColor] = None,
-            includeInterior: bool = True
-            ) -> str:
-        return self._mapWidget.createHexBordersOverlay(
-            hexes=hexes,
-            lineColour=lineColour,
-            lineWidth=lineWidth,
-            fillColour=fillColour,
-            includeInterior=includeInterior)
-
-    def createRadiusOverlay(
-            self,
-            center: astronomer.HexPosition,
-            radius: int,
-            lineColour: typing.Optional[QtGui.QColor] = None,
-            lineWidth: typing.Optional[int] = None, # In pixels
-            fillColour: typing.Optional[QtGui.QColor] = None,
-            ) -> str:
-        radiusHexes = list(center.yieldRadiusHexes(
-            radius=radius,
-            includeInterior=False))
-        return self._mapWidget.createHexBordersOverlay(
-            hexes=radiusHexes,
-            fillColour=fillColour,
-            lineColour=lineColour,
-            lineWidth=lineWidth,
-            includeInterior=False)
+        self._mapWidget.addOverlay(overlay=overlay)
 
     def removeOverlay(
             self,
-            handle: str
+            overlay: gui.MapOverlay
             ) -> None:
-        self._mapWidget.removeOverlay(handle=handle)
+        self._mapWidget.removeOverlay(overlay)
 
     def createPixmap(self) -> QtGui.QPixmap:
         return self._mapWidget.createPixmap()
@@ -1720,7 +1681,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         return len(self._selectedHexes) > 0
 
     def selectedHexes(self) -> typing.Iterable[astronomer.HexPosition]:
-        return list(self._selectedHexes.keys())
+        return list(self._selectedHexes)
 
     def selectHex(
             self,
@@ -1746,14 +1707,20 @@ class MapWidgetEx(QtWidgets.QWidget):
             with gui.SignalBlocker(widget=self):
                 self.clearSelectedHexes()
 
+        self._selectedHexes.add(hex)
+
         with gui.SignalBlocker(widget=self._searchWidget):
             self._searchWidget.setCurrentHex(hex=hex)
 
-        self._createSelectionHexOverlay(hex=hex)
-        self._updateSelectionOutline()
+        if self._selectionOverlay is None:
+            self._createHexSelectionOverlay()
+        else:
+            self._selectionOverlay.addHex(hex=hex)
 
         if setInfoHex:
             self.setInfoHex(hex=hex)
+
+        self.update()
 
         self.selectionChanged.emit()
 
@@ -1784,26 +1751,37 @@ class MapWidgetEx(QtWidgets.QWidget):
                 setInfoHex=False)
             return
 
+        oldCount = len(self._selectedHexes)
+        self._selectedHexes.update(hexes)
+        newCount = len(self._selectedHexes)
+        selectionChanged = newCount != oldCount
+        if not selectionChanged:
+            return
+
         with gui.SignalBlocker(widget=self._searchWidget):
             self._searchWidget.setCurrentHex(hex=hexes[0])
 
-        selectionChanged = False
-        for hex in hexes:
-            if hex not in self._selectedHexes:
-                self._createSelectionHexOverlay(hex=hex)
-                selectionChanged = True
+        if self._selectionOverlay is None:
+            self._createHexSelectionOverlay()
+        else:
+            self._selectionOverlay.addHexes(hexes=self._selectedHexes)
 
-        if selectionChanged:
-            self._updateSelectionOutline()
-            self.selectionChanged.emit()
+        self.update()
+
+        self.selectionChanged.emit()
 
     def deselectHex(
             self,
             hex: astronomer.HexPosition
             ) -> None:
-        if not self._removeSelectionHexOverlay(hex=hex):
-            return # Hex wasn't selected
-        self._updateSelectionOutline()
+        if hex not in self._selectedHexes:
+            return
+
+        self._selectedHexes.remove(hex)
+        if self._selectionOverlay is not None:
+            self._selectionOverlay.removeHex(hex)
+
+        self.update()
 
         if self._selectionMode != MapWidgetEx.SelectionMode.NoSelect:
             self.selectionChanged.emit()
@@ -1812,12 +1790,14 @@ class MapWidgetEx(QtWidgets.QWidget):
         if not self._selectedHexes:
             return # Nothing to do
 
-        for overlayHandle in self._selectedHexes.values():
-            self.removeOverlay(handle=overlayHandle)
         self._selectedHexes.clear()
-        self._updateSelectionOutline()
+        if self._selectionOverlay is not None:
+            self._selectionOverlay.clearHexes()
 
-        self.selectionChanged.emit()
+        self.update()
+
+        if self._selectionMode != MapWidgetEx.SelectionMode.NoSelect:
+            self.selectionChanged.emit()
 
     def selectionMode(self) -> 'MapWidgetEx.SelectionMode':
         return self._selectionMode
@@ -1830,10 +1810,10 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         if self._selectionMode == MapWidgetEx.SelectionMode.NoSelect:
             if self._selectedHexes:
-                for overlayHandle in self._selectedHexes.values():
-                    self.removeOverlay(handle=overlayHandle)
                 self._selectedHexes.clear()
-                self._updateSelectionOutline()
+                if self._selectionOverlay is not None:
+                    self._removeSelectionHexOverlay()
+                self.update()
                 # NOTE: The selection changed signal is intentionally not generated
                 # as we're now in no select mode
         elif self._selectionMode == MapWidgetEx.SelectionMode.SingleSelect:
@@ -1841,12 +1821,12 @@ class MapWidgetEx(QtWidgets.QWidget):
             selectionChanged = False
             while len(self._selectedHexes) > 1:
                 hex = next(iter(self._selectedHexes))
-                overlayHandle = self._selectedHexes[hex]
-                self.removeOverlay(handle=overlayHandle)
-                del self._selectedHexes[hex]
+                self._selectedHexes.discard(hex)
                 selectionChanged = True
+
             if selectionChanged:
-                self._updateSelectionOutline()
+                self._updateSelectionOverlay()
+                self.update()
                 self.selectionChanged.emit()
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
@@ -1856,16 +1836,17 @@ class MapWidgetEx(QtWidgets.QWidget):
         if not self._enableDeadSpaceSelection:
             # Deselect any dead space
             selectionChanged = False
-            for hex in list(self._selectedHexes.keys()):
+            for hex in list(self._selectedHexes):
                 world = self._universe.worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if not world:
-                    self._removeSelectionHexOverlay(hex=hex)
+                    self._selectedHexes.discard(hex)
                     selectionChanged = True
 
             if selectionChanged:
-                self._updateSelectionOutline()
+                self._updateSelectionOverlay()
+                self.update()
                 self.selectionChanged.emit()
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
@@ -2301,43 +2282,32 @@ class MapWidgetEx(QtWidgets.QWidget):
                             configSize.width()),
             vertOffset)
 
-    def _createSelectionHexOverlay(
-            self,
-            hex: astronomer.HexPosition,
-            ) -> None:
-        self._selectedHexes[hex] = self.createHexOverlay(
-            hexes=[hex],
-            primitive=gui.MapPrimitiveType.Hex,
-            fillColour=self.selectionFillColour())
+    def _createHexSelectionOverlay(self) -> None:
+        if self._selectionOverlay is not None:
+            self._removeSelectionHexOverlay()
 
-    def _removeSelectionHexOverlay(
-            self,
-            hex: astronomer.HexPosition
-            ) -> bool:
-        overlayHandle = self._selectedHexes.get(hex)
-        if not overlayHandle:
-            return False
+        self._selectionOverlay = gui.HexBoundaryMapOverlay(
+            hexes=self._selectedHexes,
+            includeInterior=True,
+            lineColour=self.selectionOutlineColour(),
+            lineWidth=self.selectionOutlineWidth(),
+            fillColour=self.selectionFillColour(),
+            depth=MapWidgetEx._HexSelectionOverlayDepth)
+        self._mapWidget.addOverlay(overlay=self._selectionOverlay)
 
-        self.removeOverlay(handle=overlayHandle)
-        del self._selectedHexes[hex]
-        return True
+    def _removeSelectionHexOverlay(self) -> None:
+        if self._selectionOverlay is None:
+            return
+        self._mapWidget.removeOverlay(self._selectionOverlay)
+        self._selectionOverlay = None
 
-    def _updateSelectionOutline(self) -> None:
-        if self._selectionOutlineHandle:
-            self.removeOverlay(handle=self._selectionOutlineHandle)
-            self._selectionOutlineHandle = None
-        if self._selectedHexes:
-            self._selectionOutlineHandle = self.createHexBordersOverlay(
-                hexes=self._selectedHexes.keys(),
-                lineColour=self.selectionOutlineColour(),
-                lineWidth=self.selectionOutlineWidth())
-
-    def _recreateSelectionOverlays(self):
-        for overlayHandle in self._selectedHexes.values():
-            self.removeOverlay(handle=overlayHandle)
-        for hex in self._selectedHexes.keys():
-            self._createSelectionHexOverlay(hex=hex)
-        self._updateSelectionOutline()
+    # TODO: This probably needs a heuristic where, if the
+    # selection count is over a given amount, it draws a
+    # simplified selection box or something like that
+    def _updateSelectionOverlay(self) -> None:
+        if self._selectionOverlay is None:
+            return
+        self._selectionOverlay.setHexes(self._selectedHexes)
 
     def _searchHexTextEdited(self) -> None:
         # Clear the current info hex (and hide the widget) as soon as the user starts editing the

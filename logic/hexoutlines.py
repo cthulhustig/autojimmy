@@ -147,8 +147,7 @@ def calculateCompleteHexOutlines(
         hexes: typing.Iterable[astronomer.HexPosition]
         ) -> typing.Iterable[typing.Iterable[typing.Tuple[float, float]]]:
     hexDataMap = {hex: {} for hex in hexes}
-    for hex in hexes:
-        edgeMap = hexDataMap[hex]
+    for hex, edgeMap in hexDataMap.items():
         for edge in astronomer.HexEdge:
             if edge in edgeMap:
                 # This edge has already been processed when the adjacent hex was

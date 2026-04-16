@@ -713,6 +713,12 @@ class JumpRouteWindow(gui.WindowWidget):
     _JumpRatingOverlayLightStyleColour = QtGui.QColor('#7F4A03FC')
     _JumpRatingOverlayLineWidth = 6
 
+    _WorldTaggingOverlayDepth = gui.MapWidgetEx.userOverlayMinDepth() + 1
+    _JumpRatingOverlayDepth = gui.MapWidgetEx.userOverlayMinDepth() + 2
+    _StartFinishOverlayDepth = gui.MapWidgetEx.userOverlayMinDepth() + 3
+    _WaypointsOverlayDepth = gui.MapWidgetEx.userOverlayMinDepth() + 4
+    _AvoidHexesOverlayDepth = gui.MapWidgetEx.userOverlayMinDepth() + 5
+
     def __init__(self) -> None:
         super().__init__(
             title='Jump Route Planner',
@@ -722,7 +728,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRoute = None
         self._routeLogistics = None
         self._shouldZoomToNewRoute = False
-        self._jumpOverlayHandles = set()
+        self._jumpOverlays: typing.List[gui.MapOverlay] = []
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
             universe=astronomer.WorldManager.instance().universe(),
@@ -1370,6 +1376,24 @@ class JumpRouteWindow(gui.WindowWidget):
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
         self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
+
+        self._startFinishOverlay = gui.HexPointsMapOverlay(
+            radius=0.5,
+            colour=QtGui.QColor('#7F00FF00'),
+            depth=JumpRouteWindow._StartFinishOverlayDepth)
+        self._mapWidget.addOverlay(overlay=self._startFinishOverlay)
+
+        self._waypointsOverlay = gui.HexPointsMapOverlay(
+            radius=0.3,
+            colour=QtGui.QColor('#7F0066FF'),
+            depth=JumpRouteWindow._WaypointsOverlayDepth)
+        self._mapWidget.addOverlay(overlay=self._waypointsOverlay)
+
+        self._avoidHexesOverlay = gui.HexPointsMapOverlay(
+            radius=0.3,
+            colour=QtGui.QColor('#7FFF0000'),
+            depth=JumpRouteWindow._AvoidHexesOverlayDepth)
+        self._mapWidget.addOverlay(overlay=self._avoidHexesOverlay)
 
         self._jumpRatingOverlayToggle = gui.ToggleButton()
         self._jumpRatingOverlayToggle.setChecked(False)
@@ -2349,9 +2373,9 @@ class JumpRouteWindow(gui.WindowWidget):
         self._showHexesOnMap(hexes=self._refuellingPlanTable.hexes())
 
     def _updateJumpOverlays(self) -> None:
-        for handle in self._jumpOverlayHandles:
-            self._mapWidget.removeOverlay(handle=handle)
-        self._jumpOverlayHandles.clear()
+        for overlay in self._jumpOverlays:
+            self._mapWidget.removeOverlay(overlay)
+        self._jumpOverlays.clear()
 
         showJumpRatingOverlay = self._jumpRatingOverlayToggle.isChecked()
         showWorldTaggingOverlay = self._worldTaggingOverlayToggle.isChecked()
@@ -2362,58 +2386,59 @@ class JumpRouteWindow(gui.WindowWidget):
         jumpRating = self._shipJumpRatingSpinBox.value()
 
         if startHex and showJumpRatingOverlay:
-            mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
-            isDarkMapStyle = gui.isDarkMapStyle(style=mapStyle)
-            colour = self._JumpRatingOverlayDarkStyleColour \
-                if isDarkMapStyle else \
-                self._JumpRatingOverlayLightStyleColour
-            handle = self._mapWidget.createRadiusOverlay(
-                center=startHex,
-                radius=jumpRating,
-                lineColour=colour,
-                lineWidth=self._JumpRatingOverlayLineWidth)
-            self._jumpOverlayHandles.add(handle)
+            try:
+                mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+                isDarkMapStyle = gui.isDarkMapStyle(style=mapStyle)
+                colour = self._JumpRatingOverlayDarkStyleColour \
+                    if isDarkMapStyle else \
+                    self._JumpRatingOverlayLightStyleColour
+
+                overlay = gui.HexRadiusMapOverlay(
+                    center=startHex,
+                    radius=jumpRating,
+                    lineColour=colour,
+                    lineWidth=JumpRouteWindow._JumpRatingOverlayLineWidth,
+                    depth=JumpRouteWindow._JumpRatingOverlayDepth)
+                self._mapWidget.addOverlay(overlay=overlay)
+                self._jumpOverlays.append(overlay)
+            except Exception as ex:
+                logging.warning(
+                    f'An exception occurred while creating the jump radius overlay',
+                    exc_info=ex)
 
         if startHex and showWorldTaggingOverlay:
-            universe = astronomer.WorldManager.instance().universe()
-            milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
-            worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
-            taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
-
             try:
+                universe = astronomer.WorldManager.instance().universe()
+                milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+                worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+                taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
+
+                tagLevelColours = {}
+                for tagLevel in logic.TagLevel:
+                    colour = QtGui.QColor(taggingColours.colour(level=tagLevel))
+                    colour.setAlpha(128)
+                    tagLevelColours[tagLevel] = colour
+
                 worlds = universe.worldsInRadius(
                     milieu=milieu,
                     center=startHex,
-                    searchRadius=jumpRating)
+                    searchRadius=jumpRating,
+                    # Don't highlight start/finish worlds
+                    filterCallback=lambda world: (world.hex() != startHex) and (world.hex() != finishHex))
+
+                overlay = gui.WorldTaggingMapOverlay(
+                    worlds=worlds,
+                    worldTagging=worldTagging,
+                    desirableColour=tagLevelColours.get(logic.TagLevel.Desirable),
+                    warningColour=tagLevelColours.get(logic.TagLevel.Warning),
+                    dangerColour=tagLevelColours.get(logic.TagLevel.Danger),
+                    depth=JumpRouteWindow._WorldTaggingOverlayDepth)
+                self._mapWidget.addOverlay(overlay=overlay)
+                self._jumpOverlays.append(overlay)
             except Exception as ex:
-                startString = universe.canonicalHexName(milieu=milieu, hex=startHex)
                 logging.warning(
-                    f'An exception occurred while finding worlds reachable from {startString}',
+                    f'An exception occurred while creating the world tagging overlay',
                     exc_info=ex)
-                return
-
-            taggedHexes = []
-            colourMap = {}
-            for world in worlds:
-                worldHex = world.hex()
-                if (worldHex == startHex) or (worldHex == finishHex):
-                    continue # Don't highlight start/finish worlds
-                tagLevel = worldTagging.calculateWorldTagLevel(world=world)
-                if not tagLevel:
-                    continue
-
-                colour = QtGui.QColor(taggingColours.colour(level=tagLevel))
-                colour.setAlpha(128)
-
-                taggedHexes.append(world.hex())
-                colourMap[world.hex()] = colour
-
-            if taggedHexes:
-                handle = self._mapWidget.createHexOverlay(
-                    hexes=taggedHexes,
-                    primitive=gui.MapPrimitiveType.Hex,
-                    fillMap=colourMap)
-                self._jumpOverlayHandles.add(handle)
 
     def _updateRouteLabels(self) -> None:
         if self._jumpRoute:
@@ -2440,49 +2465,40 @@ class JumpRouteWindow(gui.WindowWidget):
             self._maxRouteCostLabel.clear()
 
     def _updateTravellerMapOverlays(self) -> None:
-        self._mapWidget.clearHexHighlights()
-        self._mapWidget.clearJumpRoute()
         self._jumpRatingOverlayHandle = None
         self._reachableWorldsOverlayHandle = None
 
         startHex, finishHex = self._selectStartFinishWidget.hexes()
-        if startHex:
-            self._mapWidget.highlightHex(
-                hex=startHex,
-                colour=QtGui.QColor('#7F00FF00'),
-                radius=0.5)
-        if finishHex:
-            self._mapWidget.highlightHex(
-                hex=finishHex,
-                colour=QtGui.QColor('#7F00FF00'),
-                radius=0.5)
+        if self._startFinishOverlay is not None:
+            hexes = []
+            if startHex:
+                hexes.append(startHex)
+            if finishHex:
+                hexes.append(finishHex)
+            self._startFinishOverlay.setHexes(hexes=hexes)
+            self._mapWidget.update()
 
-        waypointHexes = self._waypointsWidget.hexes()
-        if waypointHexes:
-            self._mapWidget.highlightHexes(
-                hexes=waypointHexes,
-                colour=QtGui.QColor('#7F0066FF'),
-                radius=0.3)
+        waypointHexes = set(self._waypointsWidget.hexes())
+        if self._waypointsOverlay is not None:
+            self._waypointsOverlay.setHexes(hexes=waypointHexes)
+            self._mapWidget.update()
 
-        filteredAvoidHexes = []
-        for hex in self._avoidHexesWidget.hexes():
-            if (hex != startHex) and (hex != finishHex) and (hex not in waypointHexes):
-                filteredAvoidHexes.append(hex)
-        if filteredAvoidHexes:
-            self._mapWidget.highlightHexes(
-                hexes=filteredAvoidHexes,
-                colour=QtGui.QColor('#7FFF0000'),
-                radius=0.3)
+        if self._avoidHexesOverlay is not None:
+            filteredAvoidHexes = []
+            for hex in self._avoidHexesWidget.hexes():
+                if (hex != startHex) and (hex != finishHex) and (hex not in waypointHexes):
+                    filteredAvoidHexes.append(hex)
+            self._avoidHexesOverlay.setHexes(hexes=filteredAvoidHexes)
+            self._mapWidget.update()
 
-        if self._jumpRoute:
-            self._mapWidget.setJumpRoute(
-                jumpRoute=self._jumpRoute,
-                refuellingPlan=self._routeLogistics.refuellingPlan() if self._routeLogistics else None)
-            if self._shouldZoomToNewRoute:
-                # Only zoom to area if this is a 'new' route (i.e. the start/finish worlds have changed).
-                # Otherwise we assume this is an iteration of the existing jump route and the user wants
-                # to stay with their current view
-                self._mapWidget.centerOnJumpRoute()
+        self._mapWidget.setJumpRoute(
+            jumpRoute=self._jumpRoute,
+            refuellingPlan=self._routeLogistics.refuellingPlan() if self._routeLogistics else None)
+        if self._jumpRoute and self._shouldZoomToNewRoute:
+            # Only zoom to area if this is a 'new' route (i.e. the start/finish worlds have changed).
+            # Otherwise we assume this is an iteration of the existing jump route and the user wants
+            # to stay with their current view
+            self._mapWidget.centerOnJumpRoute()
 
         self._updateJumpOverlays()
 

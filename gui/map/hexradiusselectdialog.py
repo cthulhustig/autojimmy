@@ -9,6 +9,9 @@ import typing
 from PyQt5 import QtWidgets, QtCore
 
 class HexRadiusSelectDialog(gui.DialogEx):
+    _FillOverlayDepth = gui.MapWidgetEx.userOverlayMinDepth() + 1
+    _RadiusOverlayDepth = gui.MapWidgetEx.userOverlayMinDepth() + 2
+
     def __init__(
             self,
             universe: astronomer.Universe,
@@ -27,7 +30,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             configSection='HexRadiusSelectDialog',
             parent=parent)
 
-        self._overlays: typing.List[str] = []
+        self._overlays: typing.List[gui.MapOverlay] = []
         self._selectedHexes: typing.List[astronomer.HexPosition] = []
 
         self._radiusSpinBox = gui.SpinBoxEx()
@@ -211,8 +214,8 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
     def _updateOverlay(self) -> None:
         self._selectedHexes.clear()
-        for handle in self._overlays:
-            self._mapWidget.removeOverlay(handle)
+        for overlay in self._overlays:
+            self._mapWidget.removeOverlay(overlay)
         self._overlays.clear()
 
         centerHex = self.centerHex()
@@ -229,11 +232,13 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 for hex in centerHex.yieldRadiusHexes(radius=searchRadius):
                     self._selectedHexes.append(hex)
 
-                handle = self._mapWidget.createRadiusOverlay(
+                overlay = gui.HexRadiusMapOverlay(
                     center=centerHex,
                     radius=searchRadius,
-                    fillColour=selectionColour)
-                self._overlays.append(handle)
+                    fillColour=selectionColour,
+                    depth=HexRadiusSelectDialog._FillOverlayDepth)
+                self._mapWidget.addOverlay(overlay=overlay)
+                self._overlays.append(overlay)
             else:
                 try:
                     universe = self._mapWidget.universe()
@@ -252,17 +257,21 @@ class HexRadiusSelectDialog(gui.DialogEx):
                         exception=ex)
 
                 if self._selectedHexes:
-                    handle = self._mapWidget.createHexOverlay(
+                    overlay = gui.HexBoundaryMapOverlay(
                         hexes=self._selectedHexes,
-                        primitive=gui.MapPrimitiveType.Hex,
-                        fillColour=selectionColour)
-                    self._overlays.append(handle)
+                        includeInterior=True,
+                        fillColour=selectionColour,
+                        depth=HexRadiusSelectDialog._FillOverlayDepth)
+                    self._mapWidget.addOverlay(overlay=overlay)
+                    self._overlays.append(overlay)
 
-            handle = self._mapWidget.createRadiusOverlay(
+            overlay = gui.HexRadiusMapOverlay(
                 center=centerHex,
                 radius=searchRadius,
                 lineColour=radiusColour,
-                lineWidth=lineWidth)
-            self._overlays.append(handle)
+                lineWidth=lineWidth,
+                depth=HexRadiusSelectDialog._RadiusOverlayDepth)
+            self._mapWidget.addOverlay(overlay=overlay)
+            self._overlays.append(overlay)
 
         self._okButton.setDisabled(not self._selectedHexes)

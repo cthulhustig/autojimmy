@@ -103,7 +103,6 @@ class SimulatorJob(QtCore.QThread):
     def run(self) -> None:
         try:
             self._simulator.run(
-                # TODO: Universe and milieu should probably be passed at construction
                 universe=self._universe,
                 milieu=self._milieu,
                 startHex=self._startHex,

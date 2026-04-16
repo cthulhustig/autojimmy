@@ -602,6 +602,12 @@ class SimulatorWindow(gui.WindowWidget):
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
         self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
+        self._positionOverlay = gui.HexPointsMapOverlay(
+            radius=0.5,
+            colour=QtGui.QColor('#7F8080FF'),
+            depth=gui.MapWidgetEx.userOverlayMinDepth())
+        self._mapWidget.addOverlay(overlay=self._positionOverlay)
+
         simulationLayout = QtWidgets.QVBoxLayout()
         simulationLayout.addWidget(self._runSimulationButton, 0)
         simulationLayout.addLayout(labelLayout, 0)
@@ -629,9 +635,11 @@ class SimulatorWindow(gui.WindowWidget):
     def _startWorldChanged(self) -> None:
         startWorld = self._startWorldWidget.selectedWorld()
         if startWorld:
-            self._mapWidget.clearHexHighlights()
-            self._mapWidget.highlightHex(hex=startWorld.hex())
+            self._positionOverlay.setHexes([startWorld.hex()])
             self._mapWidget.centerOnHex(hex=startWorld.hex())
+        else:
+            self._positionOverlay.clearHexes()
+        self._mapWidget.update()
 
         self._enableDisableControls()
 
@@ -887,12 +895,14 @@ class SimulatorWindow(gui.WindowWidget):
                 self._currentHex = currentHex
 
             if self._currentHex:
-                self._mapWidget.clearHexHighlights()
-                self._mapWidget.highlightHex(hex=self._currentHex)
+                self._positionOverlay.setHexes([self._currentHex])
                 self._mapWidget.centerOnHex(
                     hex=self._currentHex,
                     scale=None) # Keep current scale
                 self._mapWidget.setInfoHex(hex=self._currentHex)
+            else:
+                self._positionOverlay.clearHexes()
+            self._mapWidget.update()
         elif event.type() == logic.Simulator.Event.Type.InfoMessage:
             # Data is a string containing the message
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: {event.data()}')

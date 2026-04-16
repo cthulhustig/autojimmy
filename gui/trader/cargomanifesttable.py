@@ -124,6 +124,7 @@ class CargoManifestTable(gui.FrozenColumnListTable):
     def __init__(
             self,
             universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             outcomeColours: app.OutcomeColours,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -132,6 +133,7 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         super().__init__()
 
         self._universe = universe
+        self._milieu = milieu
         self._outcomeColours = app.OutcomeColours(outcomeColours)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
@@ -198,6 +200,15 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         if universe is self._universe:
             return
         self._universe = universe
+        self._syncContent()
+
+    def milieu(self) -> astronomer.Milieu:
+        return self._milieu
+
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+        self._milieu = milieu
         self._syncContent()
 
     def outcomeColours(self) -> app.OutcomeColours:
@@ -579,7 +590,7 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                 return self._hexTooltipProvider.tooltip(hex=purchaseWorld.hex())
             else:
                 return self._universe.canonicalHexName(
-                    milieu=purchaseWorld.milieu(),
+                    milieu=self._milieu,
                     hex=purchaseWorld.hex())
         elif columnType == self.ColumnType.SaleWorld or columnType == self.ColumnType.SaleSector or \
                 columnType == self.ColumnType.SaleSubsector:
@@ -588,7 +599,7 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                 return self._hexTooltipProvider.tooltip(hex=saleWorld.hex())
             else:
                 return self._universe.canonicalHexName(
-                    milieu=saleWorld.milieu(),
+                    milieu=self._milieu,
                     hex=saleWorld.hex())
         elif columnType == self.ColumnType.Logistics:
             return gui.createLogisticsToolTip(
@@ -663,8 +674,7 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             worlds: typing.Iterable[astronomer.World]
             ) -> None:
         try:
-            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
-            mapWindow.clearOverlays()
+            mapWindow = gui.WindowManager.instance().createMapWindow()
             mapWindow.highlightHexes(hexes=[world.hex() for world in worlds])
         except Exception as ex:
             message = 'Failed to show world(s) on map'
@@ -679,8 +689,7 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             route: logic.JumpRoute
             ) -> None:
         try:
-            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
-            mapWindow.clearOverlays()
+            mapWindow = gui.WindowManager.instance().createMapWindow()
             mapWindow.setJumpRoute(jumpRoute=route)
         except Exception as ex:
             message = 'Failed to show jump route on map'
