@@ -6,7 +6,6 @@ from .selector import *
 from .imagestore import *
 from .labelstore import *
 from .vectorstore import *
-from .stylestore import *
 from .sectorcache import *
 from .worldcache import *
 from .gridcache import *

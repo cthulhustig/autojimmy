@@ -11,13 +11,14 @@ import gunsmith
 import locale
 import logging
 import multiprocessing
+import multiverse
 import objectdb
 import os
 import pathlib
 import qasync
 import robots
+import startup
 import sys
-import multiverse
 import uuid
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
@@ -58,16 +59,16 @@ def _snapshotUpdateCheck(
         isStartup: bool,
         parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> _SnapshotCheckResult:
-    snapshotAvailability = multiverse.DataStore.instance().checkForNewSnapshot()
+    snapshotAvailability = multiverse.SnapshotManager.instance().checkForNewSnapshot()
 
-    if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.NoNewSnapshot:
+    if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.NoNewSnapshot:
         return _SnapshotCheckResult.NoUpdate
 
-    if snapshotAvailability != multiverse.DataStore.SnapshotAvailability.NewSnapshotAvailable:
+    if snapshotAvailability != multiverse.SnapshotManager.SnapshotAvailability.NewSnapshotAvailable:
         promptMessage = 'New universe data is available, however it can\'t be installed as this version of {app} is to {age} to use it.'.format(
             app=app.AppName,
-            age='old' if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.AppToOld else 'new')
-        if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.AppToOld:
+            age='old' if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.AppToOld else 'new')
+        if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.AppToOld:
             promptMessage += ' New versions can be downloaded from: <br><br><a href=\'{url}\'>{url}</a>'.format(
                 url=app.AppURL)
             stateKey = 'UniverseUpdateAppToOld'
@@ -123,6 +124,28 @@ def _snapshotUpdateCheck(
     return _SnapshotCheckResult.UpdateInstalled \
         if result == QtWidgets.QDialog.DialogCode.Accepted else \
         _SnapshotCheckResult.Cancelled
+
+def _pushConfigChangeToWorldManager(
+        option: app.ConfigOption,
+        oldValue: typing.Any,
+        newValue: typing.Any
+        ) -> None:
+    if option is app.ConfigOption.Universe:
+        startupProgressDlg = gui.StartupProgressDialog()
+
+        # TODO: I don't like the fact this is reinitialising the whole
+        # world manager. Should probably have it's own job rather than
+        # reusing
+        startupProgressDlg.addJob(job=startup.InitWorldManager())
+
+        if startupProgressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            # TODO: Not sure how best to handle errors
+            pass
+
+        # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
+        # when exec is called on the application
+        # https://doc.qt.io/qt-6/qobject.html#deleteLater
+        startupProgressDlg.deleteLater()
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
@@ -187,8 +210,8 @@ class MainWindow(QtWidgets.QMainWindow):
         refereeGroupBox = QtWidgets.QGroupBox('Referee Tools')
         refereeGroupBox.setLayout(refereeLayout)
 
-        self._customSectorsButton = QtWidgets.QPushButton('Custom Sectors...', self)
-        self._customSectorsButton.clicked.connect(self._showCustomSectorsWindow)
+        self._customUniverseButton = QtWidgets.QPushButton('Custom Universe...', self)
+        self._customUniverseButton.clicked.connect(gui.WindowManager.instance().showCustomUniverseWindow)
 
         self._downloadButton = QtWidgets.QPushButton('Download Universe Data...', self)
         self._downloadButton.clicked.connect(self._downloadUniverse)
@@ -198,9 +221,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._aboutButton = QtWidgets.QPushButton('About...', self)
         self._aboutButton.clicked.connect(self._showAbout)
+        # Add debug context menu to about button
+        self._aboutButton.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._aboutButton.customContextMenuRequested.connect(self._showDebugMenu)
 
         systemLayout = QtWidgets.QVBoxLayout()
-        systemLayout.addWidget(self._customSectorsButton)
+        systemLayout.addWidget(self._customUniverseButton)
         systemLayout.addWidget(self._downloadButton)
         systemLayout.addWidget(self._configurationButton)
         systemLayout.addWidget(self._aboutButton)
@@ -260,23 +286,6 @@ class MainWindow(QtWidgets.QMainWindow):
             noShowAgainId='AppWelcome')
         message.exec()
 
-    def _showCustomSectorsWindow(self) -> None:
-        try:
-            sectorDialog = gui.CustomSectorDialog(parent=self)
-        except Exception as ex:
-            message = 'Failed to open custom sector dialog'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(parent=self, text=message, exception=ex)
-            return
-
-        sectorDialog.exec()
-
-        if sectorDialog.modified():
-            self._showRestartRequiredStatus()
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'{app.AppName} will load changes to custom sectors when next started.')
-
     def _showConfiguration(self) -> None:
         try:
             configDialog = gui.ConfigDialog(parent=self)
@@ -294,6 +303,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 parent=self,
                 text=f'Some changes will only be applied when {app.AppName} is restarted.')
 
+    # TODO: If the the current universe is a custom universe this should probably give
+    # a warning telling the user that their universe won't update.
     def _downloadUniverse(self) -> None:
         try:
             result = _snapshotUpdateCheck(isStartup=False, parent=self)
@@ -327,6 +338,51 @@ class MainWindow(QtWidgets.QMainWindow):
     def _showRestartRequiredStatus(self) -> None:
         self.statusBar().showMessage('Status: Restart Required')
 
+    def _showDebugMenu(
+            self,
+            point: QtCore.QPoint
+            ) -> None:
+        if not gui.isShiftKeyDown(exclusive=False) or not gui.isCtrlKeyDown(exclusive=False):
+            # Only show menu if you hold down shift and ctrl
+            return
+
+        writeGarbageCollectorStatsAction = QtWidgets.QAction('Write Garbage Collector Stats', self)
+        writeGarbageCollectorStatsAction.triggered.connect(self._debugWriteGarbageCollectorStats)
+
+        forceGarbageCollectionAction = QtWidgets.QAction('Force Garbage Collector', self)
+        forceGarbageCollectionAction.triggered.connect(self._debugForceGarbageCollector)
+
+        checkForTypeCyclesAction = QtWidgets.QAction('Check For Type Cycles', self)
+        checkForTypeCyclesAction.triggered.connect(self._debugCheckForTypeCycles)
+
+        menu = QtWidgets.QMenu(self)
+        menu.addAction(writeGarbageCollectorStatsAction)
+        menu.addAction(forceGarbageCollectionAction)
+        menu.addAction(checkForTypeCyclesAction)
+        # NOTE: The passed in point isn't used to make showing the menu independent
+        # of whatever control it's attached to
+        menu.exec(QtGui.QCursor.pos())
+
+    def _debugWriteGarbageCollectorStats(self) -> None:
+        app.debugWriteGarbageCollectorStats(
+            writeToLogLevel=app.currentLogLevel())
+
+    def _debugForceGarbageCollector(self) -> None:
+        try:
+            logLevel = app.currentLogLevel()
+            app.debugWriteGarbageCollectorStats(writeToLogLevel=logLevel)
+            app.debugForceGarbageCollection(writeToLogLevel=logLevel)
+            app.debugWriteGarbageCollectorStats(writeToLogLevel=logLevel)
+        except Exception as ex:
+            logging.error('Failed to force garbage collection', exc_info=ex)
+
+    def _debugCheckForTypeCycles(self) -> None:
+        try:
+            logLevel = app.currentLogLevel()
+            app.debugCheckForTypeCycles(writeToLogLevel=logLevel)
+        except Exception as ex:
+            logging.error('Failed to check for type cycles', exc_info=ex)
+
 def main() -> None:
     QtWidgets.QApplication.setAttribute(
         QtCore.Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
@@ -342,7 +398,6 @@ def main() -> None:
         print(f'{app.AppName} is already running.')
         return
 
-    exitCode = 0
     try:
         installDir = _installDirectory()
         application.setWindowIcon(QtGui.QIcon(os.path.join(installDir, 'icons', 'autojimmy.ico')))
@@ -372,19 +427,20 @@ def main() -> None:
         except Exception as ex:
             logging.warning('Failed to set log level', exc_info=ex)
 
-        databasePath = os.path.join(appDir, 'autojimmy.db')
-        objectdb.ObjectDbManager.instance().initialise(databasePath=databasePath)
+        multiverseDbPath = os.path.join(appDir, 'autojimmy.db')
+        objectdb.ObjectDbManager.instance().initialise(databasePath=multiverseDbPath)
 
         installMapsDir = os.path.join(installDir, 'data', 'map')
         overlayMapsDir = os.path.join(appDir, 'map')
-        customMapsDir = os.path.join(appDir, 'custom_map')
-        multiverse.DataStore.setSectorDirs(
+        multiverse.SnapshotManager.setSectorDirs(
             installDir=installMapsDir,
-            overlayDir=overlayMapsDir,
-            customDir=customMapsDir)
+            overlayDir=overlayMapsDir)
 
         gunsmith.WeaponStore.setWeaponDirs(
             userDir=os.path.join(appDir, 'weapons'),
+            # TODO: Why is this using __file__, shouldn't it (and the code below)
+            # be using installDir? It looks like it basically does the whole
+            # __file__ shenanigans
             exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
 
         robots.RobotStore.setRobotDirs(
@@ -411,17 +467,54 @@ def main() -> None:
                 stateKey='UniverseUpdateErrorWhenChecking')
             # Continue loading the app with the existing data
 
-        startupProgress = gui.StartupProgressDialog()
-        if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            exception = startupProgress.exception()
-            if exception is not None:
-                raise exception
-            raise RuntimeError('Startup failed with an unknown error')
+        multiversePath = os.path.join(appDir, 'multiverse')
+        multiverse.UniverseManager.initialise(multiversePath=multiversePath)
+
+        shouldSyncStockUniverse = False
+        try:
+            shouldSyncStockUniverse = multiverse.isStockUniverseSnapshotNewer()
+        except Exception as ex:
+            logging.warning('Failed to compare stock universe snapshot age.', exc_info=ex)
+
+        # Check if we need to import legacy custom sectors
+        # TODO: At some point in the future I should be able to remove this
+        legacyCustomSectorsDir = os.path.join(appDir, 'custom_map')
+        shouldImportLegacyCustomSectors = False
+        try:
+            shouldImportLegacyCustomSectors = not multiverse.haveLegacyCustomSectorsBeenImported(
+                directoryPath=legacyCustomSectorsDir)
+        except Exception as ex:
+            logging.warning('Failed to check for imported legacy custom sectors.', exc_info=ex)
+
+        startupProgressDlg = gui.StartupProgressDialog()
+
+        if shouldSyncStockUniverse:
+            startupProgressDlg.addJob(job=startup.ImportStockUniverseJob())
+
+        if shouldImportLegacyCustomSectors:
+            startupProgressDlg.addJob(job=startup.ImportLegacyCustomSectorsJob(
+                directoryPath=legacyCustomSectorsDir))
+
+        startupProgressDlg.addJob(job=startup.InitWorldManager())
+        startupProgressDlg.addJob(job=startup.LoadWeaponsJob())
+        startupProgressDlg.addJob(job=startup.LoadRobotsJob())
+
+        if startupProgressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            sys.exit(1)
 
         # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
         # when exec is called on the application
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
-        startupProgress.deleteLater()
+        startupProgressDlg.deleteLater()
+
+        # Register a callback that will push config changes (i.e. switching universe) to
+        # the world manager
+        # NOTE: It is VERY important that this is registered early as we need the world
+        # manager to be the first thing that is notified of a change in universe as other
+        # subscribers may assume it's been updated
+        # TODO: Doing this here feels wrong
+        app.Config.instance().configChanged.connect(
+            _pushConfigChangeToWorldManager)
 
         with qasync.QEventLoop() as asyncEventLoop:
             window = MainWindow()
@@ -433,9 +526,9 @@ def main() -> None:
         gui.MessageBoxEx.critical(
             text=message,
             exception=ex)
-        exitCode = 1
+        sys.exit(1)
 
-    sys.exit(exitCode)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

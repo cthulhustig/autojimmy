@@ -1,16 +1,16 @@
 import app
+import astronomer
 import cartographer
 import gui
 import logging
 import logic
-import multiverse
 import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
 class HexSelectToolWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
-    showHex = QtCore.pyqtSignal(multiverse.HexPosition)
+    showHex = QtCore.pyqtSignal(astronomer.HexPosition)
 
     # This state version intentionally doesn't match the class name. This
     # was done for backwards compatibility when the class was renamed as
@@ -26,7 +26,8 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Iterable[app.MapOption],
@@ -39,6 +40,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
+        self._universe = universe
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._mapStyle = mapStyle
@@ -52,7 +54,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self._enableShowInfoButton = False
 
         self._searchComboBox = gui.HexSelectComboBox(
-            universe=multiverse.WorldManager.instance().universe(),
+            universe=self._universe,
             milieu=self._milieu)
         self._searchComboBox.enableAutoComplete(True)
         self._searchComboBox.setMinimumWidth(
@@ -101,12 +103,25 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         QtWidgets.QWidget.setTabOrder(self._mapSelectButton, self._showHexButton)
         QtWidgets.QWidget.setTabOrder(self._showHexButton, self._showInfoButton)
 
-    def milieu(self) -> multiverse.Milieu:
+    def universe(self) -> astronomer.Universe:
+        return self._universe
+
+    def setUniverse(
+            self,
+            universe: astronomer.Universe
+            ) -> None:
+        if universe is self._universe:
+            return
+
+        self._universe = universe
+        self._searchComboBox.setUniverse(universe=self._universe)
+
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
     def setMilieu(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             ) -> None:
         if milieu is self._milieu:
             return
@@ -177,12 +192,12 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             return
         self._taggingColours = app.TaggingColours(colours) if colours else None
 
-    def selectedHex(self) -> typing.Optional[multiverse.HexPosition]:
+    def selectedHex(self) -> typing.Optional[astronomer.HexPosition]:
         return self._searchComboBox.currentHex()
 
     def setSelectedHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition],
+            hex: typing.Optional[astronomer.HexPosition],
             updateHistory: bool = True
             ) -> None:
         self._searchComboBox.setCurrentHex(
@@ -191,13 +206,11 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     # Helper to get the selected world if a world is selected. Useful for code
     # that never enables dead space selection
-    def selectedWorld(self) -> typing.Optional[multiverse.World]:
+    def selectedWorld(self) -> typing.Optional[astronomer.World]:
         hex = self.selectedHex()
         if not hex:
             return None
-        return multiverse.WorldManager.instance().worldByPosition(
-            milieu=self._milieu,
-            hex=hex)
+        return self._universe.worldByPosition(milieu=self._milieu, hex=hex)
 
     def enableMapSelectButton(self, enable: bool) -> None:
         self._enableMapSelectButton = enable
@@ -261,7 +274,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
                 logging.warning(f'Failed to restore HexSelectToolWidget state (Invalid hex string "{value}")')
                 return False
             try:
-                hex = multiverse.HexPosition(
+                hex = astronomer.HexPosition(
                     absoluteX=int(tokens[0]),
                     absoluteY=int(tokens[1]))
             except Exception as ex:
@@ -275,7 +288,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def _selectionChanged(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         self._showHexButton.setEnabled(hex != None)
         self._showInfoButton.setEnabled(hex != None)
@@ -283,6 +296,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def _mapSelectClicked(self) -> None:
         dlg = gui.HexSelectDialog(
+            universe=self._universe,
             milieu=self._milieu,
             rules=self._rules,
             mapStyle=self._mapStyle,

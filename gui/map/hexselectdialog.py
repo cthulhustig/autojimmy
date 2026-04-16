@@ -1,16 +1,17 @@
 import app
+import astronomer
 import cartographer
 import gui
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class HexSelectDialog(gui.DialogEx):
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Iterable[app.MapOption],
@@ -26,7 +27,7 @@ class HexSelectDialog(gui.DialogEx):
             parent=parent)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=multiverse.WorldManager.instance().universe(),
+            universe=universe,
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -79,12 +80,12 @@ class HexSelectDialog(gui.DialogEx):
 
         self._updateLabel()
 
-    def selectedHexes(self) -> typing.Iterable[multiverse.HexPosition]:
+    def selectedHexes(self) -> typing.Iterable[astronomer.HexPosition]:
         return self._mapWidget.selectedHexes()
 
     def selectHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             setInfoHex: bool = True
             ) -> None:
         self._mapWidget.selectHex(
@@ -93,13 +94,13 @@ class HexSelectDialog(gui.DialogEx):
 
     def deselectHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         self._mapWidget.deselectHex(hex=hex)
 
     def selectHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         self._mapWidget.selectHexes(hexes=hexes)
 
