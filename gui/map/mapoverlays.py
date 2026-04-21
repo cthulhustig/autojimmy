@@ -5,34 +5,34 @@ import math
 import typing
 from PyQt5 import QtCore, QtGui
 
-class HexMapOverlay(gui.MapOverlay):
-    _HexPolygon = QtGui.QPolygonF([
-        # Upper left
-        QtCore.QPointF(
-            (-0.5 + astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
-            -0.5 * astronomer.ParsecScaleY),
-        # Upper right
-        QtCore.QPointF(
-            (+0.5 - astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
-            -0.5 * astronomer.ParsecScaleY),
-        # Center right
-        QtCore.QPointF(
-            (+0.5 + astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
-            0 * astronomer.ParsecScaleY) ,
-        # Lower right
-        QtCore.QPointF(
-            (+0.5 - astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
-            +0.5 * astronomer.ParsecScaleY),
-        # Lower Left
-        QtCore.QPointF(
-            (-0.5 + astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
-            +0.5 * astronomer.ParsecScaleY),
-        # Center left
-        QtCore.QPointF(
-            (-0.5 - astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
-            0 * astronomer.ParsecScaleY),
-    ])
+_HexPolygon = QtGui.QPolygonF([
+    # Upper left
+    QtCore.QPointF(
+        (-0.5 + astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+        -0.5 * astronomer.ParsecScaleY),
+    # Upper right
+    QtCore.QPointF(
+        (+0.5 - astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+        -0.5 * astronomer.ParsecScaleY),
+    # Center right
+    QtCore.QPointF(
+        (+0.5 + astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+        0 * astronomer.ParsecScaleY) ,
+    # Lower right
+    QtCore.QPointF(
+        (+0.5 - astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+        +0.5 * astronomer.ParsecScaleY),
+    # Lower Left
+    QtCore.QPointF(
+        (-0.5 + astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+        +0.5 * astronomer.ParsecScaleY),
+    # Center left
+    QtCore.QPointF(
+        (-0.5 - astronomer.HexWidthOffset) * astronomer.ParsecScaleX,
+        0 * astronomer.ParsecScaleY),
+])
 
+class HexMapOverlay(gui.MapOverlay):
     def __init__(
             self,
             depth: int,
@@ -45,7 +45,7 @@ class HexMapOverlay(gui.MapOverlay):
         super().__init__(depth=depth, enabled=enabled)
 
         self._hexes = set(hexes) if hexes else set()
-        self._translations: typing.Optional[typing.List[QtCore.QPointF]] = None
+        self._translations: typing.Optional[typing.List[typing.Tuple[float, float]]] = None
 
         self._pen = self._brush = None
         if lineColour:
@@ -99,12 +99,12 @@ class HexMapOverlay(gui.MapOverlay):
 
         painter.setBrush(self._brush if self._brush else QtCore.Qt.BrushStyle.NoBrush)
 
-        for translation in self._translations:
+        for translateX, translateY in self._translations:
             with gui.PainterStateGuard(painter):
                 transform = painter.transform()
-                transform.translate(translation.x(), translation.y())
+                transform.translate(translateX, translateY)
                 painter.setTransform(transform)
-                painter.drawPolygon(HexMapOverlay._HexPolygon)
+                painter.drawPolygon(_HexPolygon)
 
         return True # Something was drawn
 
@@ -115,7 +115,7 @@ class HexMapOverlay(gui.MapOverlay):
         self._translations = []
         for hex in self._hexes:
             centerX, centerY = hex.worldCenter()
-            self._translations.append(QtCore.QPointF(
+            self._translations.append((
                 centerX * astronomer.ParsecScaleX,
                 centerY * astronomer.ParsecScaleY))
 
@@ -207,7 +207,7 @@ class HexPointsMapOverlay(gui.MapOverlay):
                 centerX * astronomer.ParsecScaleX,
                 centerY * astronomer.ParsecScaleY))
 
-class HexBoundaryMapOverlay(gui.MapOverlay):
+class HexOutlineMapOverlay(gui.MapOverlay):
     def __init__(
             self,
             depth: int,
@@ -222,7 +222,8 @@ class HexBoundaryMapOverlay(gui.MapOverlay):
 
         self._hexes = set(hexes) if hexes else set()
         self._includeInterior = includeInterior
-        self._polygons = None
+        self._polygons: typing.Optional[typing.List[QtGui.QPolygonF]] = None
+        self._translations: typing.Optional[typing.List[typing.Tuple[float, float]]] = None
 
         self._pen = self._brush = None
         if lineColour:
@@ -243,14 +244,14 @@ class HexBoundaryMapOverlay(gui.MapOverlay):
         self._hexes.clear()
         if hexes:
             self._hexes.update(hexes)
-        self._polygons = None
+        self._polygons = self._translations = None
 
     def addHex(self, hex: astronomer.HexPosition) -> None:
         if hex in self._hexes:
             return
 
         self._hexes.add(hex)
-        self._polygons = None # Regenerate on demand
+        self._polygons = self._translations = None # Regenerate on demand
 
     def addHexes(self, hexes: typing.Iterable[astronomer.HexPosition]):
         oldCount = len(self._hexes)
@@ -258,21 +259,21 @@ class HexBoundaryMapOverlay(gui.MapOverlay):
         newCount = len(self._hexes)
 
         if newCount != oldCount:
-            self._polygons = None
+            self._polygons = self._translations = None
 
     def removeHex(self, hex: astronomer.HexPosition) -> None:
         if hex not in self._hexes:
             return
 
         self._hexes.discard(hex)
-        self._polygons = None # Regenerate on demand
+        self._polygons = self._translations = None # Regenerate on demand
 
-    def clearHexes(self) -> None:
+    def clear(self) -> None:
         if not self._hexes:
             return
 
         self._hexes.clear()
-        self._polygons = None # Regenerate on demand
+        self._polygons = self._translations = None # Regenerate on demand
 
     def draw(
             self,
@@ -282,23 +283,58 @@ class HexBoundaryMapOverlay(gui.MapOverlay):
         if not self.isEnabled() or not self._hexes:
             return False
 
-        if not self._polygons:
-            self._updatePolygons()
-            if not self._polygons:
-                return False
+        hasRendered = False
 
         painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
 
-        if self._pen:
-            self._pen.setWidthF(self._lineWidth / currentScale.linear)
-        painter.setPen(self._pen if self._pen else QtCore.Qt.PenStyle.NoPen)
+        if self._brush and self._includeInterior:
+            # When interior outlines and a fill are to be drawn, the fill needs to be
+            # drawn as individual hexes as the interior and exterior outline polygons
+            # are separate polygons rather than a single polygon. If this wasn't done,
+            # if the selection made a loop with the center of the loop not selected,
+            # the center hex would be incorrectly drawn filled (due to the interior
+            # loop polygon getting filled)
+            if self._translations is None:
+                self._updateTranslations()
 
-        painter.setBrush(self._brush if self._brush else QtCore.Qt.BrushStyle.NoBrush)
+            if self._translations:
+                painter.setPen(QtCore.Qt.PenStyle.NoPen)
+                painter.setBrush(self._brush)
+                for translateX, translateY in self._translations:
+                    with gui.PainterStateGuard(painter):
+                        transform = painter.transform()
+                        transform.translate(translateX, translateY)
+                        painter.setTransform(transform)
+                        painter.drawPolygon(_HexPolygon)
+                hasRendered = True
 
-        for polygon in self._polygons:
-            painter.drawPolygon(polygon)
+        fillPolygons = self._brush and not self._includeInterior
+        if self._pen or fillPolygons:
+            if self._polygons is None:
+                self._updatePolygons()
 
-        return True # Something was drawn
+            if self._polygons:
+                if self._pen:
+                    self._pen.setWidthF(self._lineWidth / currentScale.linear)
+                painter.setPen(self._pen if self._pen else QtCore.Qt.PenStyle.NoPen)
+                painter.setBrush(self._brush if fillPolygons else QtCore.Qt.BrushStyle.NoBrush)
+
+                for polygon in self._polygons:
+                    painter.drawPolygon(polygon)
+                hasRendered = True
+
+        return hasRendered
+
+    def _updateTranslations(self) -> None:
+        if not self._hexes:
+            return
+
+        self._translations = []
+        for hex in self._hexes:
+            centerX, centerY = hex.worldCenter()
+            self._translations.append((
+                centerX * astronomer.ParsecScaleX,
+                centerY * astronomer.ParsecScaleY))
 
     def _updatePolygons(self) -> None:
         if not self._hexes:
@@ -329,7 +365,7 @@ class HexRadiusMapOverlay(gui.MapOverlay):
         super().__init__(depth=depth, enabled=enabled)
         self._center = center
         self._radius = radius
-        self._overlay = HexBoundaryMapOverlay(
+        self._overlay = HexOutlineMapOverlay(
             hexes=center.yieldRadiusHexes(radius=radius, includeInterior=False),
             includeInterior=False,
             depth=depth,
@@ -591,3 +627,114 @@ class JumpRouteMapOverlay(gui.MapOverlay):
                 self._pitStopPoints.append(QtCore.QPointF(
                     centerX * astronomer.ParsecScaleX,
                     centerY * astronomer.ParsecScaleY))
+
+# TODO: This needs to handle drawing the fill when includeInterior is true in a similar
+# way to HexOutlineMapOverlay
+class SectorOutlineMapOverlay(gui.MapOverlay):
+    def __init__(
+            self,
+            depth: int,
+            sectors: typing.Optional[typing.Iterable[astronomer.SectorIndex]] = None,
+            includeInterior: bool = True,
+            lineColour: typing.Optional[QtGui.QColor] = None,
+            lineWidth: typing.Optional[int] = None, # In pixels
+            fillColour: typing.Optional[QtGui.QColor] = None,
+            enabled: bool = True
+            ) -> None:
+        super().__init__(depth=depth, enabled=enabled)
+
+        self._sectors = set(sectors) if sectors else set()
+        self._includeInterior = includeInterior
+        self._polygons = None
+
+        self._pen = self._brush = None
+        if lineColour:
+            self._pen = QtGui.QPen(
+                lineColour,
+                0) # Line width set at draw time as it's dependent on scale
+            self._lineWidth = lineWidth
+        if fillColour:
+            self._brush = QtGui.QBrush(fillColour)
+
+    def sectors(self) -> typing.Collection[astronomer.SectorIndex]:
+        return self._sectors
+
+    def setSectors(
+            self,
+            sectors: typing.Optional[typing.Iterable[astronomer.SectorIndex]]
+            ) -> None:
+        self._sectors.clear()
+        if sectors:
+            self._sectors.update(sectors)
+        self._polygons = None
+
+    def addSector(self, sector: astronomer.SectorIndex) -> None:
+        if sector in self._sectors:
+            return
+
+        self._sectors.add(sector)
+        self._polygons = None # Regenerate on demand
+
+    def addSectors(self, sectors: typing.Iterable[astronomer.SectorIndex]):
+        oldCount = len(self._sectors)
+        self._sectors.update(sectors)
+        newCount = len(self._sectors)
+
+        if newCount != oldCount:
+            self._polygons = None
+
+    def removeSector(self, sector: astronomer.SectorIndex) -> None:
+        if sector not in self._sectors:
+            return
+
+        self._sectors.discard(sector)
+        self._polygons = None # Regenerate on demand
+
+    def clear(self) -> None:
+        if not self._sectors:
+            return
+
+        self._sectors.clear()
+        self._polygons = None # Regenerate on demand
+
+    def draw(
+            self,
+            painter: QtGui.QPainter,
+            currentScale: gui.MapScale
+            ) -> bool:
+        if not self.isEnabled() or not self._sectors:
+            return False
+
+        if not self._polygons:
+            self._updatePolygons()
+            if not self._polygons:
+                return False
+
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
+
+        if self._pen:
+            self._pen.setWidthF(self._lineWidth / currentScale.linear)
+        painter.setPen(self._pen if self._pen else QtCore.Qt.PenStyle.NoPen)
+
+        painter.setBrush(self._brush if self._brush else QtCore.Qt.BrushStyle.NoBrush)
+
+        for polygon in self._polygons:
+            painter.drawPolygon(polygon)
+
+        return True # Something was drawn
+
+    def _updatePolygons(self) -> None:
+        if not self._sectors:
+            return
+
+        if self._includeInterior:
+            outlines = logic.calculateCompleteSectorOutlines(sectors=self._sectors)
+        else:
+            # TODO: This should be calculateOuterSectorOutlines when I've implemented it
+            outlines = logic.calculateCompleteSectorOutlines(sectors=self._sectors)
+        self._polygons: typing.List[QtGui.QPolygonF] = []
+        for outline in outlines:
+            polygon = QtGui.QPolygonF()
+            for x, y in outline:
+                polygon.append(QtCore.QPointF(x, y))
+            self._polygons.append(polygon)

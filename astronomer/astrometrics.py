@@ -2,6 +2,8 @@ import enum
 import math
 import typing
 
+
+
 SubsectorWidth = 8 # parsecs
 SubsectorHeight = 10 # parsecs
 HorzSubsectorsPerSector = 4
@@ -64,49 +66,48 @@ def absoluteSpaceToSectorPos(
 
 # These are orientated visually as seen in Traveller Map
 class HexEdge(enum.Enum):
-    Upper = 0
-    UpperRight = 1
-    LowerRight = 2
-    Lower = 3
-    LowerLeft = 4
-    UpperLeft = 5
+    Top = 0
+    TopRight = 1
+    BottomRight = 2
+    Bottom = 3
+    BottomLeft = 4
+    TopLeft = 5
 
-
-_OppositeEdgeTransitions = {
-    HexEdge.Upper: HexEdge.Lower,
-    HexEdge.UpperRight: HexEdge.LowerLeft,
-    HexEdge.LowerRight: HexEdge.UpperLeft,
-    HexEdge.Lower: HexEdge.Upper,
-    HexEdge.LowerLeft: HexEdge.UpperRight,
-    HexEdge.UpperLeft: HexEdge.LowerRight
+_OppositeHexEdgeTransitions = {
+    HexEdge.Top: HexEdge.Bottom,
+    HexEdge.TopRight: HexEdge.BottomLeft,
+    HexEdge.BottomRight: HexEdge.TopLeft,
+    HexEdge.Bottom: HexEdge.Top,
+    HexEdge.BottomLeft: HexEdge.TopRight,
+    HexEdge.TopLeft: HexEdge.BottomRight
 }
 
-_ClockwiseEdgeTransitions = {
-    HexEdge.Upper: HexEdge.UpperLeft,
-    HexEdge.UpperRight: HexEdge.Upper,
-    HexEdge.LowerRight: HexEdge.UpperRight,
-    HexEdge.Lower: HexEdge.LowerRight,
-    HexEdge.LowerLeft: HexEdge.Lower,
-    HexEdge.UpperLeft: HexEdge.LowerLeft
+_ClockwiseHexEdgeTransitions = {
+    HexEdge.Top: HexEdge.TopLeft,
+    HexEdge.TopRight: HexEdge.Top,
+    HexEdge.BottomRight: HexEdge.TopRight,
+    HexEdge.Bottom: HexEdge.BottomRight,
+    HexEdge.BottomLeft: HexEdge.Bottom,
+    HexEdge.TopLeft: HexEdge.BottomLeft
 }
 
-_AnticlockwiseEdgeTransitions = {
-    HexEdge.Upper: HexEdge.UpperRight,
-    HexEdge.UpperRight: HexEdge.LowerRight,
-    HexEdge.LowerRight: HexEdge.Lower,
-    HexEdge.Lower: HexEdge.LowerLeft,
-    HexEdge.LowerLeft: HexEdge.UpperLeft,
-    HexEdge.UpperLeft: HexEdge.Upper
+_AnticlockwiseHexEdgeTransitions = {
+    HexEdge.Top: HexEdge.TopRight,
+    HexEdge.TopRight: HexEdge.BottomRight,
+    HexEdge.BottomRight: HexEdge.Bottom,
+    HexEdge.Bottom: HexEdge.BottomLeft,
+    HexEdge.BottomLeft: HexEdge.TopLeft,
+    HexEdge.TopLeft: HexEdge.Top
 }
 
 def oppositeHexEdge(edge: HexEdge) -> HexEdge:
-    return _OppositeEdgeTransitions[edge]
+    return _OppositeHexEdgeTransitions[edge]
 
 def clockwiseHexEdge(edge: HexEdge) -> HexEdge:
-    return _ClockwiseEdgeTransitions[edge]
+    return _ClockwiseHexEdgeTransitions[edge]
 
 def anticlockwiseHexEdge(edge: HexEdge) -> HexEdge:
-    return _AnticlockwiseEdgeTransitions[edge]
+    return _AnticlockwiseHexEdgeTransitions[edge]
 
 def neighbourAbsoluteHex(
         origin: typing.Tuple[int, int],
@@ -114,20 +115,20 @@ def neighbourAbsoluteHex(
         ) -> typing.Tuple[int, int]:
     hexX = origin[0]
     hexY = origin[1]
-    if edge == HexEdge.Upper:
+    if edge == HexEdge.Top:
         hexY -= 1
-    elif edge == HexEdge.UpperRight:
+    elif edge == HexEdge.TopRight:
         hexY += 0 if (hexX % 2) else -1
         hexX += 1
-    elif edge == HexEdge.LowerRight:
+    elif edge == HexEdge.BottomRight:
         hexY += 1 if (hexX % 2) else 0
         hexX += 1
-    elif edge == HexEdge.Lower:
+    elif edge == HexEdge.Bottom:
         hexY += 1
-    elif edge == HexEdge.LowerLeft:
+    elif edge == HexEdge.BottomLeft:
         hexY += 1 if (hexX % 2) else 0
         hexX -= 1
-    elif edge == HexEdge.UpperLeft:
+    elif edge == HexEdge.TopLeft:
         hexY += 0 if (hexX % 2) else -1
         hexX -= 1
     else:
@@ -143,20 +144,20 @@ def neighbourRelativeHex(
     hexX = origin[2]
     hexY = origin[3]
 
-    if edge == HexEdge.Upper:
+    if edge == HexEdge.Top:
         hexY -= 1
-    elif edge == HexEdge.UpperRight:
+    elif edge == HexEdge.TopRight:
         hexY += -1 if (hexX % 2) else 0
         hexX += 1
-    elif edge == HexEdge.LowerRight:
+    elif edge == HexEdge.BottomRight:
         hexY += 0 if (hexX % 2) else 1
         hexX += 1
-    elif edge == HexEdge.Lower:
+    elif edge == HexEdge.Bottom:
         hexY += 1
-    elif edge == HexEdge.LowerLeft:
+    elif edge == HexEdge.BottomLeft:
         hexY += 0 if (hexX % 2) else 1
         hexX -= 1
-    elif edge == HexEdge.UpperLeft:
+    elif edge == HexEdge.TopLeft:
         hexY += -1 if (hexX % 2) else 0
         hexX -= 1
     else:
@@ -224,38 +225,76 @@ def yieldAbsoluteRadiusHexes(
         current = (center[0], center[1] + radius)
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.UpperRight)
+            current = neighbourAbsoluteHex(current, HexEdge.TopRight)
             yield current
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.Upper)
+            current = neighbourAbsoluteHex(current, HexEdge.Top)
             yield current
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.UpperLeft)
+            current = neighbourAbsoluteHex(current, HexEdge.TopLeft)
             yield current
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.LowerLeft)
+            current = neighbourAbsoluteHex(current, HexEdge.BottomLeft)
             yield current
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.Lower)
+            current = neighbourAbsoluteHex(current, HexEdge.Bottom)
             yield current
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.LowerRight)
+            current = neighbourAbsoluteHex(current, HexEdge.BottomRight)
             yield current
+
+# These neighbours are orientated as displayed when viewing traveller map
+class RectilinearNeighbour(enum.Enum):
+    TopLeft = 0
+    Top = 1
+    TopRight = 2
+    Right = 3
+    BottomRight = 4
+    Bottom = 5
+    BottomLeft = 6
+    Left = 7
+
+_OppositeRectilinearNeighbourTransitions = {
+    RectilinearNeighbour.TopLeft: RectilinearNeighbour.BottomRight,
+    RectilinearNeighbour.Top: RectilinearNeighbour.Bottom,
+    RectilinearNeighbour.TopRight: RectilinearNeighbour.BottomLeft,
+    RectilinearNeighbour.Right: RectilinearNeighbour.Left,
+    RectilinearNeighbour.BottomRight: RectilinearNeighbour.TopLeft,
+    RectilinearNeighbour.Bottom: RectilinearNeighbour.Top,
+    RectilinearNeighbour.BottomLeft: RectilinearNeighbour.TopRight,
+    RectilinearNeighbour.Left: RectilinearNeighbour.Right
+}
+
+_RectilinearNeighbourOffsets = {
+    RectilinearNeighbour.TopLeft:  (-1, -1),
+    RectilinearNeighbour.Top: (0, -1),
+    RectilinearNeighbour.TopRight:  (1, -1),
+    RectilinearNeighbour.Right:  (1, 0),
+    RectilinearNeighbour.BottomRight:  (1, 1),
+    RectilinearNeighbour.Bottom:  (0, 1),
+    RectilinearNeighbour.BottomLeft:  (-1, 1),
+    RectilinearNeighbour.Left:  (-1, 0)
+}
+
+def oppositeRectilinearNeighbour(neighbour: RectilinearNeighbour) -> RectilinearNeighbour:
+    return _OppositeRectilinearNeighbourTransitions[neighbour]
 
 # NOTE: There is a LOT of code that assumes instances of this
 # class are immutable
+# TODO: Why isn't this called SectorPosition (same for SubsectorIndex)
 class SectorIndex(object):
     def __init__(self, sectorX: int, sectorY: int) -> None:
         self._sectorX = int(sectorX)
         self._sectorY = int(sectorY)
 
         self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
-        self._hexExtent: typing.Optional[typing.Tuple['HexPosition', 'HexPosition']] = None
+        self._isotropicBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
+        self._hexBounds: typing.Optional[typing.Tuple['HexPosition', 'HexPosition']] = None
         self._hash = None
 
     def __eq__(self, other):
@@ -281,6 +320,12 @@ class SectorIndex(object):
     def elements(self) -> typing.Tuple[int, int]:
         return (self._sectorX, self._sectorY)
 
+    def neighbour(self, neighbour: RectilinearNeighbour) -> 'SectorIndex':
+        offsetX, offsetY = _RectilinearNeighbourOffsets[neighbour]
+        return SectorIndex(
+            sectorX=self._sectorX + offsetX,
+            sectorY=self._sectorY + offsetY)
+
     def worldBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
         if self._worldBounds is None:
             left = (self._sectorX * SectorWidth) - ReferenceHexX
@@ -296,8 +341,18 @@ class SectorIndex(object):
             self._worldBounds = (left, top, width, height)
         return self._worldBounds
 
-    def hexExtent(self) -> typing.Tuple['HexPosition', 'HexPosition']: # (top left hex, bottom right hex)
-        if self._hexExtent is None:
+    def isotropicBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
+        if not self._isotropicBounds:
+            worldLeft, worldTop, worldWidth, worldHeight = self.worldBounds()
+            self._isotropicBounds = (
+                worldLeft * ParsecScaleX,
+                worldTop * ParsecScaleY,
+                worldWidth * ParsecScaleX,
+                worldHeight * ParsecScaleY)
+        return self._isotropicBounds
+
+    def hexBounds(self) -> typing.Tuple['HexPosition', 'HexPosition']: # (top left hex, bottom right hex)
+        if self._hexBounds is None:
             topLeft = HexPosition(
                 sectorX=self._sectorX,
                 sectorY=self._sectorY,
@@ -308,8 +363,8 @@ class SectorIndex(object):
                 sectorY=self._sectorY,
                 offsetX=SectorWidth,
                 offsetY=SectorHeight)
-            self._hexExtent = (topLeft, bottomRight)
-        return self._hexExtent
+            self._hexBounds = (topLeft, bottomRight)
+        return self._hexBounds
 
 # NOTE: There is a LOT of code that assumes instances of this
 # class are immutable
@@ -358,7 +413,8 @@ class SubsectorIndex(object):
 
         self._sectorIndex: typing.Optional[SectorIndex] = None
         self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
-        self._hexExtent: typing.Optional[typing.Tuple['HexPosition', 'HexPosition']] = None
+        self._isotropicBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
+        self._hexBounds: typing.Optional[typing.Tuple['HexPosition', 'HexPosition']] = None
         self._hash = None
 
     def __eq__(self, other):
@@ -416,8 +472,18 @@ class SubsectorIndex(object):
             self._worldBounds = (left, top, width, height)
         return self._worldBounds
 
-    def hexExtent(self) -> typing.Tuple['HexPosition', 'HexPosition']: # (top left hex, bottom right hex)
-        if self._hexExtent is None:
+    def isotropicBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
+        if not self._isotropicBounds:
+            worldLeft, worldTop, worldWidth, worldHeight = self.worldBounds()
+            self._isotropicBounds = (
+                worldLeft * ParsecScaleX,
+                worldTop * ParsecScaleY,
+                worldWidth * ParsecScaleX,
+                worldHeight * ParsecScaleY)
+        return self._isotropicBounds
+
+    def hexBounds(self) -> typing.Tuple['HexPosition', 'HexPosition']: # (top left hex, bottom right hex)
+        if self._hexBounds is None:
             topLeft = HexPosition(
                 sectorX=self._sectorX,
                 sectorY=self._sectorY,
@@ -428,8 +494,8 @@ class SubsectorIndex(object):
                 sectorY=self._sectorY,
                 offsetX=topLeft.offsetX() + (SubsectorWidth - 1),
                 offsetY=topLeft.offsetY() + (SubsectorHeight - 1))
-            self._hexExtent = (topLeft, bottomRight)
-        return self._hexExtent
+            self._hexBounds = (topLeft, bottomRight)
+        return self._hexBounds
 
 # NOTE: There is a LOT of code that assumes instances of this
 # class are immutable
@@ -469,7 +535,9 @@ class HexPosition(object):
         self._sectorIndex: typing.Optional[SectorIndex] = None
         self._subsectorIndex: typing.Optional[SubsectorIndex] = None
         self._worldCenter: typing.Optional[typing.Tuple[float, float]] = None
-        self._isotropicSpace: typing.Optional[typing.Tuple[float, float]] = None
+        self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
+        self._isotropicCenter: typing.Optional[typing.Tuple[float, float]] = None
+        self._isotropicBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
         self._hash = None
 
     def __eq__(self, other):
@@ -566,18 +634,6 @@ class HexPosition(object):
             self._calculateRelative()
         return self._relative
 
-    # This gets the center of the hex in an coordinate space where the x & y
-    # axis scale the same, unlike world space where they scale differently (I
-    # think the term isotropic is correct). It's my equivalent of Traveller Map
-    # 'Map Space'. It's basically identical except I don't invert the y axis.
-    def isotropicSpace(self) -> typing.Tuple[float, float]:
-        if not self._isotropicSpace:
-            worldCenter = self.worldCenter()
-            self._isotropicSpace = (
-                worldCenter[0] * ParsecScaleX,
-                worldCenter[1] * ParsecScaleY)
-        return self._isotropicSpace
-
     # Reimplementation of code from Traveller Map source code.
     # HexDistance in Astrometrics.cs
     def parsecsTo(
@@ -600,7 +656,7 @@ class HexPosition(object):
         adx -= ody
         return adx if adx > max else max
 
-    def neighbourHex(
+    def neighbour(
             self,
             edge: HexEdge
             ) -> 'HexPosition':
@@ -634,7 +690,6 @@ class HexPosition(object):
         for absoluteX, absoluteY in generator:
             yield HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
 
-    # Return the absolute center point of the hex
     def worldCenter(self) -> typing.Tuple[float, float]:
         if not self._worldCenter:
             absX, absY = self.absolute()
@@ -646,12 +701,36 @@ class HexPosition(object):
     def worldBounds(
             self
             ) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
-        absoluteX, absoluteY = self.absolute()
-        return (
-            absoluteX - (1 + HexWidthOffset),
-            absoluteY - (0.5 if absoluteX % 2 else 1),
-            1 + (2 * HexWidthOffset),
-            1)
+        if not self._worldBounds:
+            absoluteX, absoluteY = self.absolute()
+            self._worldBounds = (
+                absoluteX - (1 + HexWidthOffset),
+                absoluteY - (0.5 if absoluteX % 2 else 1),
+                1 + (2 * HexWidthOffset),
+                1)
+        return self._worldBounds
+
+    # This gets the center of the hex in an coordinate space where the x & y
+    # axis scale the same, unlike world space where they scale differently (I
+    # think the term isotropic is correct). It's my equivalent of Traveller Map
+    # 'Map Space'. It's basically identical except I don't invert the y axis.
+    def isotropicCenter(self) -> typing.Tuple[float, float]:
+        if not self._isotropicCenter:
+            worldCenter = self.worldCenter()
+            self._isotropicCenter = (
+                worldCenter[0] * ParsecScaleX,
+                worldCenter[1] * ParsecScaleY)
+        return self._isotropicCenter
+
+    def isotropicBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
+        if not self._isotropicBounds:
+            worldLeft, worldTop, worldWidth, worldHeight = self.worldBounds()
+            self._isotropicBounds = (
+                worldLeft * ParsecScaleX,
+                worldTop * ParsecScaleY,
+                worldWidth * ParsecScaleX,
+                worldHeight * ParsecScaleY)
+        return self._isotropicBounds
 
     def _calculateRelative(self) -> None:
         self._relative = absoluteSpaceToRelativeSpace(pos=self._absolute)

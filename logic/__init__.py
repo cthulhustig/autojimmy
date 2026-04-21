@@ -16,4 +16,5 @@ from .trader import *
 from .cargomanifest import *
 from .simulator import *
 from .hexoutlines import *
+from .sectoroutlines import *
 from .serialization import *

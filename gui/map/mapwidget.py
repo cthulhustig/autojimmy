@@ -1271,7 +1271,8 @@ class MapWidget(QtWidgets.QWidget):
                         painter.drawImage(
                             QtCore.QRectF(0, 0, self.width(), self.height()),
                             self._overlayStagingImage)
-            except:
+            except Exception as ex:
+                logging.debug('Map overlay threw exception when drawing', exc_info=ex)
                 continue
 
     def _drawScale(

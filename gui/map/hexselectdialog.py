@@ -105,7 +105,7 @@ class HexSelectDialog(gui.DialogEx):
         self._mapWidget.selectHexes(hexes=hexes)
 
     def clearSelectedHexes(self) -> None:
-        self._mapWidget.clearSelectedHexes()
+        self._mapWidget.clearSelection()
 
     def configureSelection(
             self,

@@ -3,20 +3,20 @@ import typing
 
 class Region(object):
     _AntiClockwiseOffsets = {
-        astronomer.HexEdge.Upper: (-0.5 + astronomer.HexWidthOffset, -0.5), # Upper left
-        astronomer.HexEdge.UpperRight: (+0.5 - astronomer.HexWidthOffset, -0.5), # Upper right
-        astronomer.HexEdge.LowerRight: (+0.5 + astronomer.HexWidthOffset, 0), # Center right
-        astronomer.HexEdge.Lower: (+0.5 - astronomer.HexWidthOffset, +0.5), # Lower right
-        astronomer.HexEdge.LowerLeft: (-0.5 + astronomer.HexWidthOffset, +0.5), # Lower Left
-        astronomer.HexEdge.UpperLeft: (-0.5 - astronomer.HexWidthOffset, 0), # Center left
+        astronomer.HexEdge.Top: (-0.5 + astronomer.HexWidthOffset, -0.5), # Upper left
+        astronomer.HexEdge.TopRight: (+0.5 - astronomer.HexWidthOffset, -0.5), # Upper right
+        astronomer.HexEdge.BottomRight: (+0.5 + astronomer.HexWidthOffset, 0), # Center right
+        astronomer.HexEdge.Bottom: (+0.5 - astronomer.HexWidthOffset, +0.5), # Lower right
+        astronomer.HexEdge.BottomLeft: (-0.5 + astronomer.HexWidthOffset, +0.5), # Lower Left
+        astronomer.HexEdge.TopLeft: (-0.5 - astronomer.HexWidthOffset, 0), # Center left
     }
     _AdjacentTransitionMap = {
-        astronomer.HexEdge.Upper: astronomer.HexEdge.LowerLeft,
-        astronomer.HexEdge.UpperRight: astronomer.HexEdge.UpperLeft,
-        astronomer.HexEdge.LowerRight: astronomer.HexEdge.Upper,
-        astronomer.HexEdge.Lower: astronomer.HexEdge.UpperRight,
-        astronomer.HexEdge.LowerLeft: astronomer.HexEdge.LowerRight,
-        astronomer.HexEdge.UpperLeft: astronomer.HexEdge.Lower
+        astronomer.HexEdge.Top: astronomer.HexEdge.BottomLeft,
+        astronomer.HexEdge.TopRight: astronomer.HexEdge.TopLeft,
+        astronomer.HexEdge.BottomRight: astronomer.HexEdge.Top,
+        astronomer.HexEdge.Bottom: astronomer.HexEdge.TopRight,
+        astronomer.HexEdge.BottomLeft: astronomer.HexEdge.BottomRight,
+        astronomer.HexEdge.TopLeft: astronomer.HexEdge.Bottom
     }
     _HexOutlineOffsets = [
         (-0.5 - astronomer.HexWidthOffset, 0), # Center left
@@ -86,7 +86,7 @@ class Region(object):
         hex = startHex
         edge = startEdge
         while True:
-            adjacentHex = hex.neighbourHex(edge=edge)
+            adjacentHex = hex.neighbour(edge=edge)
             if adjacentHex in hexes:
                 # There is an adjacent hex so transition to it
                 hex = adjacentHex
@@ -128,15 +128,15 @@ class Region(object):
         # works we know that there can only be adjacent hexes along the upper,
         # upper right and lower right edges. If this wasn't true then this
         # wouldn't be the hex with the lowest x value and largest y value.
-        hex = bestHex.neighbourHex(edge=astronomer.HexEdge.LowerRight)
+        hex = bestHex.neighbour(edge=astronomer.HexEdge.BottomRight)
         if hex in hexes:
-            return (bestHex, astronomer.HexEdge.Lower)
-        hex = bestHex.neighbourHex(edge=astronomer.HexEdge.UpperRight)
+            return (bestHex, astronomer.HexEdge.Bottom)
+        hex = bestHex.neighbour(edge=astronomer.HexEdge.TopRight)
         if hex in hexes:
-            return (bestHex, astronomer.HexEdge.LowerRight)
-        hex = bestHex.neighbourHex(edge=astronomer.HexEdge.Upper)
+            return (bestHex, astronomer.HexEdge.BottomRight)
+        hex = bestHex.neighbour(edge=astronomer.HexEdge.Top)
         if hex in hexes:
-            return (bestHex, astronomer.HexEdge.UpperRight)
+            return (bestHex, astronomer.HexEdge.TopRight)
         return (bestHex, None) # This hex has no adjacent hexes so it's outline is the outline
 
     # Return the most anticlockwise point on the given edge

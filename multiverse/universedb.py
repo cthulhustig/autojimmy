@@ -6,6 +6,21 @@ import multiverse
 import sqlite3
 import typing
 
+# TODO: Do I want to separate sectors from things like systems/routes/borders etc and treat
+# everything more as a single universe rather than a group of sectors.
+# - Things like systems/routes/borders would need to be stored as absolute hexes rather than sector relative hexes
+# - Need to flatten sophonts/allegiances to make a single set of each for the entire universe
+# - I think it would make sense to join border polygons from individual sectors into complete borders
+#
+# - PRO: I think it more closely models what I'm trying to achieve (a single coherent universe) so will
+# make things easier in the future
+# - PRO: Having sophonts/allegiances for the whole universe makes it easier for the user to edit things that span multiple sectors
+# - CON: Will make it harder to pull updated traveller map data into new sectors
+#   - Not sure if I need this functionality
+# - CON: If I join borders it could make it harder to export individual sectors (would need to split them again)
+#
+# At a minimum I think I want to make the sophonts/allegiances per universe
+
 class SectorInfo(object):
     def __init__(
             self,

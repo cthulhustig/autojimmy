@@ -645,7 +645,7 @@ class RenderContext(object):
                 if not subsectorName or subsector.isNameGenerated():
                     continue
 
-                ulHex, brHex = subsectorIndex.hexExtent()
+                ulHex, brHex = subsectorIndex.hexBounds()
                 left = ulHex.absoluteX() - 1
                 top = ulHex.absoluteY() - 1
                 right = brHex.absoluteX()

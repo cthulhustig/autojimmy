@@ -310,7 +310,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _tableContentsChanged(self) -> None:
         with gui.SignalBlocker(widget=self._mapWidget):
-            self._mapWidget.clearSelectedHexes()
+            self._mapWidget.clearSelection()
             for world in self._worldTable.worlds():
                 self._mapWidget.selectHex(
                     hex=world.hex(),

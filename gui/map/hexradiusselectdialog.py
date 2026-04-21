@@ -132,7 +132,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                     hex=hex,
                     immediate=self.isHidden())
             else:
-                self._mapWidget.clearSelectedHexes()
+                self._mapWidget.clearSelection()
 
         self._updateOverlay()
 
@@ -257,7 +257,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                         exception=ex)
 
                 if self._selectedHexes:
-                    overlay = gui.HexBoundaryMapOverlay(
+                    overlay = gui.HexOutlineMapOverlay(
                         hexes=self._selectedHexes,
                         includeInterior=True,
                         fillColour=selectionColour,

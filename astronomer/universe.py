@@ -756,7 +756,7 @@ class Universe(object):
             world = todo.pop(0)
             hex = world.hex()
             for edge in astronomer.HexEdge:
-                adjacentHex = hex.neighbourHex(edge=edge)
+                adjacentHex = hex.neighbour(edge=edge)
 
                 key = adjacentHex.absolute()
                 adjacentWorld = milieuData.worldPositionMap.get(key) if milieuData else None
