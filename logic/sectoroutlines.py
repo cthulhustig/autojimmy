@@ -34,29 +34,62 @@ _AllEdgesMask = \
     _EdgeToBitFlag[astronomer.RectilinearNeighbour.Bottom] | \
     _EdgeToBitFlag[astronomer.RectilinearNeighbour.Left]
 
+_HalfHexHeight = 0.5 * astronomer.ParsecScaleY
+_HorzGapLength = (astronomer.HexWidthOffset * 2) * astronomer.ParsecScaleX
+_HorzEdgeLength = (1 - (astronomer.HexWidthOffset * 2)) * astronomer.ParsecScaleX
 def _edgePoints(
         sector: astronomer.SectorIndex,
         edge: astronomer.RectilinearNeighbour
         ) -> typing.List[typing.Tuple[float, float]]:
     left, top, width, height = sector.isotropicBounds()
+    right = left + width
+    bottom = top + height
+    points = []
+
     if edge is astronomer.RectilinearNeighbour.Top:
-        return [(left + width, top), (left, top)]
+        x = right - _HorzGapLength
+        for index in range(astronomer.SectorWidth):
+            y = top if index % 2 else top + _HalfHexHeight
+            points.append((x, y))
+            x -= _HorzEdgeLength
+            points.append((x, y))
+            x -= _HorzGapLength
     elif edge is astronomer.RectilinearNeighbour.Right:
-        return [(left + width, top + height), (left + width, top)]
+        x = right - _HorzGapLength
+        y = bottom - _HalfHexHeight
+        for _ in range(astronomer.SectorHeight):
+            points.append((right, y))
+            y -= _HalfHexHeight
+            points.append((x, y))
+            y -= _HalfHexHeight
     elif edge is astronomer.RectilinearNeighbour.Bottom:
-        return [(left, top + height), (left + width, top + height)]
+        x = left + _HorzGapLength
+        for index in range(astronomer.SectorWidth):
+            y = bottom if index % 2 else bottom - _HalfHexHeight
+            points.append((x, y))
+            x += _HorzEdgeLength
+            points.append((x, y))
+            x += _HorzGapLength
     elif edge is astronomer.RectilinearNeighbour.Left:
-        return [(left, top), (left, top + height)]
+        x = left + _HorzGapLength
+        y = top + _HalfHexHeight
+        for _ in range(astronomer.SectorHeight):
+            points.append((left, y))
+            y += _HalfHexHeight
+            points.append((x, y))
+            y += _HalfHexHeight
+
+    return points
 
 def _sectorOutline(
         sector: astronomer.SectorIndex
         ) -> typing.List[typing.Tuple[float, float]]:
-    left, top, width, height = sector.isotropicBounds()
-    return [
-        (left, top),
-        (left, top + height),
-        (left + width, top + height),
-        (left + width, top)]
+    points = []
+    points.extend(_edgePoints(sector=sector, edge=astronomer.RectilinearNeighbour.Left))
+    points.extend(_edgePoints(sector=sector, edge=astronomer.RectilinearNeighbour.Bottom))
+    points.extend(_edgePoints(sector=sector, edge=astronomer.RectilinearNeighbour.Right))
+    points.extend(_edgePoints(sector=sector, edge=astronomer.RectilinearNeighbour.Top))
+    return points
 
 # TODO: Update this and the hex variants to take a polygon factory interface that
 # can be used to construct whatever type of polygons are required. These functions

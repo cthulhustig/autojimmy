@@ -956,7 +956,7 @@ class _SelectionMapOverlay(gui.MapOverlay):
             ) -> None:
         super().__init__(depth, enabled)
 
-        self._hexOverlay = gui.HexOutlineMapOverlay(
+        self._hexOverlay = gui.HexMapOverlay(
             hexes=hexes,
             includeInterior=True,
             depth=depth,
@@ -964,7 +964,7 @@ class _SelectionMapOverlay(gui.MapOverlay):
             lineWidth=lineWidth,
             fillColour=fillColour,
             enabled=enabled)
-        self._sectorOverlay = gui.SectorOutlineMapOverlay(
+        self._sectorOverlay = gui.SectorMapOverlay(
             sectors=sectors,
             includeInterior=True,
             depth=depth,
@@ -1109,8 +1109,8 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self._selectionMode = MapWidgetEx.SelectionMode.NoSelect
         # TODO: Should default to hex select
-        #self._selectionCategory = MapWidgetEx.SelectionCategory.HexSelect
-        self._selectionCategory = MapWidgetEx.SelectionCategory.SectorSelect
+        self._selectionCategory = MapWidgetEx.SelectionCategory.HexSelect
+        #self._selectionCategory = MapWidgetEx.SelectionCategory.SectorSelect
         self._enableDeadSpaceSelection = False
         self._selectedHexes: typing.Set[astronomer.HexPosition] = set()
         self._selectedSectors: typing.Set[astronomer.SectorIndex] = set()
@@ -1791,6 +1791,8 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         if self._selectionMode is MapWidgetEx.SelectionMode.SingleSelect and self._selectedHexes:
             self._selectedHexes.clear()
+            if self._selectionOverlay:
+                self._selectionOverlay.clear()
 
         self._selectedHexes.add(hex)
 
@@ -1891,6 +1893,8 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         if self._selectionMode is MapWidgetEx.SelectionMode.SingleSelect and self._selectedSectors:
             self._selectedSectors.clear()
+            if self._selectionOverlay:
+                self._selectionOverlay.clear()
 
         self._selectedSectors.add(index)
 
@@ -2362,9 +2366,6 @@ class MapWidgetEx(QtWidgets.QWidget):
             if self._enableDeadSpaceSelection:
                 shouldSelect = sectorIndex != None
             elif sectorIndex:
-                print(sectorIndex.isotropicBounds())
-                print(hex.isotropicBounds())
-
                 shouldSelect = self._universe.sectorBySectorIndex(
                     milieu=self._milieu,
                     index=sectorIndex) != None

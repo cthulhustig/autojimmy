@@ -257,7 +257,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                         exception=ex)
 
                 if self._selectedHexes:
-                    overlay = gui.HexOutlineMapOverlay(
+                    overlay = gui.HexMapOverlay(
                         hexes=self._selectedHexes,
                         includeInterior=True,
                         fillColour=selectionColour,
