@@ -438,14 +438,11 @@ def main() -> None:
 
         gunsmith.WeaponStore.setWeaponDirs(
             userDir=os.path.join(appDir, 'weapons'),
-            # TODO: Why is this using __file__, shouldn't it (and the code below)
-            # be using installDir? It looks like it basically does the whole
-            # __file__ shenanigans
-            exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
+            exampleDir=os.path.join(installDir, 'data', 'weapons'))
 
         robots.RobotStore.setRobotDirs(
             userDir=os.path.join(appDir, 'robots'),
-            exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'robots'))
+            exampleDir=os.path.join(installDir, 'data', 'robots'))
 
         gui.configureAppStyle(
             application=application,
