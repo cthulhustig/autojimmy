@@ -15,14 +15,14 @@ def _formatHexName(
         milieu: astronomer.Milieu,
         hex: astronomer.HexPosition
         ) -> str:
-    world = universe.worldByPosition(
+    world = universe.worldByHexPosition(
         milieu=milieu,
         hex=hex)
     if world:
         return _formatWorldName(world=world)
 
     sectorHex = universe.positionToSectorHex(milieu=milieu, hex=hex)
-    subsector = universe.subsectorByPosition(milieu=milieu, hex=hex)
+    subsector = universe.subsectorByHexPosition(milieu=milieu, hex=hex)
     return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
 
 def _formatWorldHtml(world: astronomer.World) -> str:
@@ -36,7 +36,7 @@ def _formatHexHtml(
         milieu: astronomer.Milieu,
         hex: astronomer.HexPosition
         ) -> str:
-    world = universe.worldByPosition(milieu=milieu, hex=hex)
+    world = universe.worldByHexPosition(milieu=milieu, hex=hex)
     if world:
         return _formatWorldHtml(world=world)
     return html.escape(_formatHexName(universe=universe, milieu=milieu, hex=hex))
@@ -251,7 +251,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # if it's a dead space hex
             hex = self.currentHex()
             if hex:
-                world = self._universe.worldByPosition(
+                world = self._universe.worldByHexPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if not world:
@@ -379,7 +379,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
         if selectedHex and not self._enableDeadSpaceSelection:
             # Dead space selection is not enabled so clear the currently selected
             # hex if there isn't a world at that location
-            world = self._universe.worldByPosition(
+            world = self._universe.worldByHexPosition(
                 milieu=self._milieu,
                 hex=selectedHex)
             if not world:
@@ -397,7 +397,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
             for hex in app.HexHistory.instance().hexes():
                 if not self._enableDeadSpaceSelection:
-                    world = self._universe.worldByPosition(
+                    world = self._universe.worldByHexPosition(
                         milieu=self._milieu,
                         hex=hex)
                     if not world:

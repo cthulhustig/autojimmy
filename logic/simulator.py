@@ -139,7 +139,7 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
-        currentWorld = self._universe.worldByPosition(
+        currentWorld = self._universe.worldByHexPosition(
             milieu=self._milieu,
             hex=self._currentHex)
 
@@ -222,7 +222,7 @@ class Simulator(object):
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex = jumpRoute.nodeAt(self._jumpRouteIndex)
-                nextWorld = self._universe.worldByPosition(
+                nextWorld = self._universe.worldByHexPosition(
                     milieu=self._milieu,
                     hex=nextHex)
                 currentString = self._universe.canonicalHexName(

@@ -836,7 +836,7 @@ class MapWidget(QtWidgets.QWidget):
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
             ) -> typing.Optional[astronomer.World]:
         hex = self._pixelSpaceToHex(pixelPos=pos)
-        return self._universe.worldByPosition(
+        return self._universe.worldByHexPosition(
             milieu=self._milieu,
             hex=hex)
 

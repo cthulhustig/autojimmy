@@ -313,7 +313,7 @@ def createLogisticsToolTip(
             pitStopMap[pitStop.routeIndex()] = pitStop
 
     for index, nodePos in enumerate(jumpRoute):
-        world = universe.worldByPosition(
+        world = universe.worldByHexPosition(
             milieu=milieu,
             hex=nodePos)
         hexString = html.escape('{type}: {name}'.format(

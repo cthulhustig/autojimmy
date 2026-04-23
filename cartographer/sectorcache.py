@@ -99,23 +99,23 @@ class SectorCache(object):
         self._universe = universe
         self._graphics = graphics
         self._worldsCache: typing.Dict[
-            astronomer.SectorIndex,
+            astronomer.SectorPosition,
             cartographer.AbstractPointList
         ] = {}
         self._borderCache: typing.Dict[
-            astronomer.SectorIndex,
+            astronomer.SectorPosition,
             typing.List[SectorPath]
         ] = {}
         self._regionCache: typing.Dict[
-            astronomer.SectorIndex,
+            astronomer.SectorPosition,
             typing.List[SectorPath]
         ] = {}
         self._routeCache: typing.Dict[
-            astronomer.SectorIndex,
+            astronomer.SectorPosition,
             typing.List[SectorLines]
         ] = {}
         self._clipCache: typing.Dict[
-            astronomer.SectorIndex,
+            astronomer.SectorPosition,
             cartographer.AbstractPath
         ] = {}
 
@@ -132,15 +132,15 @@ class SectorCache(object):
 
     def isotropicWorldPoints(
             self,
-            index: astronomer.SectorIndex
+            sectorPos: astronomer.SectorPosition
             ) -> typing.Optional[cartographer.AbstractPointList]:
-        worlds = self._worldsCache.get(index)
+        worlds = self._worldsCache.get(sectorPos)
         if worlds is not None:
             return worlds
 
-        sector = self._universe.sectorBySectorIndex(
+        sector = self._universe.sectorBySectorPosition(
             milieu=self._milieu,
-            index=index,
+            position=sectorPos,
             includePlaceholders=True)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
@@ -155,20 +155,20 @@ class SectorCache(object):
                 y=centerY * astronomer.ParsecScaleY))
 
         worlds = self._graphics.createPointList(points=points)
-        self._worldsCache[index] = worlds
+        self._worldsCache[sectorPos] = worlds
         return worlds
 
     def borderPaths(
             self,
-            index: astronomer.SectorIndex
+            sectorPos: astronomer.SectorPosition
             ) -> typing.Optional[typing.List[SectorPath]]:
-        borders = self._borderCache.get(index)
+        borders = self._borderCache.get(sectorPos)
         if borders is not None:
             return borders
 
-        sector = self._universe.sectorBySectorIndex(
+        sector = self._universe.sectorBySectorPosition(
             milieu=self._milieu,
-            index=index)
+            position=sectorPos)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -176,20 +176,20 @@ class SectorCache(object):
         borders = []
         for border in sector.yieldBorders():
             borders.append(self._createOutline(source=border))
-        self._borderCache[index] = borders
+        self._borderCache[sectorPos] = borders
         return borders
 
     def regionPaths(
             self,
-            index: astronomer.SectorIndex
+            sectorPos: astronomer.SectorPosition
             ) -> typing.Optional[typing.List[SectorPath]]:
-        regions = self._regionCache.get(index)
+        regions = self._regionCache.get(sectorPos)
         if regions is not None:
             return regions
 
-        sector = self._universe.sectorBySectorIndex(
+        sector = self._universe.sectorBySectorPosition(
             milieu=self._milieu,
-            index=index)
+            position=sectorPos)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -197,20 +197,20 @@ class SectorCache(object):
         regions = []
         for region in sector.yieldRegions():
             regions.append(self._createOutline(source=region))
-        self._regionCache[index] = regions
+        self._regionCache[sectorPos] = regions
         return regions
 
     def routeLines(
             self,
-            index: astronomer.SectorIndex
+            sectorPos: astronomer.SectorPosition
             ) -> typing.Optional[typing.List[SectorLines]]:
-        routes = self._routeCache.get(index)
+        routes = self._routeCache.get(sectorPos)
         if routes is not None:
             return routes
 
-        sector = self._universe.sectorBySectorIndex(
+        sector = self._universe.sectorBySectorPosition(
             milieu=self._milieu,
-            index=index)
+            position=sectorPos)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -281,20 +281,20 @@ class SectorCache(object):
                 colour=colour,
                 width=width,
                 style=style))
-        self._routeCache[index] = routes
+        self._routeCache[sectorPos] = routes
 
         return routes
 
     def clipPath(
             self,
-            index: astronomer.SectorIndex
+            sectorPos: astronomer.SectorPosition
             ) -> cartographer.AbstractPath:
-        clipPath = self._clipCache.get(index)
+        clipPath = self._clipCache.get(sectorPos)
         if clipPath:
             return clipPath
 
         absoluteOriginX, absoluteOriginY = astronomer.relativeSpaceToAbsoluteSpace(
-            (index.sectorX(), index.sectorY(), 1, 1))
+            (sectorPos.sectorX(), sectorPos.sectorY(), 1, 1))
 
         points = []
 
@@ -341,7 +341,7 @@ class SectorCache(object):
                     y=((absoluteOriginY + y) - 0.5) + offsetY))
 
         path = self._graphics.createPath(points=points, closed=True)
-        self._clipCache[index] = path
+        self._clipCache[sectorPos] = path
         return path
 
     def clear(self) -> None:

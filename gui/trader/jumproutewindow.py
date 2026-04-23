@@ -202,7 +202,7 @@ class _RefuellingPlanTable(gui.HexTable):
             row: int,
             hex: astronomer.HexPosition
             ) -> int:
-        world = self._universe.worldByPosition(
+        world = self._universe.worldByHexPosition(
             milieu=self._milieu,
             hex=hex)
 
@@ -1677,7 +1677,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
-            startWorld = universe.worldByPosition(milieu=milieu, hex=startHex)
+            startWorld = universe.worldByHexPosition(milieu=milieu, hex=startHex)
             if startWorld and not pitCostCalculator.refuellingType(world=startWorld):
                 message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy.'
                 if self._shipCurrentFuelSpinBox.value() <= 0:
@@ -1710,7 +1710,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             fuelIssueWorldStrings = []
             for waypointHex in self._waypointsWidget.hexes():
-                waypointWorld = universe.worldByPosition(milieu=milieu, hex=waypointHex)
+                waypointWorld = universe.worldByHexPosition(milieu=milieu, hex=waypointHex)
                 if waypointWorld and not pitCostCalculator.refuellingType(world=waypointWorld):
                     fuelIssueWorldStrings.append(waypointWorld.name())
 
@@ -1977,7 +1977,7 @@ class JumpRouteWindow(gui.WindowWidget):
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         isValidStartFinish = isValidWaypoint = \
             self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace or \
-            universe.worldByPosition(milieu=milieu, hex=hex) != None
+            universe.worldByHexPosition(milieu=milieu, hex=hex) != None
         isValidAvoidHex = not isCurrentAvoidHex
 
         startHex, finishHex = self._selectStartFinishWidget.hexes()

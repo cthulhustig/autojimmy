@@ -653,7 +653,7 @@ def _processRoute(
         while reachableNodeIndex <= finishNodeIndex:
             fromHex = jumpRoute.nodeAt(reachableNodeIndex - 1)
             toHex = jumpRoute.nodeAt(reachableNodeIndex)
-            toWorld = universe.worldByPosition(milieu=milieu, hex=toHex)
+            toWorld = universe.worldByHexPosition(milieu=milieu, hex=toHex)
             parsecs = fromHex.parsecsTo(toHex)
             totalParsecs += parsecs
             if parsecsToNextWorld == None:
@@ -670,7 +670,7 @@ def _processRoute(
             reachableNodeIndex += 1
 
         nodePos = jumpRoute.nodeAt(index=nodeIndex)
-        world = universe.worldByPosition(milieu=milieu, hex=nodePos)
+        world = universe.worldByHexPosition(milieu=milieu, hex=nodePos)
         refuellingType = None
         fuelCostPerTon = None
         berthingCost = None

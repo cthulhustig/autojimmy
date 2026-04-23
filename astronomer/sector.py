@@ -5,14 +5,14 @@ class Subsector(object):
     def __init__(
             self,
             milieu: astronomer.Milieu,
-            index: astronomer.SubsectorIndex,
+            position: astronomer.SubsectorPosition,
             subsectorName: str,
             isNameGenerated: bool,
             sectorName: str,
             worlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
             ) -> None:
         self._milieu = milieu
-        self._index = index
+        self._position = position
         self._name = subsectorName
         self._isNameGenerated = isNameGenerated
         self._sectorName = sectorName
@@ -22,10 +22,10 @@ class Subsector(object):
         return self._milieu
 
     def code(self) -> str:
-        return self._index.code()
+        return self._position.code()
 
-    def index(self) -> astronomer.SubsectorIndex:
-        return self._index
+    def position(self) -> astronomer.SubsectorPosition:
+        return self._position
 
     def name(self) -> str:
         return self._name
@@ -63,7 +63,7 @@ class Sector(object):
             self,
             isCustom: bool,
             milieu: astronomer.Milieu,
-            index: astronomer.SectorIndex,
+            position: astronomer.SectorPosition,
             name: str,
             alternateNames: typing.Optional[typing.Iterable[str]] = None,
             abbreviation: typing.Optional[str] = None,
@@ -82,7 +82,7 @@ class Sector(object):
             ) -> None:
         self._isCustom = isCustom
         self._milieu = milieu
-        self._index = index
+        self._position = position
         self._name = name
         self._alternateNames = list(alternateNames) if alternateNames else None
         self._abbreviation = abbreviation
@@ -102,10 +102,10 @@ class Sector(object):
         self._subsectorCodeMap: typing.Dict[str, Subsector] = {}
         self._worlds: typing.List[astronomer.World] = []
         for subsector in subsectors:
-            subsectorIndex = subsector.index()
+            subsectorPos = subsector.position()
             self._subsectorNameMap[subsector.name()] = subsector
-            self._subsectorIndexMap[(subsectorIndex.indexX(), subsectorIndex.indexY())] = subsector
-            self._subsectorCodeMap[subsectorIndex.code()] = subsector
+            self._subsectorIndexMap[(subsectorPos.indexX(), subsectorPos.indexY())] = subsector
+            self._subsectorCodeMap[subsectorPos.code()] = subsector
             self._worlds.extend(subsector.worlds())
 
         self._allegiances: typing.List[astronomer.Allegiance] = []
@@ -117,8 +117,8 @@ class Sector(object):
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
-    def index(self) -> astronomer.SectorIndex:
-        return self._index
+    def position(self) -> astronomer.SectorPosition:
+        return self._position
 
     def name(self) -> str:
         return self._name

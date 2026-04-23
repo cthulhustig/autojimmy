@@ -286,8 +286,7 @@ def oppositeRectilinearNeighbour(neighbour: RectilinearNeighbour) -> Rectilinear
 
 # NOTE: There is a LOT of code that assumes instances of this
 # class are immutable
-# TODO: Why isn't this called SectorPosition (same for SubsectorIndex)
-class SectorIndex(object):
+class SectorPosition(object):
     def __init__(self, sectorX: int, sectorY: int) -> None:
         self._sectorX = int(sectorX)
         self._sectorY = int(sectorY)
@@ -298,7 +297,7 @@ class SectorIndex(object):
         self._hash = None
 
     def __eq__(self, other):
-        if isinstance(other, SectorIndex):
+        if isinstance(other, SectorPosition):
             return self._sectorX == other._sectorX and \
                 self._sectorY == other._sectorY
         return super().__eq__(other)
@@ -320,9 +319,9 @@ class SectorIndex(object):
     def elements(self) -> typing.Tuple[int, int]:
         return (self._sectorX, self._sectorY)
 
-    def neighbour(self, neighbour: RectilinearNeighbour) -> 'SectorIndex':
+    def neighbour(self, neighbour: RectilinearNeighbour) -> 'SectorPosition':
         offsetX, offsetY = _RectilinearNeighbourOffsets[neighbour]
-        return SectorIndex(
+        return SectorPosition(
             sectorX=self._sectorX + offsetX,
             sectorY=self._sectorY + offsetY)
 
@@ -368,7 +367,7 @@ class SectorIndex(object):
 
 # NOTE: There is a LOT of code that assumes instances of this
 # class are immutable
-class SubsectorIndex(object):
+class SubsectorPosition(object):
     @typing.overload
     def __init__(self, sectorX: int, sectorY: int, code: str) -> None: ...
     @typing.overload
@@ -387,7 +386,7 @@ class SubsectorIndex(object):
 
             index = ord(self._code) - ord('A')
             if index < 0 or index > 15:
-                raise ValueError('Subsector index code must be in range in range A-P')
+                raise ValueError('Subsector position code must be in range in range A-P')
 
             self._indexX = index % 4
             self._indexY = index // 4
@@ -403,22 +402,22 @@ class SubsectorIndex(object):
             self._indexY = int(indexY)
 
             if self._indexX < 0 or self._indexX > 3:
-                raise ValueError('Subsector index x value must be in range in range 0-3')
+                raise ValueError('Subsector position x value must be in range in range 0-3')
             if self._indexY < 0 or self._indexY > 3:
-                raise ValueError('Subsector index y value must be in range in range 0-3')
+                raise ValueError('Subsector position y value must be in range in range 0-3')
 
             self._code = chr(ord('A') + (self._indexY * 4) + self._indexX)
         else:
-            raise ValueError('Invalid sector index arguments')
+            raise ValueError('Invalid sector position arguments')
 
-        self._sectorIndex: typing.Optional[SectorIndex] = None
+        self._sectorPos: typing.Optional[SectorPosition] = None
         self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
         self._isotropicBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
         self._hexBounds: typing.Optional[typing.Tuple['HexPosition', 'HexPosition']] = None
         self._hash = None
 
     def __eq__(self, other):
-        if isinstance(other, SubsectorIndex):
+        if isinstance(other, SubsectorPosition):
             return self._sectorX == other._sectorX and \
                 self._sectorY == other._sectorY and \
                 self._code == other._code
@@ -450,10 +449,10 @@ class SubsectorIndex(object):
     def elements(self) -> typing.Tuple[int, int, str]:
         return (self._sectorX, self._sectorY, self._code)
 
-    def sectorIndex(self) -> SectorIndex:
-        if not self._sectorIndex:
-            self._sectorIndex = SectorIndex(sectorX=self._sectorX, sectorY=self._sectorY)
-        return self._sectorIndex
+    def sectorPosition(self) -> SectorPosition:
+        if not self._sectorPos:
+            self._sectorPos = SectorPosition(sectorX=self._sectorX, sectorY=self._sectorY)
+        return self._sectorPos
 
     def worldBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
         if self._worldBounds is None:
@@ -505,7 +504,7 @@ class HexPosition(object):
     @typing.overload
     def __init__(self, sectorX: int, sectorY: int, offsetX: int, offsetY: int) -> None: ...
     @typing.overload
-    def __init__(self, sectorIndex, offsetX: int, offsetY: int) -> None: ...
+    def __init__(self, sectorPos, offsetX: int, offsetY: int) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         argCount = len(args) + len(kwargs)
@@ -515,12 +514,12 @@ class HexPosition(object):
             self._absolute = (absoluteX, absoluteY)
             self._relative = None
         elif argCount == 3:
-            sectorIndex = args[0] if len(args) > 0 else kwargs['sectorIndex']
+            sectorPos = args[0] if len(args) > 0 else kwargs['sectorPos']
             offsetX = int(args[1] if len(args) > 1 else kwargs['offsetX'])
             offsetY = int(args[2] if len(args) > 2 else kwargs['offsetY'])
-            if not isinstance(sectorIndex, SectorIndex):
-                raise ValueError('The sectorIndex argument must be a SectorIndex')
-            self._relative = (sectorIndex.sectorX(), sectorIndex.sectorY(), offsetX, offsetY)
+            if not isinstance(sectorPos, SectorPosition):
+                raise ValueError('The sectorPos argument must be a SectorPos')
+            self._relative = (sectorPos.sectorX(), sectorPos.sectorY(), offsetX, offsetY)
             self._absolute = None
         elif argCount == 4:
             sectorX = int(args[0] if len(args) > 0 else kwargs['sectorX'])
@@ -532,8 +531,8 @@ class HexPosition(object):
         else:
             raise ValueError('Invalid hex position arguments')
 
-        self._sectorIndex: typing.Optional[SectorIndex] = None
-        self._subsectorIndex: typing.Optional[SubsectorIndex] = None
+        self._sectorPos: typing.Optional[SectorPosition] = None
+        self._subsectorPos: typing.Optional[SubsectorPosition] = None
         self._worldCenter: typing.Optional[typing.Tuple[float, float]] = None
         self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
         self._isotropicCenter: typing.Optional[typing.Tuple[float, float]] = None
@@ -586,23 +585,23 @@ class HexPosition(object):
             self._calculateRelative()
         return (self._relative[0], self._relative[1])
 
-    def sectorIndex(self) -> SectorIndex:
-        if not self._sectorIndex:
+    def sectorPosition(self) -> SectorPosition:
+        if not self._sectorPos:
             sectorX, sectorY, _, _ = self.relative()
-            self._sectorIndex = SectorIndex(
+            self._sectorPos = SectorPosition(
                 sectorX=sectorX,
                 sectorY=sectorY)
-        return self._sectorIndex
+        return self._sectorPos
 
-    def subsectorIndex(self) -> SubsectorIndex:
-        if not self._subsectorIndex:
+    def subsectorPosition(self) -> SubsectorPosition:
+        if not self._subsectorPos:
             sectorX, sectorY, offsetX, offsetY = self.relative()
-            self._subsectorIndex = SubsectorIndex(
+            self._subsectorPos = SubsectorPosition(
                 sectorX=sectorX,
                 sectorY=sectorY,
                 indexX=(offsetX - 1) // SubsectorWidth,
                 indexY=(offsetY - 1) // SubsectorHeight)
-        return self._subsectorIndex
+        return self._subsectorPos
 
     def sectorX(self) -> int:
         if not self._relative:

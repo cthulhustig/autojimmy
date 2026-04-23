@@ -623,21 +623,21 @@ class RenderContext(object):
             for y in range(minY, maxY + astronomer.SubsectorHeight, astronomer.SubsectorHeight):
                 sectorX, sectorY, offsetX, offsetY = \
                     astronomer.absoluteSpaceToRelativeSpace((x, y))
-                sectorIndex = astronomer.SectorIndex(
+                sectorPos = astronomer.SectorPosition(
                     sectorX=sectorX,
                     sectorY=sectorY)
-                sector = self._universe.sectorBySectorIndex(
+                sector = self._universe.sectorBySectorPosition(
                     milieu=self._milieu,
-                    index=sectorIndex)
+                    position=sectorPos)
                 if not sector:
                     continue
 
-                subsectorIndex = astronomer.SubsectorIndex(
+                subsectorPos = astronomer.SubsectorPosition(
                     sectorX=sectorX,
                     sectorY=sectorY,
                     indexX=(offsetX - 1) // astronomer.SubsectorWidth,
                     indexY=(offsetY - 1) // astronomer.SubsectorHeight)
-                subsector = sector.subsectorByCode(subsectorIndex.code())
+                subsector = sector.subsectorByCode(subsectorPos.code())
                 if not subsector:
                     continue
 
@@ -645,7 +645,7 @@ class RenderContext(object):
                 if not subsectorName or subsector.isNameGenerated():
                     continue
 
-                ulHex, brHex = subsectorIndex.hexBounds()
+                ulHex, brHex = subsectorPos.hexBounds()
                 left = ulHex.absoluteX() - 1
                 top = ulHex.absoluteY() - 1
                 right = brHex.absoluteX()
@@ -685,7 +685,7 @@ class RenderContext(object):
 
             for sector in self._selector.sectors():
                 sectorRoutes = self._sectorCache.routeLines(
-                    index=sector.index())
+                    sectorPos=sector.position())
                 for route in sectorRoutes:
                     routeColour = route.colour()
                     routeWidth = route.width()
@@ -731,8 +731,8 @@ class RenderContext(object):
             for sector in self._selector.sectors():
                 brush.copyFrom(self._styleSheet.microBorders.textBrush)
 
-                sectorIndex = sector.index()
-                sectorWorldOriginX, sectorWorldOriginY, _, _ = sectorIndex.worldBounds()
+                sectorPos = sector.position()
+                sectorWorldOriginX, sectorWorldOriginY, _, _ = sectorPos.worldBounds()
 
                 for border in sector.yieldBorders():
                     if not border.showLabel():
@@ -832,10 +832,10 @@ class RenderContext(object):
                     and not sectorLabel:
                 continue
 
-            index = sector.index()
+            sectorPos = sector.position()
             centerX, centerY = astronomer.relativeSpaceToAbsoluteSpace((
-                index.sectorX(),
-                index.sectorY(),
+                sectorPos.sectorX(),
+                sectorPos.sectorY(),
                 int(astronomer.SectorWidth // 2),
                 int(astronomer.SectorHeight // 2)))
 
@@ -1199,13 +1199,13 @@ class RenderContext(object):
 
                 for sector in self._selector.sectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
-                        index=sector.index())
+                        sectorPos=sector.position())
                     if worlds:
                         self._graphics.drawPoints(points=worlds, pen=pen)
 
                 for sector in self._selector.placeholderSectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
-                        index=sector.index())
+                        sectorPos=sector.position())
                     if worlds:
                         self._graphics.drawPoints(points=worlds, pen=pen)
 
@@ -1625,7 +1625,7 @@ class RenderContext(object):
                         not tagging.contains(astronomer.SectorTag.InReview)
                 if shouldDim:
                     clipPath = self._sectorCache.clipPath(
-                        index=sector.index())
+                        sectorPos=sector.position())
 
                     self._graphics.drawPath(
                         path=clipPath,
@@ -1660,7 +1660,7 @@ class RenderContext(object):
                     continue
 
                 clipPath = self._sectorCache.clipPath(
-                    index=sector.index())
+                    sectorPos=sector.position())
 
                 self._graphics.drawPath(
                     path=clipPath,
@@ -1853,7 +1853,7 @@ class RenderContext(object):
 
         for sector in self._selector.sectors():
             sectorClipPath = self._sectorCache.clipPath(
-                index=sector.index())
+                sectorPos=sector.position())
             sectorClipRect = sectorClipPath.bounds()
             if drawCurvedBorders and self._scale >= 16:
                 # HACK: Inflate the sector clip bounds slightly when drawing
@@ -1904,7 +1904,7 @@ class RenderContext(object):
                 continue
 
             sectorRegions = self._sectorCache.regionPaths(
-                index=sector.index())
+                sectorPos=sector.position())
             regionOutlines: typing.List[cartographer.SectorPath] = []
             if sectorRegions and drawRegions:
                 for outline in sectorRegions:
@@ -1916,7 +1916,7 @@ class RenderContext(object):
                         regionOutlines.append(outline)
 
             sectorBorders = self._sectorCache.borderPaths(
-                index=sector.index())
+                sectorPos=sector.position())
             borderOutlines: typing.List[cartographer.SectorPath] = []
             if sectorBorders and drawBorders:
                 for outline in sectorBorders:

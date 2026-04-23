@@ -284,10 +284,10 @@ class RoutePlanner(object):
         finishWorldIndex = sequenceLength - 1
 
         startHex = hexSequence[0]
-        startWorld = universe.worldByPosition(milieu=milieu, hex=startHex)
+        startWorld = universe.worldByHexPosition(milieu=milieu, hex=startHex)
 
         finishHex = hexSequence[finishWorldIndex]
-        finishWorld = universe.worldByPosition(milieu=milieu, hex=finishHex)
+        finishWorld = universe.worldByHexPosition(milieu=milieu, hex=finishHex)
 
         startWorldFuelType = None
         if routingType is RoutingType.Basic:

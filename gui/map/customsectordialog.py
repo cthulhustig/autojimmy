@@ -908,8 +908,8 @@ class CustomSectorDialog(gui.DialogEx):
 
         self._sectorMapWidget.setUniverse(universe=universe)
 
-        sectorIndex = sector.index()
-        left, top, width, height = sectorIndex.worldBounds()
+        sectorPos = sector.position()
+        left, top, width, height = sectorPos.worldBounds()
         sectorCenter = QtCore.QPointF(left + (width / 2), top + (height / 2))
         self._sectorMapWidget.setViewAreaLimits(
             upperLeft=QtCore.QPointF(left, top),

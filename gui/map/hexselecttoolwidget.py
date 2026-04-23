@@ -210,7 +210,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         hex = self.selectedHex()
         if not hex:
             return None
-        return self._universe.worldByPosition(milieu=self._milieu, hex=hex)
+        return self._universe.worldByHexPosition(milieu=self._milieu, hex=hex)
 
     def enableMapSelectButton(self, enable: bool) -> None:
         self._enableMapSelectButton = enable

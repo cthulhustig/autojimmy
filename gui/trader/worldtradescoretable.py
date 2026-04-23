@@ -175,7 +175,7 @@ class WorldTradeScoreTable(gui.HexTable):
             row: int,
             hex: astronomer.HexPosition
             ) -> int:
-        world = self._universe.worldByPosition(
+        world = self._universe.worldByHexPosition(
             milieu=self._milieu,
             hex=hex)
 

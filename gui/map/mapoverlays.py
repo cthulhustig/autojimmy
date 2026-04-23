@@ -33,7 +33,7 @@ _HexPolygon = QtGui.QPolygonF([
 ])
 
 def _createSectorPolygon() -> QtGui.QPolygonF:
-    sector = astronomer.SectorIndex(sectorX=0, sectorY=0)
+    sector = astronomer.SectorPosition(sectorX=0, sectorY=0)
     outline = logic.calculateCompleteSectorOutlines(sectors=[sector])[0]
 
     # The outline is in isotropic coordinates but we want the origin of
@@ -559,7 +559,7 @@ class SectorMapOverlay(gui.MapOverlay):
     def __init__(
             self,
             depth: int,
-            sectors: typing.Optional[typing.Iterable[astronomer.SectorIndex]] = None,
+            sectors: typing.Optional[typing.Iterable[astronomer.SectorPosition]] = None,
             includeInterior: bool = True,
             lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
@@ -582,26 +582,26 @@ class SectorMapOverlay(gui.MapOverlay):
         if fillColour:
             self._brush = QtGui.QBrush(fillColour)
 
-    def sectors(self) -> typing.Collection[astronomer.SectorIndex]:
+    def sectors(self) -> typing.Collection[astronomer.SectorPosition]:
         return self._sectors
 
     def setSectors(
             self,
-            sectors: typing.Optional[typing.Iterable[astronomer.SectorIndex]]
+            sectors: typing.Optional[typing.Iterable[astronomer.SectorPosition]]
             ) -> None:
         self._sectors.clear()
         if sectors:
             self._sectors.update(sectors)
         self._polygons = self._translations = None
 
-    def addSector(self, sector: astronomer.SectorIndex) -> None:
+    def addSector(self, sector: astronomer.SectorPosition) -> None:
         if sector in self._sectors:
             return
 
         self._sectors.add(sector)
         self._polygons = self._translations = None # Regenerate on demand
 
-    def addSectors(self, sectors: typing.Iterable[astronomer.SectorIndex]):
+    def addSectors(self, sectors: typing.Iterable[astronomer.SectorPosition]):
         oldCount = len(self._sectors)
         self._sectors.update(sectors)
         newCount = len(self._sectors)
@@ -609,7 +609,7 @@ class SectorMapOverlay(gui.MapOverlay):
         if newCount != oldCount:
             self._polygons = self._translations = None
 
-    def removeSector(self, sector: astronomer.SectorIndex) -> None:
+    def removeSector(self, sector: astronomer.SectorPosition) -> None:
         if sector not in self._sectors:
             return
 

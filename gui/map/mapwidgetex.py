@@ -947,7 +947,7 @@ class _SelectionMapOverlay(gui.MapOverlay):
     def __init__(
             self,
             hexes: typing.Iterable[astronomer.HexPosition],
-            sectors: typing.Iterable[astronomer.SectorIndex],
+            sectors: typing.Iterable[astronomer.SectorPosition],
             depth: int,
             lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
@@ -1000,17 +1000,17 @@ class _SelectionMapOverlay(gui.MapOverlay):
 
     def setSectors(
             self,
-            sectors: typing.Optional[typing.Iterable[astronomer.SectorIndex]]
+            sectors: typing.Optional[typing.Iterable[astronomer.SectorPosition]]
             ) -> None:
         self._sectorOverlay.setSectors(sectors=sectors)
 
-    def addSector(self, sector: astronomer.SectorIndex) -> None:
+    def addSector(self, sector: astronomer.SectorPosition) -> None:
         self._sectorOverlay.addSector(sector=sector)
 
-    def addSectors(self, sectors: typing.Iterable[astronomer.SectorIndex]):
+    def addSectors(self, sectors: typing.Iterable[astronomer.SectorPosition]):
         self._sectorOverlay.addSectors(sectors=sectors)
 
-    def removeSector(self, sector: astronomer.SectorIndex) -> None:
+    def removeSector(self, sector: astronomer.SectorPosition) -> None:
         self._sectorOverlay.removeSector(sector=sector)
 
     def clear(self) -> None:
@@ -1113,7 +1113,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         #self._selectionCategory = MapWidgetEx.SelectionCategory.SectorSelect
         self._enableDeadSpaceSelection = False
         self._selectedHexes: typing.Set[astronomer.HexPosition] = set()
-        self._selectedSectors: typing.Set[astronomer.SectorIndex] = set()
+        self._selectedSectors: typing.Set[astronomer.SectorPosition] = set()
         self._selectionOverlay: typing.Optional[_SelectionMapOverlay] = None
         self._infoHex = None
 
@@ -1783,7 +1783,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 self.setInfoHex(hex=hex)
             return
 
-        world = self._universe.worldByPosition(
+        world = self._universe.worldByHexPosition(
             milieu=self._milieu,
             hex=hex)
         if not world and not self._enableDeadSpaceSelection:
@@ -1820,7 +1820,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if not self._enableDeadSpaceSelection:
             filtered = []
             for hex in hexes:
-                world = self._universe.worldByPosition(
+                world = self._universe.worldByHexPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if world:
@@ -1872,22 +1872,22 @@ class MapWidgetEx(QtWidgets.QWidget):
         self.update()
         self.selectionChanged.emit()
 
-    def selectedSectors(self) -> typing.List[astronomer.SectorIndex]:
+    def selectedSectors(self) -> typing.List[astronomer.SectorPosition]:
         return list(self._selectedSectors)
 
     def selectSector(
             self,
-            index: astronomer.SectorIndex
+            position: astronomer.SectorPosition
             ) -> None:
         if not self._isSectorSelectAllowed():
             return
 
-        if index in self._selectedSectors:
+        if position in self._selectedSectors:
             return
 
-        sector = self._universe.sectorBySectorIndex(
+        sector = self._universe.sectorBySectorPosition(
             milieu=self._milieu,
-            index=index)
+            position=position)
         if not sector and not self._enableDeadSpaceSelection:
             return
 
@@ -1896,45 +1896,45 @@ class MapWidgetEx(QtWidgets.QWidget):
             if self._selectionOverlay:
                 self._selectionOverlay.clear()
 
-        self._selectedSectors.add(index)
+        self._selectedSectors.add(position)
 
         if self._selectionOverlay is None:
             self._createSelectionOverlay()
         else:
-            self._selectionOverlay.addSector(sector=index)
+            self._selectionOverlay.addSector(sector=position)
 
         self.update()
         self.selectionChanged.emit()
 
     def selectSectors(
             self,
-            indices: typing.Iterable[astronomer.SectorIndex]
+            positions: typing.Collection[astronomer.SectorPosition]
             ) -> None:
         if not self._isSectorSelectAllowed():
             return
 
         if not self._enableDeadSpaceSelection:
             filtered = []
-            for index in indices:
-                sector = self._universe.sectorBySectorIndex(
+            for position in positions:
+                sector = self._universe.sectorBySectorPosition(
                     milieu=self._milieu,
-                    index=index)
+                    position=position)
                 if sector:
-                    filtered.append(index)
-            indices = filtered
+                    filtered.append(position)
+            positions = filtered
 
-        if not indices:
+        if not positions:
             return
 
         if self._selectionMode is MapWidgetEx.SelectionMode.SingleSelect:
             # In single select mode just select the first item
             self.selectSector(
-                hex=indices[0],
+                hex=positions[0],
                 setInfoHex=False)
             return
 
         oldCount = len(self._selectedSectors)
-        self._selectedSectors.update(indices)
+        self._selectedSectors.update(positions)
         newCount = len(self._selectedSectors)
         selectionChanged = newCount != oldCount
         if not selectionChanged:
@@ -1943,24 +1943,24 @@ class MapWidgetEx(QtWidgets.QWidget):
         if self._selectionOverlay is None:
             self._createSelectionOverlay()
         else:
-            self._selectionOverlay.addSectors(sectors=indices)
+            self._selectionOverlay.addSectors(sectors=positions)
 
         self.update()
         self.selectionChanged.emit()
 
     def deselectSector(
             self,
-            index: astronomer.SectorIndex
+            position: astronomer.SectorPosition
             ) -> None:
         if not self._isSectorSelectAllowed():
             return
 
-        if index not in self._selectedSectors:
+        if position not in self._selectedSectors:
             return
 
-        self._selectedSectors.remove(index)
+        self._selectedSectors.remove(position)
         if self._selectionOverlay is not None:
-            self._selectionOverlay.removeSector(sector=index)
+            self._selectionOverlay.removeSector(sector=position)
 
         self.update()
         self.selectionChanged.emit()
@@ -2044,18 +2044,18 @@ class MapWidgetEx(QtWidgets.QWidget):
             # Deselect any dead space
             selectionChanged = False
             for hex in list(self._selectedHexes):
-                world = self._universe.worldByPosition(
+                world = self._universe.worldByHexPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if not world:
                     self._selectedHexes.discard(hex)
                     selectionChanged = True
-            for index in list(self._selectedSectors):
-                sector = self._universe.sectorBySectorIndex(
+            for pos in list(self._selectedSectors):
+                sector = self._universe.sectorBySectorPosition(
                     milieu=self._milieu,
-                    index=index)
+                    position=pos)
                 if not sector:
-                    self._selectedSectors.discard(index)
+                    self._selectedSectors.discard(pos)
                     selectionChanged = True
 
             if selectionChanged:
@@ -2336,7 +2336,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             if self._enableDeadSpaceSelection:
                 shouldSelect = hex != None
             elif hex:
-                shouldSelect = self._universe.worldByPosition(
+                shouldSelect = self._universe.worldByHexPosition(
                     milieu=self._milieu,
                     hex=hex) != None
 
@@ -2361,21 +2361,21 @@ class MapWidgetEx(QtWidgets.QWidget):
                         # Clicking a selected worlds deselects it
                         self.deselectHex(hex=hex)
         elif self._selectionCategory is MapWidgetEx.SelectionCategory.SectorSelect:
-            sectorIndex = hex.sectorIndex() if hex else None
+            position = hex.sectorPosition() if hex else None
             shouldSelect = False
             if self._enableDeadSpaceSelection:
-                shouldSelect = sectorIndex != None
-            elif sectorIndex:
-                shouldSelect = self._universe.sectorBySectorIndex(
+                shouldSelect = position != None
+            elif position:
+                shouldSelect = self._universe.sectorBySectorPosition(
                     milieu=self._milieu,
-                    index=sectorIndex) != None
+                    position=position) != None
 
             if shouldSelect:
-                if sectorIndex not in self._selectedSectors:
-                    self.selectSector(index=sectorIndex)
+                if position not in self._selectedSectors:
+                    self.selectSector(position=position)
                 else:
                     # Clicking a selected worlds deselects it
-                    self.deselectSector(index=sectorIndex)
+                    self.deselectSector(position=position)
 
         self.leftClicked.emit(hex)
 

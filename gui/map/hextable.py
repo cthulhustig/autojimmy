@@ -628,7 +628,7 @@ class HexTable(gui.FrozenColumnListTable):
         try:
             uwp = economics = culture = pbg = worldTagColour = None
 
-            world = self._universe.worldByPosition(milieu=self._milieu, hex=hex)
+            world = self._universe.worldByHexPosition(milieu=self._milieu, hex=hex)
             if world:
                 uwp = world.uwp()
                 economics = world.economics()
@@ -666,7 +666,7 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.sectorName())
                         tagColour = worldTagColour
                     else:
-                        sector = self._universe.sectorByPosition(
+                        sector = self._universe.sectorByHexPosition(
                             milieu=self._milieu,
                             hex=hex)
                         tableItem.setData(
@@ -680,7 +680,7 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.subsectorName())
                         tagColour = worldTagColour
                     else:
-                        subsector = self._universe.subsectorByPosition(
+                        subsector = self._universe.subsectorByHexPosition(
                             milieu=self._milieu,
                             hex=hex)
                         tableItem.setData(
@@ -975,17 +975,17 @@ class HexTable(gui.FrozenColumnListTable):
                                     if matchSectors:
                                         ownerSector = matchSectors[0]
                                 else:
-                                    ownerSector = self._universe.sectorBySectorIndex(
+                                    ownerSector = self._universe.sectorBySectorPosition(
                                         milieu=self._milieu,
-                                        index=hex.sectorIndex())
+                                        position=hex.sectorPosition())
 
                                 ownerWorld = None
                                 if ownerSector:
                                     ownerHex = astronomer.HexPosition(
-                                        sectorIndex=ownerSector.index(),
+                                        sectorPos=ownerSector.position(),
                                         offsetX=ownerWorldRef.hexX(),
                                         offsetY=ownerWorldRef.hexY())
-                                    ownerWorld = self._universe.worldByPosition(
+                                    ownerWorld = self._universe.worldByHexPosition(
                                         milieu=self._milieu,
                                         hex=ownerHex)
 
@@ -1013,17 +1013,17 @@ class HexTable(gui.FrozenColumnListTable):
                                     if matchSectors:
                                         colonySector = matchSectors[0]
                                 else:
-                                    colonySector = self._universe.sectorBySectorIndex(
+                                    colonySector = self._universe.sectorBySectorPosition(
                                         milieu=self._milieu,
-                                        index=hex.sectorIndex())
+                                        position=hex.sectorPosition())
 
                                 colonyWorld = None
                                 if colonySector:
                                     colonyHex = astronomer.HexPosition(
-                                        sectorIndex=colonySector.index(),
+                                        sectorPos=colonySector.position(),
                                         offsetX=colonyWorldRef.hexX(),
                                         offsetY=colonyWorldRef.hexY())
-                                    colonyWorld = self._universe.worldByPosition(
+                                    colonyWorld = self._universe.worldByHexPosition(
                                         milieu=self._milieu,
                                         hex=colonyHex)
 
@@ -1257,17 +1257,17 @@ class HexTable(gui.FrozenColumnListTable):
                         if matchSectors:
                             ownerSector = matchSectors[0]
                     else:
-                        ownerSector = self._universe.sectorBySectorIndex(
+                        ownerSector = self._universe.sectorBySectorPosition(
                             milieu=self._milieu,
-                            index=hex.sectorIndex())
+                            position=hex.sectorPosition())
 
                     ownerWorld = None
                     if ownerSector:
                         ownerHex = astronomer.HexPosition(
-                            sectorIndex=ownerSector.index(),
+                            sectorPos=ownerSector.position(),
                             offsetX=ownerWorldRef.hexX(),
                             offsetY=ownerWorldRef.hexY())
-                        ownerWorld = self._universe.worldByPosition(
+                        ownerWorld = self._universe.worldByHexPosition(
                             milieu=self._milieu,
                             hex=ownerHex)
 
@@ -1303,17 +1303,17 @@ class HexTable(gui.FrozenColumnListTable):
                         if matchSectors:
                             colonySector = matchSectors[0]
                     else:
-                        colonySector = self._universe.sectorBySectorIndex(
+                        colonySector = self._universe.sectorBySectorPosition(
                             milieu=self._milieu,
-                            index=hex.sectorIndex())
+                            position=hex.sectorPosition())
 
                     colonyWorld = None
                     if colonySector:
                         colonyHex = astronomer.HexPosition(
-                            sectorIndex=colonySector.index(),
+                            sectorPos=colonySector.position(),
                             offsetX=colonyWorldRef.hexX(),
                             offsetY=colonyWorldRef.hexY())
-                        colonyWorld = self._universe.worldByPosition(
+                        colonyWorld = self._universe.worldByHexPosition(
                             milieu=self._milieu,
                             hex=colonyHex)
 

@@ -73,15 +73,15 @@ class WorldManager(object):
                         'Loaded {worlds} worlds for sector {name} at ({x}, {y}) from {milieu}'.format(
                             worlds=sector.worldCount(),
                             name=sector.name(),
-                            x=sector.index().sectorX(),
-                            y=sector.index().sectorY(),
+                            x=sector.position().sectorX(),
+                            y=sector.position().sectorY(),
                             milieu=sector.milieu().value))
                 except Exception as ex:
                     logging.error(
                         'Failed to load sector {name} at ({x}, {y}) from {milieu.value}'.format(
                             name=sector.name(),
-                            x=sector.index().sectorX(),
-                            y=sector.index().sectorY(),
+                            x=sector.position().sectorX(),
+                            y=sector.position().sectorY(),
                             milieu=sector.milieu().value),
                         exc_info=ex)
                     continue
@@ -232,8 +232,8 @@ class WorldManager(object):
                         isNameGenerated = True
 
 
-                    subsectorIndex = worldHex.subsectorIndex()
-                    subsectorCode = subsectorIndex.code()
+                    subsectorPos = worldHex.subsectorPosition()
+                    subsectorCode = subsectorPos.code()
                     subsectorName, _ = subsectorNameMap[subsectorCode]
 
                     allegianceId = dbSystem.allegianceId()
@@ -593,7 +593,7 @@ class WorldManager(object):
             subsectorWorlds = subsectorWorldsMap[subsectorCode]
             subsectors.append(astronomer.Subsector(
                 milieu=milieu,
-                index=astronomer.SubsectorIndex(
+                position=astronomer.SubsectorPosition(
                     sectorX=sectorX,
                     sectorY=sectorY,
                     code=subsectorCode),
@@ -880,7 +880,7 @@ class WorldManager(object):
             isCustom=isCustom,
             name=sectorName,
             milieu=milieu,
-            index=astronomer.SectorIndex(sectorX=sectorX, sectorY=sectorY),
+            position=astronomer.SectorPosition(sectorX=sectorX, sectorY=sectorY),
             alternateNames=alternateNames,
             abbreviation=dbSector.abbreviation(),
             sectorLabel=dbSector.sectorLabel(),

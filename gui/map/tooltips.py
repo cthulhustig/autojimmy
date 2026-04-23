@@ -32,10 +32,10 @@ def createHexToolTip(
         hexImageOptions: typing.Optional[typing.Collection[app.MapOption]] = None,
         includeCredits: bool = True
         ) -> str:
-    world = universe.worldByPosition(
+    world = universe.worldByHexPosition(
         milieu=milieu,
         hex=hex)
-    sector = universe.sectorByPosition(
+    sector = universe.sectorByHexPosition(
         milieu=milieu,
         hex=hex)
     uwp = world.uwp() if world else None
@@ -85,10 +85,10 @@ def createHexToolTip(
 
     subsector = None
     if sector:
-        subsectorIndex = hex.subsectorIndex()
+        subsectorPos = hex.subsectorPosition()
         subsector = sector.subsectorByIndex(
-            indexX=subsectorIndex.indexX(),
-            indexY=subsectorIndex.indexY())
+            indexX=subsectorPos.indexX(),
+            indexY=subsectorPos.indexY())
     if subsector:
         if not subsector.isNameGenerated():
             subsectorName = subsector.name()
@@ -171,17 +171,17 @@ def createHexToolTip(
                     if matchSectors:
                         ownerSector = matchSectors[0]
                 else:
-                    ownerSector = universe.sectorBySectorIndex(
+                    ownerSector = universe.sectorBySectorPosition(
                         milieu=milieu,
-                        index=hex.sectorIndex())
+                        position=hex.sectorPosition())
 
                 ownerWorld = None
                 if ownerSector:
                     ownerHex = astronomer.HexPosition(
-                        sectorIndex=ownerSector.index(),
+                        sectorPos=ownerSector.position(),
                         offsetX=ownerWorldRef.hexX(),
                         offsetY=ownerWorldRef.hexY())
-                    ownerWorld = universe.worldByPosition(
+                    ownerWorld = universe.worldByHexPosition(
                         milieu=milieu,
                         hex=ownerHex)
 
@@ -428,17 +428,17 @@ def createHexToolTip(
                     if matchSectors:
                         colonySector = matchSectors[0]
                 else:
-                    colonySector = universe.sectorBySectorIndex(
+                    colonySector = universe.sectorBySectorPosition(
                         milieu=milieu,
-                        index=hex.sectorIndex())
+                        position=hex.sectorPosition())
 
                 colonyWorld = None
                 if colonySector:
                     colonyHex = astronomer.HexPosition(
-                        sectorIndex=colonySector.index(),
+                        sectorPos=colonySector.position(),
                         offsetX=colonyWorldRef.hexX(),
                         offsetY=colonyWorldRef.hexY())
-                    colonyWorld = universe.worldByPosition(
+                    colonyWorld = universe.worldByHexPosition(
                         milieu=milieu,
                         hex=colonyHex)
 

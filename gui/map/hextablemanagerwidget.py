@@ -460,7 +460,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             # the table
             contentChanged = False
             for row in range(self._hexTable.rowCount() - 1, -1, -1):
-                world = self._universe.worldByPosition(
+                world = self._universe.worldByHexPosition(
                     milieu=self._milieu,
                     hex=self.hex(row=row))
                 if not world:

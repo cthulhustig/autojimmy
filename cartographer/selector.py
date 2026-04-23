@@ -152,16 +152,14 @@ class RectSelector(object):
 
             self._tightSectors = []
             for sector in self._sloppySectors:
-                index = sector.index()
-                left, top, width, height = index.worldBounds()
+                left, top, width, height = sector.position().worldBounds()
                 rect.setRect(x=left, y=top, width=width, height=height)
                 if self._rect.intersects(other=rect):
                     self._tightSectors.append(sector)
 
             self._tightPlaceholderSectors = []
             for sector in self._sloppyPlaceholderSectors:
-                index = sector.index()
-                left, top, width, height = index.worldBounds()
+                left, top, width, height = sector.position().worldBounds()
                 rect.setRect(x=left, y=top, width=width, height=height)
                 if self._rect.intersects(other=rect):
                     self._tightPlaceholderSectors.append(sector)

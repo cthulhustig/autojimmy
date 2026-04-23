@@ -38,7 +38,7 @@ _HalfHexHeight = 0.5 * astronomer.ParsecScaleY
 _HorzGapLength = (astronomer.HexWidthOffset * 2) * astronomer.ParsecScaleX
 _HorzEdgeLength = (1 - (astronomer.HexWidthOffset * 2)) * astronomer.ParsecScaleX
 def _edgePoints(
-        sector: astronomer.SectorIndex,
+        sector: astronomer.SectorPosition,
         edge: astronomer.RectilinearNeighbour
         ) -> typing.List[typing.Tuple[float, float]]:
     left, top, width, height = sector.isotropicBounds()
@@ -82,7 +82,7 @@ def _edgePoints(
     return points
 
 def _sectorOutline(
-        sector: astronomer.SectorIndex
+        sector: astronomer.SectorPosition
         ) -> typing.List[typing.Tuple[float, float]]:
     points = []
     points.extend(_edgePoints(sector=sector, edge=astronomer.RectilinearNeighbour.Left))
@@ -97,12 +97,12 @@ def _sectorOutline(
 # can then have their own polygon factory that takes the positions in world coordinate
 # and converts them to isotropic coordinates
 def calculateCompleteSectorOutlines(
-        sectors: typing.Iterable[astronomer.SectorIndex]
+        sectors: typing.Iterable[astronomer.SectorPosition]
         ) -> typing.List[typing.List[typing.Tuple[float, float]]]:
     sectors = set(sectors)
     outlines: typing.List[typing.List[typing.Tuple[float, float]]] = []
 
-    sectorEdgeFlags: typing.Dict[astronomer.SectorIndex, int] = {}
+    sectorEdgeFlags: typing.Dict[astronomer.SectorPosition, int] = {}
     for sector in sectors:
         edgeFlags = 0
         for edge in _SectorEdges:
