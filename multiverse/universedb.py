@@ -2894,6 +2894,29 @@ class UniverseDb(object):
             sector: multiverse.DbSector,
             stockDataHash: typing.Optional[str] = None
             ) -> None:
+        # Check there isn't a sector at the same position with a different id.
+        # In order for the created/modified/stock hash to work correctly, updating
+        # the sector at an occupied hex should be done by writing an updated sector
+        # with the same id.
+        sql = """
+            SELECT id
+            FROM {table}
+            WHERE id != :id AND milieu = :milieu AND sector_x = :x AND sector_y = :y
+            LIMIT 1;
+            """.format(table=UniverseDb._SectorsTableName)
+        cursor.execute(sql, {
+            'id': sector.id(),
+            'milieu': sector.milieu(),
+            'x': sector.sectorX(),
+            'y': sector.sectorY()})
+        row = cursor.fetchone()
+        if row:
+            raise ValueError('Sector {otherId} already exists at ({x}, {y}) in {milieu}'.format(
+                otherId=row[0],
+                x=sector.sectorX(),
+                y=sector.sectorY(),
+                milieu=sector.milieu()))
+
         # Query any current metadata so it can be re-added after saving. This
         # is needed as the metadata is set to cascade delete when the sector
         # is deleted and the sector will be removed before it's reinserted when
@@ -2919,9 +2942,6 @@ class UniverseDb(object):
         # same time and place as the new sector
         self._deleteSector(
             sectorId=sector.id(),
-            milieu=sector.milieu(),
-            sectorX=sector.sectorX(),
-            sectorY=sector.sectorY(),
             cursor=cursor)
         self._insertSector(
             sector=sector,
@@ -2953,25 +2973,14 @@ class UniverseDb(object):
     def _deleteSector(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str,
-            milieu: typing.Optional[str] = None,
-            sectorX: typing.Optional[int] = None,
-            sectorY: typing.Optional[int] = None,
+            sectorId: str
             ) -> None:
         sql = """
             DELETE FROM {table}
-            WHERE id = :id
+            WHERE id = :id;
             """.format(
             table=UniverseDb._SectorsTableName)
         queryData = {'id': sectorId}
-
-        if milieu is not None and sectorX is not None and sectorY is not None:
-            sql += 'OR (milieu = :milieu AND sector_x = :sector_x AND sector_y = :sector_y)'
-            queryData['milieu'] = milieu
-            queryData['sector_x'] = sectorX
-            queryData['sector_y'] = sectorY
-
-        sql += ';'
         cursor.execute(sql, queryData)
 
     def _clearSectors(self, cursor: sqlite3.Cursor) -> None:

@@ -52,6 +52,11 @@ def importLegacyCustomSectors(
     rawStockStyleSheet = survey.parseStyleSheet(
         content=multiverse.SnapshotManager.instance().readSnapshotStyleSheet())
 
+    stockSectorInfos = multiverse.UniverseManager.instance().stockUniverseSectorInfos()
+    stockSectorInfoMap: typing.Dict[
+        typing.Tuple[str, int, int],
+        multiverse.SectorInfo] = {(i.milieu(), i.sectorX(), i.sectorY()): i for i in stockSectorInfos}
+
     universePath = os.path.join(directoryPath, 'milieu')
     milieuSectors: typing.List[typing.Tuple[
         str, # Milieu
@@ -64,6 +69,7 @@ def importLegacyCustomSectors(
     for milieu in [d for d in os.listdir(universePath) if os.path.isdir(os.path.join(universePath, d))]:
         milieuPath = os.path.join(universePath, milieu)
         universeInfoPath = os.path.join(milieuPath, 'universe.json')
+
         try:
             logging.info(f'Loading legacy custom universe file {universeInfoPath}')
 
@@ -156,10 +162,19 @@ def importLegacyCustomSectors(
                 with open(sectorPath, 'r', encoding='utf-8-sig') as file:
                     sectorContent = file.read()
 
+                rawMetadata = survey.parseMetadata(content=metadataContent, format=metadataFormat)
+                rawSystems = survey.parseSector(content=sectorContent, format=sectorFormat)
+
+                # NOTE: If there is a stock sector where this custom sector is going to
+                # be placed, use the same sector id as the stock one. This is important
+                # to have the creation/modified time/stock hash set correctly in the
+                # sector metadata
+                stockSectorInfo = stockSectorInfoMap.get((milieu, rawMetadata.x(), rawMetadata.y()))
                 dbSector = multiverse.convertRawSectorToDbSector(
+                    sectorId=stockSectorInfo.id() if stockSectorInfo else None,
                     milieu=milieu,
-                    rawMetadata=survey.parseMetadata(content=metadataContent, format=metadataFormat),
-                    rawSystems=survey.parseSector(content=sectorContent, format=sectorFormat),
+                    rawMetadata=rawMetadata,
+                    rawSystems=rawSystems,
                     rawStockAllegiances=rawStockAllegiances,
                     rawStockSophonts=rawStockSophonts,
                     rawStockStyleSheet=rawStockStyleSheet)

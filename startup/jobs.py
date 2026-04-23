@@ -88,9 +88,10 @@ class InitWorldManager(app.StartupJob):
             # it though (this runs in a thread). Have a look at how import custom sectors works
             # as it looks like it might handle non fatal errors
             logging.error(f'Configured universe "{currentUniverseId}" wasn\'t found, defaulting to stock universe')
+            currentUniverseId = stockUniverseInfo.id()
             app.Config.instance().setValue(
                 option=app.ConfigOption.Universe,
-                value=stockUniverseInfo.id())
+                value=currentUniverseId)
 
         astronomer.WorldManager.instance().setCurrentUniverse(
             universeId=currentUniverseId,

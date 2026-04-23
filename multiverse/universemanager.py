@@ -85,11 +85,11 @@ class UniverseManager(object):
     def universeInfo(self, universeId: str) -> typing.Optional[multiverse.UniverseInfo]:
         return UniverseManager._registry.universeById(id=universeId)
 
-    def stockUniverseInfo(self) -> typing.Optional[multiverse.UniverseInfo]:
-        return UniverseManager._registry.stockUniverse()
-
     def hasStockUniverse(self) -> bool:
         return UniverseManager._registry.stockUniverse() is not None
+
+    def stockUniverseInfo(self) -> typing.Optional[multiverse.UniverseInfo]:
+        return UniverseManager._registry.stockUniverse()
 
     def checkStockUniverseTimestamp(
             self,
@@ -295,14 +295,33 @@ class UniverseManager(object):
             ) -> None:
         UniverseManager._registry.setUniverseDescription(id=id, description=description)
 
-    def universeSectors(
+    def sectorInfos(
+            self,
+            universeId: str
+            ) -> typing.List[multiverse.SectorInfo]:
+        universeInfo = UniverseManager._registry.universeById(id=universeId)
+        if not universeInfo:
+            raise ValueError(f'Unknown universe {universeId}')
+
+        dbPath = UniverseManager._universeDbFilePath(id=universeId)
+        universeDb = multiverse.UniverseDb(universePath=dbPath)
+
+        return universeDb.listSectors()
+
+    def stockUniverseSectorInfos(self) -> typing.List[multiverse.SectorInfo]:
+        info = UniverseManager._registry.stockUniverse()
+        if not info:
+            raise RuntimeError('No stock universe defined')
+        return self.sectorInfos(universeId=info.id())
+
+    def sectors(
             self,
             universeId: str,
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
             ) -> typing.List[multiverse.DbSector]:
-        return list(self.yieldUniverseSectors(universeId=universeId, progressCallback=progressCallback))
+        return list(self.yieldSectors(universeId=universeId, progressCallback=progressCallback))
 
-    def yieldUniverseSectors(
+    def yieldSectors(
             self,
             universeId: str,
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
@@ -358,7 +377,7 @@ class UniverseManager(object):
         info = UniverseManager._registry.stockUniverse()
         if not info:
             raise RuntimeError('No stock universe defined')
-        return self.yieldUniverseSectors(universeId=info.id(), progressCallback=progressCallback)
+        return self.yieldSectors(universeId=info.id(), progressCallback=progressCallback)
 
     # NOTE: When copyStock is true the stock database is copied as-is. This is
     # done for speed (3 seconds vs > 30 seconds when loaded then saved). The

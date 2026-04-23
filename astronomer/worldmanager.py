@@ -46,7 +46,18 @@ class WorldManager(object):
                 raise ValueError(f'Unknown universe "{universeId}"')
 
             logging.info(f'Loaded universe {universeId} ({universeInfo.name()})')
-            sectorGenerator = multiverse.UniverseManager.instance().yieldUniverseSectors(
+
+            customSectors = set()
+            if not universeInfo.isStock():
+                sectorInfos = multiverse.UniverseManager.instance().sectorInfos(
+                    universeId=universeId)
+                for sectorInfo in sectorInfos:
+                    fromStockData = sectorInfo.stockDataHash() is not None
+                    isModified = sectorInfo.modifiedTimestamp() is not None
+                    if fromStockData and isModified:
+                        customSectors.add(sectorInfo.id())
+
+            sectorGenerator = multiverse.UniverseManager.instance().yieldSectors(
                 universeId=universeId,
                 progressCallback=progressCallback)
             sectors = []
@@ -54,19 +65,7 @@ class WorldManager(object):
                 try:
                     sector = self._convertDbSector(
                         dbSector=dbSector,
-                        # TODO: This isCustom is used when constructing the astrometrics
-                        # sector and was used when shading unofficial sectors so that any
-                        # official sectors that were overridden were shaded. With things
-                        # work now it's not an issue for the stock universe as it will
-                        # always be false and only the it will use the tags to determine
-                        # if it's official/unofficial. The problem is when the custom
-                        # universe is used as all sectors will be custom and therefore
-                        # unofficial, even the ones that haven't actually been modified.
-                        # To fix this I need a way to determine if the sector has been
-                        # modified since it was created from the stock data. This also
-                        # needs to take into account some universes won't be created from
-                        # the stock data.
-                        isCustom=not universeInfo.isStock())
+                        isCustom=dbSector.id() in customSectors)
                     sectors.append(sector)
 
                     logging.debug(
