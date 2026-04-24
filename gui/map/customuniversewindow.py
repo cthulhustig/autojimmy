@@ -55,6 +55,8 @@ class CustomUniverseWindow(gui.WindowWidget):
             animated=mapAnimations,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
+        self._mapWidget.setSelectionMode(mode=gui.MapWidgetEx.SelectionMode.MultiSelect)
+        self._mapWidget.setSelectionCategory(category=gui.MapWidgetEx.SelectionCategory.SectorSelect)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)

@@ -1108,9 +1108,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             linear=MapWidgetEx._DefaultHomeLinearScale)
 
         self._selectionMode = MapWidgetEx.SelectionMode.NoSelect
-        # TODO: Should default to hex select
         self._selectionCategory = MapWidgetEx.SelectionCategory.HexSelect
-        #self._selectionCategory = MapWidgetEx.SelectionCategory.SectorSelect
         self._enableDeadSpaceSelection = False
         self._selectedHexes: typing.Set[astronomer.HexPosition] = set()
         self._selectedSectors: typing.Set[astronomer.SectorPosition] = set()
