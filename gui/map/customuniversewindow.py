@@ -45,6 +45,12 @@ class CustomUniverseWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
         app.Config.instance().configChanged.connect(self._appConfigChanged)
 
+        self._sectorTable = gui.SectorTable(
+            universe=universe,
+            milieu=milieu)
+        self._sectorTable.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+        self._sectorTable.itemSelectionChanged.connect(self._sectorSelectionChanged)
+
         self._mapWidget = gui.MapWidgetEx(
             universe=universe,
             milieu=milieu,
@@ -55,15 +61,23 @@ class CustomUniverseWindow(gui.WindowWidget):
             animated=mapAnimations,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
-        self._mapWidget.setSelectionMode(mode=gui.MapWidgetEx.SelectionMode.MultiSelect)
-        self._mapWidget.setSelectionCategory(category=gui.MapWidgetEx.SelectionCategory.SectorSelect)
+        self._mapWidget.setSelectionMode(gui.MapWidgetEx.SelectionMode.SingleSelection)
+        self._mapWidget.setSelectionCategory(gui.MapWidgetEx.SelectionCategory.SectorSelection)
+        self._mapWidget.enableDeadSpaceSelection(True)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
         self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
+        self._mapWidget.selectionChanged.connect(self._mapSelectionChanged)
+
+        self._splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        self._splitter.addWidget(self._sectorTable)
+        self._splitter.addWidget(self._mapWidget)
+        self._splitter.setStretchFactor(0, 1)
+        self._splitter.setStretchFactor(1, 100)
 
         windowLayout = QtWidgets.QVBoxLayout()
-        windowLayout.addWidget(self._mapWidget)
+        windowLayout.addWidget(self._splitter)
         self.resize(640, 480)
         self.setLayout(windowLayout)
 
@@ -77,16 +91,32 @@ class CustomUniverseWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
+            key='SectorTableState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._sectorTable.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
             key='MapWidgetState',
             type=QtCore.QByteArray)
         if storedValue:
             self._mapWidget.restoreState(storedValue)
 
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='SplitterState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._splitter.restoreState(storedValue)
+
         self._settings.endGroup()
 
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
+        self._settings.setValue('SectorTableState', self._sectorTable.saveState())
         self._settings.setValue('MapWidgetState', self._mapWidget.saveState())
+        self._settings.setValue('SplitterState', self._splitter.saveState())
         self._settings.endGroup()
 
         super().saveSettings()
@@ -98,9 +128,11 @@ class CustomUniverseWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Universe:
-            self._mapWidget.setUniverse(
-                universe=astronomer.WorldManager.instance().universe())
+            universe = astronomer.WorldManager.instance().universe()
+            self._sectorTable.setUniverse(universe=universe)
+            self._mapWidget.setUniverse(universe=universe)
         elif option is app.ConfigOption.Milieu:
+            self._sectorTable.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._mapWidget.setRules(rules=newValue)
@@ -116,6 +148,14 @@ class CustomUniverseWindow(gui.WindowWidget):
             self._mapWidget.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:
             self._mapWidget.setTaggingColours(colours=newValue)
+
+    def _sectorSelectionChanged(self) -> None:
+        sector = self._sectorTable.currentSector()
+        if sector:
+            self._mapWidget.selectSector(sector.position())
+            self._mapWidget.centerOnSector(sector.position())
+        else:
+            self._mapWidget.clearSelection()
 
     def _mapStyleChanged(
             self,
@@ -148,3 +188,12 @@ class CustomUniverseWindow(gui.WindowWidget):
         app.Config.instance().setValue(
             option=app.ConfigOption.MapAnimations,
             value=animations)
+
+    def _mapSelectionChanged(self) -> None:
+        selection = self._mapWidget.selectedSectors()
+        sectorPos = selection[0] if selection else None
+        if sectorPos:
+            self._sectorTable.setCurrentSectorByPosition(sectorPos)
+            self._sectorTable.scrollToPosition(sectorPos)
+        else:
+            self._sectorTable.clearSelection()

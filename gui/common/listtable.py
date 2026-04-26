@@ -303,7 +303,7 @@ class ListTable(gui.TableWidgetEx):
         item = self.item(row, 0)
         return item and item.isSelected()
 
-    def setSelectedRow(self, row: int, select: bool):
+    def setSelectedRow(self, row: int, select: bool = True):
         for column in range(self.columnCount()):
             item = self.item(row, column)
             if item:

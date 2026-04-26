@@ -37,7 +37,7 @@ class HexSelectDialog(gui.DialogEx):
             worldTagging=worldTagging,
             taggingColours=taggingColours)
         self._mapWidget.setInfoEnabled(False) # Disable by default
-        self._mapWidget.setSelectionMode(gui.MapWidgetEx.SelectionMode.MultiSelect)
+        self._mapWidget.setSelectionMode(gui.MapWidgetEx.SelectionMode.MultiSelection)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
@@ -113,9 +113,9 @@ class HexSelectDialog(gui.DialogEx):
             includeDeadSpace: bool = False
             ) -> None:
         self._mapWidget.setSelectionMode(
-            gui.MapWidgetEx.SelectionMode.SingleSelect \
+            gui.MapWidgetEx.SelectionMode.SingleSelection \
             if singleSelect else \
-            gui.MapWidgetEx.SelectionMode.MultiSelect)
+            gui.MapWidgetEx.SelectionMode.MultiSelection)
         self._mapWidget.enableDeadSpaceSelection(enable=includeDeadSpace)
         self._updateLabel()
 
@@ -135,7 +135,7 @@ class HexSelectDialog(gui.DialogEx):
         # it needs to be done after the initial size has been calculated.
         selection = self.selectedHexes()
         if selection:
-            if self._mapWidget.selectionMode() is gui.MapWidgetEx.SelectionMode.SingleSelect:
+            if self._mapWidget.selectionMode() is gui.MapWidgetEx.SelectionMode.SingleSelection:
                 self._mapWidget.centerOnHex(
                     hex=selection[0],
                     immediate=True)
@@ -178,7 +178,7 @@ class HexSelectDialog(gui.DialogEx):
 
     def _updateLabel(self) -> None:
         isWorld = not self._mapWidget.isDeadSpaceSelectionEnabled()
-        isSingular = self._mapWidget.selectionMode() == gui.MapWidgetEx.SelectionMode.SingleSelect
+        isSingular = self._mapWidget.selectionMode() == gui.MapWidgetEx.SelectionMode.SingleSelection
         if isWorld:
             wording = 'world' if isSingular else 'worlds'
         else:

@@ -293,7 +293,8 @@ class SectorPosition(object):
 
         self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
         self._isotropicBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
-        self._hexBounds: typing.Optional[typing.Tuple['HexPosition', 'HexPosition']] = None
+        self._worldCenter: typing.Optional[typing.Tuple[float, float]] = None
+        self._isotropicCenter: typing.Optional[typing.Tuple[float, float]] = None
         self._hash = None
 
     def __eq__(self, other):
@@ -350,20 +351,17 @@ class SectorPosition(object):
                 worldHeight * ParsecScaleY)
         return self._isotropicBounds
 
-    def hexBounds(self) -> typing.Tuple['HexPosition', 'HexPosition']: # (top left hex, bottom right hex)
-        if self._hexBounds is None:
-            topLeft = HexPosition(
-                sectorX=self._sectorX,
-                sectorY=self._sectorY,
-                offsetX=1,
-                offsetY=1)
-            bottomRight = HexPosition(
-                sectorX=self._sectorX,
-                sectorY=self._sectorY,
-                offsetX=SectorWidth,
-                offsetY=SectorHeight)
-            self._hexBounds = (topLeft, bottomRight)
-        return self._hexBounds
+    def worldCenter(self) -> typing.Tuple[float, float]:
+        if self._worldCenter is None:
+            left, top, width, height = self.worldBounds()
+            self._worldCenter = (left + (width / 2), top + (height / 2))
+        return self._worldCenter
+
+    def isotropicCenter(self) -> typing.Tuple[float, float]:
+        if self._isotropicCenter is None:
+            left, top, width, height = self.isotropicBounds()
+            self._isotropicCenter = (left + (width / 2), top + (height / 2))
+        return self._isotropicCenter
 
 # NOTE: There is a LOT of code that assumes instances of this
 # class are immutable

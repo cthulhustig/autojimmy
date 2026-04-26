@@ -247,7 +247,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             worldTagging=worldTagging,
             taggingColours=taggingColours)
         self._mapWidget.setSelectionMode(
-            mode=gui.MapWidgetEx.SelectionMode.MultiSelect)
+            mode=gui.MapWidgetEx.SelectionMode.MultiSelection)
         self._mapWidget.selectionChanged.connect(self._mapSelectionChanged)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)

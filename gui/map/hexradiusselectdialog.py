@@ -61,7 +61,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             worldTagging=worldTagging,
             taggingColours=taggingColours)
         self._mapWidget.setSelectionMode(
-            mode=gui.MapWidgetEx.SelectionMode.SingleSelect)
+            mode=gui.MapWidgetEx.SelectionMode.SingleSelection)
         # Always enable dead space selection on the map as, even if dead space selection
         # is disabled at the dialog level, the user should be able to select a dead space
         # hex and have the worlds around it selected

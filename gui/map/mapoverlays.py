@@ -694,8 +694,7 @@ class SectorMapOverlay(gui.MapOverlay):
         if self._includeInterior:
             outlines = logic.calculateCompleteSectorOutlines(sectors=self._sectors)
         else:
-            # TODO: This should be calculateOuterSectorOutlines when I've implemented it
-            outlines = logic.calculateCompleteSectorOutlines(sectors=self._sectors)
+            outlines = logic.calculateOuterSectorOutlines(sectors=self._sectors)
         self._polygons: typing.List[QtGui.QPolygonF] = []
         for outline in outlines:
             polygon = QtGui.QPolygonF()

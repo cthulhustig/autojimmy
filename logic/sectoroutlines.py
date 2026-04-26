@@ -91,18 +91,10 @@ def _sectorOutline(
     points.extend(_edgePoints(sector=sector, edge=astronomer.RectilinearNeighbour.Top))
     return points
 
-# TODO: Update this and the hex variants to take a polygon factory interface that
-# can be used to construct whatever type of polygons are required. These functions
-# and the factory interface should probably work in world coordinates. The overlays
-# can then have their own polygon factory that takes the positions in world coordinate
-# and converts them to isotropic coordinates
-def calculateCompleteSectorOutlines(
-        sectors: typing.Iterable[astronomer.SectorPosition]
-        ) -> typing.List[typing.List[typing.Tuple[float, float]]]:
-    sectors = set(sectors)
-    outlines: typing.List[typing.List[typing.Tuple[float, float]]] = []
-
-    sectorEdgeFlags: typing.Dict[astronomer.SectorPosition, int] = {}
+def _generateSectorEdgesMap(
+        sectors: typing.Set[astronomer.SectorPosition],
+        ) -> typing.Dict[astronomer.SectorPosition, int]:
+    sectorEdgesMap: typing.Dict[astronomer.SectorPosition, int] = {}
     for sector in sectors:
         edgeFlags = 0
         for edge in _SectorEdges:
@@ -113,56 +105,136 @@ def calculateCompleteSectorOutlines(
         if edgeFlags == 0:
             # This sector has sectors on each side so can be ignored
             continue
+
+        sectorEdgesMap[sector] = edgeFlags
+    return sectorEdgesMap
+
+def _walkOutline(
+        startSector: astronomer.SectorPosition,
+        startEdge: astronomer.RectilinearNeighbour,
+        sectors: typing.Set[astronomer.SectorPosition],
+        sectorEdgesMap: typing.Dict[astronomer.SectorPosition, int]
+        ) -> typing.List[typing.Tuple[float, float]]:
+    outline: typing.List[typing.Tuple[float, float]] = []
+    sector = startSector
+    edge = startEdge
+    while True:
+        outline.extend(_edgePoints(sector=sector, edge=edge))
+
+        edgeFlags = sectorEdgesMap[sector]
+        edgeFlags &= ~_EdgeToBitFlag[edge]
+        if edgeFlags:
+            sectorEdgesMap[sector] = edgeFlags
+        else:
+            del sectorEdgesMap[sector]
+
+        nextEdgeACW = _AntiClockwiseEdgeTransitions[edge]
+        nextSectorACW = sector.neighbour(neighbour=nextEdgeACW)
+        if nextSectorACW in sectors:
+            nextSectorCW = nextSectorACW.neighbour(
+                neighbour=_ClockwiseEdgeTransitions[nextEdgeACW])
+            if nextSectorCW in sectors:
+                # Move clockwise onto the next sector
+                sector = nextSectorCW
+                edge = _ClockwiseEdgeTransitions[edge]
+            else:
+                # Continue on the same edge along the next sector
+                sector = nextSectorACW
+        else:
+            # Continue on the next anti-clockwise edge of the current
+            # sector
+            edge = nextEdgeACW
+
+        if sector == startSector and edge == startEdge:
+            break
+
+    return outline
+
+def _floodRemove(
+        startSector: astronomer.SectorPosition,
+        sectors: typing.Set[astronomer.SectorPosition]
+        ) -> None:
+    queue: typing.Set[astronomer.SectorPosition] = set([startSector])
+    sectors.discard(startSector)
+
+    while queue:
+        sector = queue.pop()
+        for edge in _SectorEdges:
+            neighbour = sector.neighbour(neighbour=edge)
+            if neighbour in sectors:
+                sectors.discard(neighbour)
+                queue.add(neighbour)
+
+def calculateOuterSectorOutlines(
+        sectors: typing.Iterable[astronomer.SectorPosition]
+        ) -> typing.List[typing.List[typing.Tuple[float, float]]]:
+    sectors = set(sectors)
+    outlines: typing.List[typing.List[typing.Tuple[float, float]]] = []
+
+    sectorEdgesMap = _generateSectorEdgesMap(sectors=sectors)
+
+    while sectors:
+        # Find top left most sector
+        startSector = None
+        for sector in sectors:
+            if startSector is None:
+                startSector = sector
+            elif sector.sectorX() < startSector.sectorX():
+                startSector = sector
+            elif sector.sectorX() == startSector.sectorX() and sector.sectorY() < startSector.sectorY():
+                startSector = sector
+
+        edgeFlags = sectorEdgesMap[startSector]
         if edgeFlags == _AllEdgesMask:
             # This sector has no neighbours so just add it as an outline
-            outlines.append(_sectorOutline(sector=sector))
+            outlines.append(_sectorOutline(sector=startSector))
+            sectors.discard(startSector)
             continue
-
-        # The sector has at least one neighbour sector so the outline needs
-        # to be walked
-        sectorEdgeFlags[sector] = edgeFlags
-
-    while sectorEdgeFlags:
-        startSector = next(iter(sectorEdgeFlags))
-        edgeFlags = sectorEdgeFlags[startSector]
 
         for startEdge, flag in _EdgeToBitFlag.items():
             if flag & edgeFlags != 0:
                 break
 
-        outline: typing.List[typing.Tuple[float, float]] = []
-        sector = startSector
-        edge = startEdge
-        while True:
-            outline.extend(_edgePoints(sector=sector, edge=edge))
+        outline = _walkOutline(
+            startSector=startSector,
+            startEdge=startEdge,
+            sectors=sectors,
+            sectorEdgesMap=sectorEdgesMap)
+        outlines.append(outline)
 
-            edgeFlags = sectorEdgeFlags[sector]
-            edgeFlags &= ~_EdgeToBitFlag[edge]
-            if edgeFlags:
-                sectorEdgeFlags[sector] = edgeFlags
-            else:
-                del sectorEdgeFlags[sector]
+        _floodRemove(
+            startSector=startSector,
+            sectors=sectors)
 
-            nextEdgeACW = _AntiClockwiseEdgeTransitions[edge]
-            nextSectorACW = sector.neighbour(neighbour=nextEdgeACW)
-            if nextSectorACW in sectors:
-                nextSectorCW = nextSectorACW.neighbour(
-                    neighbour=_ClockwiseEdgeTransitions[nextEdgeACW])
-                if nextSectorCW in sectors:
-                    # Move clockwise onto the next sector
-                    sector = nextSectorCW
-                    edge = _ClockwiseEdgeTransitions[edge]
-                else:
-                    # Continue on the same edge along the next sector
-                    sector = nextSectorACW
-            else:
-                # Continue on the next anti-clockwise edge of the current
-                # sector
-                edge = nextEdgeACW
+    return outlines
 
-            if sector == startSector and edge == startEdge:
+def calculateCompleteSectorOutlines(
+        sectors: typing.Iterable[astronomer.SectorPosition]
+        ) -> typing.List[typing.List[typing.Tuple[float, float]]]:
+    sectors = set(sectors)
+    outlines: typing.List[typing.List[typing.Tuple[float, float]]] = []
+
+    sectorEdgesMap = _generateSectorEdgesMap(sectors=sectors)
+
+    while sectorEdgesMap:
+        startSector = next(iter(sectorEdgesMap))
+        edgeFlags = sectorEdgesMap[startSector]
+
+        if edgeFlags == _AllEdgesMask:
+            # This sector has no neighbours so just add it as an outline
+            outlines.append(_sectorOutline(sector=startSector))
+            del sectorEdgesMap[startSector]
+            continue
+
+        for startEdge, flag in _EdgeToBitFlag.items():
+            if flag & edgeFlags != 0:
                 break
 
+        outline = _walkOutline(
+            startSector=startSector,
+            startEdge=startEdge,
+            sectors=sectors,
+            sectorEdgesMap=sectorEdgesMap)
         outlines.append(outline)
 
     return outlines

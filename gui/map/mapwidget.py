@@ -831,14 +831,12 @@ class MapWidget(QtWidgets.QWidget):
             ) -> astronomer.HexPosition:
         return self._pixelSpaceToHex(pixelPos=pos)
 
-    def worldAt(
+    def sectorAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
-            ) -> typing.Optional[astronomer.World]:
+            ) -> astronomer.SectorPosition:
         hex = self._pixelSpaceToHex(pixelPos=pos)
-        return self._universe.worldByHexPosition(
-            milieu=self._milieu,
-            hex=hex)
+        return hex.sectorPosition()
 
     def centerOnHex(
             self,
@@ -888,6 +886,17 @@ class MapWidget(QtWidgets.QWidget):
         self.setView(
             center=center,
             scale=gui.MapScale(log=logScale),
+            immediate=immediate)
+
+    def centerOnSector(
+            self,
+            position: astronomer.SectorPosition,
+            scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=16), # None keeps current scale
+            immediate: bool = False
+            ) -> None:
+        self.setView(
+            center=QtCore.QPointF(*position.worldCenter()),
+            scale=scale,
             immediate=immediate)
 
     @staticmethod

@@ -61,6 +61,7 @@ from .map.hexradiusselectdialog import *
 from .map.hexselectdialog import *
 from .map.hexselecttoolwidget import *
 from .map.hextable import *
+from .map.sectortable import *
 from .map.hextablemanagerwidget import *
 from .map.hexdetailswindow import *
 from .map.customsectordialog import *
