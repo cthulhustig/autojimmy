@@ -1,9 +1,9 @@
 import app
+import astronomer
 import common
 import gui
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtCore, QtWidgets
 
@@ -15,7 +15,7 @@ class PurchaseCargoDialog(gui.DialogEx):
 
     def __init__(
             self,
-            world: multiverse.World,
+            world: astronomer.World,
             rules: traveller.Rules,
             availableCargo: typing.Iterable[logic.CargoRecord],
             availableFunds: typing.Union[int, float, common.ScalarCalculation],

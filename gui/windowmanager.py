@@ -1,23 +1,26 @@
 import gui
 import threading
+import typing
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 class WindowManager(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
-    _worldComparisonWindow = None
-    _worldSearchWindow = None
-    _jumpRouteWindow = None
-    _purchaseCalculatorWindow = None
-    _saleCalculatorWindow = None
-    _worldTradeOptionsWindow = None
-    _multiWorldTradeOptionsWindow = None
-    _simulatorWindow = None
-    _hexDetailsWindow = None
-    _calculationWindow = None
-    _universeMapWindow = None
-    _gunsmithWindow = None
-    _robotBuilderWindow = None
-    _diceRollerWindow = None
+    _customUniverseWindow: typing.Optional[gui.CustomUniverseWindow] = None
+    _worldComparisonWindow: typing.Optional[gui.WorldComparisonWindow] = None
+    _worldSearchWindow: typing.Optional[gui.WorldSearchWindow] = None
+    _jumpRouteWindow: typing.Optional[gui.JumpRouteWindow] = None
+    _purchaseCalculatorWindow: typing.Optional[gui.PurchaseCalculatorWindow] = None
+    _saleCalculatorWindow: typing.Optional[gui.SaleCalculatorWindow] = None
+    _worldTradeOptionsWindow: typing.Optional[gui.WorldTraderWindow] = None
+    _multiWorldTradeOptionsWindow: typing.Optional[gui.MultiWorldTraderWindow] = None
+    _simulatorWindow: typing.Optional[gui.SimulatorWindow] = None
+    _hexDetailsWindow: typing.Optional[gui.HexDetailsWindow] = None
+    _calculationWindow: typing.Optional[gui.CalculationWindow] = None
+    _gunsmithWindow: typing.Optional[gui.GunsmithWindow] = None
+    _robotBuilderWindow: typing.Optional[gui.RobotBuilderWindow] = None
+    _diceRollerWindow: typing.Optional[gui.DiceRollerWindow] = None
+    _mapWindows: typing.Set[gui.MapWindow] = set()
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -33,6 +36,8 @@ class WindowManager(object):
         return cls._instance
 
     def closeWindows(self) -> None:
+        if self._customUniverseWindow:
+            self._customUniverseWindow.close()
         if self._worldComparisonWindow:
             self._worldComparisonWindow.close()
         if self._worldSearchWindow:
@@ -53,14 +58,22 @@ class WindowManager(object):
             self._hexDetailsWindow.close()
         if self._calculationWindow:
             self._calculationWindow.close()
-        if self._universeMapWindow:
-            self._universeMapWindow.close()
         if self._gunsmithWindow:
             self._gunsmithWindow.close()
         if self._robotBuilderWindow:
             self._robotBuilderWindow.close()
         if self._diceRollerWindow:
             self._diceRollerWindow.close()
+
+        for window in self._mapWindows:
+            window.close()
+        self._mapWindows.clear()
+
+    def showCustomUniverseWindow(self) -> 'gui.CustomUniverseWindow':
+        if not self._customUniverseWindow:
+            self._customUniverseWindow = gui.CustomUniverseWindow()
+        self._customUniverseWindow.bringToFront()
+        return self._customUniverseWindow
 
     def showWorldComparisonWindow(self) -> 'gui.WorldComparisonWindow':
         if not self._worldComparisonWindow:
@@ -122,12 +135,6 @@ class WindowManager(object):
         self._calculationWindow.bringToFront()
         return self._calculationWindow
 
-    def showUniverseMapWindow(self) -> 'gui.MapWindow':
-        if not self._universeMapWindow:
-            self._universeMapWindow = gui.MapWindow()
-        self._universeMapWindow.bringToFront()
-        return self._universeMapWindow
-
     def showGunsmithWindow(self) -> 'gui.GunsmithWindow':
         if not self._gunsmithWindow:
             self._gunsmithWindow = gui.GunsmithWindow()
@@ -145,3 +152,16 @@ class WindowManager(object):
             self._diceRollerWindow = gui.DiceRollerWindow()
         self._diceRollerWindow.bringToFront()
         return self._diceRollerWindow
+
+    # NOTE: Unlike most windows, a new map window is created each time this function is
+    # called. This is primarily done because most uses of the map window add overlays to
+    # the map and you don't want them to hang around if the window was to be reused. I can
+    # also see advantages from a users point of view as it allows them to be looking at
+    # two worlds at once (but closing multiple windows could be a pain).
+    def createMapWindow(self) -> 'gui.MapWindow':
+        mapWindow = gui.MapWindow()
+        mapWindow.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
+        mapWindow.show()
+        WindowManager._mapWindows.add(mapWindow)
+        mapWindow.destroyed.connect(lambda: WindowManager._mapWindows.discard(mapWindow))
+        return mapWindow

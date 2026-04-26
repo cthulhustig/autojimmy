@@ -1,10 +1,10 @@
 import app
+import astronomer
 import common
 import enum
 import gui
 import logging
 import logic
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -170,6 +170,8 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
     def __init__(
             self,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             outcomeColours: app.OutcomeColours,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -177,6 +179,8 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             ) -> None:
         super().__init__()
 
+        self._universe = universe
+        self._milieu = milieu
         self._outcomeColours = app.OutcomeColours(outcomeColours)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
@@ -237,6 +241,24 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     columnType == self.ColumnType.SaleSector or \
                     columnType == self.ColumnType.SaleSubsector:
                 self.setColumnWidth(column, 100)
+
+    def universe(self) -> astronomer.Universe:
+        return self._universe
+
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        if universe is self._universe:
+            return
+        self._universe = universe
+        self._syncContent()
+
+    def milieu(self) -> astronomer.Milieu:
+        return self._milieu
+
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+        self._milieu = milieu
+        self._syncContent()
 
     def outcomeColours(self) -> app.OutcomeColours:
         return app.OutcomeColours(self._outcomeColours)
@@ -330,7 +352,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     tradeOptions.append(tradeOption)
         return tradeOptions
 
-    def uniqueWorlds(self, selectedOnly: bool = False) -> typing.Set[multiverse.World]:
+    def uniqueWorlds(self, selectedOnly: bool = False) -> typing.Set[astronomer.World]:
         rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
         worlds = set()
         for row in rowsIter:
@@ -340,7 +362,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 worlds.add(tradeOption.saleWorld())
         return worlds
 
-    def uniquePurchaseWorlds(self, selectedOnly: bool = False) -> typing.Set[multiverse.World]:
+    def uniquePurchaseWorlds(self, selectedOnly: bool = False) -> typing.Set[astronomer.World]:
         rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
         worlds = set()
         for row in rowsIter:
@@ -349,7 +371,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 worlds.add(tradeOption.purchaseWorld())
         return worlds
 
-    def uniqueSaleWorlds(self, selectedOnly: bool = False) -> typing.Set[multiverse.World]:
+    def uniqueSaleWorlds(self, selectedOnly: bool = False) -> typing.Set[astronomer.World]:
         rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
         worlds = set()
         for row in rowsIter:
@@ -516,11 +538,11 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
             purchaseWorldTagColour = saleWorldTagColour = None
             if self._worldTagging and self._taggingColours:
-                tagLevel = self._worldTagging.calculateWorldTagLevel(purchaseWorld)
+                tagLevel = self._worldTagging.calculateWorldTagLevel(world=purchaseWorld)
                 if tagLevel:
                     purchaseWorldTagColour = self._taggingColours.colour(level=tagLevel)
 
-                tagLevel = self._worldTagging.calculateWorldTagLevel(saleWorld)
+                tagLevel = self._worldTagging.calculateWorldTagLevel(world=saleWorld)
                 if tagLevel:
                     saleWorldTagColour = self._taggingColours.colour(level=tagLevel)
 
@@ -702,8 +724,8 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=purchaseWorld.hex())
             else:
-                return multiverse.WorldManager.instance().canonicalHexName(
-                    milieu=purchaseWorld.milieu(),
+                return self._universe.canonicalHexName(
+                    milieu=self._milieu,
                     hex=purchaseWorld.hex())
         elif columnType == self.ColumnType.SaleWorld or columnType == self.ColumnType.SaleSector or \
                 columnType == self.ColumnType.SaleSubsector:
@@ -711,8 +733,8 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=saleWorld.hex())
             else:
-                return multiverse.WorldManager.instance().canonicalHexName(
-                    milieu=saleWorld.milieu(),
+                return self._universe.canonicalHexName(
+                    milieu=self._milieu,
                     hex=saleWorld.hex())
         elif columnType == self.ColumnType.Notes:
             notes = tradeOption.tradeNotes()
@@ -722,6 +744,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 return gui.createStringToolTip('No notes')
         elif columnType == self.ColumnType.Jumps:
             return gui.createLogisticsToolTip(
+                universe=self._universe,
                 routeLogistics=tradeOption.routeLogistics(),
                 worldTagging=self._worldTagging,
                 taggingColours=self._taggingColours)
@@ -782,18 +805,17 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showWorldsOnMap(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         try:
-            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
-            mapWindow.clearOverlays()
+            mapWindow = gui.WindowManager.instance().createMapWindow()
             mapWindow.highlightHexes(hexes=[world.hex() for world in worlds])
         except Exception as ex:
             message = 'Failed to show world(s) on map'
@@ -808,8 +830,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             route: logic.JumpRoute
             ) -> None:
         try:
-            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
-            mapWindow.clearOverlays()
+            mapWindow = gui.WindowManager.instance().createMapWindow()
             mapWindow.setJumpRoute(jumpRoute=route)
         except Exception as ex:
             message = 'Failed to show jump route on map'
