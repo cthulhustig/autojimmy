@@ -150,10 +150,14 @@ class CustomUniverseWindow(gui.WindowWidget):
             self._mapWidget.setTaggingColours(colours=newValue)
 
     def _sectorSelectionChanged(self) -> None:
-        sector = self._sectorTable.currentSector()
-        if sector:
-            self._mapWidget.selectSector(sector.position())
-            self._mapWidget.centerOnSector(sector.position())
+        newSector = self._sectorTable.currentSector()
+        newPos = newSector.position() if newSector else None
+        if newPos:
+            currentSelection = self._mapWidget.selectedSectors()
+            currentPos = currentSelection[0] if currentSelection else None
+            if currentPos != newPos:
+                self._mapWidget.selectSector(newPos)
+                self._mapWidget.centerOnSector(newPos)
         else:
             self._mapWidget.clearSelection()
 
@@ -190,10 +194,13 @@ class CustomUniverseWindow(gui.WindowWidget):
             value=animations)
 
     def _mapSelectionChanged(self) -> None:
-        selection = self._mapWidget.selectedSectors()
-        sectorPos = selection[0] if selection else None
-        if sectorPos:
-            self._sectorTable.setCurrentSectorByPosition(sectorPos)
-            self._sectorTable.scrollToPosition(sectorPos)
+        newSelection = self._mapWidget.selectedSectors()
+        newPos = newSelection[0] if newSelection else None
+        if newPos:
+            currentSector = self._sectorTable.currentSector()
+            currentPos = currentSector.position() if currentSector else None
+            if currentPos != newPos:
+                self._sectorTable.setCurrentSectorByPosition(newPos)
+                self._sectorTable.scrollToPosition(newPos)
         else:
             self._sectorTable.clearSelection()
