@@ -16,6 +16,25 @@ import typing
 # wrap them in a try/except and log and continue if they throw.
 # TODO: I need away to export sectors to metadata/tab formats (i.e. convert
 # DbObjects back to RawObjects then save)
+# TODO: The data from the label files (mega_labels.tab, minor_labels.tab, Worlds.xml)
+# should be integrated into the data written to the database. These changes will need
+# an update to the rendering code as it will need to pull the data from the universe
+# rather than static files
+# - mega_labels.tab & minor_labels.tab probably need to be separate label tables. Either
+# a table for each type or a single table with a column to indicate the type. I could
+# include the min/max scale values that determine when they're shown so the user can
+# customise it when I add a UI
+# - Worlds.xml data needs to be added to the world table. Adding it to the remarks seems
+# the obvious choice. It might even be there already as it seems to all relate to the
+# major sophont home worlds & major allegiance capitals
+# TODO: Need to move the vectors in data\map\vectors into the database as well so the
+# user can edit them for their universe. This will also need an update to the rendering
+# code
+# TODO: It would probably be a good idea to store the zoomed out galaxy bitmap in the
+# database as well. Remember there are two, one for light and one for dark maps. Again
+# this will need an update to the rendering code but it should be trivial. I think it
+# makes sense to leave the candy images as static files as they're more part of the
+# rendering system than the universe
 
 # Useful Test Locations:
 # - Sector: Tsebntsiatldlants

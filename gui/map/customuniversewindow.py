@@ -2,7 +2,6 @@ import app
 import astronomer
 import cartographer
 import gui
-import logic
 import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 
