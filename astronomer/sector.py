@@ -78,13 +78,15 @@ class Sector(object):
             labels: typing.Optional[typing.Iterable[astronomer.Label]] = None,
             selected: bool = False,
             tagging: typing.Optional[astronomer.SectorTagging] = None,
-            sources: typing.Optional[astronomer.SectorSources] = None
+            credits: typing.Optional[str] = None,
+            source: typing.Optional[astronomer.SectorSource] = None,
+            products: typing.Optional[typing.Iterable[astronomer.SectorSource]] = None
             ) -> None:
         self._isCustom = isCustom
         self._milieu = milieu
         self._position = position
         self._name = name
-        self._alternateNames = list(alternateNames) if alternateNames else None
+        self._alternateNames = list(alternateNames) if alternateNames else []
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
         self._allegiances = list(allegiances) if allegiances else []
@@ -95,7 +97,9 @@ class Sector(object):
         self._labels = list(labels) if labels else []
         self._selected = selected
         self._tagging = tagging
-        self._sources = sources
+        self._credits = credits
+        self._source = source
+        self._products = list(products) if products else []
 
         self._subsectorNameMap: typing.Dict[str, Subsector] = {}
         self._subsectorIndexMap: typing.Dict[typing.Tuple[int, int], Subsector] = {}
@@ -123,8 +127,8 @@ class Sector(object):
     def name(self) -> str:
         return self._name
 
-    def alternateNames(self) -> typing.Optional[typing.Collection[str]]:
-        return list(self._alternateNames) if self._alternateNames else None
+    def alternateNames(self) -> typing.List[str]:
+        return list(self._alternateNames)
 
     def yieldAlternateNames(self) -> typing.Generator[str, None, None]:
         if self._alternateNames:
@@ -140,7 +144,7 @@ class Sector(object):
     def worldCount(self) -> int:
         return len(self._worlds)
 
-    def worlds(self) -> typing.Collection[astronomer.World]:
+    def worlds(self) -> typing.List[astronomer.World]:
         return list(self._worlds)
 
     def yieldWorlds(self) -> typing.Generator[astronomer.World, None, None]:
@@ -157,28 +161,28 @@ class Sector(object):
     def allegianceByCode(self, code: str) -> typing.Optional[astronomer.Allegiance]:
         return self._allegianceCodeMap.get(code)
 
-    def routes(self) -> typing.Collection[astronomer.Route]:
+    def routes(self) -> typing.List[astronomer.Route]:
         return list(self._routes)
 
     def yieldRoutes(self) -> typing.Generator[astronomer.Route, None, None]:
         for route in self._routes:
             yield route
 
-    def borders(self) -> typing.Collection[astronomer.Border]:
+    def borders(self) -> typing.List[astronomer.Border]:
         return list(self._borders)
 
     def yieldBorders(self) -> typing.Generator[astronomer.Border, None, None]:
         for border in self._borders:
             yield border
 
-    def regions(self) -> typing.Collection[astronomer.Region]:
+    def regions(self) -> typing.List[astronomer.Region]:
         return list(self._regions)
 
     def yieldRegions(self) -> typing.Generator[astronomer.Region, None, None]:
         for region in self._regions:
             yield region
 
-    def labels(self) -> typing.Collection[astronomer.Label]:
+    def labels(self) -> typing.List[astronomer.Label]:
         return list(self._labels)
 
     def yieldLabels(self) -> typing.Generator[astronomer.Label, None, None]:
@@ -200,8 +204,14 @@ class Sector(object):
             return False
         return self._tagging.contains(tag)
 
-    def sources(self) -> typing.Optional[astronomer.SectorSources]:
-        return self._sources
+    def credits(self) -> typing.Optional[str]:
+        return self._credits
+
+    def source(self) -> typing.Optional[astronomer.SectorSource]:
+        return self._source
+
+    def products(self) -> typing.List[astronomer.SectorSource]:
+        return list(self._products)
 
     def isCustom(self) -> bool:
         return self._isCustom

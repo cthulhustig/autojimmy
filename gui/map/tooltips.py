@@ -458,47 +458,48 @@ def createHexToolTip(
             toolTip += '</ul>'
     toolTip += '</ul>'
 
-    if includeCredits and sector and sector.sources():
-        sources = sector.sources()
+    if includeCredits and sector:
+        credits = sector.credits()
+        source = sector.source()
+        products = sector.products()
 
         toolTip += '<br>'
 
-        if sources.credits():
+        if credits:
             toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
 
             toolTip += '<li><i><u>Sector Credits</u></i></li>'
             toolTip += '<li>'
             # NOTE: Credits are expected to be preformatted html so no escaping
-            toolTip += sources.credits()
+            toolTip += credits
             toolTip += '</li>'
             toolTip += '</ul>'
 
-        primary = sources.primary()
-        if primary:
+        if source:
             toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
 
             toolTip += '<li><i><u>Sector Data</u></i></li>'
-            text = ', '.join([s for s in [primary.publication(), primary.author(), primary.publisher()] if s])
+            text = ', '.join([s for s in [source.publication(), source.author(), source.publisher()] if s])
 
-            if text or primary.reference():
+            if text or source.reference():
                 toolTip += '<li>'
                 if text:
                     toolTip += html.escape(text)
-                if primary.reference():
+                if source.reference():
                     if text:
                         toolTip += ' - '
                     toolTip += '<a href="{url}">Source</a>'.format(
-                        url=html.escape(primary.reference()))
+                        url=html.escape(source.reference()))
                 toolTip += '</li>'
 
             toolTip += '</ul>'
 
-        if sources.products():
+        if products:
             toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
 
             toolTip += '<li><i><u>Reference Products</u></i></li>'
             isFirst = True
-            for product in sources.products():
+            for product in products:
                 if not product.publication():
                     continue # No publication so no product to mention
 

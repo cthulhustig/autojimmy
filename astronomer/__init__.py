@@ -19,7 +19,7 @@ from .region import *
 from .border import *
 from .label import *
 from .route import *
-from .sectorsources import *
+from .sectorsource import *
 from .sector import *
 from .main import *
 from .universe import *

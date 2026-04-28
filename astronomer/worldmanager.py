@@ -826,54 +826,41 @@ class WorldManager(object):
                         name=sectorLoggingName),
                     exc_info=ex)
 
-        dbPrimaryPublication = dbSector.publication()
-        dbPrimaryAuthor = dbSector.author()
-        dbPrimaryPublisher = dbSector.publisher()
-        dbPrimaryReference = dbSector.reference()
-        dbCredits = dbSector.credits()
-        dbProducts = dbSector.products()
-        sources = None
-        if dbPrimaryPublication or dbPrimaryAuthor or dbPrimaryPublisher or dbPrimaryReference or dbCredits or dbProducts:
-            primary = None
-            if dbPrimaryPublication or dbPrimaryAuthor or dbPrimaryPublisher or dbPrimaryReference:
-                try:
-                    primary = astronomer.SectorSource(
-                        publication=dbPrimaryPublication,
-                        author=dbPrimaryAuthor,
-                        publisher=dbPrimaryPublisher,
-                        reference=dbPrimaryReference)
-                except Exception as ex:
-                    logging.warning('Failed to create primary source when loading sector {sectorId} ({name})'.format(
-                            sectorId=dbSector.id(),
-                            name=sectorLoggingName),
-                        exc_info=ex)
-
-            products = []
-            if dbProducts:
-                for dbProduct in dbProducts:
-                    try:
-                        products.append(astronomer.SectorSource(
-                            publication=dbProduct.publication(),
-                            author=dbProduct.author(),
-                            publisher=dbProduct.publisher(),
-                            reference=dbProduct.reference()))
-                    except Exception as ex:
-                        logging.warning('Failed to create source {objectId} when loading sector {sectorId} ({name})'.format(
-                                objectId=dbProduct.id(),
-                                sectorId=dbSector.id(),
-                                name=sectorLoggingName),
-                            exc_info=ex)
-
+        dbPublication = dbSector.publication()
+        dbAuthor = dbSector.author()
+        dbPublisher = dbSector.publisher()
+        dbReference = dbSector.reference()
+        source = None
+        if dbPublication or dbAuthor or dbPublisher or dbReference:
             try:
-                sources = astronomer.SectorSources(
-                    credits=dbCredits,
-                    primary=primary,
-                    products=products)
+                source = astronomer.SectorSource(
+                    publication=dbPublication,
+                    author=dbAuthor,
+                    publisher=dbPublisher,
+                    reference=dbReference)
             except Exception as ex:
-                logging.warning('Failed to create sources when loading sector {sectorId} ({name})'.format(
+                logging.warning('Failed to create primary source when loading sector {sectorId} ({name})'.format(
                         sectorId=dbSector.id(),
                         name=sectorLoggingName),
                     exc_info=ex)
+
+        dbProducts = dbSector.products()
+        products = None
+        if dbProducts:
+            products = []
+            for dbProduct in dbProducts:
+                try:
+                    products.append(astronomer.SectorSource(
+                        publication=dbProduct.publication(),
+                        author=dbProduct.author(),
+                        publisher=dbProduct.publisher(),
+                        reference=dbProduct.reference()))
+                except Exception as ex:
+                    logging.warning('Failed to create source {objectId} when loading sector {sectorId} ({name})'.format(
+                            objectId=dbProduct.id(),
+                            sectorId=dbSector.id(),
+                            name=sectorLoggingName),
+                        exc_info=ex)
 
         return astronomer.Sector(
             isCustom=isCustom,
@@ -892,7 +879,9 @@ class WorldManager(object):
             labels=labels,
             selected=dbSector.selected(),
             tagging=tagging,
-            sources=sources)
+            credits=dbSector.credits(),
+            source=source,
+            products=products)
 
     @staticmethod
     def _mapMilieu(milieu: str) -> typing.Optional[astronomer.Milieu]:

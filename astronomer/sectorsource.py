@@ -24,23 +24,3 @@ class SectorSource(object):
 
     def reference(self) -> typing.Optional[str]:
         return self._reference
-
-class SectorSources(object):
-    def __init__(
-            self,
-            credits: typing.Optional[str],
-            primary: typing.Optional[SectorSource],
-            products: typing.Optional[typing.Collection[SectorSource]]
-            ) -> None:
-        self._credits = credits
-        self._primary = primary
-        self._products = list(products) if products else list()
-
-    def credits(self) -> typing.Optional[str]:
-        return self._credits
-
-    def primary(self) -> typing.Optional[SectorSource]:
-        return self._primary
-
-    def products(self) -> typing.List[SectorSource]:
-        return list(self._products)
