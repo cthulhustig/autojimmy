@@ -7,39 +7,48 @@ import math
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-def _formatWorldName(world: astronomer.World) -> str:
-    return world.name(includeSubsector=True)
+def _formatWorldName(
+        universe: astronomer.Universe,
+        world: astronomer.World
+        ) -> str:
+    subsector = universe.subsectorByPosition(
+        milieu=world.milieu(),
+        position=world.hex())
+    return '{world} ({subsector})'.format(
+        world=world.name(),
+        subsector=subsector.name() if subsector else 'Unknown')
 
 def _formatHexName(
         universe: astronomer.Universe,
         milieu: astronomer.Milieu,
         hex: astronomer.HexPosition
         ) -> str:
-    world = universe.worldByHexPosition(
+    world = universe.worldByPosition(
         milieu=milieu,
         hex=hex)
     if world:
-        return _formatWorldName(world=world)
+        return _formatWorldName(universe=universe, world=world)
 
-    sectorHex = universe.positionToSectorHex(milieu=milieu, hex=hex)
-    subsector = universe.subsectorByHexPosition(milieu=milieu, hex=hex)
+    sectorHex = universe.formatSectorHex(milieu=milieu, hex=hex)
+    subsector = universe.subsectorByPosition(milieu=milieu, position=hex)
     return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
-
-def _formatWorldHtml(world: astronomer.World) -> str:
-    return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
-        worldName=html.escape(_formatWorldName(world=world)),
-        sectorHex=html.escape(world.sectorHex()),
-        uwp=html.escape(world.uwp().string()))
 
 def _formatHexHtml(
         universe: astronomer.Universe,
         milieu: astronomer.Milieu,
         hex: astronomer.HexPosition
         ) -> str:
-    world = universe.worldByHexPosition(milieu=milieu, hex=hex)
-    if world:
-        return _formatWorldHtml(world=world)
-    return html.escape(_formatHexName(universe=universe, milieu=milieu, hex=hex))
+    world = universe.worldByPosition(milieu=milieu, hex=hex)
+    if not world:
+        return html.escape(_formatHexName(universe=universe, milieu=milieu, hex=hex))
+
+    sectorHex = universe.formatSectorHex(
+        milieu=milieu,
+        hex=world.hex())
+    return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
+        worldName=html.escape(_formatWorldName(universe=universe, world=world)),
+        sectorHex=html.escape(sectorHex),
+        uwp=html.escape(world.uwp().string()))
 
 # Based on code from here
 # https://stackoverflow.com/questions/21141757/pyqt-different-colors-in-a-single-row-in-a-combobox
@@ -251,7 +260,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # if it's a dead space hex
             hex = self.currentHex()
             if hex:
-                world = self._universe.worldByHexPosition(
+                world = self._universe.worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if not world:
@@ -379,7 +388,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
         if selectedHex and not self._enableDeadSpaceSelection:
             # Dead space selection is not enabled so clear the currently selected
             # hex if there isn't a world at that location
-            world = self._universe.worldByHexPosition(
+            world = self._universe.worldByPosition(
                 milieu=self._milieu,
                 hex=selectedHex)
             if not world:
@@ -397,7 +406,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
             for hex in app.HexHistory.instance().hexes():
                 if not self._enableDeadSpaceSelection:
-                    world = self._universe.worldByHexPosition(
+                    world = self._universe.worldByPosition(
                         milieu=self._milieu,
                         hex=hex)
                     if not world:

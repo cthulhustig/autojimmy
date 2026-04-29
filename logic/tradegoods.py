@@ -731,7 +731,7 @@ def calculateWorldTradeGoodQuantity(
     if worldModifiers:
         totalModifier = common.Calculator.sum(
             values=worldModifiers,
-            name=f'{world.name(includeSubsector=True)} Quantity DM')
+            name=f'{world.name()} Quantity DM')
         diceRoll = common.Calculator.max(
             lhs=common.Calculator.add(lhs=diceRoll, rhs=totalModifier),
             rhs=common.ScalarCalculation(value=0, name='Minimum Quantity'),

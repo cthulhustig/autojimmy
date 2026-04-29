@@ -111,7 +111,7 @@ def calculateRouteLogistics(
             mandatoryFinishBerthing = jumpRoute.mandatoryBerthing(index=jumpRoute.nodeCount() - 1)
             if mandatoryStartBerthing or mandatoryFinishBerthing:
                 startHex = jumpRoute.startNode()
-                startWorld = universe.worldByHexPosition(milieu=milieu, hex=startHex)
+                startWorld = universe.worldByPosition(milieu=milieu, hex=startHex)
                 if startWorld:
                     berthingCost = pitCostCalculator.berthingCost(
                         world=startWorld,
@@ -119,7 +119,7 @@ def calculateRouteLogistics(
                     if berthingCost:
                         berthingCost = common.Calculator.rename(
                             value=berthingCost,
-                            name=f'Berthing Cost For {startWorld.name(includeSubsector=True)}')
+                            name=f'Berthing Cost For {startWorld.name()}')
 
                         if not includeLogisticsCosts:
                             berthingCost = common.Calculator.override(

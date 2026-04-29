@@ -185,7 +185,7 @@ def generateRandomPurchaseCargo(
             value=survey.ehexToInteger(
                 value=world.uwp().code(astronomer.UWP.Element.Population),
                 default=0),
-            name=f'{world.name(includeSubsector=True)} Population Code')
+            name=f'{world.name()} Population Code')
         numberOfRandomTradeGoods = common.Calculator.equals(
             value=population,
             name='Random Item Count')

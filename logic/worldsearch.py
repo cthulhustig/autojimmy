@@ -90,6 +90,7 @@ class WorldFilter(object):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -145,6 +146,7 @@ class NameFiler(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -153,17 +155,37 @@ class NameFiler(WorldFilter):
             if self._type == NameFiler.Type.WorldName:
                 return self._regex.search(world.name()) != None
             elif self._type == NameFiler.Type.SectorName:
-                return self._regex.search(world.sectorName()) != None
+                sector = universe.sectorByPosition(
+                    milieu=world.milieu(),
+                    position=world.hex())
+                if not sector:
+                    return False
+                return self._regex.search(sector.name()) != None
             elif self._type == NameFiler.Type.SubsectorName:
-                return self._regex.search(world.subsectorName()) != None
+                subsector = universe.subsectorByPosition(
+                    milieu=world.milieu(),
+                    position=world.hex())
+                if not subsector:
+                    return False
+                return self._regex.search(subsector.name()) != None
             raise ValueError('Invalid name filter type')
         elif self._operation == StringFilterOperation.MatchRegex:
             if self._type == NameFiler.Type.WorldName:
                 return self._regex.match(world.name()) != None
             elif self._type == NameFiler.Type.SectorName:
-                return self._regex.match(world.sectorName()) != None
+                sector = universe.sectorByPosition(
+                    milieu=world.milieu(),
+                    position=world.hex())
+                if not sector:
+                    return False
+                return self._regex.match(sector.name()) != None
             elif self._type == NameFiler.Type.SubsectorName:
-                return self._regex.match(world.subsectorName()) != None
+                subsector = universe.subsectorByPosition(
+                    milieu=world.milieu(),
+                    position=world.hex())
+                if not subsector:
+                    return False
+                return self._regex.match(subsector.name()) != None
             raise ValueError('Invalid name filter type')
         raise ValueError('Invalid name filter operation')
 
@@ -193,6 +215,7 @@ class TagLevelFiler(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -237,6 +260,7 @@ class ZoneFiler(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -316,6 +340,7 @@ class UWPFilter(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -371,6 +396,7 @@ class EconomicsFilter(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -426,6 +452,7 @@ class CultureFilter(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -497,6 +524,7 @@ class RefuellingFilter(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -567,6 +595,7 @@ class AllegianceFilter(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -626,6 +655,7 @@ class SophontFilter(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -686,6 +716,7 @@ class BaseFilter(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -750,6 +781,7 @@ class NobilityFilter(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -802,6 +834,7 @@ class RemarksFilter(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -859,6 +892,7 @@ class TradeCodeFilter(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -921,6 +955,7 @@ class PBGFilter(WorldFilter):
 
     def match(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -965,6 +1000,7 @@ class WorldSearch(object):
 
     def checkWorld(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
@@ -973,7 +1009,11 @@ class WorldSearch(object):
             return True # No filter always matches the world
 
         for filter in self._filters:
-            matched = filter.match(world=world, rules=rules, tagging=tagging)
+            matched = filter.match(
+                universe=universe,
+                world=world,
+                rules=rules,
+                tagging=tagging)
             if self._logic == FilterLogic.MatchesAll:
                 if not matched:
                     return False
@@ -999,6 +1039,7 @@ class WorldSearch(object):
         results = []
         for sector in universe.yieldSectors(milieu=milieu):
             self._searchWorlds(
+                universe=universe,
                 worlds=sector.yieldWorlds(),
                 rules=rules,
                 tagging=tagging,
@@ -1024,6 +1065,7 @@ class WorldSearch(object):
 
         if not subsectorName:
             return self._searchWorlds(
+                universe=universe,
                 worlds=sector.yieldWorlds(),
                 rules=rules,
                 tagging=tagging,
@@ -1033,6 +1075,7 @@ class WorldSearch(object):
             if not subsector:
                 raise RuntimeError(f'Subsector "{subsectorName}" not found in sector "{sectorName}"')
             return self._searchWorlds(
+                universe=universe,
                 worlds=subsector.yieldWorlds(),
                 rules=rules,
                 tagging=tagging,
@@ -1047,14 +1090,16 @@ class WorldSearch(object):
             centerHex: astronomer.HexPosition,
             searchRadius: int
             ) -> typing.Iterable[astronomer.World]:
+        filterCallback = lambda world: self.checkWorld(universe=universe, world=world, rules=rules, tagging=tagging)
         return universe.worldsInRadius(
             milieu=milieu,
             center=centerHex,
             searchRadius=searchRadius,
-            filterCallback=lambda world: self.checkWorld(world=world, rules=rules, tagging=tagging))
+            filterCallback=filterCallback)
 
     def _searchWorlds(
             self,
+            universe: astronomer.Universe,
             worlds: typing.Iterable[astronomer.World],
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
@@ -1067,7 +1112,7 @@ class WorldSearch(object):
             results = []
 
         for world in worlds:
-            if self.checkWorld(world=world, rules=rules, tagging=tagging):
+            if self.checkWorld(universe=universe, world=world, rules=rules, tagging=tagging):
                 results.append(world)
                 if maxResults and len(results) >= maxResults:
                     return results

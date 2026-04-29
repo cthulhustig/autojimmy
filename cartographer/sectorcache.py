@@ -138,7 +138,7 @@ class SectorCache(object):
         if worlds is not None:
             return worlds
 
-        sector = self._universe.sectorBySectorPosition(
+        sector = self._universe.sectorByPosition(
             milieu=self._milieu,
             position=sectorPos,
             includePlaceholders=True)
@@ -166,7 +166,7 @@ class SectorCache(object):
         if borders is not None:
             return borders
 
-        sector = self._universe.sectorBySectorPosition(
+        sector = self._universe.sectorByPosition(
             milieu=self._milieu,
             position=sectorPos)
         if not sector:
@@ -187,7 +187,7 @@ class SectorCache(object):
         if regions is not None:
             return regions
 
-        sector = self._universe.sectorBySectorPosition(
+        sector = self._universe.sectorByPosition(
             milieu=self._milieu,
             position=sectorPos)
         if not sector:
@@ -208,7 +208,7 @@ class SectorCache(object):
         if routes is not None:
             return routes
 
-        sector = self._universe.sectorBySectorPosition(
+        sector = self._universe.sectorByPosition(
             milieu=self._milieu,
             position=sectorPos)
         if not sector:

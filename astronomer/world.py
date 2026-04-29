@@ -8,10 +8,8 @@ class World(object):
             self,
             milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
-            worldName: str,
+            name: str,
             isNameGenerated: bool,
-            sectorName: str,
-            subsectorName: str,
             allegiance: typing.Optional[astronomer.Allegiance] = None,
             zone: typing.Optional[astronomer.ZoneType] = None,
             uwp: typing.Optional[astronomer.UWP] = None,
@@ -26,10 +24,8 @@ class World(object):
             ) -> None:
         self._milieu = milieu
         self._hex = hex
-        self._name = worldName
+        self._name = name
         self._isNameGenerated = isNameGenerated
-        self._sectorName = sectorName
-        self._subsectorName = subsectorName
         self._allegiance = allegiance
         self._zone = zone
         self._uwp = uwp if uwp else astronomer.UWP()
@@ -51,28 +47,11 @@ class World(object):
     def hex(self) -> astronomer.HexPosition:
         return self._hex
 
-    def name(
-            self,
-            includeSubsector: bool = False
-            ) -> str:
-        if includeSubsector:
-            return f'{self._name} ({self._subsectorName})'
+    def name(self) -> str:
         return self._name
 
     def isNameGenerated(self) -> bool:
         return self._isNameGenerated
-
-    def sectorName(self) -> str:
-        return self._sectorName
-
-    def subsectorName(self) -> str:
-        return self._subsectorName
-
-    def sectorHex(self) -> str:
-        return astronomer.formatSectorHex(
-            sectorName=self._sectorName,
-            offsetX=self._hex.offsetX(),
-            offsetY=self._hex.offsetY())
 
     def allegiance(self) -> typing.Optional[astronomer.Allegiance]:
         return self._allegiance

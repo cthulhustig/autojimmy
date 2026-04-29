@@ -408,7 +408,7 @@ class WorldCache(object):
             ) -> WorldInfo:
         worldInfo = self._infoCache.get(hex)
         if not worldInfo:
-            world = self._universe.worldByHexPosition(
+            world = self._universe.worldByPosition(
                 milieu=self._milieu,
                 hex=hex)
             if not world:

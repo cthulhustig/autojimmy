@@ -1,21 +1,21 @@
 import astronomer
 import typing
 
+# TODO: The subsector object is close to being pointless and with a little
+# effort I could probably get rid of it
 class Subsector(object):
     def __init__(
             self,
             milieu: astronomer.Milieu,
             position: astronomer.SubsectorPosition,
-            subsectorName: str,
+            name: str,
             isNameGenerated: bool,
-            sectorName: str,
             worlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
             ) -> None:
         self._milieu = milieu
         self._position = position
-        self._name = subsectorName
+        self._name = name
         self._isNameGenerated = isNameGenerated
-        self._sectorName = sectorName
         self._worlds = list(worlds) if worlds else []
 
     def milieu(self) -> astronomer.Milieu:
@@ -29,9 +29,6 @@ class Subsector(object):
 
     def name(self) -> str:
         return self._name
-
-    def sectorName(self) -> str:
-        return self._sectorName
 
     def isNameGenerated(self) -> bool:
         return self._isNameGenerated

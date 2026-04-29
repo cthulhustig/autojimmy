@@ -626,7 +626,7 @@ class RenderContext(object):
                 sectorPos = astronomer.SectorPosition(
                     sectorX=sectorX,
                     sectorY=sectorY)
-                sector = self._universe.sectorBySectorPosition(
+                sector = self._universe.sectorByPosition(
                     milieu=self._milieu,
                     position=sectorPos)
                 if not sector:

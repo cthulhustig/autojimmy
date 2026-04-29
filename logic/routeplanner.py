@@ -115,6 +115,7 @@ class JumpCostCalculatorInterface(object):
 class HexFilterInterface(object):
     def match(
             self,
+            universe: astronomer.Universe,
             hex: astronomer.HexPosition,
             world: typing.Optional[astronomer.World]
             ) -> float:
@@ -284,10 +285,10 @@ class RoutePlanner(object):
         finishWorldIndex = sequenceLength - 1
 
         startHex = hexSequence[0]
-        startWorld = universe.worldByHexPosition(milieu=milieu, hex=startHex)
+        startWorld = universe.worldByPosition(milieu=milieu, hex=startHex)
 
         finishHex = hexSequence[finishWorldIndex]
-        finishWorld = universe.worldByHexPosition(milieu=milieu, hex=finishHex)
+        finishWorld = universe.worldByPosition(milieu=milieu, hex=finishHex)
 
         startWorldFuelType = None
         if routingType is RoutingType.Basic:
@@ -694,7 +695,10 @@ class RoutePlanner(object):
             if hexFilter and (nearbyHex != targetHex):
                 isMatched = filterResultCache.get(nearbyHex)
                 if isMatched == None:
-                    isMatched = hexFilter.match(hex=nearbyHex, world=nearbyWorld)
+                    isMatched = hexFilter.match(
+                        universe=universe,
+                        hex=nearbyHex,
+                        world=nearbyWorld)
                     filterResultCache[nearbyHex] = isMatched
                 if not isMatched:
                     continue # Hex has been excluded
@@ -758,7 +762,10 @@ class RoutePlanner(object):
                     if hexFilter and not isTarget:
                         isMatched = filterResultCache.get(nearbyHex)
                         if isMatched == None:
-                            isMatched = hexFilter.match(hex=nearbyHex, world=None)
+                            isMatched = hexFilter.match(
+                                universe=universe,
+                                hex=nearbyHex,
+                                world=None)
                             filterResultCache[nearbyHex] = isMatched
                         if not isMatched:
                             continue # Hex has been excluded

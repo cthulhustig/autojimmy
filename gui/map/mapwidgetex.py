@@ -1792,7 +1792,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 self.setInfoHex(hex=hex)
             return
 
-        world = self._universe.worldByHexPosition(
+        world = self._universe.worldByPosition(
             milieu=self._milieu,
             hex=hex)
         if not world and not self._enableDeadSpaceSelection:
@@ -1829,7 +1829,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if not self._enableDeadSpaceSelection:
             filtered = []
             for hex in hexes:
-                world = self._universe.worldByHexPosition(
+                world = self._universe.worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if world:
@@ -1894,7 +1894,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if position in self._selectedSectors:
             return
 
-        sector = self._universe.sectorBySectorPosition(
+        sector = self._universe.sectorByPosition(
             milieu=self._milieu,
             position=position)
         if not sector and not self._enableDeadSpaceSelection:
@@ -1925,7 +1925,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if not self._enableDeadSpaceSelection:
             filtered = []
             for position in positions:
-                sector = self._universe.sectorBySectorPosition(
+                sector = self._universe.sectorByPosition(
                     milieu=self._milieu,
                     position=position)
                 if sector:
@@ -2053,14 +2053,14 @@ class MapWidgetEx(QtWidgets.QWidget):
             # Deselect any dead space
             selectionChanged = False
             for hex in list(self._selectedHexes):
-                world = self._universe.worldByHexPosition(
+                world = self._universe.worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if not world:
                     self._selectedHexes.discard(hex)
                     selectionChanged = True
             for pos in list(self._selectedSectors):
-                sector = self._universe.sectorBySectorPosition(
+                sector = self._universe.sectorByPosition(
                     milieu=self._milieu,
                     position=pos)
                 if not sector:
@@ -2345,7 +2345,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             if self._enableDeadSpaceSelection:
                 shouldSelect = hex != None
             elif hex:
-                shouldSelect = self._universe.worldByHexPosition(
+                shouldSelect = self._universe.worldByPosition(
                     milieu=self._milieu,
                     hex=hex) != None
 
@@ -2375,7 +2375,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             if self._enableDeadSpaceSelection:
                 shouldSelect = position != None
             elif position:
-                shouldSelect = self._universe.sectorBySectorPosition(
+                shouldSelect = self._universe.sectorByPosition(
                     milieu=self._milieu,
                     position=position) != None
 

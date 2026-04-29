@@ -251,7 +251,7 @@ class PitStop(object):
 
         # Cache total so we don't have to repeatedly calculate it. This assumes that a pit stop
         # is immutable
-        calculationName = f'Pit Stop Cost on {self._world.name(includeSubsector=True)}'
+        calculationName = f'Pit Stop Cost on {self._world.name()}'
         if self._fuelCost and  self._berthingCost:
             self._totalCost = common.Calculator.add(
                 lhs=self._fuelCost,
@@ -653,7 +653,7 @@ def _processRoute(
         while reachableNodeIndex <= finishNodeIndex:
             fromHex = jumpRoute.nodeAt(reachableNodeIndex - 1)
             toHex = jumpRoute.nodeAt(reachableNodeIndex)
-            toWorld = universe.worldByHexPosition(milieu=milieu, hex=toHex)
+            toWorld = universe.worldByPosition(milieu=milieu, hex=toHex)
             parsecs = fromHex.parsecsTo(toHex)
             totalParsecs += parsecs
             if parsecsToNextWorld == None:
@@ -670,7 +670,7 @@ def _processRoute(
             reachableNodeIndex += 1
 
         nodePos = jumpRoute.nodeAt(index=nodeIndex)
-        world = universe.worldByHexPosition(milieu=milieu, hex=nodePos)
+        world = universe.worldByPosition(milieu=milieu, hex=nodePos)
         refuellingType = None
         fuelCostPerTon = None
         berthingCost = None
@@ -868,7 +868,7 @@ def _createRefuellingPlan(
 
             fuelCostPerTon = nodeContext.fuelCostPerTon()
             if fuelCostPerTon is not None:
-                worldString = world.name(includeSubsector=True)
+                worldString = world.name()
                 fuelCostPerTon = common.ScalarCalculation(
                     value=fuelCostPerTon,
                     name=f'{refuellingType.value} Fuel Cost Per Ton On {worldString}')
@@ -888,7 +888,7 @@ def _createRefuellingPlan(
             if berthingCost:
                 berthingCost = common.Calculator.rename(
                     value=berthingCost,
-                    name=f'Berthing Cost For {world.name(includeSubsector=True)}')
+                    name=f'Berthing Cost For {world.name()}')
 
         # Only create a pit stop if we're refuelling or berthing
         if refuellingType or berthingCost:

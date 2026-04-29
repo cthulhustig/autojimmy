@@ -37,7 +37,7 @@ class TradeScore(object):
             ruleSystem=self._ruleSystem,
             world=self._world)
 
-        worldName = self._world.name(includeSubsector=True)
+        worldName = self._world.name()
         self._totalPurchaseScore = common.Calculator.sum(
             values=list(self._purchaseScores.values()) + self._quantityModifiers,
             name=f'Purchase Trade Score for {worldName}')
@@ -95,7 +95,7 @@ class TradeScore(object):
         if not purchaseDm and not saleDm:
             return None
 
-        name = f'Purchase Trade Score For {tradeGood.name()} on {world.name(includeSubsector=True)}'
+        name = f'Purchase Trade Score For {tradeGood.name()} on {world.name()}'
         if purchaseDm and not saleDm:
             return common.Calculator.equals(
                 value=purchaseDm,
@@ -121,7 +121,7 @@ class TradeScore(object):
         if not purchaseDm and not saleDm:
             return None
 
-        name = f'Sale Trade Score For {tradeGood.name()} on {world.name(includeSubsector=True)}'
+        name = f'Sale Trade Score For {tradeGood.name()} on {world.name()}'
         if saleDm and not purchaseDm:
             return common.Calculator.equals(
                 value=saleDm,

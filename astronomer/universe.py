@@ -12,8 +12,9 @@ class Universe(object):
             self.canonicalNameMap: typing.Dict[str, astronomer.Sector] = {}
             self.alternateNameMap: typing.Dict[str, typing.List[astronomer.Sector]] = {}
             self.abbreviationMap: typing.Dict[str, typing.List[astronomer.Sector]] = {}
-            self.sectorPosMap: typing.Dict[typing.Tuple[int, int], astronomer.Sector] = {}
+            self.sectorPositionMap: typing.Dict[typing.Tuple[int, int], astronomer.Sector] = {}
             self.subsectorNameMap: typing.Dict[str, typing.List[astronomer.Subsector]] = {}
+            self.subsectorPositionMap: typing.Dict[typing.Tuple[int, int, str], astronomer.Subsector] = {}
             self.subsectorSectorMap: typing.Dict[astronomer.Subsector, astronomer.Sector] = {}
             self.worldPositionMap: typing.Dict[typing.Tuple[int, int], astronomer.World] = {}
             self.mainsList: typing.List[astronomer.Main] = []
@@ -59,7 +60,7 @@ class Universe(object):
 
             sectorPos = sector.position()
             milieuData.sectorList.append(sector)
-            milieuData.sectorPosMap[sectorPos.elements()] = sector
+            milieuData.sectorPositionMap[sectorPos.elements()] = sector
 
             # Add canonical name to the main name map. The name is added lower case as lookups are
             # case insensitive
@@ -94,11 +95,13 @@ class Universe(object):
                     milieuData.subsectorNameMap[subsectorName] = subsectorList
                 subsectorList.append(subsector)
 
+                subsectorPos = subsector.position()
+                milieuData.subsectorPositionMap[subsectorPos.elements()] = subsector
                 milieuData.subsectorSectorMap[subsector] = sector
 
             for world in sector.worlds():
                 hex = world.hex()
-                milieuData.worldPositionMap[(hex.absoluteX(), hex.absoluteY())] = world
+                milieuData.worldPositionMap[hex.absolute()] = world
 
             for route in sector.routes():
                 for hex in [route.startHex(), route.endHex()]:
@@ -169,15 +172,26 @@ class Universe(object):
             filterCallback=filterCallback,
             includePlaceholders=includePlaceholders))
 
+    def worlds(
+            self,
+            milieu: astronomer.Milieu,
+            filterCallback: typing.Callable[[astronomer.World], bool] = None,
+            includePlaceholders: bool = False
+            ) -> typing.List[astronomer.World]:
+        return list(self.yieldWorlds(
+            milieu=milieu,
+            filterCallback=filterCallback,
+            includePlaceholders=includePlaceholders))
+
     def worldBySectorHex(
             self,
             milieu: astronomer.Milieu,
             sectorHex: str,
             ) -> typing.Optional[astronomer.World]:
         hex = self.sectorHexToPosition(milieu=milieu, sectorHex=sectorHex)
-        return self.worldByHexPosition(milieu=milieu, hex=hex) if hex else None
+        return self.worldByPosition(milieu=milieu, hex=hex) if hex else None
 
-    def worldByHexPosition(
+    def worldByPosition(
             self,
             milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
@@ -188,71 +202,57 @@ class Universe(object):
 
         if not world and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
             sectorPos = hex.sectorPosition()
-            if not milieuData or sectorPos.elements() not in milieuData.sectorPosMap:
-                world = self.worldByHexPosition(
+            if not milieuData or sectorPos.elements() not in milieuData.sectorPositionMap:
+                world = self.worldByPosition(
                     milieu=self._placeholderMilieu,
                     hex=hex,
                     includePlaceholders=False)
 
         return world
 
-    def sectorByHexPosition(
+    def sectorByPosition(
             self,
             milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition,
+            position: typing.Union[astronomer.SectorPosition, astronomer.SubsectorPosition, astronomer.HexPosition],
             includePlaceholders: bool = False
             ) -> typing.Optional[astronomer.Sector]:
+        if isinstance(position, astronomer.SubsectorPosition):
+            position = position.sectorPosition()
+        elif isinstance(position, astronomer.HexPosition):
+            position = position.sectorPosition()
+
         milieuData = self._milieuDataMap.get(milieu)
-        sector = milieuData.sectorPosMap.get(hex.sectorPosition().elements()) if milieuData else None
+        sector = milieuData.sectorPositionMap.get(position.elements()) if milieuData else None
 
         if not sector and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            sector = self.sectorByHexPosition(
-                milieu=self._placeholderMilieu,
-                hex=hex,
-                includePlaceholders=False)
-
-        return sector
-
-    def sectorBySectorPosition(
-            self,
-            milieu: astronomer.Milieu,
-            position: astronomer.SectorPosition,
-            includePlaceholders: bool = False
-            ) -> typing.Optional[astronomer.Sector]:
-        milieuData = self._milieuDataMap.get(milieu)
-        sector = milieuData.sectorPosMap.get(position.elements()) if milieuData else None
-
-        if not sector and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            sector = self.sectorBySectorPosition(
+            sector = self.sectorByPosition(
                 milieu=self._placeholderMilieu,
                 position=position,
                 includePlaceholders=False)
 
         return sector
 
-    def subsectorByHexPosition(
+    def subsectorByPosition(
             self,
             milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition,
+            position: typing.Union[astronomer.SubsectorPosition, astronomer.HexPosition],
             includePlaceholders: bool = False
             ) -> typing.Optional[astronomer.Subsector]:
-        sector = self.sectorByHexPosition(
-            milieu=milieu,
-            hex=hex,
-            includePlaceholders=includePlaceholders)
-        if not sector:
-            return None
-        subsectors = sector.subsectors()
-        assert(len(subsectors) == 16)
+        if isinstance(position, astronomer.HexPosition):
+            position = position.subsectorPosition()
 
-        _, _, offsetX, offsetY = hex.relative()
-        subsectorX = (offsetX - 1) // astronomer.SubsectorWidth
-        subsectorY = (offsetY - 1) // astronomer.SubsectorHeight
-        index = (subsectorY * astronomer.HorzSubsectorsPerSector) + subsectorX
-        if index < 0 or index >= 16:
-            return None
+        milieuData = self._milieuDataMap.get(milieu)
+        subsector = milieuData.subsectorPositionMap.get(position.elements()) if milieuData else None
 
-        return subsectors[index]
+        if not subsector and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
+            sectorPos = position.sectorPosition()
+            if not milieuData or sectorPos.elements() not in milieuData.sectorPositionMap:
+                subsector = self.subsectorByPosition(
+                    milieu=self._placeholderMilieu,
+                    position=position,
+                    includePlaceholders=False)
+
+        return subsector
 
     def sectorsInArea(
             self,
@@ -281,17 +281,6 @@ class Universe(object):
             milieu=milieu,
             upperLeft=upperLeft,
             lowerRight=lowerRight,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders))
-
-    def worlds(
-            self,
-            milieu: astronomer.Milieu,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
-            ) -> typing.List[astronomer.World]:
-        return list(self.yieldWorlds(
-            milieu=milieu,
             filterCallback=filterCallback,
             includePlaceholders=includePlaceholders))
 
@@ -338,7 +327,7 @@ class Universe(object):
             filterCallback=filterCallback,
             includePlaceholders=includePlaceholders))
 
-    def positionToSectorHex(
+    def formatSectorHex(
             self,
             milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
@@ -348,12 +337,12 @@ class Universe(object):
 
         sectorX, sectorY, offsetX, offsetY = hex.relative()
         sectorPos = (sectorX, sectorY)
-        sector = milieuData.sectorPosMap.get(sectorPos) if milieuData else None
+        sector = milieuData.sectorPositionMap.get(sectorPos) if milieuData else None
 
         if not sector and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
             placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
             if placeholderData:
-                sector = placeholderData.sectorPosMap.get(sectorPos)
+                sector = placeholderData.sectorPositionMap.get(sectorPos)
 
         return astronomer.formatSectorHex(
             sectorName=sector.name() if sector else f'{sectorX}:{sectorY}',
@@ -470,17 +459,12 @@ class Universe(object):
             milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
             ) -> str:
-        world = self.worldByHexPosition(milieu=milieu, hex=hex)
-        if world:
-            return world.name(includeSubsector=True)
-        try:
-            name = self.positionToSectorHex(milieu=milieu, hex=hex)
-            subsector = self.subsectorByHexPosition(milieu=milieu, hex=hex)
-            if subsector:
-                name += f' ({subsector.name()})'
-            return name
-        except KeyError:
-            return str(hex)
+        world = self.worldByPosition(milieu=milieu, hex=hex)
+        name = world.name() if world else self.formatSectorHex(milieu=milieu, hex=hex)
+        subsector = self.subsectorByPosition(milieu=milieu, position=hex)
+        if subsector:
+            name += f' ({subsector.name()})'
+        return name
 
     def mainByPosition(
             self,
@@ -525,7 +509,7 @@ class Universe(object):
             if placeholderData:
                 for sector in placeholderData.sectorList:
                     sectorPos = sector.position()
-                    if not milieuData or sectorPos.elements() not in milieuData.sectorPosMap:
+                    if not milieuData or sectorPos.elements() not in milieuData.sectorPositionMap:
                         if not filterCallback or filterCallback(sector):
                             yield sector
 
@@ -550,9 +534,9 @@ class Universe(object):
             y = startY
             while y <= finishY:
                 key = (x, y)
-                sector = milieuData.sectorPosMap.get(key) if milieuData else None
+                sector = milieuData.sectorPositionMap.get(key) if milieuData else None
                 if not sector and placeholderData:
-                    sector = placeholderData.sectorPosMap.get(key)
+                    sector = placeholderData.sectorPositionMap.get(key)
 
                 if sector and (not filterCallback or filterCallback(sector)):
                     yield sector
@@ -577,7 +561,7 @@ class Universe(object):
             if placeholderData:
                 for sector in placeholderData.sectorList:
                     sectorPos = sector.position()
-                    if not milieuData or sectorPos.elements() not in milieuData.sectorPosMap:
+                    if not milieuData or sectorPos.elements() not in milieuData.sectorPositionMap:
                         for subsector in sector.yieldSubsectors():
                             if not filterCallback or filterCallback(subsector):
                                 yield subsector
@@ -604,9 +588,9 @@ class Universe(object):
                     astronomer.absoluteSpaceToRelativeSpace((x, y))
 
                 key = (sectorX, sectorY)
-                sector = milieuData.sectorPosMap.get(key) if milieuData else None
+                sector = milieuData.sectorPositionMap.get(key) if milieuData else None
                 if not sector and placeholderData:
-                    sector = placeholderData.sectorPosMap.get(key)
+                    sector = placeholderData.sectorPositionMap.get(key)
 
                 if not sector:
                     continue
@@ -633,7 +617,7 @@ class Universe(object):
             if placeholderData:
                 for sector in placeholderData.sectorList:
                     sectorPos = sector.position()
-                    if not milieuData or sectorPos.elements() not in milieuData.sectorPosMap:
+                    if not milieuData or sectorPos.elements() not in milieuData.sectorPositionMap:
                         for world in sector.yieldWorlds():
                             if not filterCallback or filterCallback(world):
                                 yield world
@@ -662,7 +646,7 @@ class Universe(object):
                 world = milieuData.worldPositionMap.get(key) if milieuData else None
                 if not world and placeholderData:
                     sectorPos = astronomer.absoluteSpaceToSectorPos(key)
-                    if not milieuData or sectorPos not in milieuData.sectorPosMap:
+                    if not milieuData or sectorPos not in milieuData.sectorPositionMap:
                         world = placeholderData.worldPositionMap.get(key)
 
                 if world and ((not filterCallback) or filterCallback(world)):
@@ -717,7 +701,7 @@ class Universe(object):
                 world = milieuData.worldPositionMap.get(key) if milieuData else None
                 if not world and placeholderData:
                     sectorPos = astronomer.absoluteSpaceToSectorPos(key)
-                    if not milieuData or sectorPos not in milieuData.sectorPosMap:
+                    if not milieuData or sectorPos not in milieuData.sectorPositionMap:
                         world = placeholderData.worldPositionMap.get(key)
 
                 if world and ((not filterCallback) or filterCallback(world)):
@@ -739,7 +723,7 @@ class Universe(object):
         world = milieuData.worldPositionMap.get(key) if milieuData else None
         if not world and placeholderData:
             sectorPos = astronomer.absoluteSpaceToSectorPos(key)
-            if not milieuData or sectorPos not in milieuData.sectorPosMap:
+            if not milieuData or sectorPos not in milieuData.sectorPositionMap:
                 world = placeholderData.worldPositionMap.get(key)
         if not world:
             return
@@ -759,7 +743,7 @@ class Universe(object):
                 adjacentWorld = milieuData.worldPositionMap.get(key) if milieuData else None
                 if not adjacentWorld and placeholderData:
                     sectorPos = astronomer.absoluteSpaceToSectorPos(key)
-                    if not milieuData or sectorPos not in milieuData.sectorPosMap:
+                    if not milieuData or sectorPos not in milieuData.sectorPositionMap:
                         adjacentWorld = placeholderData.worldPositionMap.get(key)
 
                 if adjacentWorld and (adjacentWorld not in seen):
@@ -830,16 +814,17 @@ class Universe(object):
                 fnmatch.translate(filterString + '*'),
                 re.IGNORECASE)
 
-        matches: typing.List[astronomer.World] = []
+        worldKeyMap: typing.Dict[astronomer.World, str] = {}
         for worldList in searchWorldLists:
             for world in worldList:
-                if strictExpression.match(world.name()):
-                    matches.append(world)
-                elif wildExpression and wildExpression.match(world.name()):
-                    matches.append(world)
+                if strictExpression.match(world.name()) or (wildExpression and wildExpression.match(world.name())):
+                    hex = world.hex()
+                    sector = milieuData.sectorPositionMap.get(hex.sectorPosition().elements())
+                    subsector = milieuData.subsectorPositionMap.get(hex.subsectorPosition().elements())
+                    if sector and subsector:
+                        worldKeyMap[world] = f'{world.name()}/{subsector.name()}/{sector.name()}'.casefold()
 
-        matches.sort(
-            key=lambda world: f'{world.name()}/{world.subsectorName()}/{world.sectorName()}'.casefold())
+        matches = sorted(worldKeyMap.keys(), key=lambda world: worldKeyMap[world])
         if maxResults and len(matches) >= maxResults:
             return matches[:maxResults]
         seen = set(matches)
@@ -848,35 +833,29 @@ class Universe(object):
         # we've not already seen. Ordering of this relative to sectors
         # matches is important as sub sectors are more specific so matches
         # should be listed first in results
-        subsectorMatches: typing.List[astronomer.World] = []
         for subsector in self.searchForSubsectors(milieu=milieu, searchString=searchString):
-            for world in subsector:
-                if world not in seen:
-                    subsectorMatches.append(world)
+            for world in sorted(subsector, key=lambda world: world.name().casefold()):
+                if world in seen:
+                    continue
 
-        subsectorMatches.sort(
-            key=lambda world: f'{world.name()}/{world.subsectorName()}/{world.sectorName()}'.casefold())
-        for world in subsectorMatches:
-            matches.append(world)
-            if maxResults and len(matches) >= maxResults:
-                return matches
-            seen.add(world)
+                matches.append(world)
+                if maxResults and len(matches) >= maxResults:
+                    return matches
+                seen.add(world)
 
         # If the search string matches any sectors add any worlds that
         # we've not already seen
-        sectorMatches: typing.List[astronomer.World] = []
         for sector in self.searchForSectors(milieu=milieu, searchString=searchString):
-            for world in sector:
-                if world not in seen:
-                    sectorMatches.append(world)
+            subsectors = sector.subsectors()
+            for subsector in sorted(subsectors, key=lambda subsector: subsector.name().casefold()):
+                for world in sorted(subsector, key=lambda world: world.name().casefold()):
+                    if world in seen:
+                        continue
 
-        sectorMatches.sort(
-            key=lambda world: f'{world.name()}/{world.subsectorName()}/{world.sectorName()}'.casefold())
-        for world in sectorMatches:
-            matches.append(world)
-            if maxResults and len(matches) >= maxResults:
-                return matches
-            seen.add(world)
+                    matches.append(world)
+                    if maxResults and len(matches) >= maxResults:
+                        return matches
+                    seen.add(world)
 
         return matches
 
@@ -906,16 +885,14 @@ class Universe(object):
                 fnmatch.translate(searchString + '*'),
                 re.IGNORECASE)
 
-        matches: typing.List[astronomer.Subsector] = []
-        for sector in milieuData.sectorList:
-            for subsector in sector.subsectors():
+        matches: typing.List[astronomer.Subsector, str] = []
+        for sector in sorted(milieuData.sectorList, key=lambda sector: sector.name().casefold()):
+            for subsector in sorted(sector.subsectors(), key=lambda subsector: subsector.name().casefold()):
                 if strictExpression.match(subsector.name()):
                     matches.append(subsector)
                 elif wildExpression and wildExpression.match(subsector.name()):
                     matches.append(subsector)
 
-        matches.sort(
-            key=lambda subsector: f'{subsector.name()}/{subsector.sectorName()}'.casefold())
         if maxResults and len(matches) > maxResults:
             return matches[:maxResults]
 

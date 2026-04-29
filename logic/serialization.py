@@ -496,7 +496,7 @@ def _deserialiseLogistics(
             if berthingCost is not None:
                 berthingCost = common.deserialiseCalculation(jsonData=berthingCost)
 
-            world = universe.worldByHexPosition(
+            world = universe.worldByPosition(
                 milieu=milieu,
                 hex=route.nodeAt(routeIndex))
 

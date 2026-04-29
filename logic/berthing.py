@@ -30,7 +30,7 @@ def starPortBerthingCost(
     if diceRoller:
         diceRoll = diceRoller.makeRoll(
             dieCount=1,
-            name=f'Start Port Berthing Cost Roll For {world.name(includeSubsector=True)}')
+            name=f'Start Port Berthing Cost Roll For {world.name()}')
     else:
         # We're not rolling dice so use the probability range for the dice
         # roll. We round the value up to be pessimistic. Note that the worst

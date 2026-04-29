@@ -32,12 +32,12 @@ def createHexToolTip(
         hexImageOptions: typing.Optional[typing.Collection[app.MapOption]] = None,
         includeCredits: bool = True
         ) -> str:
-    world = universe.worldByHexPosition(
+    world = universe.worldByPosition(
         milieu=milieu,
         hex=hex)
-    sector = universe.sectorByHexPosition(
+    sector = universe.sectorByPosition(
         milieu=milieu,
-        hex=hex)
+        position=hex)
     uwp = world.uwp() if world else None
     remarks = world.remarks() if world else None
 
@@ -98,12 +98,9 @@ def createHexToolTip(
         # I don't think this should really happen but handle it gracefully
         subsectorName = 'Unknown'
 
-    if world:
-        sectorHex = world.sectorHex()
-    else:
-        sectorHex = universe.positionToSectorHex(
-            milieu=milieu,
-            hex=hex)
+    sectorHex = universe.formatSectorHex(
+        milieu=milieu,
+        hex=hex)
 
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
     toolTip += f'<li>Subsector: {html.escape(subsectorName)}</li>'
@@ -171,7 +168,7 @@ def createHexToolTip(
                     if matchSectors:
                         ownerSector = matchSectors[0]
                 else:
-                    ownerSector = universe.sectorBySectorPosition(
+                    ownerSector = universe.sectorByPosition(
                         milieu=milieu,
                         position=hex.sectorPosition())
 
@@ -181,14 +178,16 @@ def createHexToolTip(
                         sectorPos=ownerSector.position(),
                         offsetX=ownerWorldRef.hexX(),
                         offsetY=ownerWorldRef.hexY())
-                    ownerWorld = universe.worldByHexPosition(
+                    ownerWorld = universe.worldByPosition(
                         milieu=milieu,
                         hex=ownerHex)
 
                 if ownerWorld:
-                    ownerInfo.append((
-                        ownerWorld.name(includeSubsector=True),
-                        worldTagging.calculateWorldTagLevel(world=ownerWorld) if worldTagging else None))
+                    ownerString = '{world} ({hex})'.format(
+                        world=ownerWorld.name(),
+                        hex=universe.formatSectorHex(milieu=milieu, hex=ownerHex))
+                    tagLevel = worldTagging.calculateWorldTagLevel(world=ownerWorld) if worldTagging else None
+                    ownerInfo.append((ownerString, tagLevel))
                 else:
                     # We don't know about this world so just display the sector hex and tag it as danger
                     ownerString = 'Unknown world at {sector} {x:02d}{y:02d}'.format(
@@ -428,7 +427,7 @@ def createHexToolTip(
                     if matchSectors:
                         colonySector = matchSectors[0]
                 else:
-                    colonySector = universe.sectorBySectorPosition(
+                    colonySector = universe.sectorByPosition(
                         milieu=milieu,
                         position=hex.sectorPosition())
 
@@ -438,12 +437,14 @@ def createHexToolTip(
                         sectorPos=colonySector.position(),
                         offsetX=colonyWorldRef.hexX(),
                         offsetY=colonyWorldRef.hexY())
-                    colonyWorld = universe.worldByHexPosition(
+                    colonyWorld = universe.worldByPosition(
                         milieu=milieu,
                         hex=colonyHex)
 
                 if colonyWorld:
-                    colonyText = colonyWorld.name(includeSubsector=True)
+                    colonyText = '{world} ({hex})'.format(
+                        world=colonyWorld.name(),
+                        hex=universe.formatSectorHex(milieu=milieu, hex=colonyHex))
                     tagLevel = worldTagging.calculateWorldTagLevel(world=colonyWorld) if worldTagging else None
                 else:
                     # We don't know about this world so just display the sector hex and tag it as danger

@@ -139,7 +139,7 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
-        currentWorld = self._universe.worldByHexPosition(
+        currentWorld = self._universe.worldByPosition(
             milieu=self._milieu,
             hex=self._currentHex)
 
@@ -156,7 +156,7 @@ class Simulator(object):
                 filterCallback=worldFilterCallback)
 
             # Buy something
-            self._logMessage(f'Buying goods on {currentWorld.name(includeSubsector=True)}')
+            self._logMessage(f'Buying goods on {self._formatWorldLogString(world=currentWorld)}')
             self._runTradeLoop(
                 world=currentWorld,
                 onTraderCallback=self._sellerFound,
@@ -193,7 +193,7 @@ class Simulator(object):
                     berthingCost = berthingCost.value()
                     self._logMessage(
                         'Berthing at {world} for a cost of Cr{cost}'.format(
-                            world=currentWorld.name(includeSubsector=True),
+                            world=self._formatWorldLogString(world=currentWorld),
                             cost=berthingCost))
                     self._setAvailableFunds(self._availableFunds - berthingCost)
                     self._actualLogisticsCost += berthingCost
@@ -208,7 +208,7 @@ class Simulator(object):
                     fuelCost = fuelCost.value() if fuelCost else 0
 
                     infoString = 'Refuelling at {world}, taking on {tons} tons of {type} fuel'.format(
-                        world=currentWorld.name(includeSubsector=True),
+                        world=self._formatWorldLogString(world=currentWorld),
                         tons=fuelTons,
                         type=refuellingType.value.lower())
                     if fuelCost > 0:
@@ -222,22 +222,17 @@ class Simulator(object):
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex = jumpRoute.nodeAt(self._jumpRouteIndex)
-                nextWorld = self._universe.worldByHexPosition(
+                nextWorld = self._universe.worldByPosition(
                     milieu=self._milieu,
                     hex=nextHex)
-                currentString = self._universe.canonicalHexName(
-                    milieu=self._milieu,
-                    hex=self._currentHex)
-                nextString = self._universe.canonicalHexName(
-                    milieu=self._milieu,
-                    hex=nextHex)
-                self._logMessage(
-                    f'Travelling from {currentString} to {nextString}')
+                self._logMessage('Travelling from {src} to {dst}'.format(
+                    src=self._formatWorldLogString(world=currentWorld),
+                    dst=self._formatWorldLogString(world=nextWorld)))
 
                 self._simulationTime += self._calculateTravelHours(1)
 
                 self._setCurrentHex(hex=nextHex)
-                self._logMessage(f'Arrived on {nextWorld.name(includeSubsector=True)}')
+                self._logMessage(f'Arrived on {self._formatWorldLogString(world=currentWorld)}')
                 return
 
             if self._perJumpOverheads:
@@ -254,12 +249,12 @@ class Simulator(object):
         else:
             assert(currentWorld) # Should always be on a world if we get here
             self._logMessage(
-                f'Staying on {currentWorld.name(includeSubsector=True)} to sell goods')
+                f'Staying on {self._formatWorldLogString(world=currentWorld)} to sell goods')
 
         assert(currentWorld) # Should always be on a world if we get here
 
         # Sell what was bought
-        self._logMessage(f'Selling goods on {currentWorld.name(includeSubsector=True)}')
+        self._logMessage(f'Selling goods on {self._formatWorldLogString(world=currentWorld)}')
         self._runTradeLoop(
             world=currentWorld,
             onTraderCallback=self._buyerFound,
@@ -661,6 +656,14 @@ class Simulator(object):
         foundTrader = (skillRoll.value() + skillRating + worldModifier - retryModifier) >= 8
 
         return (foundTrader, elapsedHours)
+
+    def _formatWorldLogString(
+            self,
+            world: astronomer.World
+            ) -> str:
+        return '{world} ({hex})'.format(
+            world=world.name(),
+            hex=self._universe.formatSectorHex(milieu=self._milieu, hex=world.hex()))
 
     @staticmethod
     def _sortCargoManifestsInPlace(cargoManifests: typing.List[logic.CargoManifest]) -> None:

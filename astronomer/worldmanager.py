@@ -233,7 +233,6 @@ class WorldManager(object):
 
                     subsectorPos = worldHex.subsectorPosition()
                     subsectorCode = subsectorPos.code()
-                    subsectorName, _ = subsectorNameMap[subsectorCode]
 
                     allegianceId = dbSystem.allegianceId()
                     systemAllegiance = None
@@ -561,10 +560,8 @@ class WorldManager(object):
                     world = astronomer.World(
                         milieu=milieu,
                         hex=worldHex,
-                        worldName=systemName,
+                        name=systemName,
                         isNameGenerated=isNameGenerated,
-                        sectorName=sectorName,
-                        subsectorName=subsectorName,
                         allegiance=systemAllegiance,
                         zone=zone,
                         uwp=uwp,
@@ -596,9 +593,8 @@ class WorldManager(object):
                     sectorX=sectorX,
                     sectorY=sectorY,
                     code=subsectorCode),
-                subsectorName=subsectorName,
+                name=subsectorName,
                 isNameGenerated=isNameGenerated,
-                sectorName=sectorName,
                 worlds=subsectorWorlds))
 
         dbRoutes = dbSector.routes()

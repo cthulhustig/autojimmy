@@ -422,8 +422,11 @@ class Trader(object):
                     (len(possibleCargo) if possibleCargo else 0))
 
                 if self._traderInfoCallback:
+                    worldString = '{world} ({hex})'.format(
+                        world=saleWorld.name(),
+                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
                     self._traderInfoCallback(
-                        f'Ignoring sale of all trade goods on {saleWorld.name(includeSubsector=True)}. ' +
+                        f'Ignoring sale of all trade goods on {worldString}. ' +
                         f'There is no jump route to get there with jump-{shipJumpRating}')
                 continue
 
@@ -444,8 +447,11 @@ class Trader(object):
                     (len(possibleCargo) if possibleCargo else 0))
 
                 if self._traderInfoCallback:
+                    worldString = '{world} ({hex})'.format(
+                        world=saleWorld.name(),
+                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
                     self._traderInfoCallback(
-                        f'Ignoring sale of all goods on {saleWorld.name(includeSubsector=True)}. ' +
+                        f'Ignoring sale of all goods on {worldString}. ' +
                         f'There is no way to reach it with the current fuel settings.')
                 continue
 
@@ -467,8 +473,11 @@ class Trader(object):
                     (len(possibleCargo) if possibleCargo else 0))
 
                 if self._traderInfoCallback:
+                    worldString = '{world} ({hex})'.format(
+                        world=saleWorld.name(),
+                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
                     self._traderInfoCallback(
-                        f'Ignoring sale of all goods on {saleWorld.name(includeSubsector=True)}. ' +
+                        f'Ignoring sale of all goods on {worldString}. ' +
                         f'The average logistics cost is Cr{common.formatNumber(logisticsCosts.averageCaseValue())} so ' +
                         f'it would require higher than average dice rolls to get there for a price you could afford.')
                 continue
@@ -561,8 +570,11 @@ class Trader(object):
 
             if not includeUnprofitableTrades and cargoQuantity.averageCaseValue() <= 0:
                 if self._traderInfoCallback:
+                    worldString = '{world} ({hex})'.format(
+                        world=purchaseWorld.name(),
+                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=purchaseWorld.hex()))
                     self._traderInfoCallback(
-                        f'Ignoring purchase of {tradeGood.name()} on {purchaseWorld.name(includeSubsector=True)}. ' +
+                        f'Ignoring purchase of {tradeGood.name()} on {worldString}. ' +
                         f'The average purchase price is Cr{common.formatNumber(purchasePricePerTon.averageCaseValue())} ' +
                         f'per ton so it would require higher than average dice rolls to buy at a price you could afford.')
                 return
@@ -617,8 +629,11 @@ class Trader(object):
         netProfit = tradeOption.netProfit()
         if not includeUnprofitableTrades and netProfit.averageCaseValue() <= 0:
             if self._traderInfoCallback:
+                worldString = '{world} ({hex})'.format(
+                    world=saleWorld.name(),
+                    hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
                 self._traderInfoCallback(
-                    f'Ignoring sale of {tradeGood.name()} on {saleWorld.name(includeSubsector=True)}. ' +
+                    f'Ignoring sale of {tradeGood.name()} on {worldString}. ' +
                     f'The average net profit is Cr{common.formatNumber(netProfit.averageCaseValue())} so ' +
                     f'it would require higher than average dice rolls to make a profit')
             return
