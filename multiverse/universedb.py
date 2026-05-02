@@ -315,6 +315,8 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='milieu', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
                     database.ColumnDef(columnName='sector_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='sector_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    # TODO: I don't like the fact these are primary name/language.
+                    # Just call them name/language
                     database.ColumnDef(columnName='primary_name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
                     database.ColumnDef(columnName='primary_language', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='abbreviation', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
@@ -327,6 +329,9 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
+                    # TODO: I think there should be a second constraint that milieu/primary_name are unique
+                    # The are unique in the traveller map data apart from Unknown sectors that I handle in
+                    # the github action
                     database.UniqueConstraintDef(columnNames=['milieu', 'sector_x', 'sector_y'])])
 
             self._database.createTable(
