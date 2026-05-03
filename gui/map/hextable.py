@@ -839,8 +839,7 @@ class HexTable(gui.FrozenColumnListTable):
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         displayText = ''
-                        remarks = world.remarks()
-                        for sophont in remarks.sophonts():
+                        for sophont in world.sophonts():
                             if displayText:
                                 displayText += ', '
                             displayText += sophont.name()
@@ -1036,10 +1035,9 @@ class HexTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.Remarks:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        remarks = world.remarks()
                         tableItem.setData(
                             QtCore.Qt.ItemDataRole.DisplayRole,
-                            remarks.string())
+                            world.remarksString())
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
@@ -1138,8 +1136,7 @@ class HexTable(gui.FrozenColumnListTable):
             return gui.createStringToolTip(allegiance.name())
         elif columnType == self.ColumnType.Sophont:
             lines = []
-            remarks = world.remarks()
-            for sophont in remarks.sophonts():
+            for sophont in world.sophonts():
                 line = sophont.name()
 
                 if sophont.isHomeWorld():
@@ -1334,8 +1331,7 @@ class HexTable(gui.FrozenColumnListTable):
                     strings=listStrings,
                     stringColours=listColours)
         elif columnType == self.ColumnType.Remarks:
-            remarks = world.remarks()
-            return gui.createStringToolTip(remarks.string())
+            return gui.createStringToolTip(world.remarksString())
 
         return None
 

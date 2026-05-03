@@ -39,7 +39,6 @@ def createHexToolTip(
         milieu=milieu,
         position=hex)
     uwp = world.uwp() if world else None
-    remarks = world.remarks() if world else None
 
     formatTaggingStyle = lambda level: '' if not level or not taggingColours else f'background-color:{taggingColours.colour(level=level)}'
 
@@ -139,7 +138,7 @@ def createHexToolTip(
         style = formatTaggingStyle(level=tagLevel)
         toolTip += f'<li><span style="{style}">Allegiance: {html.escape(allegianceString)}</span><li>'
 
-        for rulingAllegiance in remarks.rulingAllegiances():
+        for rulingAllegiance in world.rulingAllegiances():
             allegianceString = _formatAllegianceString(allegiance=rulingAllegiance)
             tagLevel = worldTagging.calculateAllegianceTagLevel(allegiance=rulingAllegiance) if rulingAllegiance and worldTagging else None
             style = formatTaggingStyle(level=tagLevel)
@@ -306,49 +305,50 @@ def createHexToolTip(
         #
         # Remarks
         #
-        if not remarks.isEmpty():
-            toolTip += f'<li>Remarks: {html.escape(remarks.string())}</li>'
+        remarks = world.remarksString()
+        if remarks:
+            toolTip += f'<li>Remarks: {html.escape(remarks)}</li>'
 
-            tradeCodes = remarks.tradeCodes()
-            if tradeCodes:
-                toolTip += '<li>Trade Codes:</li>'
-                toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
+        tradeCodes = world.tradeCodes()
+        if tradeCodes:
+            toolTip += '<li>Trade Codes:</li>'
+            toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
 
-                tradeCodeStrings = [traveller.tradeCodeString(tc) for tc in tradeCodes]
-                tradeCodeStrings.sort()
+            tradeCodeStrings = [traveller.tradeCodeString(tc) for tc in tradeCodes]
+            tradeCodeStrings.sort()
 
-                for tradeCodeString in tradeCodeStrings:
-                    tradeCode = traveller.tradeCode(tradeCodeString=tradeCodeString)
-                    if not tradeCode:
-                        continue
-                    tagLevel = worldTagging.calculateTradeCodeTagLevel(tradeCode) if worldTagging else None
-                    style = formatTaggingStyle(level=tagLevel)
-                    toolTip += '<li><span style="{style}">{code} - {name} - {description}</span></li>'.format(
-                        style=style,
-                        code=html.escape(tradeCodeString),
-                        name=html.escape(traveller.tradeCodeName(tradeCode)),
-                        description=html.escape(traveller.tradeCodeDescription(tradeCode)))
-                toolTip += '</ul>'
+            for tradeCodeString in tradeCodeStrings:
+                tradeCode = traveller.tradeCode(tradeCodeString=tradeCodeString)
+                if not tradeCode:
+                    continue
+                tagLevel = worldTagging.calculateTradeCodeTagLevel(tradeCode) if worldTagging else None
+                style = formatTaggingStyle(level=tagLevel)
+                toolTip += '<li><span style="{style}">{code} - {name} - {description}</span></li>'.format(
+                    style=style,
+                    code=html.escape(tradeCodeString),
+                    name=html.escape(traveller.tradeCodeName(tradeCode)),
+                    description=html.escape(traveller.tradeCodeDescription(tradeCode)))
+            toolTip += '</ul>'
 
-            sophonts = remarks.sophonts()
-            if sophonts:
-                toolTip += '<li>Sophonts:</li>'
-                toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-                for sophont in sophonts:
-                    tags = ''
+        sophonts = world.sophonts()
+        if sophonts:
+            toolTip += '<li>Sophonts:</li>'
+            toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
+            for sophont in sophonts:
+                tags = ''
 
-                    if sophont.isHomeWorld():
-                        tags += ' (Home World)'
+                if sophont.isHomeWorld():
+                    tags += ' (Home World)'
 
-                    if sophont.isDieBack():
-                        tags += ' (Die Back)'
-                    elif sophont.percentage() is not None:
-                        tags += f' (Population: {sophont.percentage()}%)'
+                if sophont.isDieBack():
+                    tags += ' (Die Back)'
+                elif sophont.percentage() is not None:
+                    tags += f' (Population: {sophont.percentage()}%)'
 
-                    toolTip += '<li><span>{sophont}{tags}</span></li>'.format(
-                        sophont=html.escape(sophont.name()),
-                        tags=html.escape(tags))
-                toolTip += '</ul>'
+                toolTip += '<li><span>{sophont}{tags}</span></li>'.format(
+                    sophont=html.escape(sophont.name()),
+                    tags=html.escape(tags))
+            toolTip += '</ul>'
 
         #
         # PBG

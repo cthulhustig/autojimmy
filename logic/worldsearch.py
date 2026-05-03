@@ -668,20 +668,17 @@ class SophontFilter(WorldFilter):
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        remarks = world.remarks()
-        if remarks:
-            sophonts = remarks.sophonts()
-            if self._operation == StringFilterOperation.ContainsString:
-                for sophont in sophonts:
-                    if self._regex.search(sophont.name()):
-                        return True
-            elif self._operation == StringFilterOperation.MatchRegex:
-                for sophont in sophonts:
-                    if self._regex.match(sophont.name()):
-                        return True
-            else:
-                raise ValueError('Invalid sophont filter operation')
-        return False
+        sophonts = world.sophonts()
+        if self._operation == StringFilterOperation.ContainsString:
+            for sophont in sophonts:
+                if self._regex.search(sophont.name()):
+                    return True
+        elif self._operation == StringFilterOperation.MatchRegex:
+            for sophont in sophonts:
+                if self._regex.match(sophont.name()):
+                    return True
+        else:
+            raise ValueError('Invalid sophont filter operation')
 
 class BaseFilter(WorldFilter):
     def __init__(
@@ -847,17 +844,15 @@ class RemarksFilter(WorldFilter):
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        remarks = world.remarks()
-        if remarks:
-            if self._operation == StringFilterOperation.ContainsString:
-                if self._regex.search(remarks.string()):
-                    return True
-            elif self._operation == StringFilterOperation.MatchRegex:
-                if self._regex.match(remarks.string()):
-                    return True
-            else:
-                raise ValueError('Invalid remarks filter operation')
-        return False
+        remarks = world.remarksString()
+        if self._operation == StringFilterOperation.ContainsString:
+            if self._regex.search(remarks):
+                return True
+        elif self._operation == StringFilterOperation.MatchRegex:
+            if self._regex.match(remarks):
+                return True
+        else:
+            raise ValueError('Invalid remarks filter operation')
 
 class TradeCodeFilter(WorldFilter):
     def __init__(

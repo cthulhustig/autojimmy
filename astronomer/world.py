@@ -1,7 +1,29 @@
 import astronomer
+import common
 import math
+import survey
 import traveller
 import typing
+
+class WorldReference(object):
+    def __init__(
+            self,
+            hexX: int,
+            hexY: int,
+            sectorAbbreviation: typing.Optional[str] = None # None means current system
+            ) -> None:
+        self._hexX = hexX
+        self._hexY = hexY
+        self._sectorAbbreviation = sectorAbbreviation
+
+    def hexX(self) -> int:
+        return self._hexX
+
+    def hexY(self) -> int:
+        return self._hexY
+
+    def sectorAbbreviation(self) -> typing.Optional[str]:
+        return self._sectorAbbreviation
 
 class World(object):
     def __init__(
@@ -17,10 +39,16 @@ class World(object):
             culture: typing.Optional[astronomer.Culture] = None,
             nobilities: typing.Optional[astronomer.Nobilities] = None,
             bases: typing.Optional[astronomer.Bases] = None,
-            remarks: typing.Optional[astronomer.Remarks] = None,
             systemWorlds: typing.Optional[int] = None,
             pbg: typing.Optional[astronomer.PBG] = None,
-            stellar: typing.Optional[astronomer.Stellar] = None
+            stellar: typing.Optional[astronomer.Stellar] = None,
+            tradeCodes: typing.Optional[typing.Collection[traveller.TradeCode]] = None,
+            sophontPopulations: typing.Optional[typing.Collection[astronomer.SophontPopulation]] = None,
+            rulingAllegiances: typing.Optional[typing.Collection[astronomer.Allegiance]] = None,
+            owningWorldRefs: typing.Optional[typing.Collection[WorldReference]] = None,
+            colonyWorldRefs: typing.Optional[typing.Collection[WorldReference]] = None,
+            researchStations: typing.Optional[typing.Collection[str]] = None,
+            customRemarks: typing.Optional[typing.Collection[str]] = None
             ) -> None:
         self._milieu = milieu
         self._hex = hex
@@ -33,13 +61,21 @@ class World(object):
         self._culture = culture if culture else astronomer.Culture()
         self._nobilities = nobilities if nobilities else astronomer.Nobilities()
         self._bases = bases if bases else astronomer.Bases()
-        self._remarks = remarks if remarks else astronomer.Remarks()
         self._systemWorlds = systemWorlds
         self._pbg = pbg if pbg else astronomer.PBG()
         self._stellar = stellar if stellar else astronomer.Stellar()
+        self._tradeCodes = common.OrderedSet(tradeCodes) if tradeCodes else common.OrderedSet()
+        self._sophontPopulationMap = {p.code(): p for p in sophontPopulations} if sophontPopulations else {}
+        self._rulingAllegiances = list(rulingAllegiances) if rulingAllegiances else []
+        self._owningWorldRefs = list(owningWorldRefs) if owningWorldRefs else []
+        self._colonyWorldRefs = list(colonyWorldRefs) if colonyWorldRefs else []
+        self._researchStations = common.OrderedSet(researchStations) if researchStations else common.OrderedSet()
+        self._customRemarks = common.OrderedSet(customRemarks) if customRemarks else common.OrderedSet()
 
-        self._isAnomaly = self._remarks.hasCustomRemark('{Anomaly}')
-        self._isFuelCache = self._remarks.hasCustomRemark('{Fuel}')
+        self._isAnomaly = '{Anomaly}' in self._customRemarks
+        self._isFuelCache = '{Fuel}' in self._customRemarks
+
+        self._remarksString = None # Calculated on demand
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
@@ -68,12 +104,6 @@ class World(object):
     def culture(self) -> astronomer.Culture:
         return self._culture
 
-    def remarks(self) -> astronomer.Remarks:
-        return self._remarks
-
-    def hasRemark(self, remark: str) -> None:
-        return self._remarks.hasCustomRemark(remark=remark)
-
     def nobilities(self) -> astronomer.Nobilities:
         return self._nobilities
 
@@ -86,30 +116,9 @@ class World(object):
     def hasBase(self, baseType: astronomer.BaseType) -> bool:
         return self._bases.hasBase(baseType)
 
-    def tradeCodes(self) -> typing.Iterable[traveller.TradeCode]:
-        return self._remarks.tradeCodes()
-
-    def hasTradeCode(
-            self,
-            tradeCode: traveller.TradeCode
-            ) -> bool:
-        return self._remarks.hasTradeCode(tradeCode)
-
     def hasStarPort(self):
         starPortCode = self._uwp.code(astronomer.UWP.Element.StarPort)
         return starPortCode == 'A' or starPortCode == 'B' or starPortCode == 'C' or starPortCode == 'D' or starPortCode == 'E'
-
-    def ownerCount(self) -> bool:
-        return self._remarks.ownerCount()
-
-    def ownerWorldReferences(self) -> typing.Optional[typing.Collection[astronomer.WorldReference]]:
-        return self._remarks.ownerWorlds()
-
-    def colonyCount(self) -> int:
-        return self._remarks.colonyCount()
-
-    def colonyWorldReferences(self) -> typing.Optional[typing.Collection[astronomer.WorldReference]]:
-        return self._remarks.colonyWorlds()
 
     # Anomalies are worlds that have the {Anomaly} remark
     def isAnomaly(self) -> bool:
@@ -223,6 +232,112 @@ class World(object):
         return self.hasWildernessRefuelling() or \
             self.hasStarPortRefuelling(rules=rules) or \
             self.isFuelCache()
+
+    def tradeCodes(self) -> typing.Sequence[traveller.TradeCode]:
+        return common.ConstSequenceRef(self._tradeCodes)
+
+    def hasTradeCode(
+            self,
+            tradeCode: traveller.TradeCode
+            ) -> bool:
+        return tradeCode in self._tradeCodes
+
+    def sophonts(self) -> typing.Sequence[astronomer.SophontPopulation]:
+        return common.ConstSequenceRef(self._sophontPopulationMap.values())
+
+    def hasSophont(self, code: str) -> bool:
+        return code in self._sophontPopulationMap
+
+    # NOTE: This includes die back sophonts
+    def sophontCount(self) -> int:
+        return len(self._sophontPopulationMap)
+
+    def rulingAllegiances(self) -> typing.Optional[astronomer.Allegiance]:
+        return common.ConstSequenceRef(self._rulingAllegiances)
+
+    def ownerCount(self) -> int:
+        return len(self._owningWorldRefs)
+
+    def ownerWorldReferences(self) -> typing.Sequence[WorldReference]:
+        return common.ConstSequenceRef(self._owningWorldRefs)
+
+    def colonyCount(self) -> int:
+        return len(self._colonyWorldRefs)
+
+    def colonyWorldReferences(self) -> typing.Sequence[WorldReference]:
+        return common.ConstSequenceRef(self._colonyWorldRefs)
+
+    def researchStations(self) -> typing.Optional[str]:
+        return self._researchStations
+
+    def researchStationCount(self) -> int:
+        return len(self._researchStations)
+
+    def hasResearchStation(self, code: str) -> bool:
+        return code in self._researchStations
+
+    def customRemarks(self) -> typing.Sequence[str]:
+        return common.ConstSequenceRef(self._customRemarks)
+
+    def hasCustomRemark(self, remark: str) -> bool:
+        return remark in self._customRemarks
+
+    def remarksString(self) -> str:
+        if self._remarksString is not None:
+            return self._remarksString
+
+        tradeCodes = []
+        majorRaceHomeWorlds = []
+        minorRaceHomeWorlds = []
+        sophontPopulations = []
+        dieBackSophonts = []
+        owningSystems = []
+        colonySystems = []
+        rulingAllegiances = []
+
+        for tradeCode in self._tradeCodes:
+            tradeCodes.append(traveller.tradeCodeString(tradeCode))
+        tradeCodes.sort()
+
+        for population in self._sophontPopulationMap.values():
+            # NOTE: Home world and die back checks are intentionally separate so
+            # that a sophonts home world can be marked as die back if they user
+            # wants. If it is marked as die back, any population other than None
+            # doesn't really make sense but I'm not doing anything to prevent it.
+            if population.isHomeWorld():
+                if population.isMajorRace():
+                    majorRaceHomeWorlds.append((population.name(), population.percentage()))
+                else:
+                    minorRaceHomeWorlds.append((population.name(), population.percentage()))
+
+            if population.isDieBack():
+                dieBackSophonts.append(population.name())
+            elif not population.isHomeWorld():
+                # It's not die back and not a home world so just add a standard
+                # population entry
+                sophontPopulations.append((population.code(), population.percentage()))
+
+        for owner in self._owningWorldRefs:
+            owningSystems.append((owner.hexX(), owner.hexY(), owner.sectorAbbreviation()))
+
+        for colony in self._colonyWorldRefs:
+            colonySystems.append((colony.hexX(), colony.hexY(), colony.sectorAbbreviation()))
+
+        for allegiance in self._rulingAllegiances:
+            rulingAllegiances.append(allegiance.code())
+
+        self._remarksString = survey.formatSystemRemarksString(
+            tradeCodes=tradeCodes,
+            majorRaceHomeWorlds=majorRaceHomeWorlds,
+            minorRaceHomeWorlds=minorRaceHomeWorlds,
+            sophontPopulations=sophontPopulations,
+            dieBackSophonts=dieBackSophonts,
+            owningSystems=owningSystems,
+            colonySystems=colonySystems,
+            rulingAllegiances=rulingAllegiances,
+            researchStations=self._researchStations,
+            customRemarks=self._customRemarks)
+        return self._remarksString
 
     def parsecsTo(
             self,

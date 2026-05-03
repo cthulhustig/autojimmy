@@ -254,7 +254,18 @@ class WorldManager(object):
                                     name=systemLoggingName))
                             dbMainWorld = None
 
-                    uwp = economics = culture = nobilities = bases = remarks = None
+                    uwp = None
+                    economics = None
+                    culture = None
+                    nobilities = None
+                    bases = None
+                    tradeCodes = None
+                    sophontPopulations = None
+                    rulingAllegiances = None
+                    owningWorldRefs = None
+                    colonyWorldRefs = None
+                    researchStations = None
+                    customRemarks = None
                     if dbMainWorld:
                         try:
                             uwp = astronomer.UWP(
@@ -345,7 +356,7 @@ class WorldManager(object):
                                         exc_info=ex)
 
                         dbRulingAllegiances = dbMainWorld.rulingAllegiances()
-                        rulingAllegiances: typing.Optional[typing.List[str]] = None
+                        rulingAllegiances: typing.Optional[typing.List[astronomer.Allegiance]] = None
                         if dbRulingAllegiances:
                             rulingAllegiances = []
                             for dbAllegiance in dbRulingAllegiances:
@@ -361,12 +372,12 @@ class WorldManager(object):
                                 rulingAllegiances.append(rulingAllegiance)
 
                         dbOwningSystems = dbMainWorld.owningSystems()
-                        owningWorlds: typing.Optional[typing.List[astronomer.WorldReference]] = None
+                        owningWorldRefs: typing.Optional[typing.List[astronomer.WorldReference]] = None
                         if dbOwningSystems:
-                            owningWorlds = []
+                            owningWorldRefs = []
                             for dbOwningSystem in dbOwningSystems:
                                 try:
-                                    owningWorlds.append(astronomer.WorldReference(
+                                    owningWorldRefs.append(astronomer.WorldReference(
                                         hexX=dbOwningSystem.hexX(),
                                         hexY=dbOwningSystem.hexY(),
                                         sectorAbbreviation=dbOwningSystem.sectorAbbreviation()))
@@ -379,12 +390,12 @@ class WorldManager(object):
                                         exc_info=ex)
 
                         dbColonySystems = dbMainWorld.colonySystems()
-                        colonyWorlds: typing.Optional[typing.List[astronomer.WorldReference]] = None
+                        colonyWorldRefs: typing.Optional[typing.List[astronomer.WorldReference]] = None
                         if dbColonySystems:
-                            colonyWorlds = []
+                            colonyWorldRefs = []
                             for dbColonySystem in dbColonySystems:
                                 try:
-                                    colonyWorlds.append(astronomer.WorldReference(
+                                    colonyWorldRefs.append(astronomer.WorldReference(
                                         hexX=dbColonySystem.hexX(),
                                         hexY=dbColonySystem.hexY(),
                                         sectorAbbreviation=dbColonySystem.sectorAbbreviation()))
@@ -405,22 +416,6 @@ class WorldManager(object):
                         customRemarks: typing.Optional[typing.List[str]] = None
                         if dbCustomRemarks:
                             customRemarks = [r.remark() for r in dbCustomRemarks]
-
-                        try:
-                            remarks = astronomer.Remarks(
-                                tradeCodes=tradeCodes,
-                                sophontPopulations=sophontPopulations,
-                                rulingAllegiances=rulingAllegiances,
-                                owningSystems=owningWorlds,
-                                colonySystems=colonyWorlds,
-                                researchStations=researchStations,
-                                customRemarks=customRemarks)
-                        except Exception as ex:
-                            logging.warning('Failed to create remarks when loading system {systemId} in sector {sectorId} ({name})'.format(
-                                    systemId=dbSystem.id(),
-                                    sectorId=dbSector.id(),
-                                    name=systemLoggingName),
-                                exc_info=ex)
 
                         dbNobilities = dbMainWorld.nobilities()
                         nobilityTypes = None
@@ -553,10 +548,16 @@ class WorldManager(object):
                         culture=culture,
                         nobilities=nobilities,
                         bases=bases,
-                        remarks=remarks,
                         systemWorlds=systemWorlds,
                         pbg=pbg,
-                        stellar=stellar)
+                        stellar=stellar,
+                        tradeCodes=tradeCodes,
+                        sophontPopulations=sophontPopulations,
+                        rulingAllegiances=rulingAllegiances,
+                        owningWorldRefs=owningWorldRefs,
+                        colonyWorldRefs=colonyWorldRefs,
+                        researchStations=researchStations,
+                        customRemarks=customRemarks)
 
                     worlds.append(world)
                 except Exception as ex:

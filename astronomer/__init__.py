@@ -11,7 +11,6 @@ from .culture import *
 from .nobility import *
 from .allegiance import *
 from .sophont import *
-from .remarks import *
 from .stellar import *
 from .sectortagging import *
 from .world import *

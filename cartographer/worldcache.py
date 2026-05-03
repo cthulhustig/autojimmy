@@ -152,11 +152,10 @@ class WorldInfo(object):
                 allegiance=self.legacyAllegiance,
                 code=astronomer.Bases.code(bases[2]))
 
-        remarks = world.remarks()
-        if remarks.hasTradeCode(traveller.TradeCode.ResearchStation):
+        if world.hasTradeCode(traveller.TradeCode.ResearchStation):
             foundStation = False
             for stationCode in 'ABGDEZHTO':
-                if remarks.hasResearchStation(code=stationCode):
+                if world.hasResearchStation(code=stationCode):
                     self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation(stationCode)
                     foundStation = True
                     break
@@ -165,11 +164,11 @@ class WorldInfo(object):
                 # used when the world just has the trade code 'Rs' rather than the
                 # 'RsX' format
                 self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation('G')
-        elif remarks.hasTradeCode(traveller.TradeCode.Reserve):
+        elif world.hasTradeCode(traveller.TradeCode.Reserve):
             self.specialFeatureGlyph = cartographer.GlyphDefs.Reserve
-        elif remarks.hasTradeCode(traveller.TradeCode.PenalColony):
+        elif world.hasTradeCode(traveller.TradeCode.PenalColony):
             self.specialFeatureGlyph = cartographer.GlyphDefs.Prison
-        elif remarks.hasTradeCode(traveller.TradeCode.PrisonCamp):
+        elif world.hasTradeCode(traveller.TradeCode.PrisonCamp):
             self.specialFeatureGlyph = cartographer.GlyphDefs.ExileCamp
 
         self.worldSize = uwp.numeric(astronomer.UWP.Element.WorldSize)
@@ -192,7 +191,7 @@ class WorldInfo(object):
             0
 
         self.isMinorHomeWorld = False
-        for sophontPopulation in remarks.sophonts():
+        for sophontPopulation in world.sophonts():
             if sophontPopulation.isHomeWorld() and not sophontPopulation.isMajorRace():
                 self.isMinorHomeWorld = True
                 break
@@ -268,10 +267,9 @@ class WorldInfo(object):
 
     @staticmethod
     def _calcIsCapital(world: astronomer.World) -> bool:
-        remarks = world.remarks()
-        return remarks.hasTradeCode(traveller.TradeCode.SectorCapital) or \
-            remarks.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
-            remarks.hasTradeCode(traveller.TradeCode.ImperialCapital)
+        return world.hasTradeCode(traveller.TradeCode.SectorCapital) or \
+            world.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
+            world.hasTradeCode(traveller.TradeCode.ImperialCapital)
 
     @staticmethod
     def _calcIsAncientSite(world: astronomer.World) -> bool:
@@ -284,13 +282,11 @@ class WorldInfo(object):
             code = allegiance.code()
             if code == 'Dr' or code == 'NaDr':
                 return True
-        remarks = world.remarks()
-        return remarks.hasSophont('Droy')
+        return world.hasSophont('Droy')
 
     @staticmethod
     def _calcIsChirperWorld(world: astronomer.World) -> bool:
-        remarks = world.remarks()
-        return remarks.hasSophont('Chir')
+        return world.hasSophont('Chir')
 
     # This is based on code from Traveller Map which I believe is
     # based on the T5.10 rules
