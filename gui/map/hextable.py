@@ -667,17 +667,18 @@ class HexTable(gui.FrozenColumnListTable):
                         position=hex)
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
-                        sector.name() if sector else 'Unknown')
+                        sector.name() if sector else '<Unnamed>')
                     tableItem.setItalic(enable=not sector)
                     tagColour = worldTagColour if world else self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Subsector:
                     tableItem = gui.TableWidgetItemEx()
-                    subsector = self._universe.subsectorByPosition(
+                    sector = self._universe.sectorByPosition(
                         milieu=self._milieu,
                         position=hex)
+                    subsectorName = sector.subsectorName(code=hex.subsectorCode()) if sector else None
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
-                        subsector.name() if subsector else 'Unknown')
+                        subsectorName if subsectorName else '<Unnamed>')
                     tableItem.setItalic(enable=not sector)
                     tagColour = worldTagColour if world else self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Zone:

@@ -1,60 +1,6 @@
 import astronomer
 import typing
 
-# TODO: The subsector object is close to being pointless and with a little
-# effort I could probably get rid of it
-class Subsector(object):
-    def __init__(
-            self,
-            milieu: astronomer.Milieu,
-            position: astronomer.SubsectorPosition,
-            name: str,
-            isNameGenerated: bool,
-            worlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
-            ) -> None:
-        self._milieu = milieu
-        self._position = position
-        self._name = name
-        self._isNameGenerated = isNameGenerated
-        self._worlds = list(worlds) if worlds else []
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
-
-    def code(self) -> str:
-        return self._position.code()
-
-    def position(self) -> astronomer.SubsectorPosition:
-        return self._position
-
-    def name(self) -> str:
-        return self._name
-
-    def isNameGenerated(self) -> bool:
-        return self._isNameGenerated
-
-    def worldCount(self) -> int:
-        return len(self._worlds)
-
-    def worlds(self) -> typing.Collection[astronomer.World]:
-        return list(self._worlds)
-
-    def yieldWorlds(self) -> typing.Generator[astronomer.World, None, None]:
-        for world in self._worlds:
-            yield world
-
-    def __getitem__(self, index: int) -> astronomer.World:
-        return self._worlds.__getitem__(index)
-
-    def __iter__(self) -> typing.Iterator[astronomer.World]:
-        return self._worlds.__iter__()
-
-    def __next__(self) -> typing.Any:
-        return self._worlds.__next__()
-
-    def __len__(self) -> int:
-        return self._worlds.__len__()
-
 class Sector(object):
     def __init__(
             self,
@@ -65,8 +11,8 @@ class Sector(object):
             alternateNames: typing.Optional[typing.Iterable[str]] = None,
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
-            # Subsectors should be ordered in subsector order (i.e. A-P)
-            subsectors: typing.Optional[typing.Iterable[Subsector]] = None,
+            subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
+            worlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
             allegiances: typing.Optional[typing.Iterable[astronomer.Allegiance]] = None,
             sophonts: typing.Optional[typing.Iterable[astronomer.Sophont]] = None,
             routes: typing.Optional[typing.Iterable[astronomer.Route]] = None,
@@ -86,6 +32,7 @@ class Sector(object):
         self._alternateNames = list(alternateNames) if alternateNames else []
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
+        self._worlds = list(worlds) if worlds else []
         self._allegiances = list(allegiances) if allegiances else []
         self._sophonts = list(sophonts) if sophonts else []
         self._routes = list(routes) if routes else []
@@ -98,16 +45,19 @@ class Sector(object):
         self._source = source
         self._products = list(products) if products else []
 
-        self._subsectorNameMap: typing.Dict[str, Subsector] = {}
-        self._subsectorIndexMap: typing.Dict[typing.Tuple[int, int], Subsector] = {}
-        self._subsectorCodeMap: typing.Dict[str, Subsector] = {}
-        self._worlds: typing.List[astronomer.World] = []
-        for subsector in subsectors:
-            subsectorPos = subsector.position()
-            self._subsectorNameMap[subsector.name()] = subsector
-            self._subsectorIndexMap[(subsectorPos.indexX(), subsectorPos.indexY())] = subsector
-            self._subsectorCodeMap[subsectorPos.code()] = subsector
-            self._worlds.extend(subsector.worlds())
+        self._subsectorCodeToNameMap = dict(subsectorNames) if subsectorNames else {}
+        self._subsectorNameToCodeMap = {v: k for k, v in self._subsectorCodeToNameMap.items()}
+
+        self._subsectorCodeToWorldsMap = {}
+        for world in self._worlds:
+            hex = world.hex()
+            subsectorCode = hex.subsectorCode()
+
+            subsectorWorlds = self._subsectorCodeToWorldsMap.get(subsectorCode)
+            if not subsectorWorlds:
+                subsectorWorlds = []
+                self._subsectorCodeToWorldsMap[subsectorCode] = subsectorWorlds
+            subsectorWorlds.append(world)
 
         self._allegiances: typing.List[astronomer.Allegiance] = []
         self._allegianceCodeMap: typing.Dict[str, astronomer.Allegiance] = {}
@@ -138,15 +88,39 @@ class Sector(object):
     def sectorLabel(self) -> typing.Optional[str]:
         return self._sectorLabel
 
+    def subsectorName(self, code: str) -> typing.Optional[str]:
+        return self._subsectorCodeToNameMap.get(code)
+
     def worldCount(self) -> int:
         return len(self._worlds)
 
-    def worlds(self) -> typing.List[astronomer.World]:
-        return list(self._worlds)
+    def worlds(
+            self,
+            subsectorCode: typing.Optional[str] = None,
+            filterCallback: typing.Optional[typing.Callable[[astronomer.World], bool]] = None
+            ) -> typing.List[astronomer.World]:
+        worlds = self._worlds if subsectorCode is None else self._subsectorCodeToWorldsMap.get(subsectorCode)
+        if not worlds:
+            return []
+        if not filterCallback:
+            return list(worlds)
 
-    def yieldWorlds(self) -> typing.Generator[astronomer.World, None, None]:
-        for world in self._worlds:
-            yield world
+        matched = []
+        for world in worlds:
+            if filterCallback(world):
+                matched.append(world)
+        return matched
+
+    def yieldWorlds(
+            self,
+            subsectorCode: typing.Optional[str] = None,
+            filterCallback: typing.Optional[typing.Callable[[astronomer.World], bool]] = None
+            ) -> typing.Generator[astronomer.World, None, None]:
+        worlds = self._worlds if subsectorCode is None else self._subsectorCodeToWorldsMap.get(subsectorCode)
+        if worlds:
+            for world in worlds:
+                if not filterCallback or filterCallback(world):
+                    yield world
 
     def allegiances(self) -> typing.List[astronomer.Allegiance]:
         return list(self._allegiances)
@@ -214,27 +188,14 @@ class Sector(object):
         return self._isCustom
 
     def subsectorNames(self) -> typing.Sequence[str]:
-        return list(self._subsectorNameMap.keys())
+        return list(self._subsectorCodeToNameMap.values())
 
     def yieldSubsectorNames(self) -> typing.Generator[str, None, None]:
-        for name in self._subsectorNameMap.keys():
+        for name in self._subsectorCodeToNameMap.values():
             yield name
 
-    def subsectorByName(self, name: str) -> typing.Optional[Subsector]:
-        return self._subsectorNameMap.get(name)
-
-    def subsectorByIndex(self, indexX: int, indexY: int) -> typing.Optional[Subsector]:
-        return self._subsectorIndexMap.get((indexX, indexY))
-
-    def subsectorByCode(self, code: str) -> typing.Optional[Subsector]:
-        return self._subsectorCodeMap.get(code)
-
-    def subsectors(self) -> typing.Sequence[Subsector]:
-        return list(self._subsectorIndexMap.values())
-
-    def yieldSubsectors(self) -> typing.Generator[Subsector, None, None]:
-        for subsector in self._subsectorIndexMap.values():
-            yield subsector
+    def subsectorCodeByName(self, name: str) -> typing.Optional[str]:
+        return self._subsectorNameToCodeMap.get(name)
 
     def __getitem__(self, index: int) -> astronomer.World:
         return self._worlds.__getitem__(index)

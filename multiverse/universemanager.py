@@ -134,7 +134,7 @@ class UniverseManager(object):
                 if progressCallback:
                     try:
                         progressCallback(
-                            f'Writing: {sector.milieu()} - {sector.primaryName()}',
+                            f'Writing: {sector.milieu()} - {sector.name()}',
                             progressCount,
                             sectorCount)
                     except Exception as ex:
@@ -227,7 +227,7 @@ class UniverseManager(object):
                     if progressCallback:
                         try:
                             progressCallback(
-                                f'Creating: {sector.milieu()} - {sector.primaryName()}',
+                                f'Creating: {sector.milieu()} - {sector.name()}',
                                 progressCount,
                                 sectorCount)
                         except Exception as ex:

@@ -2171,10 +2171,10 @@ def convertRawSectorToDbSector(
         ) -> multiverse.DbSector:
     dbSectorX = rawMetadata.x()
     dbSectorY = rawMetadata.y()
-    dbPrimaryName = rawMetadata.canonicalName()
+    dbSectorName = rawMetadata.canonicalName()
 
-    rawPrimaryLanguage = rawMetadata.nameLanguage(rawMetadata.canonicalName())
-    dbPrimaryLanguage = rawPrimaryLanguage if rawPrimaryLanguage else None
+    rawSectorLanguage = rawMetadata.nameLanguage(rawMetadata.canonicalName())
+    dbSectorLanguage = rawSectorLanguage if rawSectorLanguage else None
 
     rawAbbreviation = rawMetadata.abbreviation()
     dbAbbreviation = rawAbbreviation if rawAbbreviation else None
@@ -2274,8 +2274,8 @@ def convertRawSectorToDbSector(
         milieu=milieu,
         sectorX=dbSectorX,
         sectorY=dbSectorY,
-        primaryName=dbPrimaryName,
-        primaryLanguage=dbPrimaryLanguage,
+        name=dbSectorName,
+        language=dbSectorLanguage,
         abbreviation=dbAbbreviation,
         sectorLabel=dbSectorLabel,
         selected=dbSelected,

@@ -1,3 +1,4 @@
+from .stringsearch import *
 from .rolloutcome import *
 from .tradegoods import *
 from .tradescore import *

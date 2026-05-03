@@ -162,12 +162,16 @@ class NameFiler(WorldFilter):
                     return False
                 return self._regex.search(sector.name()) != None
             elif self._type == NameFiler.Type.SubsectorName:
-                subsector = universe.subsectorByPosition(
+                worldHex = world.hex()
+                sector = universe.sectorByPosition(
                     milieu=world.milieu(),
-                    position=world.hex())
-                if not subsector:
+                    position=worldHex)
+                if not sector:
                     return False
-                return self._regex.search(subsector.name()) != None
+                subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
+                if not subsectorName:
+                    return False
+                return self._regex.search(subsectorName) != None
             raise ValueError('Invalid name filter type')
         elif self._operation == StringFilterOperation.MatchRegex:
             if self._type == NameFiler.Type.WorldName:
@@ -180,12 +184,16 @@ class NameFiler(WorldFilter):
                     return False
                 return self._regex.match(sector.name()) != None
             elif self._type == NameFiler.Type.SubsectorName:
-                subsector = universe.subsectorByPosition(
+                worldHex = world.hex()
+                sector = universe.sectorByPosition(
                     milieu=world.milieu(),
-                    position=world.hex())
-                if not subsector:
+                    position=worldHex)
+                if not sector:
                     return False
-                return self._regex.match(subsector.name()) != None
+                subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
+                if not subsectorName:
+                    return False
+                return self._regex.match(subsectorName) != None
             raise ValueError('Invalid name filter type')
         raise ValueError('Invalid name filter operation')
 
@@ -1071,12 +1079,12 @@ class WorldSearch(object):
                 tagging=tagging,
                 maxResults=maxResults)
         else:
-            subsector = sector.subsectorByName(name=subsectorName)
-            if not subsector:
+            subsectorCode = sector.subsectorCodeByName(name=subsectorName)
+            if not subsectorCode:
                 raise RuntimeError(f'Subsector "{subsectorName}" not found in sector "{sectorName}"')
             return self._searchWorlds(
                 universe=universe,
-                worlds=subsector.yieldWorlds(),
+                worlds=sector.yieldWorlds(subsectorCode=subsectorCode),
                 rules=rules,
                 tagging=tagging,
                 maxResults=maxResults)

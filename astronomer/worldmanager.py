@@ -98,7 +98,7 @@ class WorldManager(object):
             dbSector: multiverse.DbSector,
             isCustom: bool
             ) -> astronomer.Sector:
-        sectorName = dbSector.primaryName()
+        sectorName = dbSector.name()
         sectorX = dbSector.sectorX()
         sectorY = dbSector.sectorY()
 
@@ -121,26 +121,12 @@ class WorldManager(object):
 
         subsectorNameMap: typing.Dict[
             str, # Subsector code (A-P)
-            typing.Tuple[
-                str, # Subsector name
-                bool # True if the name was generated
-                ]] = {}
-        subsectorWorldsMap: typing.Dict[
-            str, # Subsector code (A-P)
-            typing.List[astronomer.World]
-            ] = {}
-
-        # Setup default subsector names. Some sectors just use the code A-P but we need
-        # something unique
-        subsectorCodes = list(map(chr, range(ord('A'), ord('P') + 1)))
-        for subsectorCode in subsectorCodes:
-            subsectorNameMap[subsectorCode] = (f'{sectorName} Subsector {subsectorCode}', True)
-            subsectorWorldsMap[subsectorCode] = []
+            str] = {}
 
         if dbSector.subsectorNames():
             for dbSubsectorName in dbSector.subsectorNames():
                 # NOTE: Unlike most other places, it's intentional that this is upper case
-                subsectorNameMap[dbSubsectorName.code()] = (dbSubsectorName.name(), False)
+                subsectorNameMap[dbSubsectorName.code()] = dbSubsectorName.name()
 
         allegianceIdMap: typing.Dict[str, astronomer.Allegiance] = {}
         if dbSector.allegiances():
@@ -200,7 +186,9 @@ class WorldManager(object):
                         exc_info=ex)
 
         dbSystems = dbSector.systems()
+        worlds: typing.Optional[typing.List[astronomer.World]] = None
         if dbSystems:
+            worlds = []
             for dbSystem in dbSystems:
                 systemName = dbSystem.name()
                 systemLoggingName = '{systemName} ({hexX}, {hexY}) in {sectorString}'.format(
@@ -229,10 +217,6 @@ class WorldManager(object):
                         # dialog for worlds that have no name (but have a non ? UWP).
                         systemName = f'{sectorName} {dbSystem.hexX():02d}{dbSystem.hexY():02d}'
                         isNameGenerated = True
-
-
-                    subsectorPos = worldHex.subsectorPosition()
-                    subsectorCode = subsectorPos.code()
 
                     allegianceId = dbSystem.allegianceId()
                     systemAllegiance = None
@@ -574,28 +558,13 @@ class WorldManager(object):
                         pbg=pbg,
                         stellar=stellar)
 
-                    subsectorWorlds = subsectorWorldsMap[subsectorCode]
-                    subsectorWorlds.append(world)
+                    worlds.append(world)
                 except Exception as ex:
                     logging.warning('Failed to load system {systemId} in sector {sectorId} ({name})'.format(
                             systemId=dbSystem.id(),
                             sectorId=dbSector.id(),
                             name=systemLoggingName),
                         exc_info=ex)
-
-        subsectors = []
-        for subsectorCode in subsectorCodes:
-            subsectorName, isNameGenerated = subsectorNameMap[subsectorCode]
-            subsectorWorlds = subsectorWorldsMap[subsectorCode]
-            subsectors.append(astronomer.Subsector(
-                milieu=milieu,
-                position=astronomer.SubsectorPosition(
-                    sectorX=sectorX,
-                    sectorY=sectorY,
-                    code=subsectorCode),
-                name=subsectorName,
-                isNameGenerated=isNameGenerated,
-                worlds=subsectorWorlds))
 
         dbRoutes = dbSector.routes()
         routes = None
@@ -866,7 +835,8 @@ class WorldManager(object):
             alternateNames=alternateNames,
             abbreviation=dbSector.abbreviation(),
             sectorLabel=dbSector.sectorLabel(),
-            subsectors=subsectors,
+            subsectorNames=subsectorNameMap,
+            worlds=worlds,
             allegiances=allegianceIdMap.values(),
             sophonts=sophontIdMap.values(),
             routes=routes,

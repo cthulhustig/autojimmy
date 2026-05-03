@@ -1391,8 +1391,8 @@ class DbSector(DbObject):
             milieu: str,
             sectorX: int,
             sectorY: int,
-            primaryName: str,
-            primaryLanguage: typing.Optional[str] = None,
+            name: str,
+            language: typing.Optional[str] = None,
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             selected: bool = False,
@@ -1420,8 +1420,8 @@ class DbSector(DbObject):
         common.validateMandatoryStr(name='milieu', value=milieu, allowed=_ValidMilieu)
         common.validateMandatoryInt(name='sectorX', value=sectorX)
         common.validateMandatoryInt(name='sectorY', value=sectorY)
-        common.validateMandatoryStr(name='primaryName', value=primaryName, allowEmpty=False)
-        common.validateOptionalStr(name='primaryLanguage', value=primaryLanguage, allowEmpty=False)
+        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
+        common.validateOptionalStr(name='language', value=language, allowEmpty=False)
         common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
         common.validateOptionalStr(name='sectorLabel', value=sectorLabel, allowEmpty=False)
         common.validateMandatoryBool(name='selected', value=selected)
@@ -1446,8 +1446,8 @@ class DbSector(DbObject):
         self._milieu = milieu
         self._sectorX = sectorX
         self._sectorY = sectorY
-        self._primaryName = primaryName
-        self._primaryLanguage = primaryLanguage
+        self._name = name
+        self._language = language
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
         self._selected = selected
@@ -1490,11 +1490,11 @@ class DbSector(DbObject):
     def sectorY(self) -> int:
         return self._sectorY
 
-    def primaryName(self) -> str:
-        return self._primaryName
+    def name(self) -> str:
+        return self._name
 
-    def primaryLanguage(self) -> typing.Optional[str]:
-        return self._primaryLanguage
+    def language(self) -> typing.Optional[str]:
+        return self._language
 
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation

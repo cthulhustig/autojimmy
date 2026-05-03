@@ -3,6 +3,7 @@ import astronomer
 import gui
 import html
 import logging
+import logic
 import math
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -11,12 +12,14 @@ def _formatWorldName(
         universe: astronomer.Universe,
         world: astronomer.World
         ) -> str:
-    subsector = universe.subsectorByPosition(
+    worldHex = world.hex()
+    sector = universe.sectorByPosition(
         milieu=world.milieu(),
-        position=world.hex())
-    return '{world} ({subsector})'.format(
-        world=world.name(),
-        subsector=subsector.name() if subsector else 'Unknown')
+        position=worldHex)
+    subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
+    if not subsectorName:
+        return world.name()
+    return f'{world.name()} ({subsectorName})'
 
 def _formatHexName(
         universe: astronomer.Universe,
@@ -30,8 +33,15 @@ def _formatHexName(
         return _formatWorldName(universe=universe, world=world)
 
     sectorHex = universe.formatSectorHex(milieu=milieu, hex=hex)
-    subsector = universe.subsectorByPosition(milieu=milieu, position=hex)
-    return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
+
+    sector = universe.sectorByPosition(
+        milieu=milieu,
+        position=hex)
+    subsectorName = sector.subsectorName(code=hex.subsectorCode()) if sector else None
+    if not subsectorName:
+        return sectorHex
+
+    return f'{sectorHex} ({subsectorName})'
 
 def _formatHexHtml(
         universe: astronomer.Universe,
@@ -585,7 +595,8 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # can be sorted. The limiting of the number of results added to
             # the completer should be done on the sorted list.
             try:
-                worlds = self._universe.searchForWorlds(
+                worlds = logic.searchForWorlds(
+                    universe=self._universe,
                     milieu=self._milieu,
                     searchString=searchString)
                 for world in worlds:

@@ -2,8 +2,6 @@ import enum
 import math
 import typing
 
-
-
 SubsectorWidth = 8 # parsecs
 SubsectorHeight = 10 # parsecs
 HorzSubsectorsPerSector = 4
@@ -63,6 +61,13 @@ def absoluteSpaceToSectorPos(
     absoluteX = pos[0] + (ReferenceHexX - 1)
     absoluteY = pos[1] + (ReferenceHexY - 1)
     return (absoluteX // SectorWidth, absoluteY // SectorHeight)
+
+def sectorOffsetToSubsectorCode(
+        offset: typing.Tuple[int, int]
+        ) -> str:
+    indexX = (offset[0] - 1) // SubsectorWidth
+    indexY = (offset[1] - 1) // SubsectorHeight
+    return chr(ord('A') + (indexY * 4) + indexX)
 
 # These are orientated visually as seen in Traveller Map
 class HexEdge(enum.Enum):
@@ -365,144 +370,13 @@ class SectorPosition(object):
 
 # NOTE: There is a LOT of code that assumes instances of this
 # class are immutable
-class SubsectorPosition(object):
-    @typing.overload
-    def __init__(self, sectorX: int, sectorY: int, code: str) -> None: ...
-    @typing.overload
-    def __init__(self, sectorX: int, sectorY: int, indexX: int, indexY: int) -> None: ...
-
-    def __init__(self, *args, **kwargs) -> None:
-        argCount = len(args) + len(kwargs)
-        if argCount == 3:
-            sectorX = int(args[0] if len(args) > 0 else kwargs['sectorX'])
-            sectorY = int(args[1] if len(args) > 1 else kwargs['sectorY'])
-            code = str(args[2] if len(args) > 2 else kwargs['code'])
-
-            self._sectorX = int(sectorX)
-            self._sectorY = int(sectorY)
-            self._code = str(code).upper()
-
-            index = ord(self._code) - ord('A')
-            if index < 0 or index > 15:
-                raise ValueError('Subsector position code must be in range in range A-P')
-
-            self._indexX = index % 4
-            self._indexY = index // 4
-        elif argCount == 4:
-            sectorX = int(args[0] if len(args) > 0 else kwargs['sectorX'])
-            sectorY = int(args[1] if len(args) > 1 else kwargs['sectorY'])
-            indexX = str(args[2] if len(args) > 2 else kwargs['indexX'])
-            indexY = str(args[3] if len(args) > 3 else kwargs['indexY'])
-
-            self._sectorX = int(sectorX)
-            self._sectorY = int(sectorY)
-            self._indexX = int(indexX)
-            self._indexY = int(indexY)
-
-            if self._indexX < 0 or self._indexX > 3:
-                raise ValueError('Subsector position x value must be in range in range 0-3')
-            if self._indexY < 0 or self._indexY > 3:
-                raise ValueError('Subsector position y value must be in range in range 0-3')
-
-            self._code = chr(ord('A') + (self._indexY * 4) + self._indexX)
-        else:
-            raise ValueError('Invalid sector position arguments')
-
-        self._sectorPos: typing.Optional[SectorPosition] = None
-        self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
-        self._isotropicBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
-        self._hexBounds: typing.Optional[typing.Tuple['HexPosition', 'HexPosition']] = None
-        self._hash = None
-
-    def __eq__(self, other):
-        if isinstance(other, SubsectorPosition):
-            return self._sectorX == other._sectorX and \
-                self._sectorY == other._sectorY and \
-                self._code == other._code
-        return super().__eq__(other)
-
-    def __hash__(self) -> int:
-        if self._hash is None:
-            self._hash = hash((self._sectorX, self._sectorY, self._code))
-        return self._hash
-
-    def __str__(self) -> str:
-        return f'{self._sectorX},{self._sectorY},{self._code}'
-
-    def sectorX(self) -> int:
-        return self._sectorX
-
-    def sectorY(self) -> int:
-        return self._sectorY
-
-    def code(self) -> str:
-        return self._code
-
-    def indexX(self) -> int:
-        return self._indexX
-
-    def indexY(self) -> int:
-        return self._indexY
-
-    def elements(self) -> typing.Tuple[int, int, str]:
-        return (self._sectorX, self._sectorY, self._code)
-
-    def sectorPosition(self) -> SectorPosition:
-        if not self._sectorPos:
-            self._sectorPos = SectorPosition(sectorX=self._sectorX, sectorY=self._sectorY)
-        return self._sectorPos
-
-    def worldBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
-        if self._worldBounds is None:
-            left = ((self._sectorX * SectorWidth) - ReferenceHexX) + \
-                (self._indexX * SubsectorWidth)
-            top = ((self._sectorY * SectorHeight) - ReferenceHexY) + \
-                (self._indexY * SubsectorHeight)
-            width = SubsectorWidth
-            height = SubsectorHeight
-
-            # Adjust to completely contain all hexes in the sector
-            height += 0.5
-            left -= HexWidthOffset
-            width += HexWidthOffset * 2
-
-            self._worldBounds = (left, top, width, height)
-        return self._worldBounds
-
-    def isotropicBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
-        if not self._isotropicBounds:
-            worldLeft, worldTop, worldWidth, worldHeight = self.worldBounds()
-            self._isotropicBounds = (
-                worldLeft * ParsecScaleX,
-                worldTop * ParsecScaleY,
-                worldWidth * ParsecScaleX,
-                worldHeight * ParsecScaleY)
-        return self._isotropicBounds
-
-    def hexBounds(self) -> typing.Tuple['HexPosition', 'HexPosition']: # (top left hex, bottom right hex)
-        if self._hexBounds is None:
-            topLeft = HexPosition(
-                sectorX=self._sectorX,
-                sectorY=self._sectorY,
-                offsetX=(self._indexX * SubsectorWidth) + 1,
-                offsetY=(self._indexY * SubsectorHeight) + 1)
-            bottomRight = HexPosition(
-                sectorX=self._sectorX,
-                sectorY=self._sectorY,
-                offsetX=topLeft.offsetX() + (SubsectorWidth - 1),
-                offsetY=topLeft.offsetY() + (SubsectorHeight - 1))
-            self._hexBounds = (topLeft, bottomRight)
-        return self._hexBounds
-
-# NOTE: There is a LOT of code that assumes instances of this
-# class are immutable
 class HexPosition(object):
     @typing.overload
     def __init__(self, absoluteX: int, absoluteY: int) -> None: ...
     @typing.overload
     def __init__(self, sectorX: int, sectorY: int, offsetX: int, offsetY: int) -> None: ...
     @typing.overload
-    def __init__(self, sectorPos, offsetX: int, offsetY: int) -> None: ...
+    def __init__(self, sectorPos: SectorPosition, offsetX: int, offsetY: int) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         argCount = len(args) + len(kwargs)
@@ -530,7 +404,7 @@ class HexPosition(object):
             raise ValueError('Invalid hex position arguments')
 
         self._sectorPos: typing.Optional[SectorPosition] = None
-        self._subsectorPos: typing.Optional[SubsectorPosition] = None
+        self._subsectorCode: typing.Optional[str] = None
         self._worldCenter: typing.Optional[typing.Tuple[float, float]] = None
         self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
         self._isotropicCenter: typing.Optional[typing.Tuple[float, float]] = None
@@ -591,16 +465,6 @@ class HexPosition(object):
                 sectorY=sectorY)
         return self._sectorPos
 
-    def subsectorPosition(self) -> SubsectorPosition:
-        if not self._subsectorPos:
-            sectorX, sectorY, offsetX, offsetY = self.relative()
-            self._subsectorPos = SubsectorPosition(
-                sectorX=sectorX,
-                sectorY=sectorY,
-                indexX=(offsetX - 1) // SubsectorWidth,
-                indexY=(offsetY - 1) // SubsectorHeight)
-        return self._subsectorPos
-
     def sectorX(self) -> int:
         if not self._relative:
             self._calculateRelative()
@@ -630,6 +494,11 @@ class HexPosition(object):
         if not self._relative:
             self._calculateRelative()
         return self._relative
+
+    def subsectorCode(self) -> str:
+        if not self._subsectorCode:
+            self._subsectorCode = sectorOffsetToSubsectorCode(self.offset())
+        return self._subsectorCode
 
     # Reimplementation of code from Traveller Map source code.
     # HexDistance in Astrometrics.cs

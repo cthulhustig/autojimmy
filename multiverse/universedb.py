@@ -315,10 +315,8 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='milieu', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
                     database.ColumnDef(columnName='sector_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='sector_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    # TODO: I don't like the fact these are primary name/language.
-                    # Just call them name/language
-                    database.ColumnDef(columnName='primary_name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='primary_language', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='language', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='abbreviation', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='sector_label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='selected', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False),
@@ -329,10 +327,8 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    # TODO: I think there should be a second constraint that milieu/primary_name are unique
-                    # The are unique in the traveller map data apart from Unknown sectors that I handle in
-                    # the github action
-                    database.UniqueConstraintDef(columnNames=['milieu', 'sector_x', 'sector_y'])])
+                    database.UniqueConstraintDef(columnNames=['milieu', 'sector_x', 'sector_y']),
+                    database.UniqueConstraintDef(columnNames=['milieu', 'name'])])
 
             self._database.createTable(
                 cursor=cursor,
@@ -375,6 +371,8 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
                     database.UniqueConstraintDef(columnNames=['sector_id', 'code'])])
+                    # TODO: I think I want this enabled but it's failing, not sure where there are duplicates
+                    # database.UniqueConstraintDef(columnNames=['sector_id', 'name'])])
 
             self._database.createTable(
                 cursor=cursor,
@@ -773,7 +771,7 @@ class UniverseDb(object):
             milieu: typing.Optional[str]
             ) -> typing.List[SectorInfo]:
         sql = """
-            SELECT s.id, s.milieu, s.primary_name, s.sector_x, s.sector_y, s.abbreviation,
+            SELECT s.id, s.milieu, s.name, s.sector_x, s.sector_y, s.abbreviation,
                 m.created_timestamp, m.modified_timestamp, m.stock_data_hash
             FROM {sectorsTable} AS s
             JOIN {metadataTable} AS m ON m.sector_id = s.id
@@ -833,7 +831,7 @@ class UniverseDb(object):
 
         sql = """
             SELECT id, milieu, sector_x, sector_y,
-                primary_name, primary_language, abbreviation, sector_label, selected,
+                name, language, abbreviation, sector_label, selected,
                 credits, publication, author, publisher, reference, notes
             FROM {table};
             """.format(table=UniverseDb._SectorsTableName)
@@ -848,8 +846,8 @@ class UniverseDb(object):
                     milieu=row[1],
                     sectorX=row[2],
                     sectorY=row[3],
-                    primaryName=row[4],
-                    primaryLanguage=row[5],
+                    name=row[4],
+                    language=row[5],
                     abbreviation=row[6],
                     sectorLabel=row[7],
                     selected=True if row[8] else False,
@@ -884,10 +882,10 @@ class UniverseDb(object):
             ) -> None:
         sql = """
             INSERT INTO {table} (id, milieu, sector_x, sector_y,
-                primary_name, primary_language, abbreviation, sector_label, selected,
+                name, language, abbreviation, sector_label, selected,
                 credits, publication, author, publisher, reference, notes)
             VALUES (:id, :milieu, :sector_x, :sector_y,
-                :primary_name, :primary_language, :abbreviation, :sector_label, :selected,
+                :name, :language, :abbreviation, :sector_label, :selected,
                 :credits, :publication, :author, :publisher, :reference, :notes);
             """.format(table=UniverseDb._SectorsTableName)
         rows = {
@@ -895,8 +893,8 @@ class UniverseDb(object):
             'milieu': sector.milieu(),
             'sector_x': sector.sectorX(),
             'sector_y': sector.sectorY(),
-            'primary_name': sector.primaryName(),
-            'primary_language': sector.primaryLanguage(),
+            'name': sector.name(),
+            'language': sector.language(),
             'abbreviation': sector.abbreviation(),
             'sector_label': sector.sectorLabel(),
             'selected': 1 if sector.selected() else 0,
@@ -983,7 +981,7 @@ class UniverseDb(object):
 
         sql = """
             SELECT milieu, sector_x, sector_y,
-                primary_name, primary_language, abbreviation, sector_label, selected,
+                name, language, abbreviation, sector_label, selected,
                 credits, publication, author, publisher, reference, notes
             FROM {table}
             WHERE id = :id
@@ -999,8 +997,8 @@ class UniverseDb(object):
             milieu=row[0],
             sectorX=row[1],
             sectorY=row[2],
-            primaryName=row[3],
-            primaryLanguage=row[4],
+            name=row[3],
+            language=row[4],
             abbreviation=row[5],
             sectorLabel=row[6],
             selected=True if row[7] else False,
@@ -2920,6 +2918,27 @@ class UniverseDb(object):
                 otherId=row[0],
                 x=sector.sectorX(),
                 y=sector.sectorY(),
+                milieu=sector.milieu()))
+
+        # Check there isn't a sector with the same name but a different id.
+        # In order for the created/modified/stock hash to work correctly, updating
+        # the sector at an occupied hex should be done by writing an updated sector
+        # with the same id.
+        sql = """
+            SELECT id
+            FROM {table}
+            WHERE id != :id AND milieu = :milieu AND name = :name
+            LIMIT 1;
+            """.format(table=UniverseDb._SectorsTableName)
+        cursor.execute(sql, {
+            'id': sector.id(),
+            'milieu': sector.milieu(),
+            'name': sector.name()})
+        row = cursor.fetchone()
+        if row:
+            raise ValueError('Sector {otherId} already has the name {name} in {milieu}'.format(
+                otherId=row[0],
+                name=sector.name(),
                 milieu=sector.milieu()))
 
         # Query any current metadata so it can be re-added after saving. This

@@ -621,31 +621,32 @@ class RenderContext(object):
 
         for x in range(minX, maxX + astronomer.SubsectorWidth, astronomer.SubsectorWidth):
             for y in range(minY, maxY + astronomer.SubsectorHeight, astronomer.SubsectorHeight):
-                sectorX, sectorY, offsetX, offsetY = \
-                    astronomer.absoluteSpaceToRelativeSpace((x, y))
-                sectorPos = astronomer.SectorPosition(
-                    sectorX=sectorX,
-                    sectorY=sectorY)
+                hexPos = astronomer.HexPosition(
+                    absoluteX=x,
+                    absoluteY=y)
                 sector = self._universe.sectorByPosition(
                     milieu=self._milieu,
-                    position=sectorPos)
+                    position=hexPos)
                 if not sector:
                     continue
 
-                subsectorPos = astronomer.SubsectorPosition(
-                    sectorX=sectorX,
-                    sectorY=sectorY,
-                    indexX=(offsetX - 1) // astronomer.SubsectorWidth,
-                    indexY=(offsetY - 1) // astronomer.SubsectorHeight)
-                subsector = sector.subsectorByCode(subsectorPos.code())
-                if not subsector:
+                subsectorName = sector.subsectorName(code=hexPos.subsectorCode())
+                if not subsectorName:
                     continue
 
-                subsectorName = subsector.name()
-                if not subsectorName or subsector.isNameGenerated():
-                    continue
+                indexX = (hexPos.offsetX() - 1) // astronomer.SubsectorWidth
+                indexY = (hexPos.offsetY() - 1) // astronomer.SubsectorHeight
 
-                ulHex, brHex = subsectorPos.hexBounds()
+                ulHex = astronomer.HexPosition(
+                    sectorX=hexPos.sectorX(),
+                    sectorY=hexPos.sectorY(),
+                    offsetX=(indexX * astronomer.SubsectorWidth) + 1,
+                    offsetY=(indexY * astronomer.SubsectorHeight) + 1)
+                brHex = astronomer.HexPosition(
+                    sectorX=hexPos.sectorX(),
+                    sectorY=hexPos.sectorY(),
+                    offsetX=ulHex.offsetX() + (astronomer.SubsectorWidth - 1),
+                    offsetY=ulHex.offsetY() + (astronomer.SubsectorHeight - 1))
                 left = ulHex.absoluteX() - 1
                 top = ulHex.absoluteY() - 1
                 right = brHex.absoluteX()

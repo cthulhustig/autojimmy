@@ -14,6 +14,10 @@ class OrderedSet(typing.Generic[_T]):
     def add(self, element: _T) -> None:
         self._dict[element] = None
 
+    def extend(self, elements: typing.Iterable[_T]) -> None:
+        for element in elements:
+            self._dict[element] = None
+
     def clear(self) -> None:
         self._dict.clear()
 

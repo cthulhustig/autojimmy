@@ -489,17 +489,19 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                         position=purchaseWorld.hex())
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
-                        sector.name() if sector else 'Unknown')
+                        sector.name() if sector else '<Unnamed>')
                     if purchaseWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
                 elif columnType == self.ColumnType.PurchaseSubsector:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    subsector = self._universe.subsectorByPosition(
+                    worldHex = purchaseWorld.hex()
+                    sector = self._universe.sectorByPosition(
                         milieu=self._milieu,
-                        position=purchaseWorld.hex())
+                        position=worldHex)
+                    subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
-                        subsector.name() if subsector else 'Unknown')
+                        subsectorName if subsectorName else '<Unnamed>')
                     if purchaseWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
                 elif columnType == self.ColumnType.SaleWorld:
@@ -514,17 +516,19 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                         position=saleWorld.hex())
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
-                        sector.name() if sector else 'Unknown')
+                        sector.name() if sector else '<Unnamed>')
                     if saleWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
                 elif columnType == self.ColumnType.SaleSubsector:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    subsector = self._universe.subsectorByPosition(
+                    worldHex = saleWorld.hex()
+                    sector = self._universe.sectorByPosition(
                         milieu=self._milieu,
-                        position=saleWorld.hex())
+                        position=worldHex)
+                    subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
-                        subsector.name() if subsector else 'Unknown')
+                        subsectorName if subsectorName else '<Unnamed>')
                     if saleWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
                 elif columnType == self.ColumnType.Logistics:

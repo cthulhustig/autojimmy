@@ -83,20 +83,11 @@ def createHexToolTip(
         hex=hex)
     toolTip += f'<h1>{html.escape(canonicalName)}</h1>'
 
-    subsector = None
+    subsectorName = None
     if sector:
-        subsectorPos = hex.subsectorPosition()
-        subsector = sector.subsectorByIndex(
-            indexX=subsectorPos.indexX(),
-            indexY=subsectorPos.indexY())
-    if subsector:
-        if not subsector.isNameGenerated():
-            subsectorName = subsector.name()
-        else:
-            subsectorName = subsector.code()
-    else:
-        # I don't think this should really happen but handle it gracefully
-        subsectorName = 'Unknown'
+        subsectorName = sector.subsectorName(code=hex.subsectorCode())
+    if not subsectorName:
+        subsectorName = hex.subsectorCode()
 
     sectorHex = universe.formatSectorHex(
         milieu=milieu,
