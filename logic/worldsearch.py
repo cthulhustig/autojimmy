@@ -1,8 +1,9 @@
+import astronomer
 import enum
 import logic
 import re
+import survey
 import traveller
-import multiverse
 import typing
 
 class ComparisonFilterOperation(enum.Enum):
@@ -89,7 +90,8 @@ class WorldFilter(object):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -112,7 +114,9 @@ class NameFiler(WorldFilter):
         self._operation = operation
         self._value = value
 
-        self._regex = re.compile(self._value, re.IGNORECASE)
+        self._regex = re.compile(
+            self._value if operation is StringFilterOperation.MatchRegex else re.escape(self._value),
+            re.IGNORECASE)
 
     def type(self) -> Type:
         return self._type
@@ -142,7 +146,8 @@ class NameFiler(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -150,17 +155,45 @@ class NameFiler(WorldFilter):
             if self._type == NameFiler.Type.WorldName:
                 return self._regex.search(world.name()) != None
             elif self._type == NameFiler.Type.SectorName:
-                return self._regex.search(world.sectorName()) != None
+                sector = universe.sectorByPosition(
+                    milieu=world.milieu(),
+                    position=world.hex())
+                if not sector:
+                    return False
+                return self._regex.search(sector.name()) != None
             elif self._type == NameFiler.Type.SubsectorName:
-                return self._regex.search(world.subsectorName()) != None
+                worldHex = world.hex()
+                sector = universe.sectorByPosition(
+                    milieu=world.milieu(),
+                    position=worldHex)
+                if not sector:
+                    return False
+                subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
+                if not subsectorName:
+                    return False
+                return self._regex.search(subsectorName) != None
             raise ValueError('Invalid name filter type')
         elif self._operation == StringFilterOperation.MatchRegex:
             if self._type == NameFiler.Type.WorldName:
                 return self._regex.match(world.name()) != None
             elif self._type == NameFiler.Type.SectorName:
-                return self._regex.match(world.sectorName()) != None
+                sector = universe.sectorByPosition(
+                    milieu=world.milieu(),
+                    position=world.hex())
+                if not sector:
+                    return False
+                return self._regex.match(sector.name()) != None
             elif self._type == NameFiler.Type.SubsectorName:
-                return self._regex.match(world.subsectorName()) != None
+                worldHex = world.hex()
+                sector = universe.sectorByPosition(
+                    milieu=world.milieu(),
+                    position=worldHex)
+                if not sector:
+                    return False
+                subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
+                if not subsectorName:
+                    return False
+                return self._regex.match(subsectorName) != None
             raise ValueError('Invalid name filter type')
         raise ValueError('Invalid name filter operation')
 
@@ -190,17 +223,19 @@ class TagLevelFiler(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
+        tagLevel = tagging.calculateWorldTagLevel(world=world)
         return _performComparisonOperation(
             operation=self._operation,
-            worldValue=TagLevelFiler._tagLevelToInt(tagging.calculateWorldTagLevel(world)),
+            worldValue=TagLevelFiler._tagLevelToInt(tagLevel),
             compareValue=self._integer)
 
     @staticmethod
-    def _tagLevelToInt(level: str) -> int:
+    def _tagLevelToInt(level: typing.Optional[logic.TagLevel]) -> int:
         if level == logic.TagLevel.Danger:
             return 2
         elif level == logic.TagLevel.Warning:
@@ -211,7 +246,7 @@ class ZoneFiler(WorldFilter):
     def __init__(
             self,
             operation: ComparisonFilterOperation,
-            value: multiverse.ZoneType
+            value: astronomer.ZoneType
             ) -> None:
         super().__init__()
         self._operation = operation
@@ -221,7 +256,7 @@ class ZoneFiler(WorldFilter):
     def operation(self) -> ComparisonFilterOperation:
         return self._operation
 
-    def value(self) -> multiverse.ZoneType:
+    def value(self) -> astronomer.ZoneType:
         return self._value
 
     def description(self) -> str:
@@ -229,11 +264,12 @@ class ZoneFiler(WorldFilter):
         if not operationString:
             return None
 
-        return f'Zone {operationString} {multiverse.zoneTypeName(self._value)}'
+        return f'Zone {operationString} {astronomer.zoneTypeName(self._value)}'
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -248,16 +284,16 @@ class ZoneFiler(WorldFilter):
     # thinking that Forbidden/Unabsorbed are equivalent to Red/Amber zones
     # respectively (at least the Traveller Map IsAmber/IsRed treat them that way).
     @staticmethod
-    def _zoneToInt(zone: multiverse.ZoneType) -> int:
-        if zone == multiverse.ZoneType.RedZone:
+    def _zoneToInt(zone: astronomer.ZoneType) -> int:
+        if zone == astronomer.ZoneType.RedZone:
             return 5
-        elif zone == multiverse.ZoneType.Forbidden:
+        elif zone == astronomer.ZoneType.Forbidden:
             return 4
-        elif zone == multiverse.ZoneType.AmberZone:
+        elif zone == astronomer.ZoneType.AmberZone:
             return 3
-        elif zone == multiverse.ZoneType.Unabsorbed:
+        elif zone == astronomer.ZoneType.Unabsorbed:
             return 2
-        elif zone == multiverse.ZoneType.Balkanized:
+        elif zone == astronomer.ZoneType.Balkanized:
             return 1
         else:
             return 0
@@ -265,7 +301,7 @@ class ZoneFiler(WorldFilter):
 class UWPFilter(WorldFilter):
     def __init__(
             self,
-            element: multiverse.UWP.Element,
+            element: astronomer.UWP.Element,
             operation: ComparisonFilterOperation,
             value: str
             ) -> None:
@@ -273,9 +309,9 @@ class UWPFilter(WorldFilter):
         self._element = element
         self._operation = operation
         self._value = value
-        self._integer = multiverse.ehexToInteger(value=self._value, default=None)
+        self._integer = survey.ehexToInteger(value=self._value, default=None)
 
-    def element(self) -> multiverse.UWP.Element:
+    def element(self) -> astronomer.UWP.Element:
         return self._element
 
     def operation(self) -> ComparisonFilterOperation:
@@ -285,21 +321,21 @@ class UWPFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        if self._element == multiverse.UWP.Element.StarPort:
+        if self._element == astronomer.UWP.Element.StarPort:
             elementString = 'Star Port'
-        elif self._element == multiverse.UWP.Element.WorldSize:
+        elif self._element == astronomer.UWP.Element.WorldSize:
             elementString = 'World size'
-        elif self._element == multiverse.UWP.Element.Atmosphere:
+        elif self._element == astronomer.UWP.Element.Atmosphere:
             elementString = 'Atmosphere'
-        elif self._element == multiverse.UWP.Element.Hydrographics:
+        elif self._element == astronomer.UWP.Element.Hydrographics:
             elementString = 'Hydrographics'
-        elif self._element == multiverse.UWP.Element.Population:
+        elif self._element == astronomer.UWP.Element.Population:
             elementString = 'Population'
-        elif self._element == multiverse.UWP.Element.Government:
+        elif self._element == astronomer.UWP.Element.Government:
             elementString = 'Government'
-        elif self._element == multiverse.UWP.Element.LawLevel:
+        elif self._element == astronomer.UWP.Element.LawLevel:
             elementString = 'Law Level'
-        elif self._element == multiverse.UWP.Element.TechLevel:
+        elif self._element == astronomer.UWP.Element.TechLevel:
             elementString = 'Tech Level'
         else:
             return None
@@ -312,21 +348,20 @@ class UWPFilter(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
-            worldValue=multiverse.ehexToInteger(
-                value=world.uwp().code(self._element),
-                default=None),
+            worldValue=world.uwp().numeric(element=self._element, default=None),
             compareValue=self._integer)
 
 class EconomicsFilter(WorldFilter):
     def __init__(
             self,
-            element: multiverse.Economics.Element,
+            element: astronomer.Economics.Element,
             operation: ComparisonFilterOperation,
             value: str
             ) -> None:
@@ -335,12 +370,12 @@ class EconomicsFilter(WorldFilter):
         self._operation = operation
         self._value = value
 
-        if self._element == multiverse.Economics.Element.Efficiency:
+        if self._element == astronomer.Economics.Element.Efficiency:
             self._integer = int(self._value) if self._value != '?' else None
         else:
-            self._integer = multiverse.ehexToInteger(value=self._value, default=None)
+            self._integer = survey.ehexToInteger(value=self._value, default=None)
 
-    def element(self) -> multiverse.Economics.Element:
+    def element(self) -> astronomer.Economics.Element:
         return self._element
 
     def operation(self) -> ComparisonFilterOperation:
@@ -350,13 +385,13 @@ class EconomicsFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        if self._element == multiverse.Economics.Element.Resources:
+        if self._element == astronomer.Economics.Element.Resources:
             elementString = 'Resources'
-        elif self._element == multiverse.Economics.Element.Labour:
+        elif self._element == astronomer.Economics.Element.Labour:
             elementString = 'Labour'
-        elif self._element == multiverse.Economics.Element.Infrastructure:
+        elif self._element == astronomer.Economics.Element.Infrastructure:
             elementString = 'Infrastructure'
-        elif self._element == multiverse.Economics.Element.Efficiency:
+        elif self._element == astronomer.Economics.Element.Efficiency:
             elementString = 'Efficiency'
         else:
             return None
@@ -369,17 +404,14 @@ class EconomicsFilter(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        code = world.economics().code(self._element)
-        if self._element == multiverse.Economics.Element.Efficiency:
-            worldValue = int(code) if code != '?' else None
-        else:
-            worldValue = multiverse.ehexToInteger(
-                value=code,
-                default=None)
+        worldValue = world.economics().numeric(
+            element=self._element,
+            default=None)
 
         return _performComparisonOperation(
             operation=self._operation,
@@ -389,7 +421,7 @@ class EconomicsFilter(WorldFilter):
 class CultureFilter(WorldFilter):
     def __init__(
             self,
-            element: multiverse.Culture.Element,
+            element: astronomer.Culture.Element,
             operation: ComparisonFilterOperation,
             value: str
             ) -> None:
@@ -397,9 +429,9 @@ class CultureFilter(WorldFilter):
         self._element = element
         self._operation = operation
         self._value = value
-        self._integer = multiverse.ehexToInteger(value=self._value, default=None)
+        self._integer = survey.ehexToInteger(value=self._value, default=None)
 
-    def element(self) -> multiverse.Culture.Element:
+    def element(self) -> astronomer.Culture.Element:
         return self._element
 
     def operation(self) -> ComparisonFilterOperation:
@@ -409,13 +441,13 @@ class CultureFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        if self._element == multiverse.Culture.Element.Heterogeneity:
+        if self._element == astronomer.Culture.Element.Heterogeneity:
             elementString = 'Heterogeneity'
-        elif self._element == multiverse.Culture.Element.Acceptance:
+        elif self._element == astronomer.Culture.Element.Acceptance:
             elementString = 'Acceptance'
-        elif self._element == multiverse.Culture.Element.Strangeness:
+        elif self._element == astronomer.Culture.Element.Strangeness:
             elementString = 'Strangeness'
-        elif self._element == multiverse.Culture.Element.Symbols:
+        elif self._element == astronomer.Culture.Element.Symbols:
             elementString = 'Symbols'
         else:
             return None
@@ -428,15 +460,14 @@ class CultureFilter(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
-            worldValue=multiverse.ehexToInteger(
-                value=world.culture().code(self._element),
-                default=None),
+            worldValue=world.culture().numeric(element=self._element, default=None),
             compareValue=self._integer)
 
 class RefuellingFilter(WorldFilter):
@@ -501,7 +532,8 @@ class RefuellingFilter(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -509,19 +541,17 @@ class RefuellingFilter(WorldFilter):
         for refuelling in checkList:
             match = False
             if refuelling == RefuellingFilter.Type.RefinedRefuelling:
-                match = traveller.worldHasStarPortRefuelling(
+                match = world.hasStarPortRefuelling(
                     includeUnrefined=False,
-                    world=world,
                     rules=rules)
             elif refuelling == RefuellingFilter.Type.UnrefinedRefuelling:
-                match = traveller.worldHasStarPortRefuelling(
+                match = world.hasStarPortRefuelling(
                     includeRefined=False,
-                    world=world,
                     rules=rules)
             elif refuelling == RefuellingFilter.Type.GasGiantRefuelling:
-                match = traveller.worldHasGasGiantRefuelling(world=world)
+                match = world.hasGasGiantRefuelling()
             elif refuelling == RefuellingFilter.Type.WaterRefuelling:
-                match = traveller.worldHasWaterRefuelling(world=world)
+                match = world.hasWaterRefuelling()
             elif refuelling == RefuellingFilter.Type.FuelCacheRefuelling:
                 match = world.isFuelCache()
             elif refuelling == RefuellingFilter.Type.AnomalyRefuelling:
@@ -553,7 +583,10 @@ class AllegianceFilter(WorldFilter):
         super().__init__()
         self._operation = operation
         self._value = value
-        self._regex = re.compile(self._value, re.IGNORECASE)
+
+        self._regex = re.compile(
+            self._value if operation is StringFilterOperation.MatchRegex else re.escape(self._value),
+            re.IGNORECASE)
 
     def operation(self) -> StringFilterOperation:
         return self._operation
@@ -570,7 +603,8 @@ class AllegianceFilter(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -589,15 +623,15 @@ class AllegianceFilter(WorldFilter):
             raise ValueError('Invalid allegiance filter operation')
 
         allegianceName = allegiance.name()
-        if allegianceName:
-            if self._operation == StringFilterOperation.ContainsString:
-                if self._regex.search(allegianceName):
-                    return True
-            elif self._operation == StringFilterOperation.MatchRegex:
-                if self._regex.match(allegianceName):
-                    return True
-            else:
-                raise ValueError('Invalid allegiance filter operation')
+        if self._operation == StringFilterOperation.ContainsString:
+            if self._regex.search(allegianceName):
+                return True
+        elif self._operation == StringFilterOperation.MatchRegex:
+            if self._regex.match(allegianceName):
+                return True
+        else:
+            raise ValueError('Invalid allegiance filter operation')
+
         return False
 
 class SophontFilter(WorldFilter):
@@ -609,7 +643,10 @@ class SophontFilter(WorldFilter):
         super().__init__()
         self._operation = operation
         self._value = value
-        self._regex = re.compile(self._value, re.IGNORECASE)
+
+        self._regex = re.compile(
+            self._value if operation is StringFilterOperation.MatchRegex else re.escape(self._value),
+            re.IGNORECASE)
 
     def operation(self) -> StringFilterOperation:
         return self._operation
@@ -626,30 +663,28 @@ class SophontFilter(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        remarks = world.remarks()
-        if remarks:
-            sophonts = remarks.sophonts()
-            if self._operation == StringFilterOperation.ContainsString:
-                for sophont in sophonts:
-                    if self._regex.search(sophont):
-                        return True
-            elif self._operation == StringFilterOperation.MatchRegex:
-                for sophont in sophonts:
-                    if self._regex.match(sophont):
-                        return True
-            else:
-                raise ValueError('Invalid sophont filter operation')
-        return False
+        sophonts = world.sophonts()
+        if self._operation == StringFilterOperation.ContainsString:
+            for sophont in sophonts:
+                if self._regex.search(sophont.name()):
+                    return True
+        elif self._operation == StringFilterOperation.MatchRegex:
+            for sophont in sophonts:
+                if self._regex.match(sophont.name()):
+                    return True
+        else:
+            raise ValueError('Invalid sophont filter operation')
 
 class BaseFilter(WorldFilter):
     def __init__(
             self,
             operation: ListFilterOperation,
-            value: typing.Iterable[multiverse.BaseType]
+            value: typing.Iterable[astronomer.BaseType]
             ) -> None:
         super().__init__()
         self._operation = operation
@@ -658,7 +693,7 @@ class BaseFilter(WorldFilter):
     def operation(self) -> ListFilterOperation:
         return self._operation
 
-    def value(self) -> typing.Iterable[multiverse.BaseType]:
+    def value(self) -> typing.Iterable[astronomer.BaseType]:
         return self._value
 
     def description(self) -> str:
@@ -671,7 +706,7 @@ class BaseFilter(WorldFilter):
 
         listString = ''
         for index, base in enumerate(self._value):
-            typeString = multiverse.Bases.description(baseType=base)
+            typeString = astronomer.Bases.description(baseType=base)
 
             if index == 0:
                 listString = typeString
@@ -686,11 +721,12 @@ class BaseFilter(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        checkList = multiverse.BaseType if self._operation == ListFilterOperation.ContainsOnly else self._value
+        checkList = astronomer.BaseType if self._operation == ListFilterOperation.ContainsOnly else self._value
         worldBases = world.bases()
         for base in checkList:
             match = base in worldBases
@@ -713,7 +749,7 @@ class NobilityFilter(WorldFilter):
     def __init__(
             self,
             operation: ListFilterOperation,
-            value: typing.Iterable[multiverse.NobilityType]
+            value: typing.Iterable[astronomer.NobilityType]
             ) -> None:
         super().__init__()
         self._operation = operation
@@ -722,7 +758,7 @@ class NobilityFilter(WorldFilter):
     def operation(self) -> ListFilterOperation:
         return self._operation
 
-    def value(self) -> typing.Iterable[multiverse.NobilityType]:
+    def value(self) -> typing.Iterable[astronomer.NobilityType]:
         return self._value
 
     def description(self) -> str:
@@ -735,7 +771,7 @@ class NobilityFilter(WorldFilter):
 
         listString = ''
         for index, nobility in enumerate(self._value):
-            typeString = multiverse.Nobilities.description(nobilityType=nobility)
+            typeString = astronomer.Nobilities.description(nobilityType=nobility)
 
             if index == 0:
                 listString = typeString
@@ -750,11 +786,12 @@ class NobilityFilter(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        checkList = multiverse.NobilityType if self._operation == ListFilterOperation.ContainsOnly else self._value
+        checkList = astronomer.NobilityType if self._operation == ListFilterOperation.ContainsOnly else self._value
         worldNobilities = world.nobilities()
         for nobility in checkList:
             match = nobility in worldNobilities
@@ -782,7 +819,10 @@ class RemarksFilter(WorldFilter):
         super().__init__()
         self._operation = operation
         self._value = value
-        self._regex = re.compile(self._value, re.IGNORECASE)
+
+        self._regex = re.compile(
+            self._value if operation is StringFilterOperation.MatchRegex else re.escape(self._value),
+            re.IGNORECASE)
 
     def operation(self) -> StringFilterOperation:
         return self._operation
@@ -799,27 +839,26 @@ class RemarksFilter(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        remarks = world.remarks()
-        if remarks:
-            if self._operation == StringFilterOperation.ContainsString:
-                if self._regex.search(remarks.string()):
-                    return True
-            elif self._operation == StringFilterOperation.MatchRegex:
-                if self._regex.match(remarks.string()):
-                    return True
-            else:
-                raise ValueError('Invalid remarks filter operation')
-        return False
+        remarks = world.remarksString()
+        if self._operation == StringFilterOperation.ContainsString:
+            if self._regex.search(remarks):
+                return True
+        elif self._operation == StringFilterOperation.MatchRegex:
+            if self._regex.match(remarks):
+                return True
+        else:
+            raise ValueError('Invalid remarks filter operation')
 
 class TradeCodeFilter(WorldFilter):
     def __init__(
             self,
             operation: ListFilterOperation,
-            value: typing.Iterable[multiverse.TradeCode]
+            value: typing.Iterable[traveller.TradeCode]
             ) -> None:
         super().__init__()
         self._operation = operation
@@ -828,7 +867,7 @@ class TradeCodeFilter(WorldFilter):
     def operation(self) -> ListFilterOperation:
         return self._operation
 
-    def value(self) -> typing.Iterable[multiverse.TradeCode]:
+    def value(self) -> typing.Iterable[traveller.TradeCode]:
         return self._value
 
     def description(self) -> str:
@@ -841,7 +880,7 @@ class TradeCodeFilter(WorldFilter):
 
         listString = ''
         for index, tradeCode in enumerate(self._value):
-            typeString = multiverse.tradeCodeName(tradeCode=tradeCode)
+            typeString = traveller.tradeCodeName(tradeCode=tradeCode)
 
             if index == 0:
                 listString = typeString
@@ -856,13 +895,14 @@ class TradeCodeFilter(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        checkList = multiverse.TradeCode if self._operation == ListFilterOperation.ContainsOnly else self._value
+        checkList = traveller.TradeCode if self._operation == ListFilterOperation.ContainsOnly else self._value
         for tradeCode in checkList:
-            match = world.hasTradeCode(tradeCode)
+            match = world.hasTradeCode(tradeCode=tradeCode)
             if self._operation == ListFilterOperation.ContainsAny:
                 if match:
                     return True
@@ -881,7 +921,7 @@ class TradeCodeFilter(WorldFilter):
 class PBGFilter(WorldFilter):
     def __init__(
             self,
-            element: multiverse.PBG.Element,
+            element: astronomer.PBG.Element,
             operation: ComparisonFilterOperation,
             value: str
             ) -> None:
@@ -889,9 +929,9 @@ class PBGFilter(WorldFilter):
         self._element = element
         self._operation = operation
         self._value = value
-        self._integer = multiverse.ehexToInteger(value=self._value, default=None)
+        self._integer = survey.ehexToInteger(value=self._value, default=None)
 
-    def element(self) -> multiverse.UWP.Element:
+    def element(self) -> astronomer.UWP.Element:
         return self._element
 
     def operation(self) -> ComparisonFilterOperation:
@@ -901,11 +941,11 @@ class PBGFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        if self._element == multiverse.PBG.Element.PopulationMultiplier:
+        if self._element == astronomer.PBG.Element.PopulationMultiplier:
             elementString = 'Population Multiplier'
-        elif self._element == multiverse.PBG.Element.PlanetoidBelts:
+        elif self._element == astronomer.PBG.Element.PlanetoidBelts:
             elementString = 'Planetoid Belt Count'
-        elif self._element == multiverse.PBG.Element.GasGiants:
+        elif self._element == astronomer.PBG.Element.GasGiants:
             elementString = 'Gas Giant Count'
         else:
             return None
@@ -918,15 +958,14 @@ class PBGFilter(WorldFilter):
 
     def match(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
-            worldValue=multiverse.ehexToInteger(
-                value=world.pbg().code(self._element),
-                default=None),
+            worldValue=world.pbg().numeric(element=self._element, default=None),
             compareValue=self._integer)
 
 class WorldSearch(object):
@@ -964,7 +1003,8 @@ class WorldSearch(object):
 
     def checkWorld(
             self,
-            world: multiverse.World,
+            universe: astronomer.Universe,
+            world: astronomer.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool: # # True if matched, False if ignored
@@ -972,7 +1012,11 @@ class WorldSearch(object):
             return True # No filter always matches the world
 
         for filter in self._filters:
-            matched = filter.match(world=world, rules=rules, tagging=tagging)
+            matched = filter.match(
+                universe=universe,
+                world=world,
+                rules=rules,
+                tagging=tagging)
             if self._logic == FilterLogic.MatchesAll:
                 if not matched:
                     return False
@@ -989,14 +1033,16 @@ class WorldSearch(object):
 
     def search(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
             maxResults: int = 1000
-            ) -> typing.Iterable[multiverse.World]:
+            ) -> typing.Iterable[astronomer.World]:
         results = []
-        for sector in multiverse.WorldManager.instance().yieldSectors(milieu=milieu):
+        for sector in universe.yieldSectors(milieu=milieu):
             self._searchWorlds(
+                universe=universe,
                 worlds=sector.yieldWorlds(),
                 rules=rules,
                 tagging=tagging,
@@ -1008,64 +1054,68 @@ class WorldSearch(object):
 
     def searchRegion(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
             sectorName: str,
             subsectorName: typing.Optional[str] = None,
             maxResults: int = 1000
-            ) -> typing.Iterable[multiverse.World]:
-        sector = multiverse.WorldManager.instance().sectorByName(
-            milieu=milieu,
-            name=sectorName)
+            ) -> typing.Iterable[astronomer.World]:
+        sector = universe.sectorByName(milieu=milieu, name=sectorName)
         if not sector:
             raise RuntimeError(f'Sector "{sectorName}" for found')
 
         if not subsectorName:
             return self._searchWorlds(
+                universe=universe,
                 worlds=sector.yieldWorlds(),
                 rules=rules,
                 tagging=tagging,
                 maxResults=maxResults)
         else:
-            subsector = sector.subsectorByName(name=subsectorName)
-            if not subsector:
+            subsectorCode = sector.subsectorCodeByName(name=subsectorName)
+            if not subsectorCode:
                 raise RuntimeError(f'Subsector "{subsectorName}" not found in sector "{sectorName}"')
             return self._searchWorlds(
-                worlds=subsector.yieldWorlds(),
+                universe=universe,
+                worlds=sector.yieldWorlds(subsectorCode=subsectorCode),
                 rules=rules,
                 tagging=tagging,
                 maxResults=maxResults)
 
     def searchRadius(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
-            centerHex: multiverse.HexPosition,
+            centerHex: astronomer.HexPosition,
             searchRadius: int
-            ) -> typing.Iterable[multiverse.World]:
-        return multiverse.WorldManager.instance().worldsInRadius(
+            ) -> typing.Iterable[astronomer.World]:
+        filterCallback = lambda world: self.checkWorld(universe=universe, world=world, rules=rules, tagging=tagging)
+        return universe.worldsInRadius(
             milieu=milieu,
             center=centerHex,
             searchRadius=searchRadius,
-            filterCallback=lambda world: self.checkWorld(world=world, rules=rules, tagging=tagging))
+            filterCallback=filterCallback)
 
     def _searchWorlds(
             self,
-            worlds: typing.Iterable[multiverse.World],
+            universe: astronomer.Universe,
+            worlds: typing.Iterable[astronomer.World],
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
             maxResults: int,
-            inPlaceResults: typing.Optional[typing.Iterable[multiverse.World]] = None
-            ) -> typing.Iterable[multiverse.World]:
+            inPlaceResults: typing.Optional[typing.Iterable[astronomer.World]] = None
+            ) -> typing.Iterable[astronomer.World]:
         if inPlaceResults != None:
             results = inPlaceResults
         else:
             results = []
 
         for world in worlds:
-            if self.checkWorld(world=world, rules=rules, tagging=tagging):
+            if self.checkWorld(universe=universe, world=world, rules=rules, tagging=tagging):
                 results.append(world)
                 if maxResults and len(results) >= maxResults:
                     return results

@@ -1,7 +1,7 @@
 import app
+import astronomer
 import cartographer
 import gui
-import multiverse
 import typing
 from PyQt5 import QtCore, QtGui
 
@@ -9,7 +9,6 @@ _thumbnailRenderInitialised = False
 _thumbnailGraphics: typing.Optional[gui.MapGraphics] = None
 _thumbnailImageCache: typing.Optional[cartographer.ImageStore] = None
 _thumbnailVectorCache: typing.Optional[cartographer.VectorStore] = None
-_thumbnailStyleCache: typing.Optional[cartographer.StyleStore] = None
 
 def _initThumbnailRenderer():
     global _thumbnailRenderInitialised
@@ -24,13 +23,12 @@ def _initThumbnailRenderer():
     _thumbnailGraphics = gui.MapGraphics()
     _thumbnailImageCache = cartographer.ImageStore(graphics=_thumbnailGraphics)
     _thumbnailVectorCache = cartographer.VectorStore(graphics=_thumbnailGraphics)
-    _thumbnailStyleCache = cartographer.StyleStore()
     _thumbnailRenderInitialised = True
 
 def generateThumbnail(
-        universe: multiverse.Universe,
-        milieu: multiverse.Milieu,
-        hex: multiverse.HexPosition,
+        universe: astronomer.Universe,
+        milieu: astronomer.Milieu,
+        hex: astronomer.HexPosition,
         width: int,
         height: int,
         linearScale: float,
@@ -52,7 +50,6 @@ def generateThumbnail(
         style=style,
         options=gui.mapOptionsToRenderOptions(options),
         imageStore=_thumbnailImageCache,
-        styleStore=_thumbnailStyleCache,
         vectorStore=_thumbnailVectorCache,
         labelStore=cartographer.LabelStore(universe=universe))
 

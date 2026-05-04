@@ -1,4 +1,5 @@
 import app
+import astronomer
 import cartographer
 import common
 import gui
@@ -7,7 +8,6 @@ import logging
 import logic
 import math
 import random
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -120,6 +120,7 @@ class SimulatorWindow(gui.WindowWidget):
         self._simulatorJob = None
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
+            universe=astronomer.WorldManager.instance().universe(),
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
@@ -386,6 +387,7 @@ class SimulatorWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupConfigControls(self) -> None:
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
@@ -396,6 +398,7 @@ class SimulatorWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._startWorldWidget = gui.HexSelectToolWidget(
+            universe=universe,
             milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
@@ -574,6 +577,7 @@ class SimulatorWindow(gui.WindowWidget):
         labelLayout.addWidget(self._simulationFundsLabel)
         labelLayout.addWidget(self._simulationTravelledLabel)
 
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
@@ -584,7 +588,7 @@ class SimulatorWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=multiverse.WorldManager.instance().universe(),
+            universe=universe,
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -597,6 +601,12 @@ class SimulatorWindow(gui.WindowWidget):
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
         self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
+
+        self._positionOverlay = gui.HexPointsMapOverlay(
+            radius=0.5,
+            colour=QtGui.QColor('#7F8080FF'),
+            depth=gui.MapWidgetEx.userOverlayMinDepth())
+        self._mapWidget.addOverlay(overlay=self._positionOverlay)
 
         simulationLayout = QtWidgets.QVBoxLayout()
         simulationLayout.addWidget(self._runSimulationButton, 0)
@@ -625,9 +635,11 @@ class SimulatorWindow(gui.WindowWidget):
     def _startWorldChanged(self) -> None:
         startWorld = self._startWorldWidget.selectedWorld()
         if startWorld:
-            self._mapWidget.clearHexHighlights()
-            self._mapWidget.highlightHex(hex=startWorld.hex())
+            self._positionOverlay.setHexes([startWorld.hex()])
             self._mapWidget.centerOnHex(hex=startWorld.hex())
+        else:
+            self._positionOverlay.clearHexes()
+        self._mapWidget.update()
 
         self._enableDisableControls()
 
@@ -637,14 +649,28 @@ class SimulatorWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._hexTooltipProvider.setUniverse(universe=universe)
+            self._startWorldWidget.setUniverse(universe=universe)
+            self._mapWidget.setUniverse(universe=universe)
+            # Stop the simulator if the universe changes as it invalidates
+            # the existing simulation state
+            self._stopSimulator()
+        elif option is app.ConfigOption.Milieu:
             self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._startWorldWidget.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
+            # Stop the simulator if the milieu changes as it invalidates
+            # the existing simulation state
+            self._stopSimulator()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._startWorldWidget.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)
+            # Stop the simulator if the rules changes as it invalidates
+            # the existing simulation state
+            self._stopSimulator()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._startWorldWidget.setMapStyle(style=newValue)
@@ -736,6 +762,7 @@ class SimulatorWindow(gui.WindowWidget):
                 text='Ship\'s combined fuel and cargo capacities can\'t be larger than its total tonnage')
             return
 
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
@@ -768,10 +795,12 @@ class SimulatorWindow(gui.WindowWidget):
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.StrictXBoat:
             jumpCostCalculator = logic.StrictXBoatCostCalculator(
+                universe=universe,
                 milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LooseXBoat:
             jumpCostCalculator = logic.LooseXBoatCostCalculator(
+                universe=universe,
                 milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         else:
@@ -788,8 +817,9 @@ class SimulatorWindow(gui.WindowWidget):
         try:
             self._simulatorJob = jobs.SimulatorJob(
                 parent=self,
-                rules=rules,
+                universe=universe,
                 milieu=milieu,
+                rules=rules,
                 startHex=startWorld.hex(),
                 startingFunds=self._startingFundsSpinBox.value(),
                 shipTonnage=self._shipTonnageSpinBox.value(),
@@ -857,7 +887,7 @@ class SimulatorWindow(gui.WindowWidget):
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: Available funds = Cr{common.formatNumber(availableFunds)}')
         elif event.type() == logic.Simulator.Event.Type.HexUpdate:
             # Data is the new world object
-            currentHex: multiverse.HexPosition = event.data()
+            currentHex: astronomer.HexPosition = event.data()
             if currentHex and self._currentHex != currentHex:
                 if self._currentHex:
                     self._parsecsTravelled += self._currentHex.parsecsTo(currentHex)
@@ -865,12 +895,14 @@ class SimulatorWindow(gui.WindowWidget):
                 self._currentHex = currentHex
 
             if self._currentHex:
-                self._mapWidget.clearHexHighlights()
-                self._mapWidget.highlightHex(hex=self._currentHex)
+                self._positionOverlay.setHexes([self._currentHex])
                 self._mapWidget.centerOnHex(
                     hex=self._currentHex,
                     scale=None) # Keep current scale
                 self._mapWidget.setInfoHex(hex=self._currentHex)
+            else:
+                self._positionOverlay.clearHexes()
+            self._mapWidget.update()
         elif event.type() == logic.Simulator.Event.Type.InfoMessage:
             # Data is a string containing the message
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: {event.data()}')
@@ -898,7 +930,7 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _showOnMap(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         try:
             self._mapWidget.centerOnHex(hex=hex)

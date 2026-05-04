@@ -1,9 +1,9 @@
 import app
+import astronomer
 import common
 import gui
 import logging
 import logic
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -63,6 +63,7 @@ class CargoManifestDialog(gui.DialogEx):
         self._tradeOptions = tradeOptions
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
+            universe=astronomer.WorldManager.instance().universe(),
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
@@ -225,6 +226,8 @@ class CargoManifestDialog(gui.DialogEx):
         self._configurationGroupBox.setLayout(groupLayout)
 
     def _setupManifestControls(self):
+        universe = astronomer.WorldManager.instance().universe()
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         outcomeColours = app.Config.instance().value(option=app.ConfigOption.OutcomeColours)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
@@ -234,6 +237,8 @@ class CargoManifestDialog(gui.DialogEx):
             self._cargoManifestDisplayModeChanged)
 
         self._cargoManifestTable = gui.CargoManifestTable(
+            universe=universe,
+            milieu=milieu,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -249,6 +254,8 @@ class CargoManifestDialog(gui.DialogEx):
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
         self._cargoBreakdownTable = gui.TradeOptionsTable(
+            universe=universe,
+            milieu=milieu,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -297,8 +304,15 @@ class CargoManifestDialog(gui.DialogEx):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._hexTooltipProvider.setUniverse(universe=universe)
+            self._cargoManifestTable.setUniverse(universe=universe)
+            self._cargoBreakdownTable.setUniverse(universe=universe)
+        elif option is app.ConfigOption.Milieu:
             self._hexTooltipProvider.setMilieu(milieu=newValue)
+            self._cargoManifestTable.setMilieu(milieu=newValue)
+            self._cargoBreakdownTable.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
@@ -319,7 +333,7 @@ class CargoManifestDialog(gui.DialogEx):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
@@ -377,39 +391,6 @@ class CargoManifestDialog(gui.DialogEx):
             calculationWindow.showCalculation(calculation=calculation)
         except Exception as ex:
             message = 'Failed to show calculations'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-
-    def _showJumpRouteOnMap(
-            self,
-            jumpRoute: logic.JumpRoute
-            ) -> None:
-        try:
-            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
-            mapWindow.clearOverlays()
-            mapWindow.setJumpRoute(jumpRoute=jumpRoute)
-        except Exception as ex:
-            message = 'Failed to show jump route on map'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-
-    def _showWorldsOnMap(
-            self,
-            worlds: typing.Iterable[multiverse.World]
-            ) -> None:
-        hexes = [world.hex() for world in worlds]
-        try:
-            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
-            mapWindow.clearOverlays()
-            mapWindow.highlightHexes(hexes=hexes)
-        except Exception as ex:
-            message = 'Failed to show world(s) on map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

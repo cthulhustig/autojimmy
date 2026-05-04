@@ -1,53 +1,72 @@
 import app
+import astronomer
 import gui
 import html
 import logging
+import logic
 import math
-import multiverse
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-def _formatWorldName(world: multiverse.World) -> str:
-    return world.name(includeSubsector=True)
+def _formatWorldName(
+        universe: astronomer.Universe,
+        world: astronomer.World
+        ) -> str:
+    worldHex = world.hex()
+    sector = universe.sectorByPosition(
+        milieu=world.milieu(),
+        position=worldHex)
+    subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
+    if not subsectorName:
+        return world.name()
+    return f'{world.name()} ({subsectorName})'
 
 def _formatHexName(
-        universe: multiverse.Universe,
-        milieu: multiverse.Milieu,
-        hex: multiverse.HexPosition
+        universe: astronomer.Universe,
+        milieu: astronomer.Milieu,
+        hex: astronomer.HexPosition
         ) -> str:
     world = universe.worldByPosition(
         milieu=milieu,
         hex=hex)
     if world:
-        return _formatWorldName(world=world)
+        return _formatWorldName(universe=universe, world=world)
 
-    sectorHex = universe.positionToSectorHex(milieu=milieu, hex=hex)
-    subsector = universe.subsectorByPosition(milieu=milieu, hex=hex)
-    return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
+    sectorHex = universe.formatSectorHex(milieu=milieu, hex=hex)
 
-def _formatWorldHtml(world: multiverse.World) -> str:
-    return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
-        worldName=html.escape(_formatWorldName(world=world)),
-        sectorHex=html.escape(world.sectorHex()),
-        uwp=html.escape(world.uwp().string()))
+    sector = universe.sectorByPosition(
+        milieu=milieu,
+        position=hex)
+    subsectorName = sector.subsectorName(code=hex.subsectorCode()) if sector else None
+    if not subsectorName:
+        return sectorHex
+
+    return f'{sectorHex} ({subsectorName})'
 
 def _formatHexHtml(
-        universe: multiverse.Universe,
-        milieu: multiverse.Milieu,
-        hex: multiverse.HexPosition
+        universe: astronomer.Universe,
+        milieu: astronomer.Milieu,
+        hex: astronomer.HexPosition
         ) -> str:
     world = universe.worldByPosition(milieu=milieu, hex=hex)
-    if world:
-        return _formatWorldHtml(world=world)
-    return html.escape(_formatHexName(universe=universe, milieu=milieu, hex=hex))
+    if not world:
+        return html.escape(_formatHexName(universe=universe, milieu=milieu, hex=hex))
+
+    sectorHex = universe.formatSectorHex(
+        milieu=milieu,
+        hex=world.hex())
+    return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
+        worldName=html.escape(_formatWorldName(universe=universe, world=world)),
+        sectorHex=html.escape(sectorHex),
+        uwp=html.escape(world.uwp().string()))
 
 # Based on code from here
 # https://stackoverflow.com/questions/21141757/pyqt-different-colors-in-a-single-row-in-a-combobox
 class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(
             self,
-            universe: multiverse.Universe,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
         super().__init__(parent)
@@ -55,16 +74,16 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         self._milieu = milieu
         self._document = QtGui.QTextDocument(self)
 
-    def universe(self) -> multiverse.Universe:
+    def universe(self) -> astronomer.Universe:
         return self._universe
 
-    def setUniverse(self, universe: multiverse.Universe) -> None:
+    def setUniverse(self, universe: astronomer.Universe) -> None:
         self._universe = universe
 
-    def milieu(self) -> multiverse.Milieu:
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         self._milieu = milieu
 
     def paint(
@@ -138,8 +157,8 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def __init__(
             self,
-            universe: multiverse.Universe,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ):
         super().__init__(parent)
@@ -171,10 +190,10 @@ class HexSelectComboBox(gui.ComboBoxEx):
         self.activated.connect(self._dropDownSelected)
         self.customContextMenuRequested.connect(self._showContextMenu)
 
-    def universe(self) -> multiverse.Universe:
+    def universe(self) -> astronomer.Universe:
         return self._universe
 
-    def setUniverse(self, universe: multiverse.Universe) -> None:
+    def setUniverse(self, universe: astronomer.Universe) -> None:
         if universe is self._universe:
             return
 
@@ -186,10 +205,10 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
         self._handleDataChanged()
 
-    def milieu(self) -> multiverse.Milieu:
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         if milieu is self._milieu:
             return
 
@@ -201,12 +220,12 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
         self._handleDataChanged()
 
-    def currentHex(self) -> typing.Optional[multiverse.HexPosition]:
+    def currentHex(self) -> typing.Optional[astronomer.HexPosition]:
         return self._selectedHex
 
     def setCurrentHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition],
+            hex: typing.Optional[astronomer.HexPosition],
             updateHistory: bool = True
             ) -> None:
         text = _formatHexName(universe=self._universe, milieu=self._milieu, hex=hex) if hex else ''
@@ -350,7 +369,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             return False
 
         if stream.readBool():
-            hex = multiverse.HexPosition(
+            hex = astronomer.HexPosition(
                 absoluteX=stream.readInt32(),
                 absoluteY=stream.readInt32())
             self.setCurrentHex(
@@ -505,7 +524,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def _delayedCompleterHandler(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         self._updateSelectedHex(hex=hex)
         self.selectAll()
@@ -523,7 +542,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def _updateSelectedHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition],
+            hex: typing.Optional[astronomer.HexPosition],
             updateHistory: bool = True
             ) -> None:
         if hex and updateHistory:
@@ -566,9 +585,9 @@ class HexSelectComboBox(gui.ComboBoxEx):
             self._completer.setWidget(lineEdit)
             self._completer.complete()
 
-    def _findCompletionMatches(self) -> typing.Collection[multiverse.HexPosition]:
+    def _findCompletionMatches(self) -> typing.Collection[astronomer.HexPosition]:
         searchString = self.currentText().strip()
-        matches: typing.List[multiverse.HexPosition] = []
+        matches: typing.List[astronomer.HexPosition] = []
 
         if searchString:
             # NOTE: For sorting to make sense it's important that the world
@@ -576,7 +595,8 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # can be sorted. The limiting of the number of results added to
             # the completer should be done on the sorted list.
             try:
-                worlds = self._universe.searchForWorlds(
+                worlds = logic.searchForWorlds(
+                    universe=self._universe,
                     milieu=self._milieu,
                     searchString=searchString)
                 for world in worlds:

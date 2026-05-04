@@ -1,10 +1,10 @@
 import app
+import astronomer
 import common
 import gui
 import html
 import logic
 import traveller
-import multiverse
 import typing
 
 ShipTonnageToolTip = gui.createStringToolTip(
@@ -232,7 +232,12 @@ Mgt2022LocalBrokerToolTip = gui.createStringToolTip(
     'broker you hired is some kind of informant and hilarity ensues.</p>',
     escape=False)
 
+# TODO: I really don't like the fact the universe is passed in but the milieu
+# comes from the route logistics. Changing it would have implications for the
+# serialisation of logistics but it might be worth breaking backwards compatibility
+# as long as older versions of the app handle attempts to load newer files gracefully
 def createLogisticsToolTip(
+        universe: astronomer.Universe,
         routeLogistics: logic.RouteLogistics,
         worldTagging: typing.Optional[logic.WorldTagging] = None,
         taggingColours: typing.Optional[app.TaggingColours] = None
@@ -241,10 +246,10 @@ def createLogisticsToolTip(
     jumpRoute = routeLogistics.jumpRoute()
     startHex = jumpRoute.startNode()
     finishHex = jumpRoute.finishNode()
-    startString = html.escape(multiverse.WorldManager.instance().canonicalHexName(
+    startString = html.escape(universe.canonicalHexName(
         milieu=milieu,
         hex=startHex))
-    finishString = html.escape(multiverse.WorldManager.instance().canonicalHexName(
+    finishString = html.escape(universe.canonicalHexName(
         milieu=milieu,
         hex=finishHex))
 
@@ -308,16 +313,16 @@ def createLogisticsToolTip(
             pitStopMap[pitStop.routeIndex()] = pitStop
 
     for index, nodePos in enumerate(jumpRoute):
-        world = multiverse.WorldManager.instance().worldByPosition(
+        world = universe.worldByPosition(
             milieu=milieu,
             hex=nodePos)
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
-            name=multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=nodePos)))
+            name=universe.canonicalHexName(milieu=milieu, hex=nodePos)))
 
         tagLevel = logic.TagLevel.Danger # Dead space is tagged as danger
         if world and worldTagging:
-            tagLevel = worldTagging.calculateWorldTagLevel(world)
+            tagLevel = worldTagging.calculateWorldTagLevel(world=world)
         tagColour = taggingColours.colour(level=tagLevel) if tagLevel and taggingColours else None
 
         style = f'background-color:#{tagColour}' if tagColour else ''
@@ -379,7 +384,7 @@ def createSaleTradeScoreToolTip(tradeScore: logic.TradeScore) -> str:
         totalScore=tradeScore.totalSaleScore())
 
 def _createTradeScoreToolTip(
-        tradeScores: typing.Mapping[traveller.TradeGood, common.ScalarCalculation],
+        tradeScores: typing.Mapping[logic.TradeGood, common.ScalarCalculation],
         quantityModifiers: typing.Iterable[common.ScalarCalculation],
         totalScore: common.ScalarCalculation
         ) -> str:
@@ -440,8 +445,8 @@ def _createTradeScoreToolTip(
 
 
 def createBasesToolTip(
-        world: multiverse.World,
-        includeBaseTypes: typing.Optional[typing.Iterable[multiverse.BaseType]] = None,
+        world: astronomer.World,
+        includeBaseTypes: typing.Optional[typing.Iterable[astronomer.BaseType]] = None,
         worldTagging: typing.Optional[logic.WorldTagging] = None,
         taggingColours: typing.Optional[app.TaggingColours] = None
         ) -> str:
@@ -451,7 +456,7 @@ def createBasesToolTip(
         if includeBaseTypes and not world.hasBase(baseType=baseType):
             # An include list is being used and the world doesn't have the base type
             continue
-        baseString = multiverse.Bases.description(baseType=baseType)
+        baseString = astronomer.Bases.description(baseType=baseType)
         baseStrings.append(baseString)
 
         tagLevel = worldTagging.calculateBaseTypeTagLevel(baseType=baseType) if worldTagging else None
