@@ -14,7 +14,6 @@ class Universe(object):
             self.positionToSectorMap: typing.Dict[typing.Tuple[int, int], astronomer.Sector] = {}
             self.subsectorNameToSectorMap: typing.Dict[str, typing.List[astronomer.Sector]] = {}
             self.positionToWorldMap: typing.Dict[typing.Tuple[int, int], astronomer.World] = {}
-            self.mainsList: typing.List[astronomer.Main] = []
             self.positionToMainMap: typing.Dict[typing.Tuple[int, int], astronomer.Main] = {}
             self.positionToRoutesMap: typing.Dict[typing.Tuple[int, int], typing.List[astronomer.Route]] = {}
 
@@ -427,7 +426,7 @@ class Universe(object):
         if len(worlds) < Universe._MinMainWorldCount:
             return None
 
-        main = astronomer.Main(worlds=worlds)
+        main = astronomer.Main(hexes=(world.hex() for world in worlds))
         for world in worlds:
             milieuData.positionToMainMap[world.hex().absolute()] = main
 

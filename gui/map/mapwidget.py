@@ -212,15 +212,16 @@ class _MainsOverlay(MapOverlay):
             return
 
         self._points = QtGui.QPolygonF()
-        for world in main:
-            centerX, centerY = world.hex().worldCenter()
+        for hex in main.hexes():
+            centerX, centerY = hex.worldCenter()
             self._points.append(QtCore.QPointF(
                 centerX * astronomer.ParsecScaleX,
                 centerY * astronomer.ParsecScaleY))
 
-        if len(main) <= 10:
+        hexCount = main.hexCount()
+        if hexCount <= 10:
             colour = _MainsOverlay._SmallMainColour
-        elif len(main) < 50:
+        elif hexCount < 50:
             colour = _MainsOverlay._MediumMainColour
         else:
             colour = _MainsOverlay._LargeMainColour
