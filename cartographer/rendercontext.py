@@ -735,7 +735,7 @@ class RenderContext(object):
                 sectorPos = sector.position()
                 sectorWorldOriginX, sectorWorldOriginY, _, _ = sectorPos.worldBounds()
 
-                for border in sector.yieldBorders():
+                for border in sector.borders():
                     if not border.showLabel():
                         continue
 
@@ -763,7 +763,7 @@ class RenderContext(object):
                         brush=brush,
                         labelStyle=self._styleSheet.microBorders.textStyle)
 
-                for region in sector.yieldRegions():
+                for region in sector.regions():
                     if not region.showLabel():
                         continue
 
@@ -788,7 +788,7 @@ class RenderContext(object):
                         brush=brush,
                         labelStyle=self._styleSheet.microBorders.textStyle)
 
-                for label in sector.yieldLabels():
+                for label in sector.labels():
                     text = label.text()
                     if label.wrap():
                         text = RenderContext._wrapLabelText(text)
@@ -2304,7 +2304,7 @@ class RenderContext(object):
             float]]: # Radius
         stellar = world.stellar()
         props = []
-        for star in stellar.yieldStars():
+        for star in stellar.stars():
             classification = star.string()
             if classification == 'D':
                 props.append((common.HtmlColours.White, common.HtmlColours.Black, 0.3))

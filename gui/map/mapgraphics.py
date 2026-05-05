@@ -17,9 +17,7 @@ class MapPointList(cartographer.AbstractPath):
         if len(args) == 1:
             arg = args[0]
             if isinstance(arg, MapPointList):
-                # NOTE: This assumes the points method return a copy of
-                # the list held by other not the list itself
-                self._points = arg.points()
+                self._points = list(arg.points())
             else:
                 self._points = list(arg)
         elif 'other' in kwargs:
@@ -35,7 +33,7 @@ class MapPointList(cartographer.AbstractPath):
         self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
 
     def points(self) -> typing.Sequence[cartographer.PointF]:
-        return list(self._points)
+        return common.ConstSequenceRef(self._points)
 
     def bounds(self) -> cartographer.RectangleF:
         if self._bounds is None:
@@ -66,9 +64,7 @@ class MapPointList(cartographer.AbstractPath):
             self._qtPolygon.translate(dx, dy)
 
     def copyFrom(self, other: 'MapPointList') -> None:
-        # NOTE: This assumes the points method return a copy of
-        # the list held by other not the list itself
-        self._points = other.points()
+        self._points = list(other.points())
         self._bounds = None # Calculate on demand
         self._qtPolygon = None
 
@@ -98,9 +94,7 @@ class MapPath(cartographer.AbstractPath):
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, MapPath):
                 raise TypeError('The other parameter must be a MapPath')
-            # NOTE: This assumes the points and types methods return copies of
-            # the lists held by other not the lists themselves
-            self._points = other.points()
+            self._points = list(other.points())
             self._closed = other.closed()
         else:
             self._points = list(args[0] if len(args) > 0 else kwargs['points'])
@@ -111,7 +105,7 @@ class MapPath(cartographer.AbstractPath):
         self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
 
     def points(self) -> typing.Sequence[cartographer.PointF]:
-        return list(self._points)
+        return common.ConstSequenceRef(self._points)
 
     def closed(self) -> bool:
         return self._closed
@@ -145,9 +139,7 @@ class MapPath(cartographer.AbstractPath):
             self._qtPolygon.translate(dx, dy)
 
     def copyFrom(self, other: 'MapPath') -> None:
-        # NOTE: This assumes the points methods return a copy of
-        # the list held by other not the list itself
-        self._points = other.points()
+        self._points = list(other.points())
         self._closed = other.closed()
         self._bounds = None # Calculate on demand
         self._qtPolygon = None
@@ -180,9 +172,7 @@ class MapSpline(object):
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, MapSpline):
                 raise TypeError('The other parameter must be a MapSpline')
-            # NOTE: This assumes the points methods return copies of
-            # the list held by other not the list themselves
-            self._points = other.points()
+            self._points = list(other.points())
             self._tension = other.tension()
             self._closed = other.closed()
         else:
@@ -195,7 +185,7 @@ class MapSpline(object):
         self._qtPainterPath: typing.Optional[QtGui.QPainterPath] = None
 
     def points(self) -> typing.Sequence[cartographer.PointF]:
-        return list(self._points)
+        return common.ConstSequenceRef(self._points)
 
     def tension(self) -> float:
         return self._tension
@@ -226,9 +216,7 @@ class MapSpline(object):
             self._qtPainterPath.translate(dx, dy)
 
     def copyFrom(self, other: 'MapPath') -> None:
-        # NOTE: This assumes the points methods return copies of
-        # the list held by other not the list themselves
-        self._points = other.points()
+        self._points = list(other.points())
         self._closed = other.closed()
         self._bounds = None # Calculate on demand
         self._qtPainterPath = None

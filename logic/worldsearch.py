@@ -1043,7 +1043,7 @@ class WorldSearch(object):
         for sector in universe.yieldSectors(milieu=milieu):
             self._searchWorlds(
                 universe=universe,
-                worlds=sector.yieldWorlds(),
+                worlds=sector.worlds(),
                 rules=rules,
                 tagging=tagging,
                 inPlaceResults=results,
@@ -1069,7 +1069,7 @@ class WorldSearch(object):
         if not subsectorName:
             return self._searchWorlds(
                 universe=universe,
-                worlds=sector.yieldWorlds(),
+                worlds=sector.worlds(),
                 rules=rules,
                 tagging=tagging,
                 maxResults=maxResults)
@@ -1079,7 +1079,7 @@ class WorldSearch(object):
                 raise RuntimeError(f'Subsector "{subsectorName}" not found in sector "{sectorName}"')
             return self._searchWorlds(
                 universe=universe,
-                worlds=sector.yieldWorlds(subsectorCode=subsectorCode),
+                worlds=sector.worlds(subsectorCode=subsectorCode),
                 rules=rules,
                 tagging=tagging,
                 maxResults=maxResults)

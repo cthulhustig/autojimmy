@@ -128,14 +128,14 @@ class Universe(object):
             self,
             milieu: astronomer.Milieu,
             abbreviation: str
-            ) -> typing.List[astronomer.Sector]:
+            ) -> typing.Collection[astronomer.Sector]:
         milieuData = self._milieuDataMap.get(milieu)
         if not milieuData:
             return []
         sectors = milieuData.abbreviationToSectorMap.get(abbreviation)
         if not sectors:
             return []
-        return list(sectors)
+        return common.ConstCollectionRef(sectors)
 
     def sectors(
             self,
@@ -501,7 +501,7 @@ class Universe(object):
                 for sector in placeholderData.sectorList:
                     sectorPos = sector.position()
                     if not milieuData or sectorPos.elements() not in milieuData.positionToSectorMap:
-                        for world in sector.yieldWorlds():
+                        for world in sector.worlds():
                             if not filterCallback or filterCallback(world):
                                 yield world
 

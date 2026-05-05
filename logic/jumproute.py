@@ -1,4 +1,5 @@
 import astronomer
+import common
 import enum
 import typing
 
@@ -44,8 +45,8 @@ class JumpRoute(object):
     def nodeAt(self, index: int) -> astronomer.HexPosition:
         return self._hexes[index]
 
-    def nodes(self) -> typing.List[astronomer.HexPosition]:
-        return list(self._hexes)
+    def nodes(self) -> typing.Sequence[astronomer.HexPosition]:
+        return common.ConstSequenceRef(self._hexes)
 
     def startNode(self) -> astronomer.HexPosition:
         return self._hexes[0]

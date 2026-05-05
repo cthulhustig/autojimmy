@@ -156,7 +156,7 @@ def createHexToolTip(
                         milieu=milieu,
                         abbreviation=ownerWorldRef.sectorAbbreviation())
                     if matchSectors:
-                        ownerSector = matchSectors[0]
+                        ownerSector = next(iter(matchSectors))
                 else:
                     ownerSector = universe.sectorByPosition(
                         milieu=milieu,
@@ -369,7 +369,7 @@ def createHexToolTip(
             toolTip += f'<li><span>Stellar: {html.escape(stellar.string())}</span></li>'
 
             toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-            for star in stellar:
+            for star in stellar.stars():
                 toolTip += f'<li><span">Classification: {html.escape(star.string())}</span></li>'
                 toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
 
@@ -416,7 +416,7 @@ def createHexToolTip(
                         milieu=milieu,
                         abbreviation=colonyWorldRef.sectorAbbreviation())
                     if matchSectors:
-                        colonySector = matchSectors[0]
+                        colonySector = next(iter(matchSectors))
                 else:
                     colonySector = universe.sectorByPosition(
                         milieu=milieu,

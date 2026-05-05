@@ -1,4 +1,5 @@
 import astronomer
+import common
 import typing
 
 class Sector(object):
@@ -74,13 +75,8 @@ class Sector(object):
     def name(self) -> str:
         return self._name
 
-    def alternateNames(self) -> typing.List[str]:
-        return list(self._alternateNames)
-
-    def yieldAlternateNames(self) -> typing.Generator[str, None, None]:
-        if self._alternateNames:
-            for name in self._alternateNames:
-                yield name
+    def alternateNames(self) -> typing.Sequence[str]:
+        return common.ConstSequenceRef(self._alternateNames)
 
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
@@ -96,69 +92,30 @@ class Sector(object):
 
     def worlds(
             self,
-            subsectorCode: typing.Optional[str] = None,
-            filterCallback: typing.Optional[typing.Callable[[astronomer.World], bool]] = None
-            ) -> typing.List[astronomer.World]:
+            subsectorCode: typing.Optional[str] = None
+            ) -> typing.Collection[astronomer.World]:
         worlds = self._worlds if subsectorCode is None else self._subsectorCodeToWorldsMap.get(subsectorCode)
         if not worlds:
             return []
-        if not filterCallback:
-            return list(worlds)
+        return common.ConstCollectionRef(worlds)
 
-        matched = []
-        for world in worlds:
-            if filterCallback(world):
-                matched.append(world)
-        return matched
-
-    def yieldWorlds(
-            self,
-            subsectorCode: typing.Optional[str] = None,
-            filterCallback: typing.Optional[typing.Callable[[astronomer.World], bool]] = None
-            ) -> typing.Generator[astronomer.World, None, None]:
-        worlds = self._worlds if subsectorCode is None else self._subsectorCodeToWorldsMap.get(subsectorCode)
-        if worlds:
-            for world in worlds:
-                if not filterCallback or filterCallback(world):
-                    yield world
-
-    def allegiances(self) -> typing.List[astronomer.Allegiance]:
-        return list(self._allegiances)
-
-    def yieldAllegiances(self) -> typing.Generator[astronomer.Allegiance, None, None]:
-        for allegiance in self._allegiances:
-            yield allegiance
+    def allegiances(self) -> typing.Collection[astronomer.Allegiance]:
+        return common.ConstCollectionRef(self._allegiances)
 
     def allegianceByCode(self, code: str) -> typing.Optional[astronomer.Allegiance]:
         return self._allegianceCodeMap.get(code)
 
-    def routes(self) -> typing.List[astronomer.Route]:
-        return list(self._routes)
+    def routes(self) -> typing.Collection[astronomer.Route]:
+        return common.ConstCollectionRef(self._routes)
 
-    def yieldRoutes(self) -> typing.Generator[astronomer.Route, None, None]:
-        for route in self._routes:
-            yield route
+    def borders(self) -> typing.Collection[astronomer.Border]:
+        return common.ConstCollectionRef(self._borders)
 
-    def borders(self) -> typing.List[astronomer.Border]:
-        return list(self._borders)
+    def regions(self) -> typing.Collection[astronomer.Region]:
+        return common.ConstCollectionRef(self._regions)
 
-    def yieldBorders(self) -> typing.Generator[astronomer.Border, None, None]:
-        for border in self._borders:
-            yield border
-
-    def regions(self) -> typing.List[astronomer.Region]:
-        return list(self._regions)
-
-    def yieldRegions(self) -> typing.Generator[astronomer.Region, None, None]:
-        for region in self._regions:
-            yield region
-
-    def labels(self) -> typing.List[astronomer.Label]:
-        return list(self._labels)
-
-    def yieldLabels(self) -> typing.Generator[astronomer.Label, None, None]:
-        for label in self._labels:
-            yield label
+    def labels(self) -> typing.Collection[astronomer.Label]:
+        return common.ConstCollectionRef(self._labels)
 
     # The concept of 'selected' comes from Traveller Map and what it is isn't
     # exactly clear. The only thing I've noticed it do is when rendering if
@@ -181,30 +138,14 @@ class Sector(object):
     def source(self) -> typing.Optional[astronomer.SectorSource]:
         return self._source
 
-    def products(self) -> typing.List[astronomer.SectorSource]:
-        return list(self._products)
+    def products(self) -> typing.Collection[astronomer.SectorSource]:
+        return common.ConstCollectionRef(self._products)
 
     def isCustom(self) -> bool:
         return self._isCustom
 
-    def subsectorNames(self) -> typing.Sequence[str]:
-        return list(self._subsectorCodeToNameMap.values())
-
-    def yieldSubsectorNames(self) -> typing.Generator[str, None, None]:
-        for name in self._subsectorCodeToNameMap.values():
-            yield name
+    def subsectorNames(self) -> typing.Collection[str]:
+        return common.ConstCollectionRef(self._subsectorCodeToNameMap.values())
 
     def subsectorCodeByName(self, name: str) -> typing.Optional[str]:
         return self._subsectorNameToCodeMap.get(name)
-
-    def __getitem__(self, index: int) -> astronomer.World:
-        return self._worlds.__getitem__(index)
-
-    def __iter__(self) -> typing.Iterator[astronomer.World]:
-        return self._worlds.__iter__()
-
-    def __next__(self) -> typing.Any:
-        return self._worlds.__next__()
-
-    def __len__(self) -> int:
-        return self._worlds.__len__()

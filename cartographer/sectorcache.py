@@ -147,7 +147,7 @@ class SectorCache(object):
             return None
 
         points = []
-        for world in sector.yieldWorlds():
+        for world in sector.worlds():
             centerX, centerY = world.hex().worldCenter()
             points.append(cartographer.PointF(
                 # Scale center point by parsec scale to convert to isotropic coordinates
@@ -174,7 +174,7 @@ class SectorCache(object):
             return None
 
         borders = []
-        for border in sector.yieldBorders():
+        for border in sector.borders():
             borders.append(self._createOutline(source=border))
         self._borderCache[sectorPos] = borders
         return borders
@@ -195,7 +195,7 @@ class SectorCache(object):
             return None
 
         regions = []
-        for region in sector.yieldRegions():
+        for region in sector.regions():
             regions.append(self._createOutline(source=region))
         self._regionCache[sectorPos] = regions
         return regions
@@ -223,7 +223,7 @@ class SectorCache(object):
                 typing.Optional[str], # Type
                 typing.Optional[astronomer.Allegiance]], # Allegiance
             typing.List[cartographer.PointF]] = {}
-        for route in sector.yieldRoutes():
+        for route in sector.routes():
             # Compute source/target sectors (may be offset)
             startPoint = route.startHex()
             endPoint = route.endHex()

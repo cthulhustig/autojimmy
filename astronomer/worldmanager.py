@@ -57,11 +57,16 @@ class WorldManager(object):
                     if fromStockData and isModified:
                         customSectors.add(sectorInfo.id())
 
-            sectorGenerator = multiverse.UniverseManager.instance().yieldSectors(
+            # NOTE: Using a generator is important as it means converting
+            # each db sector to an astronomer sector is included in the
+            # progress tick for that sector rather than the progress just
+            # covering loading the sectors then a long pause at the end
+            # while it converts them all to astronomer sectors.
+            dbSectorGenerator = multiverse.UniverseManager.instance().yieldSectors(
                 universeId=universeId,
                 progressCallback=progressCallback)
             sectors = []
-            for dbSector in sectorGenerator:
+            for dbSector in dbSectorGenerator:
                 try:
                     sector = self._convertDbSector(
                         dbSector=dbSector,

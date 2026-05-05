@@ -1,3 +1,4 @@
+import common
 import enum
 import survey
 import typing
@@ -109,7 +110,7 @@ class Star(object):
 class Stellar(object):
     def __init__(
             self,
-            stars: typing.Optional[typing.Collection[Star]] = None
+            stars: typing.Optional[typing.Iterable[Star]] = None
             ) -> None:
         self._stars = list(stars) if stars else []
         self._string = None
@@ -117,12 +118,8 @@ class Stellar(object):
     def isEmpty(self) -> bool:
         return not self._stars
 
-    def stars(self) -> typing.List[Star]:
-        return list(self._stars)
-
-    def yieldStars(self) -> typing.Generator[Star, None, None]:
-        for star in self._stars:
-            yield star
+    def stars(self) -> typing.Collection[Star]:
+        return common.ConstCollectionRef(self._stars)
 
     def starCount(self) -> int:
         return len(self._stars)
@@ -132,15 +129,3 @@ class Stellar(object):
             self._string = survey.formatSystemStellarString(
                 stars=[(s.code(Star.Element.LuminosityClass), s.code(Star.Element.SpectralClass), s.code(Star.Element.SpectralScale)) for s in self._stars])
         return self._string
-
-    def __getitem__(self, index: int) -> Star:
-        return self._stars.__getitem__(index)
-
-    def __iter__(self) -> typing.Iterator[Star]:
-        return self._stars.__iter__()
-
-    def __next__(self) -> typing.Any:
-        return self._stars.__next__()
-
-    def __len__(self) -> int:
-        return self._stars.__len__()

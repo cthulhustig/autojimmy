@@ -203,7 +203,8 @@ class WorldTagging(object):
             if tempTagLevel and (not worldTagLevel or (tempTagLevel > worldTagLevel)):
                 worldTagLevel = tempTagLevel
 
-        for star in world.stellar():
+        stellar = world.stellar()
+        for star in stellar.stars():
             tempTagLevel = self.calculateSpectralTagLevel(star)
             if tempTagLevel and (not worldTagLevel or (tempTagLevel > worldTagLevel)):
                 worldTagLevel = tempTagLevel

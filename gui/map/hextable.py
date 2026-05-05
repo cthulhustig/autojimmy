@@ -407,7 +407,7 @@ class HexTable(gui.FrozenColumnListTable):
 
     def setHexes(
             self,
-            hexes: typing.Iterator[astronomer.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         self.removeAllRows()
         for hex in hexes:
@@ -965,7 +965,7 @@ class HexTable(gui.FrozenColumnListTable):
                                         milieu=self._milieu,
                                         abbreviation=ownerWorldRef.sectorAbbreviation())
                                     if matchSectors:
-                                        ownerSector = matchSectors[0]
+                                        ownerSector = next(iter(matchSectors))
                                 else:
                                     ownerSector = self._universe.sectorByPosition(
                                         milieu=self._milieu,
@@ -1003,7 +1003,7 @@ class HexTable(gui.FrozenColumnListTable):
                                         milieu=self._milieu,
                                         abbreviation=colonyWorldRef.sectorAbbreviation())
                                     if matchSectors:
-                                        colonySector = matchSectors[0]
+                                        colonySector = next(iter(matchSectors))
                                 else:
                                     colonySector = self._universe.sectorByPosition(
                                         milieu=self._milieu,
@@ -1169,7 +1169,7 @@ class HexTable(gui.FrozenColumnListTable):
             lineIndents = {}
             lineColours = {}
             stellar = world.stellar()
-            for star in stellar:
+            for star in stellar.stars():
                 lines.append(f'Classification: {star.string()}')
 
                 luminosityClass = star.code(astronomer.Star.Element.LuminosityClass)
@@ -1245,7 +1245,7 @@ class HexTable(gui.FrozenColumnListTable):
                             milieu=self._milieu,
                             abbreviation=ownerWorldRef.sectorAbbreviation())
                         if matchSectors:
-                            ownerSector = matchSectors[0]
+                            ownerSector = next(iter(matchSectors))
                     else:
                         ownerSector = self._universe.sectorByPosition(
                             milieu=self._milieu,
@@ -1293,7 +1293,7 @@ class HexTable(gui.FrozenColumnListTable):
                             milieu=self._milieu,
                             abbreviation=colonyWorldRef.sectorAbbreviation())
                         if matchSectors:
-                            colonySector = matchSectors[0]
+                            colonySector = next(iter(matchSectors))
                     else:
                         colonySector = self._universe.sectorByPosition(
                             milieu=self._milieu,

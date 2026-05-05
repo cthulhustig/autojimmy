@@ -41,7 +41,12 @@ def _findSectorWorlds(
                         isMatch = True
                         break
         if isMatch:
-            matches.update(sector.worlds(filterCallback=worldFilter))
+            if worldFilter:
+                for world in sector.worlds():
+                    if worldFilter(world):
+                        matches.add(world)
+            else:
+                matches.update(sector.worlds())
 
     return matches
 
@@ -68,11 +73,16 @@ def _findSubsectorWorlds(
         re.IGNORECASE)
 
     for sector in universe.yieldSectors(milieu=milieu):
-        for subsectorName in sector.yieldSubsectorNames():
+        for subsectorName in sector.subsectorNames():
             if expression.match(subsectorName):
                 subsectorCode = sector.subsectorCodeByName(name=subsectorName)
                 if subsectorCode:
-                    matches.update(sector.worlds(subsectorCode=subsectorCode, filterCallback=worldFilter))
+                    if worldFilter:
+                        for world in sector.worlds(subsectorCode=subsectorCode):
+                            if worldFilter(world):
+                                matches.add(world)
+                    else:
+                        matches.update(sector.worlds(subsectorCode=subsectorCode))
 
     return matches
 
