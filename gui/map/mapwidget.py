@@ -10,6 +10,11 @@ import typing
 import uuid
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+# TODO: Why, after starting the app, is there now a long pause when I open the
+# first window that has a map widget shown. It might be zoom dependant. It might
+# have been introduced when I moved a load of stuff to use common.ConstSequenceRef
+# and got rid of a load of yield functions
+
 class MapOverlay(object):
     def __init__(self, depth: int, enabled: bool = True):
         super().__init__()
