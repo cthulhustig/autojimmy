@@ -1,5 +1,6 @@
 import app
 import astronomer
+import azathoth
 import gunsmith
 import logging
 import multiverse
@@ -95,6 +96,7 @@ class InitWorldManager(app.StartupJob):
 
         astronomer.WorldManager.instance().setCurrentUniverse(
             universeId=currentUniverseId,
+            entityFactory=azathoth.EditableEntityFactory(),
             progressCallback=progressCallback)
 
 class LoadRobotsJob(app.StartupJob):

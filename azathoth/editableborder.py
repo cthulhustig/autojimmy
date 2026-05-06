@@ -1,7 +1,7 @@
 import astronomer
 import typing
 
-class Border(astronomer.Region):
+class EditableBorder(astronomer.Border):
     def __init__(
             self,
             id: str,
@@ -18,17 +18,11 @@ class Border(astronomer.Region):
         super().__init__(
             id=id,
             hexList=hexList,
+            allegiance=allegiance,
+            style=style,
             colour=colour,
             label=label,
             labelWorldX=labelWorldX,
             labelWorldY=labelWorldY,
             showLabel=showLabel,
             wrapLabel=wrapLabel)
-        self._allegiance = allegiance
-        self._style = style
-
-    def allegiance(self) -> typing.Optional[astronomer.Allegiance]:
-        return self._allegiance
-
-    def style(self) -> typing.Optional[astronomer.LineStyle]:
-        return self._style

@@ -1,21 +1,23 @@
 import astronomer
 import typing
 
-class Route(object):
+class Route(astronomer.Entity):
     def __init__(
             self,
+            id: str,
             startHex: astronomer.HexPosition,
             endHex: astronomer.HexPosition,
-            allegiance: typing.Optional[astronomer.Allegiance],
-            type: typing.Optional[str],
-            style: typing.Optional[astronomer.LineStyle],
-            colour: typing.Optional[str],
-            width: typing.Optional[float]
+            allegiance: typing.Optional[astronomer.Allegiance] = None,
+            routeType: typing.Optional[str] = None,
+            style: typing.Optional[astronomer.LineStyle] = None,
+            colour: typing.Optional[str] = None,
+            width: typing.Optional[float] = None
             ) -> None:
+        super().__init__(id=id)
         self._startHex = startHex
         self._endHex = endHex
         self._allegiance = allegiance
-        self._type = type
+        self._routeType = routeType
         self._style = style
         self._colour = colour
         self._width = width
@@ -29,8 +31,8 @@ class Route(object):
     def allegiance(self) -> typing.Optional[astronomer.Allegiance]:
         return self._allegiance
 
-    def type(self) -> typing.Optional[str]:
-        return self._type
+    def routeType(self) -> typing.Optional[str]:
+        return self._routeType
 
     def style(self) -> typing.Optional[astronomer.LineStyle]:
         return self._style

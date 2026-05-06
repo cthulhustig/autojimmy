@@ -4,7 +4,7 @@ import re
 import math
 import typing
 
-class Universe(object):
+class Universe(astronomer.Entity):
     class _MilieuData(object):
         def __init__(self):
             self.sectorList: typing.List[astronomer.Sector] = []
@@ -38,7 +38,7 @@ class Universe(object):
             sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
             placeholderMilieu: typing.Optional[astronomer.Milieu] = None
             ) -> None:
-        self._id = id
+        super().__init__(id=id)
         self._milieuDataMap: typing.Dict[astronomer.Milieu, Universe._MilieuData] = {}
         self._placeholderMilieu = placeholderMilieu
 
@@ -97,9 +97,6 @@ class Universe(object):
                         endpoints = []
                         milieuData.positionToRoutesMap[hex.absolute()] = endpoints
                     endpoints.append(route)
-
-    def id(self) -> str:
-        return self._id
 
     def sectorNames(
             self,

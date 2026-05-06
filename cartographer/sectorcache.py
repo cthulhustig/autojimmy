@@ -248,7 +248,7 @@ class SectorCache(object):
                 endPoint=endPoint,
                 offset=SectorCache._RouteEndAdjust)
 
-            routeKey = (route.colour(), route.width(), route.style(), route.type(), route.allegiance())
+            routeKey = (route.colour(), route.width(), route.style(), route.routeType(), route.allegiance())
             routePoints = routePointsMap.get(routeKey)
             if not routePoints:
                 routePoints = []

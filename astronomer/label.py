@@ -1,20 +1,23 @@
+import astronomer
 import enum
 import typing
 
-class Label(object):
+class Label(astronomer.Entity):
     class Size(enum.Enum):
         Small = 0
         Large = 1
 
     def __init__(
             self,
+            id: str,
             text: str,
             worldX: float,
             worldY: float,
-            colour: typing.Optional[str],
-            size: typing.Optional[Size],
-            wrap: bool
+            colour: typing.Optional[str] = None,
+            size: typing.Optional[Size] = None,
+            wrap: bool = False
             ) -> None:
+        super().__init__(id=id)
         self._text = text
         self._worldX = worldX
         self._worldY = worldY

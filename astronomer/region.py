@@ -1,7 +1,7 @@
 import astronomer
 import typing
 
-class Region(object):
+class Region(astronomer.Entity):
     _AntiClockwiseOffsets = {
         astronomer.HexEdge.Top: (-0.5 + astronomer.HexWidthOffset, -0.5), # Upper left
         astronomer.HexEdge.TopRight: (+0.5 - astronomer.HexWidthOffset, -0.5), # Upper right
@@ -29,14 +29,16 @@ class Region(object):
 
     def __init__(
             self,
+            id: str,
             hexList: typing.Iterable[astronomer.HexPosition],
-            colour: typing.Optional[str],
-            label: typing.Optional[str],
-            labelWorldX: typing.Optional[float],
-            labelWorldY: typing.Optional[float],
-            showLabel: bool,
-            wrapLabel: bool
+            colour: typing.Optional[str] = None,
+            label: typing.Optional[str] = None,
+            labelWorldX: typing.Optional[float] = None,
+            labelWorldY: typing.Optional[float] = None,
+            showLabel: bool = True,
+            wrapLabel: bool = False
             ) -> None:
+        super().__init__(id=id)
         self._hexList = list(hexList)
         self._colour = colour
         self._label = label

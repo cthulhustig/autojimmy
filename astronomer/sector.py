@@ -2,9 +2,10 @@ import astronomer
 import common
 import typing
 
-class Sector(object):
+class Sector(astronomer.Entity):
     def __init__(
             self,
+            id: str,
             isCustom: bool,
             milieu: astronomer.Milieu,
             position: astronomer.SectorPosition,
@@ -26,6 +27,7 @@ class Sector(object):
             source: typing.Optional[astronomer.SectorSource] = None,
             products: typing.Optional[typing.Iterable[astronomer.SectorSource]] = None
             ) -> None:
+        super().__init__(id=id)
         self._isCustom = isCustom
         self._milieu = milieu
         self._position = position

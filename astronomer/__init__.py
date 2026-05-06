@@ -15,6 +15,7 @@ from .data.stellar import *
 from .data.sectortagging import *
 from .data.sectorsource import *
 from .data.main import *
+from .entity import *
 from .world import *
 from .region import *
 from .border import *
@@ -22,4 +23,5 @@ from .label import *
 from .route import *
 from .sector import *
 from .universe import *
+from .entityfactory import *
 from .worldmanager import *

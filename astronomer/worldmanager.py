@@ -36,8 +36,12 @@ class WorldManager(object):
     def setCurrentUniverse(
             self,
             universeId: str,
+            entityFactory: typing.Optional[astronomer.EntityFactoryInterface] = None,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> None:
+        if entityFactory is None:
+            entityFactory = astronomer.DefaultEntityFactory()
+
         # Acquire lock while loading universe
         with self._lock:
             universeInfo = multiverse.UniverseManager.instance().universeInfo(
@@ -70,7 +74,8 @@ class WorldManager(object):
                 try:
                     sector = self._convertDbSector(
                         dbSector=dbSector,
-                        isCustom=dbSector.id() in customSectors)
+                        isCustom=dbSector.id() in customSectors,
+                        entityFactory=entityFactory)
                     sectors.append(sector)
 
                     logging.debug(
@@ -90,7 +95,7 @@ class WorldManager(object):
                         exc_info=ex)
                     continue
 
-            self._universe = astronomer.Universe(
+            self._universe = entityFactory.createUniverse(
                 id=universeId,
                 sectors=sectors,
                 placeholderMilieu=WorldManager._PlaceholderMilieu)
@@ -101,7 +106,8 @@ class WorldManager(object):
     @staticmethod
     def _convertDbSector(
             dbSector: multiverse.DbSector,
-            isCustom: bool
+            isCustom: bool,
+            entityFactory: astronomer.EntityFactoryInterface
             ) -> astronomer.Sector:
         sectorName = dbSector.name()
         sectorX = dbSector.sectorX()
@@ -541,7 +547,8 @@ class WorldManager(object):
                                 name=systemLoggingName),
                             exc_info=ex)
 
-                    world = astronomer.World(
+                    world = entityFactory.createWorld(
+                        id=dbSystem.id(),
                         milieu=milieu,
                         hex=worldHex,
                         name=systemName,
@@ -620,11 +627,12 @@ class WorldManager(object):
                                 sectorId=dbSector.id(),
                                 name=sectorLoggingName))
 
-                    routes.append(astronomer.Route(
+                    routes.append(entityFactory.createRoute(
+                        id=dbRoute.id(),
                         startHex=startHex,
                         endHex=endHex,
                         allegiance=routeAllegiance,
-                        type=dbRoute.type(),
+                        routeType=dbRoute.type(),
                         style=style,
                         colour=colour,
                         width=dbRoute.width()))
@@ -679,7 +687,8 @@ class WorldManager(object):
                                 sectorId=dbSector.id(),
                                 name=sectorLoggingName))
 
-                    borders.append(astronomer.Border(
+                    borders.append(entityFactory.createBorder(
+                        id=dbBorder.id(),
                         hexList=hexes,
                         allegiance=borderAllegiance,
                         style=style,
@@ -719,7 +728,8 @@ class WorldManager(object):
                             name=sectorLoggingName))
                         colour = None
 
-                    regions.append(astronomer.Region(
+                    regions.append(entityFactory.createRegion(
+                        id=dbRegion.id(),
                         hexList=hexes,
                         colour=colour,
                         label=dbRegion.label(),
@@ -759,7 +769,8 @@ class WorldManager(object):
                                 sectorId=dbSector.id(),
                                 name=sectorLoggingName))
 
-                    labels.append(astronomer.Label(
+                    labels.append(entityFactory.createLabel(
+                        id=dbLabel.id(),
                         text=dbLabel.text(),
                         worldX=dbLabel.worldX(),
                         worldY=dbLabel.worldY(),
@@ -833,7 +844,8 @@ class WorldManager(object):
                             name=sectorLoggingName),
                         exc_info=ex)
 
-        return astronomer.Sector(
+        return entityFactory.createSector(
+            id=dbSector.id(),
             isCustom=isCustom,
             name=sectorName,
             milieu=milieu,
