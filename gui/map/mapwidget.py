@@ -1,5 +1,6 @@
 import app
 import astronomer
+import azathoth
 import cartographer
 import common
 import gui
@@ -593,6 +594,8 @@ class MapWidget(QtWidgets.QWidget):
         self.setMouseTracking(True)
 
         self._updateView()
+
+        azathoth.UniverseEditor.instance().addObserver(self._handleUniverseChanged)
 
     def universe(self) -> astronomer.Universe:
         return self._universe
@@ -1762,7 +1765,7 @@ class MapWidget(QtWidgets.QWidget):
             tileX,
             tileY,
             tileScale,
-            self._universe.id(),
+            self._universe.universeId(),
             self._milieu,
             self._renderer.style(),
             int(self._renderer.options()))
@@ -1862,7 +1865,7 @@ class MapWidget(QtWidgets.QWidget):
                     x,
                     y,
                     placeholderScale,
-                    self._universe.id(),
+                    self._universe.universeId(),
                     self._milieu,
                     self._renderer.style(),
                     int(self._renderer.options()))
@@ -1955,7 +1958,7 @@ class MapWidget(QtWidgets.QWidget):
             tileX,
             tileY,
             tileScale,
-            self._universe.id(),
+            self._universe.universeId(),
             self._milieu,
             # Use the settings for the renderer that is going to render the
             # tile to make sure the key is accurate
@@ -2121,6 +2124,15 @@ class MapWidget(QtWidgets.QWidget):
         float,
         fget=_animateViewScaleGetter,
         fset=_animateViewScaleSetter)
+
+    def _handleUniverseChanged(
+            self,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        # TODO: This needs to be a lot better
+        self._renderer.clearCaches()
+        self._clearTileCache()
+        self.update()
 
     @staticmethod
     def _createPlaceholderTile() -> QtGui.QImage:

@@ -1,6 +1,6 @@
 class Entity(object):
-    def __init__(self, id: str) -> None:
-        self._id = id
+    def __init__(self, entityId: str) -> None:
+        self._entityId = entityId
 
-    def id(self) -> str:
-        return self._id
+    def entityId(self) -> str:
+        return self._entityId

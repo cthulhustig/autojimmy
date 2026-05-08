@@ -4,7 +4,7 @@ import typing
 class Border(astronomer.Region):
     def __init__(
             self,
-            id: str,
+            entityId: str,
             hexList: typing.Iterable[astronomer.HexPosition],
             allegiance: typing.Optional[astronomer.Allegiance] = None,
             style: typing.Optional[astronomer.LineStyle] = None,
@@ -16,7 +16,7 @@ class Border(astronomer.Region):
             wrapLabel: bool = False
             ) -> None:
         super().__init__(
-            id=id,
+            entityId=entityId,
             hexList=hexList,
             colour=colour,
             label=label,

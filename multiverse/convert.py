@@ -2138,6 +2138,8 @@ def _createDbProducts(
     return dbProducts
 
 # TODO: Not sure where this should live (probably SnapshotManager)
+# The fact they live here means things like CustomUniverseWindow need
+# to pull in multiverse when they shouldn't be dealing with this layer
 _T5OfficialAllegiancesPath = 't5ss/allegiance_codes.tab'
 def readSnapshotStockAllegiances() -> typing.List[survey.RawStockAllegiance]:
     return survey.parseTabStockAllegiances(

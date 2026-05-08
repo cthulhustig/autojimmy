@@ -28,7 +28,7 @@ class WorldReference(object):
 class World(astronomer.Entity):
     def __init__(
             self,
-            id: str,
+            entityId: str,
             milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
             name: str,
@@ -51,7 +51,7 @@ class World(astronomer.Entity):
             researchStations: typing.Optional[typing.Collection[str]] = None,
             customRemarks: typing.Optional[typing.Collection[str]] = None
             ) -> None:
-        super().__init__(id=id)
+        super().__init__(entityId=entityId)
         self._milieu = milieu
         self._hex = hex
         self._name = name

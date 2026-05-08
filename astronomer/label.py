@@ -9,7 +9,7 @@ class Label(astronomer.Entity):
 
     def __init__(
             self,
-            id: str,
+            entityId: str,
             text: str,
             worldX: float,
             worldY: float,
@@ -17,7 +17,7 @@ class Label(astronomer.Entity):
             size: typing.Optional[Size] = None,
             wrap: bool = False
             ) -> None:
-        super().__init__(id=id)
+        super().__init__(entityId=entityId)
         self._text = text
         self._worldX = worldX
         self._worldY = worldY

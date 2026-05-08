@@ -7,4 +7,7 @@ from .editableworld import *
 from .editablesector import *
 from .editableuniverse import *
 from .editableentityfactory import *
-from .command import *
+from .editcommand import *
+from .undoredostack import *
+from .universeeditor import *
+from .commands.replacesector import *

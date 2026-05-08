@@ -29,7 +29,7 @@ class Region(astronomer.Entity):
 
     def __init__(
             self,
-            id: str,
+            entityId: str,
             hexList: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
             label: typing.Optional[str] = None,
@@ -38,7 +38,7 @@ class Region(astronomer.Entity):
             showLabel: bool = True,
             wrapLabel: bool = False
             ) -> None:
-        super().__init__(id=id)
+        super().__init__(entityId=entityId)
         self._hexList = list(hexList)
         self._colour = colour
         self._label = label

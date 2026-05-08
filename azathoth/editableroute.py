@@ -4,7 +4,7 @@ import typing
 class EditableRoute(astronomer.Route):
     def __init__(
             self,
-            id: str,
+            entityId: str,
             startHex: astronomer.HexPosition,
             endHex: astronomer.HexPosition,
             allegiance: typing.Optional[astronomer.Allegiance] = None,
@@ -14,7 +14,7 @@ class EditableRoute(astronomer.Route):
             width: typing.Optional[float] = None
             ) -> None:
         super().__init__(
-            id=id,
+            entityId=entityId,
             startHex=startHex,
             endHex=endHex,
             allegiance=allegiance,
@@ -22,3 +22,10 @@ class EditableRoute(astronomer.Route):
             style=style,
             colour=colour,
             width=width)
+        self._sectorId = None
+
+    def sectorId(self) -> typing.Optional[str]:
+        return self._sectorId
+
+    def setSectorId(self, sectorId: str) -> None:
+        self._sectorId = sectorId

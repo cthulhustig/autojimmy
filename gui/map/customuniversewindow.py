@@ -1,7 +1,11 @@
 import app
 import astronomer
+import azathoth
 import cartographer
 import gui
+import logging
+import multiverse
+import survey
 import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 
@@ -82,6 +86,19 @@ class CustomUniverseWindow(gui.WindowWidget):
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         super().firstShowEvent(e)
+
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        # TODO: This is a massive hack
+        if event.key() == QtCore.Qt.Key.Key_V:
+            selection = self._mapWidget.selectedSectors()
+            if selection:
+                selection = selection[0]
+            if selection:
+                self._importSector(
+                    metadataFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.xml',
+                    sectorFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.tab',
+                    sectorPos=selection)
+                event.accept()
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -203,3 +220,136 @@ class CustomUniverseWindow(gui.WindowWidget):
                 self._sectorTable.scrollToPosition(newPos)
         else:
             self._sectorTable.clearSelection()
+
+    def _importSector(
+            self,
+            metadataFilePath: str,
+            sectorFilePath: str,
+            sectorPos: typing.Optional[astronomer.SectorPosition]
+            ) -> None:
+        universe = azathoth.UniverseEditor.instance().universe()
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+
+        oldSector = universe.sectorByPosition(
+            milieu=milieu,
+            position=sectorPos)
+        if oldSector:
+            # TODO: Confirmation prompt
+            # TODO: If it's not an existing sector then I'm going to need a different
+            # command as it won't be a replace
+            pass
+
+        try:
+            with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
+                sectorMetadata = file.read()
+            rawMetadata = survey.parseMetadata(content=sectorMetadata)
+            if sectorPos:
+                # TODO: This is crap
+                rawMetadata = survey.RawMetadata(
+                    x=sectorPos.sectorX(),
+                    y=sectorPos.sectorY(),
+                    canonicalName=rawMetadata.canonicalName(),
+                    alternateNames=rawMetadata.alternateNames(),
+                    nameLanguages=rawMetadata.nameLanguages(),
+                    abbreviation=rawMetadata.abbreviation(),
+                    sectorLabel=rawMetadata.sectorLabel(),
+                    subsectorNames=rawMetadata.subsectorNames(),
+                    selected=rawMetadata.selected(),
+                    tags=rawMetadata.tags(),
+                    allegiances=rawMetadata.allegiances(),
+                    routes=rawMetadata.routes(),
+                    borders=rawMetadata.borders(),
+                    labels=rawMetadata.labels(),
+                    regions=rawMetadata.regions(),
+                    sources=rawMetadata.sources(),
+                    styleSheet=rawMetadata.styleSheet())
+        except Exception as ex:
+            message = 'Failed to load metadata file.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        # Try to parse the sector format now to prevent it failing after the user has waited
+        # to create the posters. This is only really needed for cases where Traveller Map is
+        # happy with the format but my parser isn't
+        try:
+            with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
+                sectorData = file.read()
+            rawSystems = survey.parseSector(content=sectorData)
+        except Exception as ex:
+            message = 'Failed to load sector file.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
+        except:
+            message = 'Failed to load stock allegiances.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            rawStockSophonts = multiverse.readSnapshotStockSophonts()
+        except:
+            message = 'Failed to load stock sophonts.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            rawStyleSheet = multiverse.readSnapshotStyleSheet()
+        except:
+            message = 'Failed to load style sheet.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            newSector = astronomer.convertRawSectorToAstronomerSector(
+                milieu=milieu,
+                rawMetadata=rawMetadata,
+                rawSystems=rawSystems,
+                isCustom=True,
+                rawStockAllegiances=rawStockAllegiances,
+                rawStockSophonts=rawStockSophonts,
+                rawStockStyleSheet=rawStyleSheet,
+                entityFactory=azathoth.UniverseEditor.instance().entityFactory())
+        except Exception as ex:
+            message = 'Failed to convert custom sector'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            azathoth.UniverseEditor.instance().executeCommand(
+                command=azathoth.ReplaceSectorCommand(
+                    oldSector=oldSector,
+                    newSector=newSector))
+        except Exception as ex:
+            message = 'Failed to add custom sector to data store'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return

@@ -5,15 +5,15 @@ import typing
 class EntityFactoryInterface(object):
     def createUniverse(
             self,
-            id: str,
+            universeId: str,
             sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
             placeholderMilieu: typing.Optional[astronomer.Milieu] = None
             ) -> astronomer.Universe:
-        raise RuntimeError(f'{type(self)} is derived from EntityFactoryInterface so must implement createUniverse')
+        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createUniverse')
 
     def createSector(
             self,
-            id: str,
+            entityId: str,
             isCustom: bool,
             milieu: astronomer.Milieu,
             position: astronomer.SectorPosition,
@@ -35,11 +35,11 @@ class EntityFactoryInterface(object):
             source: typing.Optional[astronomer.SectorSource] = None,
             products: typing.Optional[typing.Iterable[astronomer.SectorSource]] = None
             ) -> astronomer.Sector:
-        raise RuntimeError(f'{type(self)} is derived from EntityFactoryInterface so must implement createSector')
+        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createSector')
 
     def createWorld(
             self,
-            id: str,
+            entityId: str,
             milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
             name: str,
@@ -62,11 +62,11 @@ class EntityFactoryInterface(object):
             researchStations: typing.Optional[typing.Collection[str]] = None,
             customRemarks: typing.Optional[typing.Collection[str]] = None
             ) -> astronomer.World:
-        raise RuntimeError(f'{type(self)} is derived from EntityFactoryInterface so must implement createWorld')
+        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createWorld')
 
     def createRoute(
             self,
-            id: str,
+            entityId: str,
             startHex: astronomer.HexPosition,
             endHex: astronomer.HexPosition,
             allegiance: typing.Optional[astronomer.Allegiance] = None,
@@ -75,11 +75,11 @@ class EntityFactoryInterface(object):
             colour: typing.Optional[str] = None,
             width: typing.Optional[float] = None
             ) -> astronomer.Route:
-        raise RuntimeError(f'{type(self)} is derived from EntityFactoryInterface so must implement createRoute')
+        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createRoute')
 
     def createBorder(
             self,
-            id: str,
+            entityId: str,
             hexList: typing.Iterable[astronomer.HexPosition],
             allegiance: typing.Optional[astronomer.Allegiance] = None,
             style: typing.Optional[astronomer.LineStyle] = None,
@@ -90,11 +90,11 @@ class EntityFactoryInterface(object):
             showLabel: bool = True,
             wrapLabel: bool = False
             ) -> astronomer.Border:
-        raise RuntimeError(f'{type(self)} is derived from EntityFactoryInterface so must implement createBorder')
+        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createBorder')
 
     def createRegion(
             self,
-            id: str,
+            entityId: str,
             hexList: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
             label: typing.Optional[str] = None,
@@ -103,11 +103,11 @@ class EntityFactoryInterface(object):
             showLabel: bool = True,
             wrapLabel: bool = False
             ) -> astronomer.Region:
-        raise RuntimeError(f'{type(self)} is derived from EntityFactoryInterface so must implement createRegion')
+        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createRegion')
 
     def createLabel(
             self,
-            id: str,
+            entityId: str,
             text: str,
             worldX: float,
             worldY: float,
@@ -115,23 +115,23 @@ class EntityFactoryInterface(object):
             size: typing.Optional[astronomer.Label.Size] = None,
             wrap: bool = False
             ) -> astronomer.Label:
-        raise RuntimeError(f'{type(self)} is derived from EntityFactoryInterface so must implement createLabel')
+        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createLabel')
 
 class DefaultEntityFactory(EntityFactoryInterface):
     def createUniverse(
             self,
-            id: str,
+            universeId: str,
             sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
             placeholderMilieu: typing.Optional[astronomer.Milieu] = None
             ) -> astronomer.Universe:
         return astronomer.Universe(
-            id=id,
+            universeId=universeId,
             sectors=sectors,
             placeholderMilieu=placeholderMilieu)
 
     def createSector(
             self,
-            id: str,
+            entityId: str,
             isCustom: bool,
             milieu: astronomer.Milieu,
             position: astronomer.SectorPosition,
@@ -154,7 +154,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             products: typing.Optional[typing.Iterable[astronomer.SectorSource]] = None
             ) -> astronomer.Sector:
         return astronomer.Sector(
-            id=id,
+            entityId=entityId,
             isCustom=isCustom,
             milieu=milieu,
             position=position,
@@ -178,7 +178,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
 
     def createWorld(
             self,
-            id: str,
+            entityId: str,
             milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
             name: str,
@@ -202,7 +202,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             customRemarks: typing.Optional[typing.Collection[str]] = None
             ) -> astronomer.World:
         return astronomer.World(
-            id=id,
+            entityId=entityId,
             milieu=milieu,
             hex=hex,
             name=name,
@@ -227,7 +227,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
 
     def createRoute(
             self,
-            id: str,
+            entityId: str,
             startHex: astronomer.HexPosition,
             endHex: astronomer.HexPosition,
             allegiance: typing.Optional[astronomer.Allegiance] = None,
@@ -237,7 +237,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             width: typing.Optional[float] = None
             ) -> astronomer.Route:
         return astronomer.Route(
-            id=id,
+            entityId=entityId,
             startHex=startHex,
             endHex=endHex,
             allegiance=allegiance,
@@ -248,7 +248,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
 
     def createBorder(
             self,
-            id: str,
+            entityId: str,
             hexList: typing.Iterable[astronomer.HexPosition],
             allegiance: typing.Optional[astronomer.Allegiance] = None,
             style: typing.Optional[astronomer.LineStyle] = None,
@@ -260,7 +260,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             wrapLabel: bool = False
             ) -> astronomer.Border:
         return astronomer.Border(
-            id=id,
+            entityId=entityId,
             hexList=hexList,
             allegiance=allegiance,
             style=style,
@@ -273,7 +273,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
 
     def createRegion(
             self,
-            id: str,
+            entityId: str,
             hexList: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
             label: typing.Optional[str] = None,
@@ -283,7 +283,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             wrapLabel: bool = False
             ) -> astronomer.Region:
         return astronomer.Region(
-            id=id,
+            entityId=entityId,
             hexList=hexList,
             colour=colour,
             label=label,
@@ -294,7 +294,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
 
     def createLabel(
             self,
-            id: str,
+            entityId: str,
             text: str,
             worldX: float,
             worldY: float,
@@ -303,7 +303,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             wrap: bool = False
             ) -> astronomer.Label:
         return astronomer.Label(
-            id=id,
+            entityId=entityId,
             text=text,
             worldX=worldX,
             worldY=worldY,

@@ -5,7 +5,7 @@ import typing
 class EditableWorld(astronomer.World):
     def __init__(
             self,
-            id: str,
+            entityId: str,
             milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
             name: str,
@@ -29,7 +29,7 @@ class EditableWorld(astronomer.World):
             customRemarks: typing.Optional[typing.Collection[str]] = None
             ) -> None:
         super().__init__(
-            id=id,
+            entityId=entityId,
             milieu=milieu,
             hex=hex,
             name=name,
@@ -51,3 +51,10 @@ class EditableWorld(astronomer.World):
             colonyWorldRefs=colonyWorldRefs,
             researchStations=researchStations,
             customRemarks=customRemarks)
+        self._sectorId = None
+
+    def sectorId(self) -> typing.Optional[str]:
+        return self._sectorId
+
+    def setSectorId(self, sectorId: str) -> None:
+        self._sectorId = sectorId

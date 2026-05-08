@@ -24,4 +24,6 @@ from .route import *
 from .sector import *
 from .universe import *
 from .entityfactory import *
+from .convert import *
+from .database import *
 from .worldmanager import *

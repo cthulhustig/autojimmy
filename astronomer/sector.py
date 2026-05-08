@@ -1,11 +1,12 @@
 import astronomer
 import common
+import itertools
 import typing
 
 class Sector(astronomer.Entity):
     def __init__(
             self,
-            id: str,
+            entityId: str,
             isCustom: bool,
             milieu: astronomer.Milieu,
             position: astronomer.SectorPosition,
@@ -27,7 +28,7 @@ class Sector(astronomer.Entity):
             source: typing.Optional[astronomer.SectorSource] = None,
             products: typing.Optional[typing.Iterable[astronomer.SectorSource]] = None
             ) -> None:
-        super().__init__(id=id)
+        super().__init__(entityId=entityId)
         self._isCustom = isCustom
         self._milieu = milieu
         self._position = position
@@ -67,6 +68,10 @@ class Sector(astronomer.Entity):
         for allegiance in allegiances:
             self._allegiances.append(allegiance)
             self._allegianceCodeMap[allegiance.code()] = allegiance
+
+        self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
+        for entity in itertools.chain(self._worlds, self._borders, self._regions, self._routes, self._labels):
+            self._idToEntityMap[entity.entityId()] = entity
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
@@ -118,6 +123,9 @@ class Sector(astronomer.Entity):
 
     def labels(self) -> typing.Collection[astronomer.Label]:
         return common.ConstCollectionRef(self._labels)
+
+    def entities(self) -> typing.Collection[astronomer.Entity]:
+        return common.ConstCollectionRef(self._idToEntityMap.values())
 
     # The concept of 'selected' comes from Traveller Map and what it is isn't
     # exactly clear. The only thing I've noticed it do is when rendering if

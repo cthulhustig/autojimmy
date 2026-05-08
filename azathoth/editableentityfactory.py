@@ -6,18 +6,18 @@ import typing
 class EditableEntityFactory(astronomer.EntityFactoryInterface):
     def createUniverse(
             self,
-            id: str,
+            universeId: str,
             sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
             placeholderMilieu: typing.Optional[astronomer.Milieu] = None
             ) -> astronomer.Universe:
         return azathoth.EditableUniverse(
-            id=id,
+            universeId=universeId,
             sectors=sectors,
             placeholderMilieu=placeholderMilieu)
 
     def createSector(
             self,
-            id: str,
+            entityId: str,
             isCustom: bool,
             milieu: astronomer.Milieu,
             position: astronomer.SectorPosition,
@@ -40,7 +40,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             products: typing.Optional[typing.Iterable[astronomer.SectorSource]] = None
             ) -> astronomer.Sector:
         return azathoth.EditableSector(
-            id=id,
+            entity=entityId,
             isCustom=isCustom,
             milieu=milieu,
             position=position,
@@ -64,7 +64,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
 
     def createWorld(
             self,
-            id: str,
+            entityId: str,
             milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
             name: str,
@@ -88,7 +88,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             customRemarks: typing.Optional[typing.Collection[str]] = None
             ) -> astronomer.World:
         return azathoth.EditableWorld(
-            id=id,
+            entityId=entityId,
             milieu=milieu,
             hex=hex,
             name=name,
@@ -113,7 +113,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
 
     def createRoute(
             self,
-            id: str,
+            entityId: str,
             startHex: astronomer.HexPosition,
             endHex: astronomer.HexPosition,
             allegiance: typing.Optional[astronomer.Allegiance] = None,
@@ -123,7 +123,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             width: typing.Optional[float] = None
             ) -> astronomer.Route:
         return azathoth.EditableRoute(
-            id=id,
+            entityId=entityId,
             startHex=startHex,
             endHex=endHex,
             allegiance=allegiance,
@@ -134,7 +134,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
 
     def createBorder(
             self,
-            id: str,
+            entityId: str,
             hexList: typing.Iterable[astronomer.HexPosition],
             allegiance: typing.Optional[astronomer.Allegiance] = None,
             style: typing.Optional[astronomer.LineStyle] = None,
@@ -146,7 +146,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             wrapLabel: bool = False
             ) -> astronomer.Border:
         return azathoth.EditableBorder(
-            id=id,
+            entityId=entityId,
             hexList=hexList,
             allegiance=allegiance,
             style=style,
@@ -159,7 +159,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
 
     def createRegion(
             self,
-            id: str,
+            entityId: str,
             hexList: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
             label: typing.Optional[str] = None,
@@ -169,7 +169,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             wrapLabel: bool = False
             ) -> astronomer.Region:
         return azathoth.EditableRegion(
-            id=id,
+            entityId=entityId,
             hexList=hexList,
             colour=colour,
             label=label,
@@ -180,7 +180,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
 
     def createLabel(
             self,
-            id: str,
+            entityId: str,
             text: str,
             worldX: float,
             worldY: float,
@@ -189,7 +189,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             wrap: bool = False
             ) -> astronomer.Label:
         return azathoth.EditableLabel(
-            id=id,
+            entityId=entityId,
             text=text,
             worldX=worldX,
             worldY=worldY,

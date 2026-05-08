@@ -4,7 +4,7 @@ import typing
 class Route(astronomer.Entity):
     def __init__(
             self,
-            id: str,
+            entityId: str,
             startHex: astronomer.HexPosition,
             endHex: astronomer.HexPosition,
             allegiance: typing.Optional[astronomer.Allegiance] = None,
@@ -13,7 +13,7 @@ class Route(astronomer.Entity):
             colour: typing.Optional[str] = None,
             width: typing.Optional[float] = None
             ) -> None:
-        super().__init__(id=id)
+        super().__init__(entityId=entityId)
         self._startHex = startHex
         self._endHex = endHex
         self._allegiance = allegiance

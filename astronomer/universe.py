@@ -4,18 +4,17 @@ import re
 import math
 import typing
 
-class Universe(astronomer.Entity):
+class Universe(object):
     class _MilieuData(object):
         def __init__(self):
-            self.sectorList: typing.List[astronomer.Sector] = []
             self.canonicalNameToSectorMap: typing.Dict[str, astronomer.Sector] = {}
-            self.alternateNameToSectorMap: typing.Dict[str, typing.List[astronomer.Sector]] = {}
-            self.abbreviationToSectorMap: typing.Dict[str, typing.List[astronomer.Sector]] = {}
+            self.alternateNameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
+            self.abbreviationToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
+            self.subsectorNameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
             self.positionToSectorMap: typing.Dict[typing.Tuple[int, int], astronomer.Sector] = {}
-            self.subsectorNameToSectorMap: typing.Dict[str, typing.List[astronomer.Sector]] = {}
             self.positionToWorldMap: typing.Dict[typing.Tuple[int, int], astronomer.World] = {}
             self.positionToMainMap: typing.Dict[typing.Tuple[int, int], astronomer.Main] = {}
-            self.positionToRoutesMap: typing.Dict[typing.Tuple[int, int], typing.List[astronomer.Route]] = {}
+            self.positionToRoutesMap: typing.Dict[typing.Tuple[int, int], typing.Set[astronomer.Route]] = {}
 
     # The absolute and relative hex patterns match search strings formatted
     # as 2 or 4 comma separated signed integers respectively, optionally
@@ -34,69 +33,20 @@ class Universe(astronomer.Entity):
 
     def __init__(
             self,
-            id: str,
+            universeId: str,
             sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
             placeholderMilieu: typing.Optional[astronomer.Milieu] = None
             ) -> None:
-        super().__init__(id=id)
+        self._universeId = universeId
         self._milieuDataMap: typing.Dict[astronomer.Milieu, Universe._MilieuData] = {}
+        self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
         self._placeholderMilieu = placeholderMilieu
 
         for sector in sectors:
-            milieu = sector.milieu()
+            self._addSector(sector=sector)
 
-            milieuData = self._milieuDataMap.get(milieu)
-            if not milieuData:
-                milieuData = Universe._MilieuData()
-                self._milieuDataMap[milieu] = milieuData
-
-            sectorPos = sector.position()
-            milieuData.sectorList.append(sector)
-            milieuData.positionToSectorMap[sectorPos.elements()] = sector
-
-            # Add canonical name to the main name map. The name is added lower case as lookups are
-            # case insensitive
-            milieuData.canonicalNameToSectorMap[sector.name().lower()] = sector
-
-            alternateNames = sector.alternateNames()
-            if alternateNames:
-                for alternateName in alternateNames:
-                    alternateName = alternateName.lower()
-                    sectorList = milieuData.alternateNameToSectorMap.get(alternateName)
-                    if not sectorList:
-                        sectorList = []
-                        milieuData.alternateNameToSectorMap[alternateName] = sectorList
-                    sectorList.append(sector)
-
-            abbreviation = sector.abbreviation()
-            if abbreviation:
-                # NOTE: Unlike most string -> sector lookups, the abbreviation
-                # map is case sensitive
-                sectorList = milieuData.abbreviationToSectorMap.get(abbreviation)
-                if not sectorList:
-                    sectorList = []
-                    milieuData.abbreviationToSectorMap[abbreviation] = sectorList
-                sectorList.append(sector)
-
-            for subsectorName in sector.subsectorNames():
-                subsectorName = subsectorName.lower()
-                sectorList = milieuData.subsectorNameToSectorMap.get(subsectorName)
-                if not sectorList:
-                    sectorList = []
-                    milieuData.subsectorNameToSectorMap[subsectorName] = sectorList
-                sectorList.append(sector)
-
-            for world in sector.worlds():
-                hex = world.hex()
-                milieuData.positionToWorldMap[hex.absolute()] = world
-
-            for route in sector.routes():
-                for hex in [route.startHex(), route.endHex()]:
-                    endpoints = milieuData.positionToRoutesMap.get(hex.absolute())
-                    if not endpoints:
-                        endpoints = []
-                        milieuData.positionToRoutesMap[hex.absolute()] = endpoints
-                    endpoints.append(route)
+    def universeId(self) -> str:
+        return self._universeId
 
     def sectorNames(
             self,
@@ -107,7 +57,7 @@ class Universe(astronomer.Entity):
             return []
 
         sectorNames = []
-        for sector in milieuData.sectorList:
+        for sector in milieuData.positionToSectorMap.values():
             sectorNames.append(sector.name())
         return sectorNames
 
@@ -261,6 +211,12 @@ class Universe(astronomer.Entity):
             filterCallback=filterCallback,
             includePlaceholders=includePlaceholders))
 
+    def entityById(
+            self,
+            entityId: str
+            ) -> typing.Optional[astronomer.Entity]:
+        return self._idToEntityMap.get(entityId)
+
     def formatSectorHex(
             self,
             milieu: astronomer.Milieu,
@@ -309,18 +265,18 @@ class Universe(astronomer.Entity):
                 sectors = milieuData.alternateNameToSectorMap.get(lowerCaseSectorName)
                 if sectors:
                     # Alternate sector name match
-                    sector = sectors[0]
+                    sector = next(iter(sectors))
                 else:
                     # NOTE: Use original case for abbreviation lookup as in theory two
                     # sectors abbreviations could vary by case
                     sectors = milieuData.abbreviationToSectorMap.get(originalSectorName)
                     if sectors:
-                        sector = sectors[0]
+                        sector = next(iter(sectors))
                     else:
                         sectors = milieuData.subsectorNameToSectorMap.get(lowerCaseSectorName)
                         if sectors:
                             # Subsector name match
-                            sector = sectors[0]
+                            sector = next(iter(sectors))
 
         if sector:
             return astronomer.HexPosition(
@@ -437,14 +393,14 @@ class Universe(astronomer.Entity):
             ) -> typing.Generator[astronomer.Sector, None, None]:
         milieuData = self._milieuDataMap.get(milieu)
         if milieuData:
-            for sector in milieuData.sectorList:
+            for sector in milieuData.positionToSectorMap.values():
                 if not filterCallback or filterCallback(sector):
                     yield sector
 
         if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
             placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
             if placeholderData:
-                for sector in placeholderData.sectorList:
+                for sector in placeholderData.positionToSectorMap.values():
                     sectorPos = sector.position()
                     if not milieuData or sectorPos.elements() not in milieuData.positionToSectorMap:
                         if not filterCallback or filterCallback(sector):
@@ -495,7 +451,7 @@ class Universe(astronomer.Entity):
         if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
             placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
             if placeholderData:
-                for sector in placeholderData.sectorList:
+                for sector in placeholderData.positionToSectorMap.values():
                     sectorPos = sector.position()
                     if not milieuData or sectorPos.elements() not in milieuData.positionToSectorMap:
                         for world in sector.worlds():
@@ -694,3 +650,110 @@ class Universe(astronomer.Entity):
                 connectedWorld = milieuData.positionToWorldMap.get(connectedHex.absolute())
                 if connectedWorld:
                     yield connectedWorld
+
+    def _addSector(self, sector: astronomer.Sector) -> None:
+        self._idToEntityMap[sector.entityId()] = sector
+        for entity in sector.entities():
+            self._idToEntityMap[entity.entityId()] = entity
+
+        milieu = sector.milieu()
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            milieuData = Universe._MilieuData()
+            self._milieuDataMap[milieu] = milieuData
+
+        sectorPos = sector.position()
+        milieuData.positionToSectorMap[sectorPos.elements()] = sector
+
+        # Add canonical name to the main name map. The name is added lower case as lookups are
+        # case insensitive
+        milieuData.canonicalNameToSectorMap[sector.name().lower()] = sector
+
+        for alternateName in sector.alternateNames():
+            alternateName = alternateName.lower()
+            sectors = milieuData.alternateNameToSectorMap.get(alternateName)
+            if not sectors:
+                sectors = set()
+                milieuData.alternateNameToSectorMap[alternateName] = sectors
+            sectors.add(sector)
+
+        abbreviation = sector.abbreviation()
+        if abbreviation:
+            # NOTE: Unlike most string -> sector lookups, the abbreviation
+            # map is case sensitive
+            sectors = milieuData.abbreviationToSectorMap.get(abbreviation)
+            if not sectors:
+                sectors = set()
+                milieuData.abbreviationToSectorMap[abbreviation] = sectors
+            sectors.add(sector)
+
+        for subsectorName in sector.subsectorNames():
+            subsectorName = subsectorName.lower()
+            sectors = milieuData.subsectorNameToSectorMap.get(subsectorName)
+            if not sectors:
+                sectors = set()
+                milieuData.subsectorNameToSectorMap[subsectorName] = sectors
+            sectors.add(sector)
+
+        for world in sector.worlds():
+            hex = world.hex()
+            milieuData.positionToWorldMap[hex.absolute()] = world
+
+        for route in sector.routes():
+            for hex in [route.startHex(), route.endHex()]:
+                endpoints = milieuData.positionToRoutesMap.get(hex.absolute())
+                if not endpoints:
+                    endpoints = set()
+                    milieuData.positionToRoutesMap[hex.absolute()] = endpoints
+                endpoints.add(route)
+
+        # Clear mains so they will be regenerated from the updated data
+        milieuData.positionToMainMap.clear()
+
+    def _removeSector(self, sector: astronomer.Sector) -> None:
+        self._idToEntityMap.pop(sector.entityId(), None)
+        for entity in sector.entities():
+            self._idToEntityMap.pop(entity.entityId(), None)
+
+        milieu = sector.milieu()
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return
+
+        sectorPos = sector.position()
+        milieuData.positionToSectorMap.pop(sectorPos.elements(), None)
+
+        milieuData.canonicalNameToSectorMap.pop(sector.name().lower(), None)
+
+        for alternateName in sector.alternateNames():
+            alternateName = alternateName.lower()
+            sectors = milieuData.alternateNameToSectorMap.get(alternateName)
+            if sectors:
+                sectors.discard(sector)
+
+        abbreviation = sector.abbreviation()
+        if abbreviation:
+            # NOTE: Unlike most string -> sector lookups, the abbreviation
+            # map is case sensitive
+            sectors = milieuData.abbreviationToSectorMap.get(abbreviation)
+            if sectors:
+                sectors.discard(sector)
+
+        for subsectorName in sector.subsectorNames():
+            subsectorName = subsectorName.lower()
+            sectors = milieuData.subsectorNameToSectorMap.get(subsectorName)
+            if sectors:
+                sectors.discard(sector)
+
+        for world in sector.worlds():
+            hex = world.hex()
+            milieuData.positionToWorldMap.pop(hex.absolute(), None)
+
+        for route in sector.routes():
+            for hex in [route.startHex(), route.endHex()]:
+                endpoints = milieuData.positionToRoutesMap.get(hex.absolute())
+                if endpoints:
+                    endpoints.discard(route)
+
+        # Clear mains so they will be regenerated from the updated data
+        milieuData.positionToMainMap.clear()

@@ -94,9 +94,8 @@ class InitWorldManager(app.StartupJob):
                 option=app.ConfigOption.Universe,
                 value=currentUniverseId)
 
-        astronomer.WorldManager.instance().setCurrentUniverse(
+        azathoth.UniverseEditor.instance().loadUniverse(
             universeId=currentUniverseId,
-            entityFactory=azathoth.EditableEntityFactory(),
             progressCallback=progressCallback)
 
 class LoadRobotsJob(app.StartupJob):

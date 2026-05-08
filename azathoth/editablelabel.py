@@ -4,7 +4,7 @@ import typing
 class EditableLabel(astronomer.Label):
     def __init__(
             self,
-            id: str,
+            entityId: str,
             text: str,
             worldX: float,
             worldY: float,
@@ -13,10 +13,17 @@ class EditableLabel(astronomer.Label):
             wrap: bool = False
             ) -> None:
         super().__init__(
-            id=id,
+            entityId=entityId,
             text=text,
             worldX=worldX,
             worldY=worldY,
             colour=colour,
             size=size,
             wrap=wrap)
+        self._sectorId = None
+
+    def sectorId(self) -> typing.Optional[str]:
+        return self._sectorId
+
+    def setSectorId(self, sectorId: str) -> None:
+        self._sectorId = sectorId

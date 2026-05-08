@@ -4,7 +4,7 @@ import typing
 class EditableBorder(astronomer.Border):
     def __init__(
             self,
-            id: str,
+            entityId: str,
             hexList: typing.Iterable[astronomer.HexPosition],
             allegiance: typing.Optional[astronomer.Allegiance] = None,
             style: typing.Optional[astronomer.LineStyle] = None,
@@ -16,7 +16,7 @@ class EditableBorder(astronomer.Border):
             wrapLabel: bool = False
             ) -> None:
         super().__init__(
-            id=id,
+            entityId=entityId,
             hexList=hexList,
             allegiance=allegiance,
             style=style,
@@ -26,3 +26,10 @@ class EditableBorder(astronomer.Border):
             labelWorldY=labelWorldY,
             showLabel=showLabel,
             wrapLabel=wrapLabel)
+        self._sectorId = None
+
+    def sectorId(self) -> typing.Optional[str]:
+        return self._sectorId
+
+    def setSectorId(self, sectorId: str) -> None:
+        self._sectorId = sectorId

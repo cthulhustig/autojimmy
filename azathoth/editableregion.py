@@ -4,7 +4,7 @@ import typing
 class EditableRegion(astronomer.Region):
     def __init__(
             self,
-            id: str,
+            entityId: str,
             hexList: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
             label: typing.Optional[str] = None,
@@ -14,7 +14,7 @@ class EditableRegion(astronomer.Region):
             wrapLabel: bool = False
             ) -> None:
         super().__init__(
-            id=id,
+            entityId=entityId,
             hexList=hexList,
             colour=colour,
             label=label,
@@ -22,3 +22,10 @@ class EditableRegion(astronomer.Region):
             labelWorldY=labelWorldY,
             showLabel=showLabel,
             wrapLabel=wrapLabel)
+        self._sectorId = None
+
+    def sectorId(self) -> typing.Optional[str]:
+        return self._sectorId
+
+    def setSectorId(self, sectorId: str) -> None:
+        self._sectorId = sectorId
