@@ -2644,8 +2644,8 @@ def _createRawWorlds(
 
             rawPBG = survey.formatSystemPBGString(
                 populationMultiplier=dbMainWorld.populationMultiplier() if dbMainWorld else None,
-                planetoidBelts=str(dbSystem.planetoidBeltCount()),
-                gasGiants=str(dbSystem.gasGiantCount()))
+                planetoidBelts=str(dbSystem.planetoidBeltCount()) if dbSystem.planetoidBeltCount() is not None else None,
+                gasGiants=str(dbSystem.gasGiantCount()) if dbSystem.gasGiantCount() is not None else None)
 
             systemWorldCount = 1
             if dbSystem.planetoidBeltCount():
