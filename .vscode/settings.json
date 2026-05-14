@@ -88,8 +88,8 @@
     "search.exclude": {
         "**/.svn": true,
         "**/.VSCodeCounter": true,
-        "**/build": true,
-        "**/dist": true,
-        "**/data": true
+        "build/**": true,
+        "dist/**": true,
+        "data/**": true
     },
 }
