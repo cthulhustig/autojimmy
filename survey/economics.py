@@ -69,7 +69,6 @@ def formatSystemEconomicsString(
         infrastructure=_processFormatCode(code=infrastructure, allowed=_ValidInfrastructureCodes, name='Infrastructure'),
         efficiency=_processFormatCode(code=efficiency, allowed=_ValidEfficiencyCodes, name='Efficiency'))
 
-
 def _mandatoryEconomicsElementValidator(
         name: str,
         value: str,

@@ -20,6 +20,9 @@ class SectorTagging(object):
             ) -> None:
         self._tags = common.OrderedSet(tags) if tags else common.OrderedSet()
 
+    def tags(self) -> typing.Collection[SectorTag]:
+        return common.ConstCollectionRef(self._tags)
+
     def contains(self, tag: SectorTag) -> bool:
         return tag in self._tags
 

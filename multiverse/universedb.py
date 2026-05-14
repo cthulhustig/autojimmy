@@ -20,6 +20,14 @@ import typing
 # - CON: If I join borders it could make it harder to export individual sectors (would need to split them again)
 #
 # At a minimum I think I want to make the sophonts/allegiances per universe
+# TODO: When I add support for notes I think I need to have it so you can add notes to the
+# stock universe. This probably means keeping notes in a separate table and having it so
+# the primary key is the object the notes are for. The editor/database would then need to
+# allow writing the notes independently of writing the object. I suspect I'll need to have
+# a table per object type _or_ have all objects with notes "inherit" from a base table so
+# the the notes table can key off the id in that table. It might be worth doing this as
+# the number of object types that will support notes will grow when I add support for gas
+# giants etc
 
 class SectorInfo(object):
     def __init__(
@@ -645,6 +653,7 @@ class UniverseDb(object):
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     database.ColumnDef(columnName='start_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='start_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    # TODO: finish_hex_* might be better than end_hex_*. I'd need to rename elsewhere to match though
                     database.ColumnDef(columnName='end_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='end_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='start_offset_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),

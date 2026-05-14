@@ -72,6 +72,8 @@ class CustomUniverseWindow(gui.WindowWidget):
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
         self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
         self._mapWidget.selectionChanged.connect(self._mapSelectionChanged)
+        self._mapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._mapWidget.customContextMenuRequested.connect(self._mapShowContextMenu)
 
         self._splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self._splitter.addWidget(self._sectorTable)
@@ -221,6 +223,30 @@ class CustomUniverseWindow(gui.WindowWidget):
         else:
             self._sectorTable.clearSelection()
 
+    def _mapShowContextMenu(
+            self,
+            pos: QtCore.QPoint
+            ) -> None:
+        sectorPos = self._mapWidget.sectorAt(pos=pos)
+        universe = azathoth.UniverseEditor.instance().universe()
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+
+        sector = universe.sectorByPosition(
+            milieu=milieu,
+            position=sectorPos)
+        if not sector:
+            return
+
+        actions: typing.List[QtWidgets.QAction] = []
+
+        action = QtWidgets.QAction('Export Sector....', self)
+        action.triggered.connect(lambda: self._exportSector(sectorPos))
+        actions.append(action)
+
+        menu = QtWidgets.QMenu()
+        menu.addActions(actions)
+        menu.exec(QtGui.QCursor.pos())
+
     def _importSector(
             self,
             metadataFilePath: str,
@@ -264,7 +290,7 @@ class CustomUniverseWindow(gui.WindowWidget):
                     sources=rawMetadata.sources(),
                     styleSheet=rawMetadata.styleSheet())
         except Exception as ex:
-            message = 'Failed to load metadata file.'
+            message = 'An error occurred when loading sector metadata.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -280,7 +306,7 @@ class CustomUniverseWindow(gui.WindowWidget):
                 sectorData = file.read()
             rawSystems = survey.parseSector(content=sectorData)
         except Exception as ex:
-            message = 'Failed to load sector file.'
+            message = 'An error occurred when loading sector world data.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -291,7 +317,7 @@ class CustomUniverseWindow(gui.WindowWidget):
         try:
             rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
         except:
-            message = 'Failed to load stock allegiances.'
+            message = 'An error occurred when loading stock allegiances.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -302,7 +328,7 @@ class CustomUniverseWindow(gui.WindowWidget):
         try:
             rawStockSophonts = multiverse.readSnapshotStockSophonts()
         except:
-            message = 'Failed to load stock sophonts.'
+            message = 'An error occurred when loading stock sophonts.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -313,7 +339,7 @@ class CustomUniverseWindow(gui.WindowWidget):
         try:
             rawStyleSheet = multiverse.readSnapshotStyleSheet()
         except:
-            message = 'Failed to load style sheet.'
+            message = 'An error occurred when loading stock style sheet.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -332,7 +358,7 @@ class CustomUniverseWindow(gui.WindowWidget):
                 rawStockStyleSheet=rawStyleSheet,
                 entityFactory=azathoth.UniverseEditor.instance().entityFactory())
         except Exception as ex:
-            message = 'Failed to convert custom sector'
+            message = 'An error occurred when converting data.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -346,7 +372,73 @@ class CustomUniverseWindow(gui.WindowWidget):
                     oldSector=oldSector,
                     newSector=newSector))
         except Exception as ex:
-            message = 'Failed to add custom sector to data store'
+            message = 'An error occurred when importing sector.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+    def _exportSector(
+            self,
+            sectorPos: astronomer.SectorPosition
+            ) -> None:
+        universe = azathoth.UniverseEditor.instance().universe()
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+
+        try:
+            sector = universe.sectorByPosition(
+                milieu=milieu,
+                position=sectorPos)
+        except Exception as ex:
+            message = 'An error occurred when finding sector data'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            rawMetadata, rawWorlds = astronomer.convertAstronomerSectorToRawSector(
+                astroSector=sector)
+        except Exception as ex:
+            message = f'An error occurred when converting sector'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        # TODO: Prompt user for file names and file formats
+        # TODO: If file names are generated from sector name, need to sanitize it for invalid
+        # characters
+        metadataFilePath = f'c:\\temp\\{sector.name()}.xml'
+        metadataFileFormat = survey.MetadataFormat.XML
+        sectorFilePath = f'c:\\temp\\{sector.name()}.sec'
+        sectorFileFormat = survey.SectorFormat.T5Column
+
+        try:
+            content = survey.formatMetadata(metadata=rawMetadata, format=metadataFileFormat)
+            with open(metadataFilePath, 'w', encoding='utf-8-sig') as file:
+                file.write(content)
+        except Exception as ex:
+            message = f'An error occurred when writing the sector metadata file'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            content = survey.formatSector(worlds=rawWorlds, format=sectorFileFormat)
+            with open(sectorFilePath, 'w', encoding='utf-8-sig') as file:
+                file.write(content)
+        except Exception as ex:
+            message = f'An error occurred when writing the sector file'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

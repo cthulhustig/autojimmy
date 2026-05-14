@@ -219,7 +219,7 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
             labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Border', index)
 
             borders.append(survey.RawBorder(
-                hexList=path,
+                hexes=path,
                 allegiance=element.get('Allegiance'),
                 showLabel=showLabel,
                 wrapLabel=wrapLabel,
@@ -271,7 +271,7 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
             labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Region', index)
 
             regions.append(survey.RawRegion(
-                hexList=path,
+                hexes=path,
                 showLabel=showLabel,
                 wrapLabel=wrapLabel,
                 labelHex=element.get('LabelPosition'),
@@ -461,7 +461,7 @@ def parseJSONMetadata(content: str) -> survey.RawMetadata:
             labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Border', index)
 
             borders.append(survey.RawBorder(
-                hexList=path,
+                hexes=path,
                 allegiance=element.get('Allegiance'),
                 showLabel=showLabel,
                 wrapLabel=wrapLabel,
@@ -518,7 +518,7 @@ def parseJSONMetadata(content: str) -> survey.RawMetadata:
             labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Region', index)
 
             regions.append(survey.RawRegion(
-                hexList=path,
+                hexes=path,
                 showLabel=showLabel,
                 wrapLabel=wrapLabel,
                 labelHex=element.get('LabelPosition'),
@@ -705,7 +705,7 @@ def formatXMLMetadata(metadata: survey.RawMetadata) -> str:
                 attributes['Color'] = border.colour()
 
             borderElement = xml.etree.ElementTree.SubElement(bordersElement, 'Border', attributes)
-            borderElement.text = ' '.join(border.hexList())
+            borderElement.text = ' '.join(border.hexes())
 
     labels = metadata.labels()
     if labels:
@@ -755,7 +755,7 @@ def formatXMLMetadata(metadata: survey.RawMetadata) -> str:
                 attributes['Color'] = region.colour()
 
             regionElement = xml.etree.ElementTree.SubElement(regionsElement, 'Region', attributes)
-            regionElement.text = ' '.join(region.hexList())
+            regionElement.text = ' '.join(region.hexes())
 
     sources = metadata.sources()
     if sources:
@@ -884,7 +884,7 @@ def formatJSONMetadata(metadata: survey.RawMetadata) -> str:
         bordersElement = []
         sectorElement['Borders'] = bordersElement
         for border in borders:
-            borderElement = {'Path': ' '.join(border.hexList())}
+            borderElement = {'Path': ' '.join(border.hexes())}
             if border.allegiance() != None:
                 borderElement['Allegiance'] = border.allegiance()
             if border.showLabel() != None:
@@ -931,7 +931,7 @@ def formatJSONMetadata(metadata: survey.RawMetadata) -> str:
         regionsElement = []
         sectorElement['Regions'] = regionsElement
         for region in regions:
-            regionElement = {'Path': ' '.join(region.hexList())}
+            regionElement = {'Path': ' '.join(region.hexes())}
             if region.showLabel() != None:
                 regionElement['ShowLabel'] = region.showLabel()
             if region.wrapLabel() != None:

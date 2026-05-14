@@ -30,7 +30,7 @@ class Region(astronomer.Entity):
     def __init__(
             self,
             entityId: str,
-            hexList: typing.Iterable[astronomer.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
             label: typing.Optional[str] = None,
             labelWorldX: typing.Optional[float] = None,
@@ -39,7 +39,7 @@ class Region(astronomer.Entity):
             wrapLabel: bool = False
             ) -> None:
         super().__init__(entityId=entityId)
-        self._hexList = list(hexList)
+        self._hexes = list(hexes)
         self._colour = colour
         self._label = label
         self._labelWorldX = labelWorldX
@@ -48,8 +48,8 @@ class Region(astronomer.Entity):
         self._wrapLabel = wrapLabel
         self._outline: typing.Optional[typing.List[typing.Tuple[float, float]]] = None
 
-    def hexList(self) -> typing.Iterable[astronomer.HexPosition]:
-        return self._hexList
+    def hexes(self) -> typing.Iterable[astronomer.HexPosition]:
+        return self._hexes
 
     def colour(self) -> typing.Optional[str]:
         return self._colour
@@ -76,7 +76,7 @@ class Region(astronomer.Entity):
 
         self._outline = []
 
-        hexes = set(self._hexList)
+        hexes = set(self._hexes)
         startHex, startEdge = Region._findOutlineStart(hexes=hexes)
         if not startEdge:
             # This is a single hex on it's own

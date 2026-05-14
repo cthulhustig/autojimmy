@@ -182,7 +182,7 @@ class RawRoute(object):
 class RawBorder(object):
     def __init__(
             self,
-            hexList: typing.Sequence[str],
+            hexes: typing.Sequence[str],
             allegiance: typing.Optional[str],
             showLabel: typing.Optional[bool],
             wrapLabel: typing.Optional[bool],
@@ -194,7 +194,7 @@ class RawBorder(object):
             colour: typing.Optional[str]
             ) -> None:
         super().__init__()
-        self._hexList = hexList
+        self._hexes = hexes
         self._allegiance = allegiance
         self._showLabel = showLabel
         self._wrapLabel = wrapLabel
@@ -205,8 +205,8 @@ class RawBorder(object):
         self._style = style
         self._colour = colour
 
-    def hexList(self) -> typing.Sequence[str]:
-        return self._hexList
+    def hexes(self) -> typing.Sequence[str]:
+        return self._hexes
 
     def allegiance(self) -> typing.Optional[str]:
         return self._allegiance
@@ -281,7 +281,7 @@ class RawLabel(object):
 class RawRegion(object):
     def __init__(
             self,
-            hexList: typing.Sequence[str],
+            hexes: typing.Sequence[str],
             showLabel: typing.Optional[bool],
             wrapLabel: typing.Optional[bool],
             labelHex: typing.Optional[str],
@@ -291,7 +291,7 @@ class RawRegion(object):
             colour: typing.Optional[str]
             ) -> None:
         super().__init__()
-        self._hexList = hexList
+        self._hexes = hexes
         self._showLabel = showLabel
         self._wrapLabel = wrapLabel
         self._labelHex = labelHex
@@ -300,8 +300,8 @@ class RawRegion(object):
         self._label = label
         self._colour = colour
 
-    def hexList(self) -> typing.Sequence[str]:
-        return self._hexList
+    def hexes(self) -> typing.Sequence[str]:
+        return self._hexes
 
     def showLabel(self) -> typing.Optional[bool]:
         return self._showLabel

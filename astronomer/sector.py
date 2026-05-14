@@ -109,6 +109,9 @@ class Sector(astronomer.Entity):
     def allegiances(self) -> typing.Collection[astronomer.Allegiance]:
         return common.ConstCollectionRef(self._allegiances)
 
+    def sophonts(self) -> typing.Collection[astronomer.Sophont]:
+        return common.ConstCollectionRef(self._sophonts)
+
     def allegianceByCode(self, code: str) -> typing.Optional[astronomer.Allegiance]:
         return self._allegianceCodeMap.get(code)
 

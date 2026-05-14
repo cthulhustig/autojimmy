@@ -5,7 +5,7 @@ class EditableRegion(astronomer.Region):
     def __init__(
             self,
             entityId: str,
-            hexList: typing.Iterable[astronomer.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
             label: typing.Optional[str] = None,
             labelWorldX: typing.Optional[float] = None,
@@ -15,7 +15,7 @@ class EditableRegion(astronomer.Region):
             ) -> None:
         super().__init__(
             entityId=entityId,
-            hexList=hexList,
+            hexes=hexes,
             colour=colour,
             label=label,
             labelWorldX=labelWorldX,

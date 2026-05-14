@@ -139,9 +139,10 @@ class Culture(object):
 
     def code(
             self,
-            element: Element
+            element: Element,
+            default: str = '?'
             ) -> str:
-        return self._valueMap.get(element, '?')
+        return self._valueMap.get(element, default)
 
     def numeric(
             self,

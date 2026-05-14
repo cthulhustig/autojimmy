@@ -5,7 +5,7 @@ class EditableBorder(astronomer.Border):
     def __init__(
             self,
             entityId: str,
-            hexList: typing.Iterable[astronomer.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             allegiance: typing.Optional[astronomer.Allegiance] = None,
             style: typing.Optional[astronomer.LineStyle] = None,
             colour: typing.Optional[str] = None,
@@ -17,7 +17,7 @@ class EditableBorder(astronomer.Border):
             ) -> None:
         super().__init__(
             entityId=entityId,
-            hexList=hexList,
+            hexes=hexes,
             allegiance=allegiance,
             style=style,
             colour=colour,

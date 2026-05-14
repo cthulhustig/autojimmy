@@ -135,7 +135,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
     def createBorder(
             self,
             entityId: str,
-            hexList: typing.Iterable[astronomer.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             allegiance: typing.Optional[astronomer.Allegiance] = None,
             style: typing.Optional[astronomer.LineStyle] = None,
             colour: typing.Optional[str] = None,
@@ -147,7 +147,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             ) -> astronomer.Border:
         return azathoth.EditableBorder(
             entityId=entityId,
-            hexList=hexList,
+            hexes=hexes,
             allegiance=allegiance,
             style=style,
             colour=colour,
@@ -160,7 +160,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
     def createRegion(
             self,
             entityId: str,
-            hexList: typing.Iterable[astronomer.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
             label: typing.Optional[str] = None,
             labelWorldX: typing.Optional[float] = None,
@@ -170,7 +170,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             ) -> astronomer.Region:
         return azathoth.EditableRegion(
             entityId=entityId,
-            hexList=hexList,
+            hexes=hexes,
             colour=colour,
             label=label,
             labelWorldX=labelWorldX,

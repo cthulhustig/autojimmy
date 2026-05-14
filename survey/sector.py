@@ -102,6 +102,11 @@ def _isAllDashes(string: str) -> bool:
             return False
     return True
 
+def _sortWorldsByHex(
+        worlds: typing.Iterable[survey.RawWorld]
+        ) -> typing.Iterable[survey.RawWorld]:
+    return sorted(worlds, key=lambda world: world.hex())
+
 def detectSectorFormat(content: str) -> typing.Optional[SectorFormat]:
     hasComment = False
     hasSeparator = False
@@ -364,7 +369,11 @@ def _worldAttribute(
     value = accessFn(world)
     if value is None:
         return default
-    return value.translate(_worldAttributeCharMap)
+
+    if isinstance(value, str):
+        return value.translate(_worldAttributeCharMap)
+    else:
+        return str(value)
 
 def formatSector(
         worlds: typing.Collection[survey.RawWorld],
@@ -406,7 +415,7 @@ def formatT5ColumnSector(worlds: typing.Collection[survey.RawWorld]) -> str:
     content += ' '.join(columns) + '\n'
     content += ' '.join(separators) + '\n'
 
-    for world in worlds:
+    for world in _sortWorldsByHex(worlds):
         values = []
         for columnName, columnAttribute in _T5Column_ColumnNameToAttributeMap.items():
             value = _worldAttribute(world=world, attribute=columnAttribute, default='')
@@ -428,7 +437,7 @@ def formatT5TabSector(worlds: typing.Collection[survey.RawWorld]) -> str:
 
     content = '\t'.join(outputColumns.keys())
 
-    for world in worlds:
+    for world in _sortWorldsByHex(worlds):
         values = []
         for columnAttribute in outputColumns.values():
             value = _worldAttribute(world=world, attribute=columnAttribute, default='')
