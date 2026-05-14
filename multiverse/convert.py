@@ -2486,7 +2486,7 @@ def _createRawRegions(
                 if labelOffsetY is not None:
                     labelOffsetY = -labelOffsetY / 0.7
 
-            rawRegions.append(survey.RawBorder(
+            rawRegions.append(survey.RawRegion(
                 hexes=hexes,
                 showLabel=dbRegion.showLabel(),
                 wrapLabel=dbRegion.wrapLabel(),
