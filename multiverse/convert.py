@@ -2761,7 +2761,7 @@ def _createRawWorlds(
             rawWorlds.append(survey.RawWorld(
                 hex=_formatHexString(dbSystem.hexX(), dbSystem.hexY()),
                 name=dbSystem.name(),
-                allegiance=dbSystemAllegiance.code() if dbSystemAllegiance else None, # TODO: Should this be the code or name
+                allegiance=dbSystemAllegiance.code() if dbSystemAllegiance else None,
                 zone=dbSystem.zone(),
                 uwp=rawUWP,
                 economics=rawEconomics,
