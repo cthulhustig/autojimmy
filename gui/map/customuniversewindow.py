@@ -2,6 +2,7 @@ import app
 import astronomer
 import azathoth
 import cartographer
+import common
 import gui
 import logging
 import multiverse
@@ -415,9 +416,10 @@ class CustomUniverseWindow(gui.WindowWidget):
         # TODO: Prompt user for file names and file formats
         # TODO: If file names are generated from sector name, need to sanitize it for invalid
         # characters
-        metadataFilePath = f'c:\\temp\\{sector.name()}.xml'
+        encodedSectorName = common.encodeFileName(sector.name())
+        metadataFilePath = f'c:\\temp\\{encodedSectorName}.xml'
         metadataFileFormat = survey.MetadataFormat.XML
-        sectorFilePath = f'c:\\temp\\{sector.name()}.sec'
+        sectorFilePath = f'c:\\temp\\{encodedSectorName}.sec'
         sectorFileFormat = survey.SectorFormat.T5Column
 
         try:
