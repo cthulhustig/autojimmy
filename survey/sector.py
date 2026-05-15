@@ -102,10 +102,38 @@ def _isAllDashes(string: str) -> bool:
             return False
     return True
 
+# NOTE: This is intended to sort the worlds so they will be written out
+# in the same order Traveller Map seems to. Worlds are grouped by rows
+# of subsectors, inside the each grouping, worlds are written out by x
+# value then by y value. If you take the standard subsector labeling
+# below, all worlds for subsector A will be written out, then all
+# worlds for subsector B and so on
+# ABCD
+# EFGH
+# IJKL
+# MNOP
+_SubsectorWidth = 8
+_SubsectorHeight = 10
+_SubsectorsPerRow = 4
+_HexesPerParsecRow = _SubsectorWidth * _SubsectorsPerRow
+_HexesPerSubsectorRow = _HexesPerParsecRow * _SubsectorHeight
 def _sortWorldsByHex(
         worlds: typing.Iterable[survey.RawWorld]
         ) -> typing.Iterable[survey.RawWorld]:
-    return sorted(worlds, key=lambda world: world.hex())
+    def calcKey(world: survey.RawWorld) -> int:
+        hexString = world.hex()
+        if not hexString:
+            return 0
+        try:
+            x = int(hexString[:2])
+            y = int(hexString[-2:])
+        except:
+            return 0
+
+        subSectorRow = (y - 1) // _SubsectorHeight
+        return (y - (subSectorRow * _SubsectorHeight)) + (x * _SubsectorHeight) + (subSectorRow * _HexesPerSubsectorRow)
+
+    return sorted(worlds, key=calcKey)
 
 def detectSectorFormat(content: str) -> typing.Optional[SectorFormat]:
     hasComment = False
