@@ -1767,24 +1767,29 @@ def _createDbSystems(
             # have (but user data could).
             # https://travellermap.com/doc/secondsurvey#worlds
             # The section covering the Planetoid Belt Count in the PBG also says that a
-            # Main World of size 0 is not included in that count.
+            # Main World of size 0 is not included in that count. I assume this is because
+            # it should be included in the other world count.
             # https://travellermap.com/doc/secondsurvey#pbg
             rawSystemWorlds = rawWorld.systemWorlds()
-            numSystemWorlds = None
             dbOtherWorldCount = None
             if rawSystemWorlds:
                 numBelts = dbPlanetoidBeltCount if dbPlanetoidBeltCount else 0
                 numGiants = dbGasGiantCount if dbGasGiantCount else 0
                 numAccountedWorlds = numBelts + numGiants + 1 # +1 for main world
+                numSystemWorlds = None
 
                 try:
                     numSystemWorlds = int(rawSystemWorlds)
                 except:
-                    logging.warning('Other world count for world {world} in {sector} at {milieu} is unknown as the system world count "{count}" is invalid'.format(
-                            count=rawSystemWorlds,
-                            world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
-                            sector=rawMetadata.canonicalName(),
-                            milieu=milieu))
+                    # The number of system worlds should be an integer but wasn't
+                    # so try parsing it as ehex
+                    numSystemWorlds = survey.ehexToInteger(value=rawSystemWorlds, default=None)
+                    if numSystemWorlds is None:
+                        logging.warning('Other world count for world {world} in {sector} at {milieu} is unknown as the system world count "{count}" is invalid'.format(
+                                count=rawSystemWorlds,
+                                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                                sector=rawMetadata.canonicalName(),
+                                milieu=milieu))
 
                 if numSystemWorlds is not None:
                     if numSystemWorlds >= numAccountedWorlds:
@@ -2644,8 +2649,8 @@ def _createRawWorlds(
 
             rawPBG = survey.formatSystemPBGString(
                 populationMultiplier=dbMainWorld.populationMultiplier() if dbMainWorld else None,
-                planetoidBelts=str(dbSystem.planetoidBeltCount()) if dbSystem.planetoidBeltCount() is not None else None,
-                gasGiants=str(dbSystem.gasGiantCount()) if dbSystem.gasGiantCount() is not None else None)
+                planetoidBelts=survey.ehexFromInteger(value=dbSystem.planetoidBeltCount(), default=None),
+                gasGiants=survey.ehexFromInteger(value=dbSystem.gasGiantCount(), default=None))
 
             systemWorldCount = 1
             if dbSystem.planetoidBeltCount():

@@ -29,7 +29,6 @@ class BaseType(enum.Enum):
     ZhodaniDepot = 18
     ZhodaniNavalMilitaryBase = 19
 
-
 _CodeToBaseTypeMap = {
     'A': [BaseType.ImperialNavalBase, BaseType.ImperialScoutBase],
     'B': [BaseType.ImperialNavalBase, BaseType.WayStation],
