@@ -437,9 +437,11 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='planetoid_belt_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
                     database.ColumnDef(columnName='gas_giant_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
-                    # TODO: I wonder if this needs to be world_count and include the main world so I
-                    # can allow for systems where there is no main world (e.g. just a star)
-                    database.ColumnDef(columnName='other_world_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
+                    # NOTE: The world count is NOT the same as the system world count from
+                    # second survey sector format. The system would count includes belts
+                    # and gas giants where as this world count does not (but it does include
+                    # the main world)
+                    database.ColumnDef(columnName='world_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
                     database.ColumnDef(columnName='zone', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
                               foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
@@ -1313,10 +1315,10 @@ class UniverseDb(object):
 
         sql = """
             INSERT INTO {table} (id, sector_id, hex_x, hex_y, name,
-                planetoid_belt_count, gas_giant_count, other_world_count,
+                planetoid_belt_count, gas_giant_count, world_count,
                 zone, allegiance_id, notes)
             VALUES (:id, :sector_id, :hex_x, :hex_y, :name,
-                :planetoid_belt_count, :gas_giant_count, :other_world_count,
+                :planetoid_belt_count, :gas_giant_count, :world_count,
                 :zone, :allegiance_id, :notes);
             """.format(table=UniverseDb._SystemsTableName)
         rows = []
@@ -1329,7 +1331,7 @@ class UniverseDb(object):
                 'name': system.name(),
                 'planetoid_belt_count': system.planetoidBeltCount(),
                 'gas_giant_count': system.gasGiantCount(),
-                'other_world_count': system.otherWorldCount(),
+                'world_count': system.worldCount(),
                 'zone': system.zone(),
                 'allegiance_id': system.allegianceId(),
                 'notes': system.notes()})
@@ -1358,7 +1360,7 @@ class UniverseDb(object):
 
         sql = """
             SELECT id, sector_id, hex_x, hex_y, name,
-                planetoid_belt_count, gas_giant_count, other_world_count,
+                planetoid_belt_count, gas_giant_count, world_count,
                 zone, allegiance_id, notes
             FROM {table}
             {where};
@@ -1389,7 +1391,7 @@ class UniverseDb(object):
                     name=row[4],
                     planetoidBeltCount=row[5],
                     gasGiantCount=row[6],
-                    otherWorldCount=row[7],
+                    worldCount=row[7],
                     zone=row[8],
                     allegianceId=row[9],
                     notes=row[10],

@@ -886,15 +886,14 @@ class DbSystem(DbSectorObject):
             # PBG (Population Multiplier is stored as the DbWorld level)
             planetoidBeltCount: typing.Optional[int] = None,
             gasGiantCount: typing.Optional[int] = None,
-            # Other worlds is my invention, it's calculated using the total
-            # system world count that is (optionally) specified in sector files
-            # but with logic applied that ignores total system world counts that
-            # are lower than the specified number of belts + gas giants (basically
-            # ignores negative values). The total system world count can be
-            # re-constituted by calculating
-            # planetoid belt count + gas giant count + other world count + 1 (for
-            # the main world)
-            otherWorldCount: typing.Optional[int] = None,
+            # World count is my invention, it's calculated using the total system
+            # world count that is (optionally) specified in sector files but with
+            # logic applied that ignores total system world counts that are lower
+            # than the specified number of belts + gas giants (basically ignores
+            # negative values). The total system world count can be re-constituted
+            # by calculating:
+            # planetoid belt count + gas giant count + world count
+            worldCount: typing.Optional[int] = None,
             zone: typing.Optional[str] = None,
             allegianceId: typing.Optional[str] = None,
             stars: typing.Optional[typing.Collection[DbStar]] = None,
@@ -910,7 +909,7 @@ class DbSystem(DbSectorObject):
         common.validateOptionalStr(name='name', value=name, allowEmpty=False)
         common.validateOptionalInt(name='planetoidBeltCount', value=planetoidBeltCount, min=0)
         common.validateOptionalInt(name='gasGiantCount', value=gasGiantCount, min=0)
-        common.validateOptionalInt(name='otherWorldCount', value=otherWorldCount, min=0)
+        common.validateOptionalInt(name='worldCount', value=worldCount, min=0)
         survey.validateOptionalZone(name='zone', value=zone)
         common.validateOptionalStr(name='allegianceId', value=allegianceId, allowEmpty=False)
         DbSystem._validateStars(name='stars', value=stars, systemId=id)
@@ -922,7 +921,7 @@ class DbSystem(DbSectorObject):
         self._name = name
         self._planetoidBeltCount = planetoidBeltCount
         self._gasGiantCount = gasGiantCount
-        self._otherWorldCount = otherWorldCount
+        self._worldCount = worldCount
         self._zone = zone
         self._allegianceId = allegianceId
         self._notes = notes
@@ -947,8 +946,8 @@ class DbSystem(DbSectorObject):
     def gasGiantCount(self) -> typing.Optional[int]:
         return self._gasGiantCount
 
-    def otherWorldCount(self) -> typing.Optional[int]:
-        return self._otherWorldCount
+    def worldCount(self) -> typing.Optional[int]:
+        return self._worldCount
 
     def zone(self) -> typing.Optional[str]:
         return self._zone
@@ -1675,7 +1674,7 @@ class DbSector(DbObject):
 
             key = (system.hexX(), system.hexY())
             if key in seenHexes:
-                raise ValueError(f'{name} contains multiple systems with the same location')
+                raise ValueError(f'{name} contains multiple systems with the same location {key}')
             seenHexes.add(key)
 
             bodies = system.bodies()

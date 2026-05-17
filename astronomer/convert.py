@@ -447,7 +447,7 @@ def _createAstronomerWorlds(
                 dbPopulationMultiplier = dbMainWorld.populationMultiplier() if dbMainWorld else None
                 dbPlanetoidBeltCount = dbSystem.planetoidBeltCount()
                 dbGasGiantCount = dbSystem.gasGiantCount()
-                dbOtherWorldCount = dbSystem.otherWorldCount()
+                dbWorldCount = dbSystem.worldCount()
                 pbg = None
                 try:
                     pbg = astronomer.PBG(
@@ -478,12 +478,11 @@ def _createAstronomerWorlds(
                 # the PBG), however I think it would be good enough if things stay the
                 # way they are.
                 systemWorlds = None
-                if dbOtherWorldCount is not None:
+                if dbWorldCount is not None:
                     systemWorlds = \
                         (dbPlanetoidBeltCount if dbPlanetoidBeltCount else 0) + \
                         (dbGasGiantCount if dbGasGiantCount else 0) + \
-                        (dbOtherWorldCount if dbOtherWorldCount else 0) + \
-                        (1 if dbMainWorld else 0) # For the main world
+                        (dbWorldCount if dbWorldCount else 0)
 
                 dbStars = dbSystem.stars()
                 stars = None
@@ -1223,14 +1222,27 @@ def _createDbSystems(
                 researchStations=dbResearchStations,
                 customRemarks=dbCustomRemarks))
 
+            numSystemWorlds = world.numberOfSystemWorlds()
+            numPlanetoidBelts = world.numberOfPlanetoidBelts()
+            numGasGiants = world.numberOfGasGiants()
+            numOtherWorlds = None
+            if numSystemWorlds is not None:
+                numOtherWorlds = numSystemWorlds
+                if numPlanetoidBelts is not None:
+                    numOtherWorlds -= numPlanetoidBelts
+                if numGasGiants is not None:
+                    numOtherWorlds -= numGasGiants
+                if numOtherWorlds < 0:
+                    numOtherWorlds = None
+
             dbSystems.append(multiverse.DbSystem(
                 id=world.entityId(),
                 hexX=hexPos.offsetX(),
                 hexY=hexPos.offsetY(),
                 name=world.name() if not world.isNameGenerated() else None,
-                planetoidBeltCount=world.numberOfPlanetoidBelts(),
-                gasGiantCount=world.numberOfGasGiants(),
-                otherWorldCount=world.numberOfSystemWorlds(),
+                planetoidBeltCount=numPlanetoidBelts,
+                gasGiantCount=numGasGiants,
+                worldCount=numOtherWorlds,
                 zone=astronomer.zoneTypeCode(world.zone()) if world.zone() else None,
                 allegianceId=dbSystemAllegiance.id() if dbSystemAllegiance else None,
                 stars=dbStars,

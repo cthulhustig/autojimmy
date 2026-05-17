@@ -291,6 +291,19 @@ def _hexToSubsectorCode(
     indexY = (hexY - 1) // _SubsectorHeight
     return chr(ord('A') + (indexY * 4) + indexX)
 
+def _parseSystemWorldCount(
+        rawSystemWorldCount: typing.Optional[str]
+        ) -> typing.Optional[int]:
+    if rawSystemWorldCount is None:
+        return None
+
+    try:
+        return int(rawSystemWorldCount)
+    except:
+        # The number of system worlds should be an integer but wasn't
+        # so try parsing it as ehex
+        return survey.ehexToInteger(value=rawSystemWorldCount, default=None)
+
 def _findUsedAllegianceCodes(
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld]
@@ -1100,14 +1113,6 @@ def _createDbBodies(
         dbSophontCodeMap: typing.Dict[str, multiverse.DbSophont],
         dbSophontNameMap: typing.Dict[str, multiverse.DbSophont]
         ) -> typing.Optional[typing.List[multiverse.DbBody]]:
-    rawSystemWorlds = rawWorld.systemWorlds()
-    numSystemWorlds = None
-    if rawSystemWorlds:
-        try:
-            numSystemWorlds = int(rawSystemWorlds)
-        except:
-            pass # This will already have been logged processing the system
-
     rawSystemName = rawWorld.name()
     dbSystemName = rawSystemName if rawSystemName else None
 
@@ -1215,6 +1220,7 @@ def _createDbBodies(
         dbPopulationMultiplier or dbTradeCodes or dbSophontPopulations or \
         dbRulingAllegiances or dbOwningSystems or dbColonySystems or \
         dbResearchStations or dbCustomRemarks
+    numSystemWorlds = _parseSystemWorldCount(rawWorld.systemWorlds())
     if not hasData and not numSystemWorlds:
         return None
 
@@ -1758,6 +1764,13 @@ def _createDbSystems(
                     # In the database a green zone is represented by null
                     dbZone = None
 
+            rawAllegianceCode = rawWorld.allegiance()
+            dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
+            if rawAllegianceCode and not dbAllegiance:
+                # TODO: This should probably log and continue with no allegiance,
+                # if it's a custom sector it should also warn the user
+                raise RuntimeError(f'World at {rawHex} in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
+
             # From the Traveller Map Second Survey documentation the system world count is
             # Main World + Gas Giant Count + Planetoid Belt Count + Other Planetoid Count.
             # With the minimum being 1 for the Main World. Gas Giant satellites (I assume
@@ -1771,29 +1784,15 @@ def _createDbSystems(
             # it should be included in the other world count.
             # https://travellermap.com/doc/secondsurvey#pbg
             rawSystemWorlds = rawWorld.systemWorlds()
-            dbOtherWorldCount = None
+            dbWorldCount = None
             if rawSystemWorlds:
                 numBelts = dbPlanetoidBeltCount if dbPlanetoidBeltCount else 0
                 numGiants = dbGasGiantCount if dbGasGiantCount else 0
-                numAccountedWorlds = numBelts + numGiants + 1 # +1 for main world
-                numSystemWorlds = None
-
-                try:
-                    numSystemWorlds = int(rawSystemWorlds)
-                except:
-                    # The number of system worlds should be an integer but wasn't
-                    # so try parsing it as ehex
-                    numSystemWorlds = survey.ehexToInteger(value=rawSystemWorlds, default=None)
-                    if numSystemWorlds is None:
-                        logging.warning('Other world count for world {world} in {sector} at {milieu} is unknown as the system world count "{count}" is invalid'.format(
-                                count=rawSystemWorlds,
-                                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
-                                sector=rawMetadata.canonicalName(),
-                                milieu=milieu))
-
+                numBeltsPlusGiants = numBelts + numGiants
+                numSystemWorlds = _parseSystemWorldCount(rawSystemWorlds)
                 if numSystemWorlds is not None:
-                    if numSystemWorlds >= numAccountedWorlds:
-                        dbOtherWorldCount = numSystemWorlds - numAccountedWorlds
+                    if numSystemWorlds >= numBeltsPlusGiants:
+                        dbWorldCount = numSystemWorlds - numBeltsPlusGiants
                     else:
                         logging.warning('Other world count for world {world} in {sector} at {milieu} is unknown as the world count {total} is lower than the number of known worlds (Main World + {belts} Planetoid Belts + {giants} Gas Giants)'.format(
                                 total=numSystemWorlds,
@@ -1802,23 +1801,12 @@ def _createDbSystems(
                                 world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
                                 sector=rawMetadata.canonicalName(),
                                 milieu=milieu))
-            else:
-                logging.debug('Other world count for world {world} in {sector} at {milieu} is unknown as the system world count is not specified'.format(
-                        world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
-                        sector=rawMetadata.canonicalName(),
-                        milieu=milieu))
-
-            rawAllegianceCode = rawWorld.allegiance()
-            dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
-            if rawAllegianceCode and not dbAllegiance:
-                # TODO: This should probably log and continue with no allegiance,
-                # if it's a custom sector it should also warn the user
-                raise RuntimeError(f'World at {rawHex} in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
-
-            dbStars = _createDbStars(
-                milieu=milieu,
-                rawMetadata=rawMetadata,
-                rawWorld=rawWorld)
+                else:
+                    logging.warning('Other world count for world {world} in {sector} at {milieu} is unknown as the system world count "{count}" is invalid'.format(
+                            count=rawSystemWorlds,
+                            world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                            sector=rawMetadata.canonicalName(),
+                            milieu=milieu))
 
             dbBodies = _createDbBodies(
                 milieu=milieu,
@@ -1828,13 +1816,26 @@ def _createDbSystems(
                 dbAllegianceCodeMap=dbAllegianceCodeMap,
                 dbSophontNameMap=dbSophontNameMap)
 
+            if dbBodies is not None:
+                numCreatedWorlds = 0
+                for dbBody in dbBodies:
+                    if isinstance(dbBody, multiverse.DbWorld):
+                        numCreatedWorlds += 1
+                if dbWorldCount is None or dbWorldCount < numCreatedWorlds:
+                    dbWorldCount = numCreatedWorlds
+
+            dbStars = _createDbStars(
+                milieu=milieu,
+                rawMetadata=rawMetadata,
+                rawWorld=rawWorld)
+
             dbSystems.append(multiverse.DbSystem(
                 hexX=dbHexX,
                 hexY=dbHexY,
                 name=dbSystemName,
                 planetoidBeltCount=dbPlanetoidBeltCount,
                 gasGiantCount=dbGasGiantCount,
-                otherWorldCount=dbOtherWorldCount,
+                worldCount=dbWorldCount,
                 zone=dbZone,
                 allegianceId=dbAllegiance.id() if dbAllegiance else None,
                 stars=dbStars,
@@ -2652,13 +2653,18 @@ def _createRawWorlds(
                 planetoidBelts=survey.ehexFromInteger(value=dbSystem.planetoidBeltCount(), default=None),
                 gasGiants=survey.ehexFromInteger(value=dbSystem.gasGiantCount(), default=None))
 
-            systemWorldCount = 1
-            if dbSystem.planetoidBeltCount():
-                systemWorldCount += dbSystem.planetoidBeltCount()
-            if dbSystem.gasGiantCount():
-                systemWorldCount += dbSystem.gasGiantCount()
-            if dbSystem.otherWorldCount():
-                systemWorldCount += dbSystem.otherWorldCount()
+            numPlanetoidBelt = dbSystem.planetoidBeltCount()
+            numGasGiants = dbSystem.gasGiantCount()
+            numWorlds = dbSystem.worldCount()
+            rawSystemWorldCount = None
+            if numPlanetoidBelt is not None or numGasGiants is not None or numWorlds is not None:
+                rawSystemWorldCount = 0
+                if numPlanetoidBelt:
+                    rawSystemWorldCount += numPlanetoidBelt
+                if numGasGiants:
+                    rawSystemWorldCount += numGasGiants
+                if numWorlds:
+                    rawSystemWorldCount += numWorlds
 
             rawNobilities = None
             rawBases = None
@@ -2775,7 +2781,7 @@ def _createRawWorlds(
                 bases=rawBases,
                 remarks=rawRemarks,
                 pbg=rawPBG,
-                systemWorlds=systemWorldCount,
+                systemWorlds=rawSystemWorldCount,
                 stellar=rawStellar,
                 sectorAbbreviation=dbSector.abbreviation(),
                 subSectorCode=_hexToSubsectorCode(hexX=dbSystem.hexX(), hexY=dbSystem.hexY()),
