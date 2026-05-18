@@ -1,7 +1,7 @@
 import app
 import common
 import gui
-import traveller
+import logic
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -10,7 +10,7 @@ class TradeGoodQuantityDialog(gui.DialogEx):
     def __init__(
         self,
         title: str,
-        selectableTradeGoods: typing.Iterable[traveller.TradeGood],
+        selectableTradeGoods: typing.Iterable[logic.TradeGood],
         limitQuantity: typing.Optional[common.ScalarCalculation] = None,
         parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> None: ...
@@ -19,7 +19,7 @@ class TradeGoodQuantityDialog(gui.DialogEx):
     def __init__(
         self,
         title: str,
-        editTradeGood: typing.Optional[traveller.TradeGood],
+        editTradeGood: typing.Optional[logic.TradeGood],
         editQuantity: typing.Optional[common.ScalarCalculation],
         limitQuantity: typing.Optional[common.ScalarCalculation] = None,
         parent: typing.Optional[QtWidgets.QWidget] = None
@@ -28,8 +28,8 @@ class TradeGoodQuantityDialog(gui.DialogEx):
     def __init__(
             self,
             title: str,
-            selectableTradeGoods: typing.Optional[typing.List[traveller.TradeGood]] = None,
-            editTradeGood: typing.Optional[traveller.TradeGood] = None,
+            selectableTradeGoods: typing.Optional[typing.List[logic.TradeGood]] = None,
+            editTradeGood: typing.Optional[logic.TradeGood] = None,
             editQuantity: typing.Optional[common.ScalarCalculation] = None,
             limitQuantity: typing.Optional[common.ScalarCalculation] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -87,7 +87,7 @@ class TradeGoodQuantityDialog(gui.DialogEx):
         windowLayout.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetFixedSize)
         self.setSizeGripEnabled(False)
 
-    def tradeGood(self) -> traveller.TradeGood:
+    def tradeGood(self) -> logic.TradeGood:
         return self._tradeGoodCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
 
     def quantity(self) -> common.ScalarCalculation:

@@ -1,22 +1,24 @@
+import astronomer
 import common
 import logic
 import math
 import traveller
-import multiverse
 import typing
 
 class Trader(object):
     def __init__(
             self,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
-            milieu: multiverse.Milieu,
             tradeOptionCallback: typing.Callable[[logic.TradeOption], typing.Any],
             traderInfoCallback: typing.Optional[typing.Callable[[str], typing.Any]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
-        self._rules = rules
+        self._universe = universe
         self._milieu = milieu
+        self._rules = rules
         self._tradeOptionCallback = tradeOptionCallback
         self._traderInfoCallback = traderInfoCallback
         self._progressCallback = progressCallback
@@ -26,8 +28,8 @@ class Trader(object):
 
     def calculateTradeOptionsForSingleWorld(
             self,
-            purchaseWorld: multiverse.World,
-            saleWorlds: typing.Iterable[multiverse.World],
+            purchaseWorld: astronomer.World,
+            saleWorlds: typing.Iterable[astronomer.World],
             currentCargo: typing.Iterable[logic.CargoRecord],
             possibleCargo: typing.Iterable[logic.CargoRecord],
             playerBrokerDm: typing.Union[int, common.ScalarCalculation],
@@ -145,6 +147,7 @@ class Trader(object):
         self._currentProgress = 0
 
         self._calculateTradeOptions(
+            universe=self._universe,
             milieu=self._milieu,
             purchaseWorld=purchaseWorld,
             saleWorlds=saleWorlds,
@@ -172,8 +175,8 @@ class Trader(object):
 
     def calculateTradeOptionsForMultipleWorlds(
             self,
-            purchaseWorlds: typing.Iterable[multiverse.World],
-            saleWorlds: typing.Iterable[multiverse.World],
+            purchaseWorlds: typing.Iterable[astronomer.World],
+            saleWorlds: typing.Iterable[astronomer.World],
             playerBrokerDm: typing.Union[int, common.ScalarCalculation],
             minSellerDm: typing.Union[int, common.ScalarCalculation],
             maxSellerDm: typing.Union[int, common.ScalarCalculation],
@@ -308,7 +311,7 @@ class Trader(object):
         purchaseWorldPossibleCargo = []
         for purchaseWorld in purchaseWorlds:
             possibleCargo = logic.generateSpeculativePurchaseCargo(
-                ruleSystem=self._rules.system(),
+                rules=self._rules,
                 world=purchaseWorld,
                 playerBrokerDm=playerBrokerDm,
                 useLocalBroker=useLocalPurchaseBroker,
@@ -335,6 +338,7 @@ class Trader(object):
                 continue
 
             self._calculateTradeOptions(
+                universe=self._universe,
                 milieu=self._milieu,
                 purchaseWorld=purchaseWorld,
                 saleWorlds=saleWorlds,
@@ -362,9 +366,10 @@ class Trader(object):
 
     def _calculateTradeOptions(
             self,
-            milieu: multiverse.Milieu,
-            purchaseWorld: multiverse.World,
-            saleWorlds: typing.Iterable[multiverse.World],
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
+            purchaseWorld: astronomer.World,
+            saleWorlds: typing.Iterable[astronomer.World],
             currentCargo: typing.Iterable[logic.CargoRecord],
             possibleCargo: typing.Iterable[logic.CargoRecord],
             playerBrokerDm: common.ScalarCalculation,
@@ -392,6 +397,7 @@ class Trader(object):
         for saleWorld in saleWorlds:
             jumpRoute = routePlanner.calculateDirectRoute(
                 routingType=routingType,
+                universe=universe,
                 milieu=milieu,
                 startHex=purchaseWorld.hex(),
                 finishHex=saleWorld.hex(),
@@ -416,12 +422,16 @@ class Trader(object):
                     (len(possibleCargo) if possibleCargo else 0))
 
                 if self._traderInfoCallback:
+                    worldString = '{world} ({hex})'.format(
+                        world=saleWorld.name(),
+                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
                     self._traderInfoCallback(
-                        f'Ignoring sale of all trade goods on {saleWorld.name(includeSubsector=True)}. ' +
+                        f'Ignoring sale of all trade goods on {worldString}. ' +
                         f'There is no jump route to get there with jump-{shipJumpRating}')
                 continue
 
             routeLogistics = logic.calculateRouteLogistics(
+                universe=universe,
                 milieu=milieu,
                 jumpRoute=jumpRoute,
                 shipTonnage=shipTonnage,
@@ -437,8 +447,11 @@ class Trader(object):
                     (len(possibleCargo) if possibleCargo else 0))
 
                 if self._traderInfoCallback:
+                    worldString = '{world} ({hex})'.format(
+                        world=saleWorld.name(),
+                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
                     self._traderInfoCallback(
-                        f'Ignoring sale of all goods on {saleWorld.name(includeSubsector=True)}. ' +
+                        f'Ignoring sale of all goods on {worldString}. ' +
                         f'There is no way to reach it with the current fuel settings.')
                 continue
 
@@ -460,8 +473,11 @@ class Trader(object):
                     (len(possibleCargo) if possibleCargo else 0))
 
                 if self._traderInfoCallback:
+                    worldString = '{world} ({hex})'.format(
+                        world=saleWorld.name(),
+                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
                     self._traderInfoCallback(
-                        f'Ignoring sale of all goods on {saleWorld.name(includeSubsector=True)}. ' +
+                        f'Ignoring sale of all goods on {worldString}. ' +
                         f'The average logistics cost is Cr{common.formatNumber(logisticsCosts.averageCaseValue())} so ' +
                         f'it would require higher than average dice rolls to get there for a price you could afford.')
                 continue
@@ -528,8 +544,8 @@ class Trader(object):
             self,
             cargoRecord: logic.CargoRecord,
             alreadyOwned: bool,
-            purchaseWorld: multiverse.World,
-            saleWorld: multiverse.World,
+            purchaseWorld: astronomer.World,
+            saleWorld: astronomer.World,
             routeLogistics: logic.RouteLogistics,
             playerBrokerDm: common.ScalarCalculation,
             buyerDm: typing.Union[common.ScalarCalculation, common.RangeCalculation],
@@ -554,8 +570,11 @@ class Trader(object):
 
             if not includeUnprofitableTrades and cargoQuantity.averageCaseValue() <= 0:
                 if self._traderInfoCallback:
+                    worldString = '{world} ({hex})'.format(
+                        world=purchaseWorld.name(),
+                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=purchaseWorld.hex()))
                     self._traderInfoCallback(
-                        f'Ignoring purchase of {tradeGood.name()} on {purchaseWorld.name(includeSubsector=True)}. ' +
+                        f'Ignoring purchase of {tradeGood.name()} on {worldString}. ' +
                         f'The average purchase price is Cr{common.formatNumber(purchasePricePerTon.averageCaseValue())} ' +
                         f'per ton so it would require higher than average dice rolls to buy at a price you could afford.')
                 return
@@ -574,6 +593,7 @@ class Trader(object):
                 blackMarket=tradeGood.isIllegal(saleWorld))
 
         salePricePerTon = tradeGood.calculateSalePrice(
+            rules=self._rules,
             world=saleWorld,
             brokerDm=localBrokerDm if localBrokerDm else playerBrokerDm,
             buyerDm=buyerDm)
@@ -609,8 +629,11 @@ class Trader(object):
         netProfit = tradeOption.netProfit()
         if not includeUnprofitableTrades and netProfit.averageCaseValue() <= 0:
             if self._traderInfoCallback:
+                worldString = '{world} ({hex})'.format(
+                    world=saleWorld.name(),
+                    hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
                 self._traderInfoCallback(
-                    f'Ignoring sale of {tradeGood.name()} on {saleWorld.name(includeSubsector=True)}. ' +
+                    f'Ignoring sale of {tradeGood.name()} on {worldString}. ' +
                     f'The average net profit is Cr{common.formatNumber(netProfit.averageCaseValue())} so ' +
                     f'it would require higher than average dice rolls to make a profit')
             return
@@ -713,10 +736,12 @@ class Trader(object):
                     percentageOfProfit = math.ceil((fuelCostToGetOffWorld / netProfit.averageCaseValue()) * 100)
                     notes.append(f'On the sale world the cost of buying the fuel for jump-1 will be Cr{fuelCostToGetOffWorld}. With average dice rolls, this will be {percentageOfProfit}% of the profits from the trade.')
 
-        if purchaseWorld.hasTradeCode(multiverse.TradeCode.LowPopulationWorld):
+        isLowPop = purchaseWorld.hasTradeCode(tradeCode=traveller.TradeCode.LowPopulationWorld)
+        if isLowPop:
             notes.append(f'The purchase world has the Low Population trade code, you may struggle to find a seller')
 
-        if saleWorld.hasTradeCode(multiverse.TradeCode.LowPopulationWorld):
+        isLowPop = saleWorld.hasTradeCode(tradeCode=traveller.TradeCode.LowPopulationWorld)
+        if isLowPop:
             notes.append(f'The sale world has the Low Population trade code, you may struggle to find a buyer')
 
         if notes:

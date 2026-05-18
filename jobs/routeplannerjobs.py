@@ -1,6 +1,6 @@
+import astronomer
 import logic
 import time
-import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -18,8 +18,9 @@ class RoutePlannerJob(QtCore.QThread):
             self,
             parent: QtCore.QObject,
             routingType: logic.RoutingType,
-            milieu: multiverse.Milieu,
-            hexSequence: typing.Sequence[multiverse.World],
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
+            hexSequence: typing.Sequence[astronomer.World],
             shipTonnage: int,
             shipJumpRating: int,
             shipFuelCapacity: int,
@@ -39,6 +40,7 @@ class RoutePlannerJob(QtCore.QThread):
         # exception to this is world objects as they are thread safe (although lists
         # holding them do need to be copied)
         self._routingType = routingType
+        self._universe = universe
         self._milieu = milieu
         self._hexSequence = list(hexSequence)
         self._shipTonnage = shipTonnage
@@ -83,6 +85,7 @@ class RoutePlannerJob(QtCore.QThread):
         try:
             jumpRoute = self._planner.calculateSequenceRoute(
                 routingType=self._routingType,
+                universe=self._universe,
                 milieu=self._milieu,
                 hexSequence=self._hexSequence,
                 shipTonnage=self._shipTonnage,

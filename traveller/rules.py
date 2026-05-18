@@ -24,7 +24,7 @@ class Rules(object):
         classBStarPortFuelType: StarPortFuelType = StarPortFuelType.AllTypes,
         classCStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
         classDStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
-        classEStarPortFuelType: StarPortFuelType = StarPortFuelType.NoFuel,
+        classEStarPortFuelType: StarPortFuelType = StarPortFuelType.NoFuel
         ) -> None: ...
 
     @typing.overload
@@ -83,6 +83,6 @@ class Rules(object):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Rules):
-            return False
+            return NotImplemented
         return self._system == other._system and \
             self._starPortFuelTypes == other._starPortFuelTypes

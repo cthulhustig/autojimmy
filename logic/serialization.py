@@ -1,10 +1,12 @@
+import astronomer
 import common
 import enum
 import logic
+import logging
 import json
 import packaging
 import packaging.version
-import multiverse
+import traveller
 import typing
 
 def serialiseEnum(
@@ -173,7 +175,7 @@ def deserialiseWorldFilter(
 
         return logic.ZoneFiler(
             operation=deserialiseEnum(type=logic.ComparisonFilterOperation, data=operation),
-            value=deserialiseEnum(type=multiverse.ZoneType, data=value))
+            value=deserialiseEnum(type=astronomer.ZoneType, data=value))
     elif filterType == 'uwp':
         element = data.get('element')
         if not element:
@@ -188,7 +190,7 @@ def deserialiseWorldFilter(
             raise RuntimeError('UWP filter is missing the value element')
 
         return logic.UWPFilter(
-            element=deserialiseEnum(type=multiverse.UWP.Element, data=element),
+            element=deserialiseEnum(type=astronomer.UWP.Element, data=element),
             operation=deserialiseEnum(type=logic.ComparisonFilterOperation, data=operation),
             value=value)
     elif filterType == 'economics':
@@ -205,7 +207,7 @@ def deserialiseWorldFilter(
             raise RuntimeError('Economics filter is missing the value element')
 
         return logic.EconomicsFilter(
-            element=deserialiseEnum(type=multiverse.Economics.Element, data=element),
+            element=deserialiseEnum(type=astronomer.Economics.Element, data=element),
             operation=deserialiseEnum(type=logic.ComparisonFilterOperation, data=operation),
             value=value)
     elif filterType == 'culture':
@@ -222,7 +224,7 @@ def deserialiseWorldFilter(
             raise RuntimeError('Culture filter is missing the value element')
 
         return logic.CultureFilter(
-            element=deserialiseEnum(type=multiverse.Culture.Element, data=element),
+            element=deserialiseEnum(type=astronomer.Culture.Element, data=element),
             operation=deserialiseEnum(type=logic.ComparisonFilterOperation, data=operation),
             value=value)
     elif filterType == 'refuelling':
@@ -272,7 +274,7 @@ def deserialiseWorldFilter(
 
         return logic.BaseFilter(
             operation=deserialiseEnum(type=logic.ListFilterOperation, data=operation),
-            value=deserialiseEnumList(type=multiverse.BaseType, data=value))
+            value=deserialiseEnumList(type=astronomer.BaseType, data=value))
     elif filterType == 'nobility':
         operation = data.get('operation')
         if not operation:
@@ -284,7 +286,7 @@ def deserialiseWorldFilter(
 
         return logic.NobilityFilter(
             operation=deserialiseEnum(type=logic.ListFilterOperation, data=operation),
-            value=deserialiseEnumList(type=multiverse.NobilityType, data=value))
+            value=deserialiseEnumList(type=astronomer.NobilityType, data=value))
     elif filterType == 'remarks':
         operation = data.get('operation')
         if not operation:
@@ -308,7 +310,7 @@ def deserialiseWorldFilter(
 
         return logic.TradeCodeFilter(
             operation=deserialiseEnum(type=logic.ListFilterOperation, data=operation),
-            value=deserialiseEnumList(type=multiverse.TradeCode, data=value))
+            value=deserialiseEnumList(type=traveller.TradeCode, data=value))
     elif filterType == 'pbg':
         element = data.get('element')
         if not element:
@@ -323,7 +325,7 @@ def deserialiseWorldFilter(
             raise RuntimeError('PBG filter is missing the value element')
 
         return logic.PBGFilter(
-            element=deserialiseEnum(type=multiverse.PBG.Element, data=element),
+            element=deserialiseEnum(type=astronomer.PBG.Element, data=element),
             operation=deserialiseEnum(type=logic.ComparisonFilterOperation, data=operation),
             value=value)
 
@@ -346,7 +348,13 @@ def deserialiseWorldFiltersList(
 
     worldFilters = []
     for item in items:
-        worldFilters.append(deserialiseWorldFilter(data=item))
+        try:
+            worldFilters.append(deserialiseWorldFilter(data=item))
+        except Exception as ex:
+            # Log and continue on failure. This is done so that the user doesn't
+            # loose all the filters if they have a filter that is using the
+            # deprecated red/amber zone trade codes
+            logging.warning('Failed to load world filter', exc_info=ex)
     return worldFilters
 
 #
@@ -365,15 +373,15 @@ def deserialiseWorldFiltersList(
 _JumpRouteVersion = packaging.version.Version('2.0')
 
 _MilieuToString = {
-    multiverse.Milieu.IW: 'IW',
-    multiverse.Milieu.M0: 'M0',
-    multiverse.Milieu.M990: 'M990',
-    multiverse.Milieu.M1105: 'M1105',
-    multiverse.Milieu.M1120: 'M1120',
-    multiverse.Milieu.M1201: 'M1201',
-    multiverse.Milieu.M1248: 'M1248',
-    multiverse.Milieu.M1900: 'M1900'}
-assert(len(_MilieuToString) == len(multiverse.Milieu))
+    astronomer.Milieu.IW: 'IW',
+    astronomer.Milieu.M0: 'M0',
+    astronomer.Milieu.M990: 'M990',
+    astronomer.Milieu.M1105: 'M1105',
+    astronomer.Milieu.M1120: 'M1120',
+    astronomer.Milieu.M1201: 'M1201',
+    astronomer.Milieu.M1248: 'M1248',
+    astronomer.Milieu.M1900: 'M1900'}
+assert(len(_MilieuToString) == len(astronomer.Milieu))
 _StringToMilieu = {v: k for k, v in _MilieuToString.items()}
 
 _RefuellingTypeToString = {
@@ -432,7 +440,8 @@ def _serialiseLogistics(
 
 def _deserialiseLogistics(
         jsonData: typing.Mapping[str, typing.Any],
-        route: logic.JumpRoute
+        route: logic.JumpRoute,
+        universe: astronomer.Universe
         ) -> logic.RouteLogistics:
     milieu = jsonData.get('milieu')
     if milieu is None:
@@ -487,7 +496,7 @@ def _deserialiseLogistics(
             if berthingCost is not None:
                 berthingCost = common.deserialiseCalculation(jsonData=berthingCost)
 
-            world = multiverse.WorldManager.instance().worldByPosition(
+            world = universe.worldByPosition(
                 milieu=milieu,
                 hex=route.nodeAt(routeIndex))
 
@@ -546,7 +555,8 @@ def serialiseJumpRoute(
     return jsonData
 
 def deserialiseJumpRoute(
-        jsonData: typing.Mapping[str, typing.Any]
+        jsonData: typing.Mapping[str, typing.Any],
+        universe: astronomer.Universe
         ) -> typing.Union[logic.JumpRoute, logic.RouteLogistics]:
     jsonVersion = jsonData.get('version')
     if jsonVersion is None:
@@ -584,7 +594,7 @@ def deserialiseJumpRoute(
         if not isinstance(absoluteY, int):
             raise RuntimeError(f'Jump route node {index} absoluteY property is not a integer')
 
-        nodeHex = multiverse.HexPosition(absoluteX, absoluteY)
+        nodeHex = astronomer.HexPosition(absoluteX, absoluteY)
         nodeFlags = 0
 
         waypoint = jsonNode.get('waypoint')
@@ -621,7 +631,10 @@ def deserialiseJumpRoute(
     jsonLogistics: typing.Mapping[str, typing.Any] = jsonData.get('logistics')
     logistics = None
     if jsonLogistics:
-        logistics = _deserialiseLogistics(jsonData=jsonLogistics, route=route)
+        logistics = _deserialiseLogistics(
+            jsonData=jsonLogistics,
+            route=route,
+            universe=universe)
 
     return logistics if logistics else route
 
@@ -633,6 +646,9 @@ def writeJumpRoute(
     with open(path, 'w', encoding='UTF8') as file:
         json.dump(serialiseJumpRoute(route=route, includeCalculations=includeCalculations), file, indent=4)
 
-def readJumpRoute(path: str) -> typing.Union[logic.JumpRoute, logic.RouteLogistics]:
+def readJumpRoute(
+        path: str,
+        universe: astronomer.Universe
+        ) -> typing.Union[logic.JumpRoute, logic.RouteLogistics]:
     with open(path, 'r') as file:
-        return deserialiseJumpRoute(jsonData=json.load(file))
+        return deserialiseJumpRoute(jsonData=json.load(file), universe=universe)

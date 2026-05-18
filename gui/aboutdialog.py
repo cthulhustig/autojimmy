@@ -35,7 +35,7 @@ class AboutDialog(gui.DialogEx):
 
         self._licenseDir = licenseDir
 
-        universeTimestamp = multiverse.DataStore.instance().universeTimestamp()
+        universeTimestamp = multiverse.SnapshotManager.instance().snapshotTimestamp()
         if universeTimestamp:
             universeTimestamp = universeTimestamp.astimezone()
             universeTimestamp = universeTimestamp.strftime('%c')

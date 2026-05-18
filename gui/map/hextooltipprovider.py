@@ -1,15 +1,16 @@
 import app
+import astronomer
 import cartographer
 import gui
 import logic
-import multiverse
 import traveller
 import typing
 
 class HexTooltipProvider(object):
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Collection[app.MapOption],
@@ -18,6 +19,7 @@ class HexTooltipProvider(object):
             ) -> None:
         super().__init__()
 
+        self._universe = universe
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._mapStyle = mapStyle
@@ -25,10 +27,16 @@ class HexTooltipProvider(object):
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
 
-    def milieu(self) -> multiverse.Milieu:
+    def universe(self) -> astronomer.Universe:
+        return self._universe
+
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        self._universe = universe
+
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         self._milieu = milieu
 
     def rules(self) -> traveller.Rules:
@@ -61,13 +69,17 @@ class HexTooltipProvider(object):
     def setTaggingColours(self, colours: typing.Optional[app.TaggingColours]) -> None:
         self._taggingColours = app.TaggingColours(colours) if colours else None
 
-    def tooltip(self, hex: multiverse.HexPosition) -> str:
+    def tooltip(self, hex: astronomer.HexPosition) -> str:
         return gui.createHexToolTip(
-            universe=multiverse.WorldManager.instance().universe(),
+            universe=self._universe,
             milieu=self._milieu,
             hex=hex,
             rules=self._rules,
-            includeHexImage=True, # Always show hex images
+            # Always show hex images
+            includeHexImage=True,
+            # Don't include credits as they can take up a lot of space meaning the tooltip
+            # doesn't fit on the screen
+            includeCredits=False,
             hexImageStyle=self._mapStyle,
             hexImageOptions=self._mapOptions,
             worldTagging=self._worldTagging,

@@ -123,6 +123,10 @@ class ListTable(gui.TableWidgetEx):
         header.setSectionsMovable(True)
         header.setHighlightSections(False) # Don't bold header when cells are selected
         header.sectionResized.connect(self._columnWidthChanged)
+        header.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        header.customContextMenuRequested.connect(
+            self._showHeaderContextMenu)
 
         self.verticalHeader().hide()
         self.setSortingEnabled(True)
@@ -277,16 +281,6 @@ class ListTable(gui.TableWidgetEx):
 
         self._userColumnHidingEnabled = enabled
 
-        header = self.horizontalHeader()
-        if self._userColumnHidingEnabled:
-            header.setContextMenuPolicy(
-                QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-            header.customContextMenuRequested.connect(
-                self._showHeaderContextMenu)
-        else:
-            header.customContextMenuRequested.disconnect(
-                self._showHeaderContextMenu)
-
         # Update columns to match new state
         if self._activeColumns:
             for columnHeader in self._activeColumns:
@@ -309,7 +303,7 @@ class ListTable(gui.TableWidgetEx):
         item = self.item(row, 0)
         return item and item.isSelected()
 
-    def setSelectedRow(self, row: int, select: bool):
+    def setSelectedRow(self, row: int, select: bool = True):
         for column in range(self.columnCount()):
             item = self.item(row, column)
             if item:
@@ -740,42 +734,45 @@ class ListTable(gui.TableWidgetEx):
             self,
             point: QtCore.QPoint
             ) -> None:
-        if not self._activeColumns or not self._userColumnHidingEnabled:
-            return
-
-        visibleColumnCount = self.visibleColumnCount()
-
         menu = QtWidgets.QMenu(self)
-        for columnHeader in self._activeColumns:
-            columnIndex = self.columnHeaderIndex(columnHeader)
-            if columnIndex < 0:
-                continue
 
-            columnText = self.columnHeaderText(columnIndex)
-            if not columnText:
-                continue
+        if self._activeColumns and self._userColumnHidingEnabled:
+            visibleColumnCount = self.visibleColumnCount()
 
-            action = QtWidgets.QAction(columnText, self)
-            action.setCheckable(True)
-            action.setChecked(not self.isColumnHidden(columnIndex))
-            action.setData(columnIndex)
-            partial = functools.partial(self._userHideColumnAction, action)
-            action.changed.connect(partial)
+            for columnHeader in self._activeColumns:
+                columnIndex = self.columnHeaderIndex(columnHeader)
+                if columnIndex < 0:
+                    continue
 
-            if (visibleColumnCount == 1) and action.isChecked():
-                # Don't allow the user to hide the last column as the header
-                # will be hidden and there is no great way of getting it back
-                action.setDisabled(True)
+                columnText = self.columnHeaderText(columnIndex)
+                if not columnText:
+                    continue
 
-            menu.addAction(action)
+                action = QtWidgets.QAction(columnText, self)
+                action.setCheckable(True)
+                action.setChecked(not self.isColumnHidden(columnIndex))
+                action.setData(columnIndex)
+                partial = functools.partial(self._userHideColumnAction, action)
+                action.changed.connect(partial)
+
+                if (visibleColumnCount == 1) and action.isChecked():
+                    # Don't allow the user to hide the last column as the header
+                    # will be hidden and there is no great way of getting it back
+                    action.setDisabled(True)
+
+                menu.addAction(action)
 
         if self.isSortingEnabled():
-            menu.addSeparator()
+            if not menu.isEmpty():
+                menu.addSeparator()
 
             action = QtWidgets.QAction('Clear Sorting', self)
             action.triggered.connect(self._clearSortingAction)
             action.setEnabled(self.currentSortColumnIndex() >= 0)
             menu.addAction(action)
+
+        if menu.isEmpty():
+            return
 
         menu.exec(self.mapToGlobal(point))
 

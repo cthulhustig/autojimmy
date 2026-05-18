@@ -1,10 +1,10 @@
 import app
+import astronomer
 import common
 import enum
 import gui
 import logging
 import logic
-import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -101,6 +101,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._randomGenerator = common.RandomGenerator()
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
+            universe=astronomer.WorldManager.instance().universe(),
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
@@ -277,6 +278,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         return super().eventFilter(object, event)
 
     def _setupWorldSelectControls(self) -> None:
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
@@ -287,6 +289,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._saleWorldWidget = gui.HexSelectToolWidget(
+            universe=universe,
             milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
@@ -528,7 +531,11 @@ class SaleCalculatorWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._hexTooltipProvider.setUniverse(universe=universe)
+            self._saleWorldWidget.setUniverse(universe=universe)
+        elif option is app.ConfigOption.Milieu:
             self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._saleWorldWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
@@ -579,9 +586,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
             return
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
-        exoticsTradeGood = traveller.tradeGoodFromId(
+        exoticsTradeGood = logic.tradeGoodFromId(
             ruleSystem=rules.system(),
-            tradeGoodId=traveller.TradeGoodIds.Exotics)
+            tradeGoodId=logic.TradeGoodIds.Exotics)
 
         # There might be multiple cargo records for a given trade good. Condense it down to the
         # tonnage for each trade good. We loose the purchase prices from the original options but
@@ -624,16 +631,16 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         # Don't list exotics. Calculating their sale price requires role playing rather than dice
         # rolling
-        ignoreTradeGoods = [traveller.tradeGoodFromId(
+        ignoreTradeGoods = [logic.tradeGoodFromId(
             ruleSystem=rules.system(),
-            tradeGoodId=traveller.TradeGoodIds.Exotics)]
+            tradeGoodId=logic.TradeGoodIds.Exotics)]
 
         # Don't list trade goods that have already been added to the list
         for row in range(self._cargoTable.rowCount()):
             cargoRecord = self._cargoTable.cargoRecord(row)
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
-        tradeGoods = traveller.tradeGoodList(
+        tradeGoods = logic.tradeGoodList(
             ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
@@ -733,7 +740,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         for cargoRecord in self._cargoTable.cargoRecords():
             tradeGood = cargoRecord.tradeGood()
 
-            if tradeGood.id() != traveller.TradeGoodIds.Exotics:
+            if tradeGood.id() != logic.TradeGoodIds.Exotics:
                 # Only generate prices for goods that match the selected legality
                 isIllegal = tradeGood.isIllegal(world=saleWorld)
                 if blackMarket == isIllegal:
@@ -755,7 +762,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         saleCargo, localBrokerIsInformant = logic.generateRandomSaleCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=saleWorld,
             currentCargo=cargoRecords,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),

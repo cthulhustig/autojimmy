@@ -1,13 +1,13 @@
-import multiverse
+import astronomer
 import typing
 
 _HalfHexHeight = 0.5
-_HalfHexMinWidth = (0.5 - multiverse.HexWidthOffset) * multiverse.ParsecScaleX
-_HalfHexMaxWidth = (0.5 + multiverse.HexWidthOffset) * multiverse.ParsecScaleX
+_HalfHexMinWidth = (0.5 - astronomer.HexWidthOffset) * astronomer.ParsecScaleX
+_HalfHexMaxWidth = (0.5 + astronomer.HexWidthOffset) * astronomer.ParsecScaleX
 
 def _findStartingHex(
-        hexes: typing.Iterable[multiverse.HexPosition]
-        ) -> typing.Tuple[multiverse.HexPosition, typing.Optional[multiverse.HexEdge]]:
+        hexes: typing.Iterable[astronomer.HexPosition]
+        ) -> typing.Tuple[astronomer.HexPosition, typing.Optional[astronomer.HexEdge]]:
     # Find the hex with the lowest x value, if there are multiple with the
     # same x value, find the one with the largest y value. This finds a hex
     # that is guaranteed to be on the edge of a group of hexes. Visually
@@ -26,20 +26,20 @@ def _findStartingHex(
     # works we know that there can only be adjacent hexes along the upper,
     # upper right and lower right edges. If this wasn't true then this
     # wouldn't be the hex with the lowest x value and largest y value.
-    hex = bestHex.neighbourHex(edge=multiverse.HexEdge.LowerRight)
+    hex = bestHex.neighbour(edge=astronomer.HexEdge.BottomRight)
     if hex in hexes:
-        return (bestHex, multiverse.HexEdge.Lower)
-    hex = bestHex.neighbourHex(edge=multiverse.HexEdge.UpperRight)
+        return (bestHex, astronomer.HexEdge.Bottom)
+    hex = bestHex.neighbour(edge=astronomer.HexEdge.TopRight)
     if hex in hexes:
-        return (bestHex, multiverse.HexEdge.LowerRight)
-    hex = bestHex.neighbourHex(edge=multiverse.HexEdge.Upper)
+        return (bestHex, astronomer.HexEdge.BottomRight)
+    hex = bestHex.neighbour(edge=astronomer.HexEdge.Top)
     if hex in hexes:
-        return (bestHex, multiverse.HexEdge.UpperRight)
+        return (bestHex, astronomer.HexEdge.TopRight)
     return (bestHex, None) # This hex has no adjacent hexes so it's outline is the outline
 
 def _floodRemove(
-        hex: multiverse.HexPosition,
-        hexes: typing.Set[multiverse.HexPosition]
+        hex: astronomer.HexPosition,
+        hexes: typing.Set[astronomer.HexPosition]
         ) -> None:
     # Remove all hexes that touch hex, then remove all hexes that touch those hexes,
     # repeat until nothing else to remove (although there may still be hexes left on
@@ -48,36 +48,36 @@ def _floodRemove(
     hexes.remove(hex)
     while todo:
         hex = todo.pop(0)
-        for edge in multiverse.HexEdge:
-            adjacent = hex.neighbourHex(edge=edge)
+        for edge in astronomer.HexEdge:
+            adjacent = hex.neighbour(edge=edge)
             if adjacent in hexes:
                 hexes.remove(adjacent)
                 todo.append(adjacent)
 
 
 _AntiClockwiseOffsets = {
-    multiverse.HexEdge.Upper: (-_HalfHexMinWidth, -_HalfHexHeight),
-    multiverse.HexEdge.UpperRight: (_HalfHexMinWidth, -_HalfHexHeight),
-    multiverse.HexEdge.LowerRight: (_HalfHexMaxWidth, 0),
-    multiverse.HexEdge.Lower: (_HalfHexMinWidth, _HalfHexHeight),
-    multiverse.HexEdge.LowerLeft: (-_HalfHexMinWidth, _HalfHexHeight),
-    multiverse.HexEdge.UpperLeft: (-_HalfHexMaxWidth, 0)
+    astronomer.HexEdge.Top: (-_HalfHexMinWidth, -_HalfHexHeight),
+    astronomer.HexEdge.TopRight: (_HalfHexMinWidth, -_HalfHexHeight),
+    astronomer.HexEdge.BottomRight: (_HalfHexMaxWidth, 0),
+    astronomer.HexEdge.Bottom: (_HalfHexMinWidth, _HalfHexHeight),
+    astronomer.HexEdge.BottomLeft: (-_HalfHexMinWidth, _HalfHexHeight),
+    astronomer.HexEdge.TopLeft: (-_HalfHexMaxWidth, 0)
 }
 
 # Return the most anticlockwise point on the given edge in isotropic space
-def _getAntiClockwisePoint(
-        hex: multiverse.HexPosition,
-        edge: multiverse.HexEdge
+def _antiClockwisePoint(
+        hex: astronomer.HexPosition,
+        edge: astronomer.HexEdge
         ) -> typing.Tuple[float, float]:
-    x, y = hex.isotropicSpace()
+    x, y = hex.isotropicCenter()
     offsetX, offsetY = _AntiClockwiseOffsets[edge]
     return (x + offsetX, y + offsetY)
 
 # Return the outline of a single hex in isotropic space
-def _getHexOutline(
-        hex: multiverse.HexPosition
+def _hexOutline(
+        hex: astronomer.HexPosition
         ) -> typing.Iterable[typing.Tuple[float, float]]:
-    x, y = hex.isotropicSpace()
+    x, y = hex.isotropicCenter()
     return [
         (x - _HalfHexMinWidth, y - _HalfHexHeight),
         (x + _HalfHexMinWidth, y - _HalfHexHeight),
@@ -87,23 +87,22 @@ def _getHexOutline(
         (x - _HalfHexMaxWidth, y)
     ]
 
-
 # Calculate the edge of the adjacent hex processing moves to if the adjacent
 # hex bordered the specified edge
 # NOTE: This assumes clockwise processing
 _AdjacentTransitionMap = {
-    multiverse.HexEdge.Upper: multiverse.HexEdge.LowerLeft,
-    multiverse.HexEdge.UpperRight: multiverse.HexEdge.UpperLeft,
-    multiverse.HexEdge.LowerRight: multiverse.HexEdge.Upper,
-    multiverse.HexEdge.Lower: multiverse.HexEdge.UpperRight,
-    multiverse.HexEdge.LowerLeft: multiverse.HexEdge.LowerRight,
-    multiverse.HexEdge.UpperLeft: multiverse.HexEdge.Lower
+    astronomer.HexEdge.Top: astronomer.HexEdge.BottomLeft,
+    astronomer.HexEdge.TopRight: astronomer.HexEdge.TopLeft,
+    astronomer.HexEdge.BottomRight: astronomer.HexEdge.Top,
+    astronomer.HexEdge.Bottom: astronomer.HexEdge.TopRight,
+    astronomer.HexEdge.BottomLeft: astronomer.HexEdge.BottomRight,
+    astronomer.HexEdge.TopLeft: astronomer.HexEdge.Bottom
 }
 
 # NOTE: This returns outlines in map coordinates
 def calculateOuterHexOutlines(
-        hexes: typing.Iterable[multiverse.HexPosition]
-        ) -> typing.Iterable[typing.Iterable[typing.Tuple[float, float]]]:
+        hexes: typing.Iterable[astronomer.HexPosition]
+        ) -> typing.List[typing.List[typing.Tuple[float, float]]]:
     # NOTE: It's important this uses a set. As well as for performance I suspect you could
     # get into an infinite loop if the same position appeared more than once
     todo = set(hexes)
@@ -112,7 +111,7 @@ def calculateOuterHexOutlines(
         startHex, startEdge = _findStartingHex(hexes=todo)
         if not startEdge:
             # This is a single hex on it's own
-            borders.append(_getHexOutline(hex=startHex))
+            borders.append(_hexOutline(hex=startHex))
             todo.remove(startHex)
             continue
 
@@ -120,7 +119,7 @@ def calculateOuterHexOutlines(
         hex = startHex
         edge = startEdge
         while True:
-            adjacentHex = hex.neighbourHex(edge=edge)
+            adjacentHex = hex.neighbour(edge=edge)
             if adjacentHex in todo:
                 # There is an adjacent hex so transition to it
                 hex = adjacentHex
@@ -129,10 +128,10 @@ def calculateOuterHexOutlines(
                 # There is no adjacent hex so add the most anti-clockwise
                 # point on the current edge and transition to the next
                 # edge
-                border.append(_getAntiClockwisePoint(
+                border.append(_antiClockwisePoint(
                     hex=hex,
                     edge=edge))
-                edge = multiverse.anticlockwiseHexEdge(edge)
+                edge = astronomer.anticlockwiseHexEdge(edge)
 
             if adjacentHex == startHex and edge == startEdge:
                 # Finished this outline
@@ -144,22 +143,21 @@ def calculateOuterHexOutlines(
     return borders
 
 def calculateCompleteHexOutlines(
-        hexes: typing.Iterable[multiverse.HexPosition]
-        ) -> typing.Iterable[typing.Iterable[typing.Tuple[float, float]]]:
+        hexes: typing.Iterable[astronomer.HexPosition]
+        ) -> typing.List[typing.List[typing.Tuple[float, float]]]:
     hexDataMap = {hex: {} for hex in hexes}
-    for hex in hexes:
-        edgeMap = hexDataMap[hex]
-        for edge in multiverse.HexEdge:
+    for hex, edgeMap in hexDataMap.items():
+        for edge in astronomer.HexEdge:
             if edge in edgeMap:
                 # This edge has already been processed when the adjacent hex was
                 # processed
                 continue
 
-            adjacentHex = hex.neighbourHex(edge=edge)
+            adjacentHex = hex.neighbour(edge=edge)
             adjacentEdgeMap = hexDataMap.get(adjacentHex)
             if adjacentEdgeMap != None:
                 edgeMap[edge] = adjacentHex
-                adjacentEdgeMap[multiverse.oppositeHexEdge(edge)] = hex
+                adjacentEdgeMap[astronomer.oppositeHexEdge(edge)] = hex
 
     borders = []
     while True:
@@ -172,7 +170,7 @@ def calculateCompleteHexOutlines(
                 # edges processed already
                 continue
             nextEdge = None
-            for edge in multiverse.HexEdge:
+            for edge in astronomer.HexEdge:
                 # NOTE: The use of not in is important here rather than doing
                 # something like using get and checking for null. The edge
                 # not being present means the edge is an outer edge that needs
@@ -204,10 +202,10 @@ def calculateCompleteHexOutlines(
                 # point on the current edge and transition to the next
                 # edge
                 edgeMap[edge] = None # Mark the current edge as processed
-                border.append(_getAntiClockwisePoint(
+                border.append(_antiClockwisePoint(
                     hex=hex,
                     edge=edge))
-                edge = multiverse.anticlockwiseHexEdge(edge)
+                edge = astronomer.anticlockwiseHexEdge(edge)
 
             if hex == startHex and edge == startEdge:
                 # Finished this outline

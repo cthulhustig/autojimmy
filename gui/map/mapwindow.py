@@ -1,17 +1,22 @@
 import app
+import astronomer
 import cartographer
 import gui
 import logic
-import multiverse
 import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 class MapWindow(gui.WindowWidget):
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            parent: typing.Optional['QtWidgets.QWidget'] = None
+            ) -> None:
         super().__init__(
             title='Universe Map',
-            configSection='MapWindow')
+            configSection='MapWindow',
+            parent=parent)
 
+        universe = astronomer.WorldManager.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
@@ -23,7 +28,7 @@ class MapWindow(gui.WindowWidget):
         app.Config.instance().configChanged.connect(self._appConfigChanged)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=multiverse.WorldManager.instance().universe(),
+            universe=universe,
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -44,7 +49,7 @@ class MapWindow(gui.WindowWidget):
 
     def centerOnHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=64), # None keeps current scale
             ) -> None:
         self._mapWidget.centerOnHex(
@@ -54,7 +59,7 @@ class MapWindow(gui.WindowWidget):
 
     def centerOnHexes(
             self,
-            hexes: multiverse.HexPosition
+            hexes: astronomer.HexPosition
             ) -> None:
         self._mapWidget.centerOnHexes(
             hexes=hexes,
@@ -63,7 +68,7 @@ class MapWindow(gui.WindowWidget):
     def setJumpRoute(
             self,
             jumpRoute: typing.Optional[logic.JumpRoute],
-            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
+            refuellingPlan: typing.Optional[logic.RefuellingPlan] = None
             ) -> None:
         self._mapWidget.setJumpRoute(
             jumpRoute=jumpRoute,
@@ -71,37 +76,21 @@ class MapWindow(gui.WindowWidget):
         self._mapWidget.centerOnJumpRoute(
             immediate=self.isHidden())
 
-    def highlightHex(
-            self,
-            hex: multiverse.HexPosition,
-            radius: float = 0.5,
-            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
-            ) -> None:
-        self._mapWidget.highlightHex(
-            hex=hex,
-            radius=radius,
-            colour=colour)
-        self._mapWidget.centerOnHex(
-            hex=hex,
-            immediate=self.isHidden())
-
     def highlightHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             radius: float = 0.5,
             colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
-        self._mapWidget.highlightHexes(
+        overlay = gui.HexPointsMapOverlay(
             hexes=hexes,
             radius=radius,
-            colour=colour)
+            colour=colour,
+            depth=gui.MapWidgetEx.userOverlayMinDepth())
+        self._mapWidget.addOverlay(overlay=overlay)
         self._mapWidget.centerOnHexes(
             hexes=hexes,
             immediate=self.isHidden())
-
-    def clearOverlays(self) -> None:
-        self._mapWidget.clearHexHighlights()
-        self._mapWidget.clearJumpRoute()
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -130,7 +119,10 @@ class MapWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
+        if option is app.ConfigOption.Universe:
+            self._mapWidget.setUniverse(
+                universe=astronomer.WorldManager.instance().universe())
+        elif option is app.ConfigOption.Milieu:
             self._mapWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._mapWidget.setRules(rules=newValue)
