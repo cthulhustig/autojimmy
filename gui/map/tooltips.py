@@ -513,9 +513,10 @@ def createHexToolTip(
                     toolTip += html.escape(product.author())
                     toolTip += '</li>'
 
-                toolTip += '<li>'
-                toolTip += html.escape(product.publisher())
-                toolTip += '</li>'
+                if product.publisher():
+                    toolTip += '<li>'
+                    toolTip += html.escape(product.publisher())
+                    toolTip += '</li>'
 
             toolTip += '</ul>'
 

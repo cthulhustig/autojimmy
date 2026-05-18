@@ -1269,7 +1269,7 @@ def _createDbRoutes(
 
             dbLineStyle = None
             if route.style():
-                dbLineStyle = _mapAstronomerLabelSizeToDbLabelSize(route.style())
+                dbLineStyle = _mapAstronomerLineStyleToDbLineStyle(route.style())
                 if dbLineStyle is None:
                     pass # TODO: Log something
 

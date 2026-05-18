@@ -16,16 +16,22 @@ class EditableUniverse(astronomer.Universe):
 
     def replaceSector(
             self,
-            oldSector: azathoth.EditableSector,
-            newSector: azathoth.EditableSector
+            oldSector: typing.Optional[azathoth.EditableSector],
+            newSector: typing.Optional[azathoth.EditableSector]
             ) -> None:
-        if oldSector.milieu() != newSector.milieu():
-            raise ValueError(f'Sectors have different milieu ({oldSector.milieu().value} vs {newSector.milieu().value})')
-        if oldSector.position() != newSector.position():
-            raise ValueError(f'Sectors have different milieu ({oldSector.position().elements()} vs {newSector.position().elements()})')
+        if oldSector and newSector:
+            if oldSector.milieu() != newSector.milieu():
+                raise ValueError(f'Sectors have different milieu ({oldSector.milieu().value} vs {newSector.milieu().value})')
+            if oldSector.position() != newSector.position():
+                raise ValueError(f'Sectors have different milieu ({oldSector.position().elements()} vs {newSector.position().elements()})')
 
-        if oldSector.entityId() not in self._idToEntityMap:
+        if oldSector and oldSector.entityId() not in self._idToEntityMap:
             raise ValueError(f'Sectors {oldSector.entityId()} is not in universe {self.universeId()}')
 
-        self._removeSector(oldSector)
-        self._addSector(newSector)
+        if newSector and newSector.entityId() in self._idToEntityMap:
+            raise ValueError(f'Sectors {newSector.entityId()} is already in universe {self.universeId()}')
+
+        if oldSector:
+            self._removeSector(oldSector)
+        if newSector:
+            self._addSector(newSector)

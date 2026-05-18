@@ -599,7 +599,7 @@ def formatXMLMetadata(metadata: survey.RawMetadata) -> str:
     sectorAttributes = {}
 
     if metadata.selected() != None:
-        sectorAttributes['Selected'] = str(metadata.selected())
+        sectorAttributes['Selected'] = str(metadata.selected()).lower()
 
     # NOTE: The Traveller Map documentation doesn't mention Tags or Abbreviation for the XML
     # format but the XSD does have them
@@ -609,6 +609,9 @@ def formatXMLMetadata(metadata: survey.RawMetadata) -> str:
 
     if metadata.abbreviation() != None:
         sectorAttributes['Abbreviation'] = metadata.abbreviation()
+
+    if metadata.sectorLabel() != None:
+        sectorAttributes['Label'] = metadata.sectorLabel()
 
     sectorElement = xml.etree.ElementTree.Element('Sector', sectorAttributes)
 
@@ -683,9 +686,11 @@ def formatXMLMetadata(metadata: survey.RawMetadata) -> str:
             attributes = {}
             if border.allegiance() != None:
                 attributes['Allegiance'] = border.allegiance()
-            if border.showLabel() != None:
+            # NOTE: Only write out show label and wrap if they are not the
+            # default (true and false respectively)
+            if border.showLabel() != None and not border.showLabel():
                 attributes['ShowLabel'] = str(border.showLabel()).lower()
-            if border.wrapLabel() != None:
+            if border.wrapLabel() != None and border.wrapLabel():
                 attributes['WrapLabel'] = str(border.wrapLabel()).lower()
             if border.labelHex() != None:
                 attributes['LabelPosition'] = border.labelHex()
@@ -735,9 +740,11 @@ def formatXMLMetadata(metadata: survey.RawMetadata) -> str:
         regionsElement = xml.etree.ElementTree.SubElement(sectorElement, 'Regions')
         for region in regions:
             attributes = {}
-            if region.showLabel() != None:
+            # NOTE: Only write out show label and wrap if they are not the
+            # default (true and false respectively)
+            if region.showLabel() != None and not region.showLabel():
                 attributes['ShowLabel'] = str(region.showLabel()).lower()
-            if region.wrapLabel() != None:
+            if region.wrapLabel() != None and region.wrapLabel():
                 attributes['WrapLabel'] = str(region.wrapLabel()).lower()
             if region.labelHex() != None:
                 attributes['LabelPosition'] = region.labelHex()
@@ -807,11 +814,17 @@ def formatXMLMetadata(metadata: survey.RawMetadata) -> str:
 def formatJSONMetadata(metadata: survey.RawMetadata) -> str:
     sectorElement = {}
 
+    if metadata.selected() != None:
+        sectorElement['Selected'] = str(metadata.selected()).lower()
+
     if metadata.tags() != None:
         sectorElement['Tags'] = metadata.tags()
 
     if metadata.abbreviation() != None:
         sectorElement['Abbreviation'] = metadata.abbreviation()
+
+    if metadata.sectorLabel() != None:
+        sectorElement['Label'] = metadata.sectorLabel()
 
     namesElement = []
     sectorElement['Names'] = namesElement
@@ -887,9 +900,11 @@ def formatJSONMetadata(metadata: survey.RawMetadata) -> str:
             borderElement = {'Path': ' '.join(border.hexes())}
             if border.allegiance() != None:
                 borderElement['Allegiance'] = border.allegiance()
-            if border.showLabel() != None:
+            # NOTE: Only write out show label and wrap if they are not the
+            # default (true and false respectively)
+            if border.showLabel() != None and not border.showLabel():
                 borderElement['ShowLabel'] = border.showLabel()
-            if border.wrapLabel() != None:
+            if border.wrapLabel() != None and border.wrapLabel():
                 borderElement['WrapLabel'] = border.wrapLabel()
             if border.labelHex() != None:
                 borderElement['LabelPosition'] = border.labelHex()
@@ -932,9 +947,11 @@ def formatJSONMetadata(metadata: survey.RawMetadata) -> str:
         sectorElement['Regions'] = regionsElement
         for region in regions:
             regionElement = {'Path': ' '.join(region.hexes())}
-            if region.showLabel() != None:
+            # NOTE: Only write out show label and wrap if they are not the
+            # default (true and false respectively)
+            if region.showLabel() != None and not region.showLabel():
                 regionElement['ShowLabel'] = region.showLabel()
-            if region.wrapLabel() != None:
+            if region.wrapLabel() != None and region.wrapLabel():
                 regionElement['WrapLabel'] = region.wrapLabel()
             if region.labelHex() != None:
                 regionElement['LabelPosition'] = region.labelHex()

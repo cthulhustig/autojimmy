@@ -2405,7 +2405,7 @@ def _createRawRoutes(
                     pass # TODO: Log something
 
             rawRoutes.append(survey.RawRoute(
-                startHex=_formatHexString(dbRoute.startHexX(), dbRoute.startHexX()),
+                startHex=_formatHexString(dbRoute.startHexX(), dbRoute.startHexY()),
                 endHex=_formatHexString(dbRoute.endHexX(), dbRoute.endHexY()),
                 startOffsetX=dbRoute.startOffsetX() if dbRoute.startOffsetX() else None,
                 startOffsetY=dbRoute.startOffsetY() if dbRoute.startOffsetY() else None,

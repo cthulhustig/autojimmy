@@ -2,6 +2,9 @@ import common
 import enum
 import typing
 
+# TODO: This probably needs to support arbitrary tags so the user
+# can add their own
+
 class SectorTag(enum.Enum):
     Official = 'Official'
     Preserve = 'Preserve'
