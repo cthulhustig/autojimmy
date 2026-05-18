@@ -644,7 +644,7 @@ def formatXMLMetadata(metadata: survey.RawMetadata) -> str:
     allegiances = metadata.allegiances()
     if allegiances:
         allegiancesElement = xml.etree.ElementTree.SubElement(sectorElement, 'Allegiances')
-        for allegiance in allegiances:
+        for allegiance in sorted(allegiances, key=lambda a: a.code()):
             attributes = {'Code': allegiance.code()}
             if allegiance.base():
                 attributes['Base'] = allegiance.base()
@@ -855,7 +855,7 @@ def formatJSONMetadata(metadata: survey.RawMetadata) -> str:
     if allegiances:
         allegiancesElement = []
         sectorElement['Allegiances'] = allegiancesElement
-        for allegiance in allegiances:
+        for allegiance in sorted(allegiances, key=lambda a: a.code()):
             allegianceElement = {
                 'Name': allegiance.name(),
                 'Code': allegiance.code()}
