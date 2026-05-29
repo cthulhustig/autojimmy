@@ -106,24 +106,21 @@ class Economics(object):
             infrastructure: typing.Optional[str] = None,
             efficiency: typing.Optional[str] = None
             ) -> None:
+        survey.validateOptionalResources(name='resources', value=resources)
+        survey.validateOptionalLabour(name='labour', value=labour)
+        survey.validateOptionalInfrastructure(name='infrastructure', value=infrastructure)
+        survey.validateOptionalEfficiency(name='efficiency', value=efficiency)
+
         self._valueMap: typing.Dict[Economics.Element, str] = {}
         self._string = None
 
         if resources is not None:
-            if resources not in _ResourcesDescriptionMap:
-                raise ValueError(f'Invalid economics resources code "{resources}"')
             self._valueMap[Economics.Element.Resources] = resources
         if labour is not None:
-            if labour not in _LabourDescriptionMap:
-                raise ValueError(f'Invalid economics labour code "{labour}"')
             self._valueMap[Economics.Element.Labour] = labour
         if infrastructure is not None:
-            if infrastructure not in _InfrastructureDescriptionMap:
-                raise ValueError(f'Invalid economics infrastructure code "{infrastructure}"')
             self._valueMap[Economics.Element.Infrastructure] = infrastructure
         if efficiency is not None:
-            if efficiency not in _EfficiencyDescriptionMap:
-                raise ValueError(f'Invalid economics efficiency code "{efficiency}"')
             self._valueMap[Economics.Element.Efficiency] = efficiency
 
     def string(self) -> str:
@@ -166,7 +163,7 @@ class Economics(object):
             self,
             element: Element
             ) -> str:
-        return Economics._ValueDescriptionsMap[element][self.code(element)]
+        return Economics._ValueDescriptionsMap[element].get(self.code(element), 'Description Unavailable')
 
     def isUnknown(self) -> bool:
         return len(self._valueMap) == 0

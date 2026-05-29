@@ -441,7 +441,7 @@ class WorldFilterDialog(gui.DialogEx):
 
         self._zoneFilterValueComboBox = gui.EnumComboBox(
             type=astronomer.ZoneType,
-            textMap=astronomer.zoneTypeNameMap())
+            textMap=astronomer.zoneTypeDescriptionMap())
 
         layout = gui.FormLayoutEx()
         layout.addRow('Operation:', self._zoneFilterOperationComboBox)

@@ -5,28 +5,33 @@ _ValidZoneCodes = set(['G', 'A', 'R', 'B', 'U', 'F'])
 
 def parseSystemZoneString(
         zone: str,
-        strict: bool = False
+        reporter: typing.Optional[common.Reporter] = None
         ) -> typing.Optional[str]:
     if zone == '?':
         return None
 
-    if zone in _ValidZoneCodes:
-        # TODO: This should log something and probably inform the user for custom sectors
-        return zone
-
-    if not strict:
+    checkZone = zone.upper()
+    if checkZone not in _ValidZoneCodes:
+        if reporter:
+            reporter.addMessage(f'Ignoring invalid Zone code "{zone}"')
         return None
 
-    raise ValueError(f'Invalid zone code "{zone}"')
+    return checkZone
 
 def formatSystemZoneString(
-        zone: typing.Optional[str]
+        zone: typing.Optional[str],
+        reporter: typing.Optional[common.Reporter] = None
         ) -> str:
     if zone is None:
-        return '?'
-    if zone not in _ValidZoneCodes:
-        raise ValueError(f'Invalid zone code "{zone}"')
-    return zone
+        return ''
+
+    checkZone = zone.upper()
+    if checkZone not in _ValidZoneCodes:
+        if reporter:
+            reporter.addMessage(f'Ignoring invalid zone code "{zone}"')
+        return ''
+
+    return checkZone
 
 def _mandatoryZoneValidator(
         name: str,

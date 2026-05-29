@@ -15,43 +15,58 @@ _ValidSpectralScales = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
 
 def parseSystemStellarString(
         string: str,
-        strict: bool = False
-        ) -> typing.Generator[typing.Tuple[
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.List[typing.Tuple[
             str, # Luminosity Class
             typing.Optional[str], # Spectral Class
             typing.Optional[str] # Spectral Scale
-            ], None, None]:
+            ]]:
+    stars = []
     for match in _StellarPattern.finditer(string):
         if match[1] and match[2]:
             # Traveller 5 star format
-            yield (match[2], match[1][0], match[1][1])
+            stars.append((match[2], match[1][0], match[1][1]))
         elif match[3]:
             # Legacy white dwarf format
-            yield (match[3][0], None if len(match[3]) == 1 else match[3][1], None)
+            stars.append((match[3][0], None if len(match[3]) == 1 else match[3][1], None))
         elif match[4]:
             # Traveller 5 white dwarf/black hole/Neutron Star/Pulsar format
-            yield (match[4], None, None)
+            stars.append((match[4], None, None))
         elif match[5]:
             # Unrecognised data
-            if not strict:
-                # TODO: This should probably log
-                continue # Ignore Unrecognised data
-            raise ValueError(f'Stellar string "{string}" contains unrecognised value "{match[0]}"')
+            if reporter:
+                reporter.addMessage(f'Ignoring invalid Stellar string "{match[0]}"')
+            continue # Ignore Unrecognised data
+    return stars
 
 def formatSystemStellarString(
         stars: typing.Iterable[typing.Tuple[
             str, # Luminosity Class
             typing.Optional[str], # Spectral Class
-            typing.Optional[str]]] # Spectral Scale
+            typing.Optional[str]]], # Spectral Scale
+        reporter: typing.Optional[common.Reporter] = None
         ) -> str:
     string = ''
     for luminosityClass, spectralClass, spectralScale in stars:
+        isValid = False
+
         if luminosityClass not in _ValidLuminosityClasses:
-            raise ValueError(f'Invalid luminosity class "{luminosityClass}"')
+            if reporter:
+                reporter.addMessage(f'Ignoring invalid Stellar Luminosity Class "{luminosityClass}"')
+            isValid = False
+
         if spectralClass is not None and spectralClass not in _ValidSpectralClasses:
-            raise ValueError(f'Invalid spectral class "{spectralClass}"')
+            if reporter:
+                reporter.addMessage(f'Ignoring invalid Stellar Spectral Class "{spectralClass}"')
+            isValid = False
+
         if spectralScale is not None and spectralScale not in _ValidSpectralScales:
-            raise ValueError(f'Invalid spectral scale "{spectralScale}"')
+            if reporter:
+                reporter.addMessage(f'Ignoring invalid Stellar Spectral Scale "{spectralScale}"')
+            isValid = False
+
+        if not isValid:
+            continue
 
         if spectralClass is not None and spectralScale is not None:
             # Traveller 5 star format

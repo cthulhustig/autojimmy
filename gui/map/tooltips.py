@@ -103,7 +103,7 @@ def createHexToolTip(
             tagLevel = worldTagging.calculateZoneTagLevel(world=world) if worldTagging else None
             toolTip += '<li><span style="{style}">Zone: {zone}</span></li>'.format(
                 style=formatTaggingStyle(level=tagLevel),
-                zone=html.escape(astronomer.zoneTypeName(zone)))
+                zone=html.escape(astronomer.zoneTypeDescription(zone)))
 
     refuellingTypes = []
     if world:

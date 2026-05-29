@@ -2132,6 +2132,10 @@ class MapWidget(QtWidgets.QWidget):
         # TODO: This needs to be a lot better
         self._renderer.clearCaches()
         self._clearTileCache()
+
+        # If there is a main it may have become invalidated so clear it.
+        self._mainsOverlay.setMain(main=None)
+
         self.update()
 
     @staticmethod

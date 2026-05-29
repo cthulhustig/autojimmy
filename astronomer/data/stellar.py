@@ -67,20 +67,18 @@ class Star(object):
             spectralClass: typing.Optional[str] = None,
             spectralScale: typing.Optional[str] = None
             ) -> None:
+        survey.validateMandatoryLuminosityClass(name='luminosityClass', value=luminosityClass)
+        survey.validateOptionalSpectralClass(name='spectralClass', value=spectralClass)
+        survey.validateOptionalSpectralScale(name='spectralScale', value=spectralScale)
+
         self._valueMap: typing.Dict[Star.Element, str] = {}
         self._string = None
 
-        if luminosityClass not in _LuminosityDescriptionMap:
-            raise ValueError(f'Invalid stellar luminosity class "{luminosityClass}"')
         self._valueMap[Star.Element.LuminosityClass] = luminosityClass
-
-        if spectralClass is not None and spectralClass not in _SpectralClassDescriptionMap:
-            raise ValueError(f'Invalid stellar spectral class "{spectralClass}"')
-        self._valueMap[Star.Element.SpectralClass] = spectralClass
-
-        if spectralScale is not None and spectralScale not in _SpectralScaleDescriptionMap:
-            raise ValueError(f'Invalid stellar spectral scale "{spectralScale}"')
-        self._valueMap[Star.Element.SpectralScale] = spectralScale
+        if spectralClass is not None:
+            self._valueMap[Star.Element.SpectralClass] = spectralClass
+        if spectralScale is not None:
+            self._valueMap[Star.Element.SpectralScale] = spectralScale
 
     @typing.overload
     def code(self, element: typing.Literal[Element.LuminosityClass]) -> str: ...
@@ -101,7 +99,7 @@ class Star(object):
         return self._string
 
     def description(self, element: Element) -> str:
-        return Star._ValueDescriptionsMap[element][self.code(element)]
+        return Star._ValueDescriptionsMap[element].get(self.code(element), 'Description Unavailable')
 
     @staticmethod
     def descriptionMap(element: Element) -> typing.Mapping[str, str]:

@@ -210,7 +210,7 @@ def _createAstronomerWorlds(
                 zone = None
                 if dbZone:
                     try:
-                        zone = astronomer.parseZoneString(dbZone)
+                        zone = astronomer.codeToZoneType(dbZone)
                     except Exception as ex:
                         logging.warning('Failed to parse zone "{zone}" when loading system {systemId} in sector {sectorId} ({name})'.format(
                                 zone=dbZone,
@@ -1243,7 +1243,7 @@ def _createDbSystems(
                 planetoidBeltCount=numPlanetoidBelts,
                 gasGiantCount=numGasGiants,
                 worldCount=numOtherWorlds,
-                zone=astronomer.zoneTypeCode(world.zone()) if world.zone() else None,
+                zone=astronomer.zoneTypeToCode(world.zone()) if world.zone() else None,
                 allegianceId=dbSystemAllegiance.id() if dbSystemAllegiance else None,
                 stars=dbStars,
                 bodies=dbBodies,

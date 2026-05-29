@@ -6,6 +6,7 @@ import common
 import gui
 import logging
 import multiverse
+import os
 import survey
 import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
@@ -98,8 +99,10 @@ class CustomUniverseWindow(gui.WindowWidget):
                 selection = selection[0]
             if selection:
                 self._importSector(
-                    metadataFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.xml',
-                    sectorFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.tab',
+                    #metadataFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.xml',
+                    #sectorFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.tab',
+                    metadataFilePath='E:\\Projects\\autojimmy\\test-second-survey-metadata.xml',
+                    sectorFilePath='E:\\Projects\\autojimmy\\test-second-survey-sector.sec',
                     sectorPos=selection)
                 event.accept()
 
@@ -266,10 +269,17 @@ class CustomUniverseWindow(gui.WindowWidget):
             # command as it won't be a replace
             pass
 
+        # TODO: Need to display any messages that are reported to the user
+        reporter = common.LoggingReporter(logLevel=logging.WARNING)
+
+        _, metadataFileName = os.path.split(metadataFilePath)
+        reporter.pushPrefix(f'{metadataFileName} - ')
         try:
             with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorMetadata = file.read()
-            rawMetadata = survey.parseMetadata(content=sectorMetadata)
+            rawMetadata = survey.parseMetadata(
+                content=sectorMetadata,
+                reporter=reporter)
             if sectorPos:
                 # TODO: This is crap
                 rawMetadata = survey.RawMetadata(
@@ -298,14 +308,21 @@ class CustomUniverseWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
             return
+        finally:
+            if reporter:
+                reporter.popPrefix()
 
         # Try to parse the sector format now to prevent it failing after the user has waited
         # to create the posters. This is only really needed for cases where Traveller Map is
         # happy with the format but my parser isn't
+        _, sectorFileName = os.path.split(sectorFilePath)
+        reporter.pushPrefix(f'{sectorFileName} - ')
         try:
             with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorData = file.read()
-            rawSystems = survey.parseSector(content=sectorData)
+            rawSystems = survey.parseSector(
+                content=sectorData,
+                reporter=reporter)
         except Exception as ex:
             message = 'An error occurred when loading sector world data.'
             logging.critical(message, exc_info=ex)
@@ -314,6 +331,9 @@ class CustomUniverseWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
             return
+        finally:
+            if reporter:
+                reporter.popPrefix()
 
         try:
             rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
@@ -422,8 +442,14 @@ class CustomUniverseWindow(gui.WindowWidget):
         sectorFilePath = f'c:\\temp\\{encodedSectorName}.sec'
         sectorFileFormat = survey.SectorFormat.T5Column
 
+        # TODO: Need to display reported messages to the user
+        reporter = common.LoggingReporter(logLevel=logging.WARNING)
+
         try:
-            content = survey.formatMetadata(metadata=rawMetadata, format=metadataFileFormat)
+            # TODO: Need to update formatMetadata to take a reporter
+            content = survey.formatMetadata(
+                metadata=rawMetadata,
+                format=metadataFileFormat)
             with open(metadataFilePath, 'w', encoding='utf-8-sig') as file:
                 file.write(content)
         except Exception as ex:
@@ -436,7 +462,10 @@ class CustomUniverseWindow(gui.WindowWidget):
             return
 
         try:
-            content = survey.formatSector(worlds=rawWorlds, format=sectorFileFormat)
+            content = survey.formatSector(
+                worlds=rawWorlds,
+                format=sectorFileFormat,
+                reporter=reporter)
             with open(sectorFilePath, 'w', encoding='utf-8-sig') as file:
                 file.write(content)
         except Exception as ex:

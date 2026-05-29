@@ -28,6 +28,7 @@ class BaseType(enum.Enum):
     ZhodaniRelayStation = 17
     ZhodaniDepot = 18
     ZhodaniNavalMilitaryBase = 19
+    Interface = 20
 
 _CodeToBaseTypeMap = {
     'A': [BaseType.ImperialNavalBase, BaseType.ImperialScoutBase],
@@ -38,6 +39,7 @@ _CodeToBaseTypeMap = {
     'F': [BaseType.MilitaryBase, BaseType.NavalBase],
     'G': [BaseType.VargrNavalBase],
     'H': [BaseType.VargrCorsairBase, BaseType.VargrNavalBase],
+    'I': {BaseType.Interface},
     'J': [BaseType.NavalBase],
     'K': [BaseType.NavalBase], # This was 'Naval Base (K'kree)' prior to 5th edition
     'L': [BaseType.HiverNavalBase],
@@ -76,7 +78,8 @@ _BaseTypeToCodeMap = {
     BaseType.WayStation: 'W',
     BaseType.ZhodaniRelayStation: 'X',
     BaseType.ZhodaniDepot: 'Y',
-    BaseType.ZhodaniNavalMilitaryBase: 'Z'
+    BaseType.ZhodaniNavalMilitaryBase: 'Z',
+    BaseType.Interface: 'I'
 }
 assert(set(_BaseTypeToCodeMap.keys()) == set(BaseType))
 
@@ -100,6 +103,7 @@ _BaseTypeToDescriptionMap = {
     BaseType.ZhodaniRelayStation: 'Zhodani Relay Station',
     BaseType.ZhodaniDepot: 'Zhodani Depot',
     BaseType.ZhodaniNavalMilitaryBase: 'Zhodani Naval/Military Base',
+    BaseType.Interface: 'Interface',
 }
 
 _ScoutBaseTypes = [

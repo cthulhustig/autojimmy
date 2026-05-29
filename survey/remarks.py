@@ -177,38 +177,38 @@ def _tokeniseRemarks(string: str) -> typing.Generator[str, None, None]:
 
 def parseSystemRemarksString(
         string: str,
-        strict: bool = False
+        reporter: typing.Optional[common.Reporter] = None
         ) -> typing.Tuple[
-            typing.List[str], # Trade Codes
-            typing.List[typing.Tuple[ # Major Race Home World
+            typing.Optional[typing.List[str]], # Trade Codes
+            typing.Optional[typing.List[typing.Tuple[ # Major Race Home World
                 str, # Sophont Name
                 typing.Optional[int] # Population Percentage
-                ]],
-            typing.List[typing.Tuple[ # Minor Race Home World
+                ]]],
+            typing.Optional[typing.List[typing.Tuple[ # Minor Race Home World
                 str, # Sophont Name
                 typing.Optional[int] # Population Percentage
-                ]],
-            typing.List[typing.Tuple[ # Sophont Populations
+                ]]],
+            typing.Optional[typing.List[typing.Tuple[ # Sophont Populations
                 str, # Sophont Code
                 typing.Optional[int] # Population Percentage
-                ]],
-            typing.List[str], # Die back Sophont Names
-            typing.List[typing.Tuple[ # Owning Systems
+                ]]],
+            typing.Optional[typing.List[str]], # Die back Sophont Names
+            typing.Optional[typing.List[typing.Tuple[ # Owning Systems
                 int, # Hex X in sector coordinates
                 int, # Hex Y in sector coordinates
                 typing.Optional[str] # Sector Abbreviation or None if Current Sector
-            ]],
-            typing.List[typing.Tuple[ # Colony Systems
+            ]]],
+            typing.Optional[typing.List[typing.Tuple[ # Colony Systems
                 int, # Hex X in sector coordinates
                 int, # Hex Y in sector coordinates
                 typing.Optional[str] # Sector Abbreviation or None if Current Sector
-            ]],
-            typing.List[str], # Ruling Allegiance Codes
-            typing.List[str], # Research Stations Codes
-            typing.List[str] # Unrecognised Remarks
+            ]]],
+            typing.Optional[typing.List[str]], # Ruling Allegiance Codes
+            typing.Optional[typing.List[str]], # Research Stations Codes
+            typing.Optional[typing.List[str]] # Unrecognised Remarks
         ]:
     if not string:
-        return
+        return (None, None, None, None, None, None, None, None, None, None)
 
     tradeCodes: typing.List[str] = []
     majorHomeWorlds: typing.List[typing.Tuple[
@@ -295,34 +295,33 @@ def parseSystemRemarksString(
             sophontPopulations.append((code, percentage))
             continue
 
-        if not strict:
-            result = _SophontMajorRaceUnofficialPattern.match(remark)
-            if result:
-                name = result.group(1)
-                percentage = int(result.group(2))
-                majorHomeWorlds.append((name, percentage))
-                continue
+        result = _SophontMajorRaceUnofficialPattern.match(remark)
+        if result:
+            name = result.group(1)
+            percentage = int(result.group(2))
+            majorHomeWorlds.append((name, percentage))
+            continue
 
-            result = _SophontMinorRaceUnofficialPattern.match(remark)
-            if result:
-                name = result.group(1)
-                percentage = int(result.group(2))
-                minorHomeWorlds.append((name, percentage))
-                continue
+        result = _SophontMinorRaceUnofficialPattern.match(remark)
+        if result:
+            name = result.group(1)
+            percentage = int(result.group(2))
+            minorHomeWorlds.append((name, percentage))
+            continue
 
-            result = _T5SophontPopulationUnofficialPattern.match(remark)
-            if result:
-                code = result.group(1)
-                percentage = int(result.group(2))
-                sophontPopulations.append((code, percentage))
-                continue
+        result = _T5SophontPopulationUnofficialPattern.match(remark)
+        if result:
+            code = result.group(1)
+            percentage = int(result.group(2))
+            sophontPopulations.append((code, percentage))
+            continue
 
-            result = _LegacySophontPopulationUnofficialPattern.match(remark)
-            if result:
-                code = result.group(1)
-                percentage = int(result.group(2))
-                sophontPopulations.append((code, percentage))
-                continue
+        result = _LegacySophontPopulationUnofficialPattern.match(remark)
+        if result:
+            code = result.group(1)
+            percentage = int(result.group(2))
+            sophontPopulations.append((code, percentage))
+            continue
 
         result = _SophontDieBackWorldPattern.match(remark)
         if result:
@@ -371,16 +370,16 @@ def parseSystemRemarksString(
         unrecognisedRemarks.append(remark)
 
     return (
-        tradeCodes,
-        majorHomeWorlds,
-        minorHomeWorlds,
-        sophontPopulations,
-        dieBackSophonts,
-        owningSystems,
-        colonySystems,
-        rulingAllegiances,
-        researchStations,
-        unrecognisedRemarks)
+        tradeCodes if tradeCodes else None,
+        majorHomeWorlds if majorHomeWorlds else None,
+        minorHomeWorlds if minorHomeWorlds else None,
+        sophontPopulations if sophontPopulations else None,
+        dieBackSophonts if dieBackSophonts else None,
+        owningSystems if owningSystems else None,
+        colonySystems if colonySystems else None,
+        rulingAllegiances if rulingAllegiances else None,
+        researchStations if researchStations else None,
+        unrecognisedRemarks if unrecognisedRemarks else None)
 
 def formatSystemRemarksString(
         tradeCodes: typing.Optional[typing.Collection[str]],
@@ -409,7 +408,8 @@ def formatSystemRemarksString(
         ]]] = None,
         rulingAllegiances: typing.Optional[typing.Collection[str]] = None,
         researchStations: typing.Optional[typing.Collection[str]] = None,
-        customRemarks: typing.Optional[typing.Collection[str]] = None
+        customRemarks: typing.Optional[typing.Collection[str]] = None,
+        reporter: typing.Optional[common.Reporter] = None
         ) -> str:
     remarks = []
 

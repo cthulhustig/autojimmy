@@ -616,8 +616,8 @@ class ConfigDialog(gui.DialogEx):
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Zone,
             displayName='Zone',
-            keyDescriptions={zone: astronomer.zoneTypeName(zone) for zone in astronomer.ZoneType},
-            keyAliases={zone: astronomer.zoneTypeCode(zone) for zone in astronomer.ZoneType})
+            keyDescriptions={zone: astronomer.zoneTypeDescription(zone) for zone in astronomer.ZoneType},
+            keyAliases={zone: astronomer.zoneTypeToCode(zone) for zone in astronomer.ZoneType})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.StarPort,

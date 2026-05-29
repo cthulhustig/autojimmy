@@ -1,3 +1,4 @@
+import common
 import enum
 import itertools
 import logging
@@ -9,6 +10,7 @@ class SectorFormat(enum.Enum):
     T5Column = 0, # aka Second Survey format
     T5Tab = 1
 
+# https://travellermap.com/doc/fileformats
 class _WorldAttribute(enum.Enum):
     Hex = 0
     Name = 1
@@ -17,19 +19,13 @@ class _WorldAttribute(enum.Enum):
     Importance = 4
     Economics = 5
     Culture = 6
-    Nobility = 7
+    Nobilities = 7
     Bases = 8
     Zone = 9
     PBG = 10
     SystemWorlds = 11
     Allegiance = 12
     Stellar = 13
-    # NOTE: The Traveller Map file format documentation says the following
-    # columns are optional
-    # https://travellermap.com/doc/fileformats
-    SectorAbbreviation = 14
-    SubSectorCode = 15
-    ResourceUnits = 16
 
 _HeaderPattern = re.compile(r'(?:([\w{}()\[\]]+)\s*)')
 _SeparatorPattern = re.compile(r'(?:([-]+)\s?)')
@@ -46,12 +42,12 @@ _T5Column_ColumnNameToAttributeMap = {
     '{Ix}': _WorldAttribute.Importance,
     '(Ex)': _WorldAttribute.Economics,
     '[Cx]': _WorldAttribute.Culture,
-    'N': _WorldAttribute.Nobility,
+    'N': _WorldAttribute.Nobilities,
     'W': _WorldAttribute.SystemWorlds,
     'Stellar': _WorldAttribute.Stellar
 }
 
-_T5Tab_MandatoryColumnNameToAttributeMap = {
+_T5Tab_ColumnNameToAttributeMap = {
     'Hex': _WorldAttribute.Hex,
     'Name': _WorldAttribute.Name,
     'UWP': _WorldAttribute.UWP,
@@ -59,39 +55,13 @@ _T5Tab_MandatoryColumnNameToAttributeMap = {
     '{Ix}': _WorldAttribute.Importance,
     '(Ex)': _WorldAttribute.Economics,
     '[Cx]': _WorldAttribute.Culture,
-    'Nobility': _WorldAttribute.Nobility,
+    'Nobility': _WorldAttribute.Nobilities,
     'Bases': _WorldAttribute.Bases,
     'Zone': _WorldAttribute.Zone,
     'PBG': _WorldAttribute.PBG,
     'W': _WorldAttribute.SystemWorlds,
     'Allegiance': _WorldAttribute.Allegiance,
     'Stars': _WorldAttribute.Stellar
-}
-_T5Tab_OptionalColumnNameToAttributeMap = {
-    'Sector': _WorldAttribute.SectorAbbreviation,
-    'SS': _WorldAttribute.SubSectorCode,
-    'RU': _WorldAttribute.ResourceUnits
-}
-_T5Tab_ColumnNameToAttributeMap = _T5Tab_MandatoryColumnNameToAttributeMap | _T5Tab_OptionalColumnNameToAttributeMap
-
-_WorldAttributeAccessMap: typing.Dict[_WorldAttribute, typing.Callable[[survey.RawWorld], typing.Optional[str]]] = {
-    _WorldAttribute.Hex: lambda world: world.hex(),
-    _WorldAttribute.Name: lambda world: world.name(),
-    _WorldAttribute.UWP: lambda world: world.uwp(),
-    _WorldAttribute.Remarks: lambda world: world.remarks(),
-    _WorldAttribute.Importance: lambda world: world.importance(),
-    _WorldAttribute.Economics: lambda world: world.economics(),
-    _WorldAttribute.Culture: lambda world: world.culture(),
-    _WorldAttribute.Nobility: lambda world: world.nobility(),
-    _WorldAttribute.Bases: lambda world: world.bases(),
-    _WorldAttribute.Zone: lambda world: world.zone(),
-    _WorldAttribute.PBG: lambda world: world.pbg(),
-    _WorldAttribute.SystemWorlds: lambda world: world.systemWorlds(),
-    _WorldAttribute.Allegiance: lambda world: world.allegiance(),
-    _WorldAttribute.Stellar: lambda world: world.stellar(),
-    _WorldAttribute.SectorAbbreviation: lambda world: world.sectorAbbreviation(),
-    _WorldAttribute.SubSectorCode: lambda world: world.subSectorCode(),
-    _WorldAttribute.ResourceUnits: lambda world: world.resourceUnits(),
 }
 
 def _isAllDashes(string: str) -> bool:
@@ -121,19 +91,155 @@ def _sortWorldsByHex(
         worlds: typing.Iterable[survey.RawWorld]
         ) -> typing.Iterable[survey.RawWorld]:
     def calcKey(world: survey.RawWorld) -> int:
-        hexString = world.hex()
-        if not hexString:
+        x = world.x()
+        y = world.y()
+        if x is None or y is None:
             return 0
-        try:
-            x = int(hexString[:2])
-            y = int(hexString[-2:])
-        except:
-            return 0
-
         subSectorRow = (y - 1) // _SubsectorHeight
         return (y - (subSectorRow * _SubsectorHeight)) + (x * _SubsectorHeight) + (subSectorRow * _HexesPerSubsectorRow)
 
     return sorted(worlds, key=calcKey)
+
+def _createWorld(
+        attributes: typing.Mapping[_WorldAttribute, typing.Optional[str]],
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.Optional[survey.RawWorld]:
+    hex = attributes.get(_WorldAttribute.Hex)
+    hexX = hexY = None
+    if hex is not None:
+        hexX, hexY = survey.parseHexString(string=hex, reporter=reporter)
+    if hexX is None or hexY is None:
+        if reporter:
+            reporter.addMessage('Ignoring system with no hex')
+        return None
+
+    zone = attributes.get(_WorldAttribute.Zone)
+    if zone is not None:
+        zone = survey.parseSystemZoneString(zone=zone, reporter=reporter)
+
+    uwp = attributes.get(_WorldAttribute.UWP)
+    if uwp is not None:
+        starport, worldSize, atmosphere, hydrographics, population, government, lawLevel, techLevel = \
+            survey.parseSystemUWPString(uwp=uwp, reporter=reporter)
+        uwp = survey.RawUWP(
+            starport=starport,
+            worldSize=worldSize,
+            atmosphere=atmosphere,
+            hydrographics=hydrographics,
+            population=population,
+            government=government,
+            lawLevel=lawLevel,
+            techLevel=techLevel)
+
+    economics = attributes.get(_WorldAttribute.Economics)
+    if economics is not None:
+        resources, labour, infrastructure, efficiency = \
+            survey.parseSystemEconomicsString(economics=economics, reporter=reporter)
+        economics = survey.RawEconomics(
+            resources=resources,
+            labour=labour,
+            infrastructure=infrastructure,
+            efficiency=efficiency)
+
+    culture = attributes.get(_WorldAttribute.Culture)
+    if culture is not None:
+        heterogeneity, acceptance, strangeness, symbols = \
+            survey.parseSystemCultureString(culture=culture, reporter=reporter)
+        culture = survey.RawCulture(
+            heterogeneity=heterogeneity,
+            acceptance=acceptance,
+            strangeness=strangeness,
+            symbols=symbols)
+
+    nobilities = attributes.get(_WorldAttribute.Nobilities)
+    if nobilities is not None:
+        nobilities = survey.parseSystemNobilityString(nobilities, reporter=reporter)
+
+    bases = attributes.get(_WorldAttribute.Bases)
+    if bases is not None:
+        bases = survey.parseSystemBasesString(bases, reporter=reporter)
+
+    remarks = attributes.get(_WorldAttribute.Remarks)
+    if remarks is not None:
+        tradeCodes, majorHomeWorlds, minorHomeWorlds, sophontPopulations, dieBackSophonts, \
+            owningSystems, colonySystems, rulingAllegiances, researchStations, unrecognisedRemarks = \
+            survey.parseSystemRemarksString(string=remarks, reporter=reporter)
+
+        if majorHomeWorlds is not None:
+            majorHomeWorlds = [survey.RawSophontPopulation(sophont=sophont, percentage=percentage)
+                            for sophont, percentage in majorHomeWorlds]
+
+        if minorHomeWorlds is not None:
+            minorHomeWorlds = [survey.RawSophontPopulation(sophont=sophont, percentage=percentage)
+                            for sophont, percentage in minorHomeWorlds]
+
+        if sophontPopulations is not None:
+            sophontPopulations = [survey.RawSophontPopulation(sophont=sophont, percentage=percentage)
+                                for sophont, percentage in sophontPopulations]
+
+        if owningSystems is not None:
+            owningSystems = [survey.RawHexRef(x=x, y=y, sector=sector)
+                            for x, y, sector in owningSystems]
+
+        if colonySystems is not None:
+            colonySystems = [survey.RawHexRef(x=x, y=y, sector=sector)
+                            for x, y, sector in colonySystems]
+
+        remarks = survey.RawRemarks(
+            tradeCodes=tradeCodes,
+            majorRaceHomeWorlds=majorHomeWorlds,
+            minorRaceHomeWorlds=minorHomeWorlds,
+            sophontPopulations=sophontPopulations,
+            dieBackSophonts=dieBackSophonts,
+            owningSystems=owningSystems,
+            colonySystems=colonySystems,
+            rulingAllegiances=rulingAllegiances,
+            researchStations=researchStations,
+            customRemarks=unrecognisedRemarks)
+
+    pbg = attributes.get(_WorldAttribute.PBG)
+    if pbg is not None:
+        populationMultiplier, planetoidBeltCount, gasGiantCount = \
+            survey.parseSystemPBGString(pbg=pbg, reporter=reporter)
+        pbg = survey.RawPBG(
+            populationMultiplier=populationMultiplier,
+            planetoidBeltCount=planetoidBeltCount,
+            gasGiantCount=gasGiantCount)
+
+    systemWorlds = attributes.get(_WorldAttribute.SystemWorlds)
+    if systemWorlds is not None:
+        systemWorlds = survey.parseSystemWorldCountString(string=systemWorlds, reporter=reporter)
+
+    stars = attributes.get(_WorldAttribute.Stellar)
+    if stars is not None:
+        stars = survey.parseSystemStellarString(string=stars, reporter=reporter)
+        stars = [survey.RawStar(luminosityClass=luminosityClass, spectralClass=spectralClass, spectralScale=spectralScale)
+                for luminosityClass, spectralClass, spectralScale in stars]
+
+    importance = attributes.get(_WorldAttribute.Importance)
+    if importance is not None:
+        importance = survey.parseSystemImportanceString(string=importance, reporter=reporter)
+
+    return survey.RawWorld(
+        x=hexX,
+        y=hexY,
+        name=attributes.get(_WorldAttribute.Name),
+        # TODO: Allegiance should probably have some kind of validation. I expect
+        # there should be at least a valid character set. I probably want to avoid
+        # things like brackets as they'd break some of the remarks formatting where
+        # it wraps names in brackets.
+        allegiance=attributes.get(_WorldAttribute.Allegiance),
+        zone=zone,
+        uwp=uwp,
+        economics=economics,
+        culture=culture,
+        nobilities=nobilities,
+        bases=bases,
+        remarks=remarks,
+        importance=importance,
+        pbg=pbg,
+        systemWorlds=systemWorlds,
+        stars=stars)
 
 def detectSectorFormat(content: str) -> typing.Optional[SectorFormat]:
     hasComment = False
@@ -184,7 +290,8 @@ def detectSectorFormat(content: str) -> typing.Optional[SectorFormat]:
 
 def parseSector(
         content: str,
-        format: typing.Optional[SectorFormat] = None
+        format: typing.Optional[SectorFormat] = None,
+        reporter: typing.Optional[common.Reporter] = None
         ) -> typing.Collection[survey.RawWorld]:
     if format is None:
         format = detectSectorFormat(content=content)
@@ -192,13 +299,16 @@ def parseSector(
             raise ValueError('Unable to detect sector format')
 
     if format == SectorFormat.T5Column:
-        return parseT5ColumnSector(content=content)
+        return parseT5ColumnSector(content=content, reporter=reporter)
     elif format == SectorFormat.T5Tab:
-        return parseT5TabSector(content=content)
+        return parseT5TabSector(content=content, reporter=reporter)
 
     raise RuntimeError(f'Unknown sector format {format}')
 
-def parseT5ColumnSector(content: str) -> typing.Collection[survey.RawWorld]:
+def parseT5ColumnSector(
+        content: str,
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.Collection[survey.RawWorld]:
     worlds = []
     columnNames = None
     columnAttributes = None
@@ -245,59 +355,52 @@ def parseT5ColumnSector(content: str) -> typing.Collection[survey.RawWorld]:
                 columnWidths.append(len(columnSeparator))
             continue
 
+        if reporter:
+            reporter.pushPrefix(f'Line {lineNumber + 1}: ')
+
         # Parse the line as a world definition
         try:
-            worlds.append(_parseT5ColumnWorld(
+            world = _parseT5ColumnWorld(
                 line=line,
                 columnAttributes=columnAttributes,
-                columnWidths=columnWidths))
-        except Exception as ex:
-            logging.warning(f'Failed parse world on sector file {lineNumber}', exc_info=ex)
-            continue
+                columnWidths=columnWidths,
+                reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
+
+        if world:
+            worlds.append(world)
+
     return worlds
 
 def _parseT5ColumnWorld(
         line: str,
         columnAttributes: typing.Collection[_WorldAttribute],
-        columnWidths: typing.Collection[int]
-        ) -> survey.RawWorld:
+        columnWidths: typing.Collection[int],
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.Optional[survey.RawWorld]:
     lineLength = len(line)
     startIndex = 0
     finishIndex = 0
-    valueMap: typing.Dict[_WorldAttribute, typing.Optional[str]] = {}
+    attributes: typing.Dict[_WorldAttribute, typing.Optional[str]] = {}
     for attribute, width in itertools.zip_longest(columnAttributes, columnWidths):
         if startIndex >= lineLength:
-            raise RuntimeError('Line is to short')
+            break
 
         finishIndex = startIndex + width
         if attribute != None:
             data = line[startIndex:finishIndex].strip()
-            if data and _isAllDashes(data):
-                data = '' # Replace no data marker with empty string
-            valueMap[attribute] = data
+            if data and not _isAllDashes(data): # Ignore "empty" columns
+                attributes[attribute] = data
         startIndex = finishIndex + 1
 
-    return survey.RawWorld(
-        hex=valueMap.get(_WorldAttribute.Hex),
-        name=valueMap.get(_WorldAttribute.Name),
-        allegiance=valueMap.get(_WorldAttribute.Allegiance),
-        zone=valueMap.get(_WorldAttribute.Zone),
-        uwp=valueMap.get(_WorldAttribute.UWP),
-        economics=valueMap.get(_WorldAttribute.Economics),
-        culture=valueMap.get(_WorldAttribute.Culture),
-        nobility=valueMap.get(_WorldAttribute.Nobility),
-        bases=valueMap.get(_WorldAttribute.Bases),
-        remarks=valueMap.get(_WorldAttribute.Remarks),
-        importance=valueMap.get(_WorldAttribute.Importance),
-        pbg=valueMap.get(_WorldAttribute.PBG),
-        systemWorlds=valueMap.get(_WorldAttribute.SystemWorlds),
-        stellar=valueMap.get(_WorldAttribute.Stellar),
-        # Optional attributes not supported by T5 column format
-        sectorAbbreviation=None,
-        subSectorCode=None,
-        resourceUnits=None)
+    return _createWorld(attributes=attributes, reporter=reporter)
 
-def parseT5TabSector(content: str) -> typing.Collection[survey.RawWorld]:
+def parseT5TabSector(
+        content: str,
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.Collection[survey.RawWorld]:
     worlds = []
     columnNames = None
     columnAttributes = None
@@ -311,7 +414,7 @@ def parseT5TabSector(content: str) -> typing.Collection[survey.RawWorld]:
 
         if not columnNames:
             columnNames = _HeaderPattern.findall(line)
-            if len(columnNames) < len(_T5Tab_MandatoryColumnNameToAttributeMap):
+            if len(columnNames) < len(_T5Tab_ColumnNameToAttributeMap):
                 # This is needed as some sectors (notably Shadow Rift) are off format and have
                 # broken comments that don't start with #. This gets logged at a low level so
                 # we don't spam the logs every time we start
@@ -321,7 +424,7 @@ def parseT5TabSector(content: str) -> typing.Collection[survey.RawWorld]:
                 continue
 
             # Check that mandatory columns are present
-            for columnName in _T5Tab_MandatoryColumnNameToAttributeMap.keys():
+            for columnName in _T5Tab_ColumnNameToAttributeMap.keys():
                 if columnName not in columnNames:
                     raise RuntimeError(
                         f'Unable to load data from sector file (Header is missing {columnName} column)')
@@ -333,22 +436,30 @@ def parseT5TabSector(content: str) -> typing.Collection[survey.RawWorld]:
                 columnAttributes.append(attribute)
             continue
 
+        if reporter:
+            reporter.pushPrefix(f'Line {lineNumber + 1}:')
+
         # Parse the line as a world definition
         try:
-            worlds.append(_parseT5TabWorld(
+            world = _parseT5TabWorld(
                 line=line,
-                columnAttributes=columnAttributes))
-        except Exception as ex:
-            logging.warning(f'Failed parse world on sector file line {lineNumber}', exc_info=ex)
-            continue
+                columnAttributes=columnAttributes,
+                reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
+
+        if world:
+            worlds.append(world)
     return worlds
 
 def _parseT5TabWorld(
         line: str,
         columnAttributes: typing.Collection[_WorldAttribute],
-        ) -> survey.RawWorld:
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.Optional[survey.RawWorld]:
     columnValues = line.split('\t')
-    valueMap: typing.Dict[_WorldAttribute, typing.Optional[str]] = {}
+    attributes: typing.Dict[_WorldAttribute, typing.Optional[str]] = {}
     for index, attribute in enumerate(columnAttributes):
         if attribute is None:
             continue
@@ -361,40 +472,123 @@ def _parseT5TabWorld(
             # lot of files that are otherwise valid.
             break
         data = columnValues[index]
-        if data and _isAllDashes(data):
-            data = '' # Replace no data marker with empty string
-        valueMap[attribute] = data
+        if data and not _isAllDashes(data): # Ignore "empty" columns
+            attributes[attribute] = data
 
-    return survey.RawWorld(
-        hex=valueMap.get(_WorldAttribute.Hex),
-        name=valueMap.get(_WorldAttribute.Name),
-        allegiance=valueMap.get(_WorldAttribute.Allegiance),
-        zone=valueMap.get(_WorldAttribute.Zone),
-        uwp=valueMap.get(_WorldAttribute.UWP),
-        economics=valueMap.get(_WorldAttribute.Economics),
-        culture=valueMap.get(_WorldAttribute.Culture),
-        nobility=valueMap.get(_WorldAttribute.Nobility),
-        bases=valueMap.get(_WorldAttribute.Bases),
-        remarks=valueMap.get(_WorldAttribute.Remarks),
-        importance=valueMap.get(_WorldAttribute.Importance),
-        pbg=valueMap.get(_WorldAttribute.PBG),
-        systemWorlds=valueMap.get(_WorldAttribute.SystemWorlds),
-        stellar=valueMap.get(_WorldAttribute.Stellar),
-        sectorAbbreviation=valueMap.get(_WorldAttribute.SectorAbbreviation),
-        subSectorCode=valueMap.get(_WorldAttribute.SubSectorCode),
-        resourceUnits=valueMap.get(_WorldAttribute.ResourceUnits))
+    return _createWorld(attributes=attributes, reporter=reporter)
 
 _worldAttributeCharMap = str.maketrans({'\t': ' ', '\n': ' '})
 def _worldAttribute(
         world: survey.RawWorld,
         attribute: _WorldAttribute,
-        default: typing.Any
+        default: typing.Any,
+        reporter: typing.Optional[common.Reporter] = None
         ) -> str:
-    accessFn = _WorldAttributeAccessMap.get(attribute)
-    if not accessFn:
-        raise ValueError(f'Unknown world attribute {attribute}')
+    value = None
+    if attribute is _WorldAttribute.Hex:
+        hexX = world.x()
+        hexY = world.y()
+        if hexX is not None and hexY is not None:
+            value = survey.formatHexString(
+                x=hexX,
+                y=hexY,
+                reporter=reporter)
+    elif attribute is _WorldAttribute.Name:
+        value = world.name()
+    elif attribute is _WorldAttribute.Zone:
+        zone = world.zone()
+        if zone is not None:
+            value = survey.formatSystemZoneString(
+                zone=zone,
+                reporter=reporter)
+    elif attribute is _WorldAttribute.UWP:
+        uwp = world.uwp()
+        if uwp is not None:
+            value = survey.formatSystemUWPString(
+                starport=uwp.starport(),
+                worldSize=uwp.worldSize(),
+                atmosphere=uwp.atmosphere(),
+                hydrographics=uwp.hydrographics(),
+                population=uwp.population(),
+                government=uwp.government(),
+                lawLevel=uwp.lawLevel(),
+                techLevel=uwp.techLevel(),
+                reporter=reporter)
+    elif attribute is _WorldAttribute.Remarks:
+        remarks = world.remarks()
+        if remarks is not None:
+            value = survey.formatSystemRemarksString(
+                tradeCodes=remarks.tradeCodes(),
+                majorRaceHomeWorlds=[(p.sophont(), p.percentage()) for p in remarks.majorRaceHomeWorlds()] if remarks.majorRaceHomeWorlds() else None,
+                minorRaceHomeWorlds=[(p.sophont(), p.percentage()) for p in remarks.minorRaceHomeWorlds()] if remarks.minorRaceHomeWorlds() else None,
+                sophontPopulations=[(p.sophont(), p.percentage()) for p in remarks.sophontPopulations()] if remarks.sophontPopulations() else None,
+                dieBackSophonts=remarks.dieBackSophonts(),
+                owningSystems=[(r.x(), r.y(), r.sector()) for r in remarks.owningSystems()] if remarks.owningSystems() else None,
+                colonySystems=[(r.x(), r.y(), r.sector()) for r in remarks.colonySystems()] if remarks.colonySystems() else None,
+                rulingAllegiances=remarks.rulingAllegiances(),
+                researchStations=remarks.researchStations(),
+                customRemarks=remarks.customRemarks(),
+                reporter=reporter)
+    elif attribute is _WorldAttribute.Importance:
+        importance = world.importance()
+        if importance is not None:
+            value = survey.formatSystemImportanceString(
+                importance=importance,
+                reporter=reporter)
+    elif attribute is _WorldAttribute.Economics:
+        economics = world.economics()
+        if economics is not None:
+            value = survey.formatSystemEconomicsString(
+                resources=economics.resources(),
+                labour=economics.labour(),
+                infrastructure=economics.infrastructure(),
+                efficiency=economics.efficiency(),
+                reporter=reporter)
+    elif attribute is _WorldAttribute.Culture:
+        culture = world.culture()
+        if culture is not None:
+            value = survey.formatSystemCultureString(
+                heterogeneity=culture.heterogeneity(),
+                acceptance=culture.acceptance(),
+                strangeness=culture.strangeness(),
+                symbols=culture.symbols(),
+                reporter=reporter)
+    elif attribute is _WorldAttribute.Nobilities:
+        nobilities = world.nobilities()
+        if nobilities is not None:
+            value = survey.formatSystemNobilityString(
+                nobilities=nobilities,
+                reporter=reporter)
+    elif attribute is _WorldAttribute.Bases:
+        bases = world.bases()
+        if bases is not None:
+            value = survey.formatSystemBasesString(
+                bases=bases,
+                reporter=reporter)
+    elif attribute is _WorldAttribute.PBG:
+        pbg = world.pbg()
+        if pbg is not None:
+            value = survey.formatSystemPBGString(
+                populationMultiplier=pbg.populationMultiplier(),
+                planetoidBelts=pbg.planetoidBeltCount(),
+                gasGiants=pbg.gasGiantCount(),
+                reporter=reporter)
+    elif attribute is _WorldAttribute.SystemWorlds:
+        systemWorlds = world.systemWorlds()
+        if systemWorlds is not None:
+            value = survey.formatSystemWorldCountString(
+                count=systemWorlds,
+                reporter=reporter)
+    elif attribute is _WorldAttribute.Allegiance:
+        value = world.allegiance()
+    elif attribute is _WorldAttribute.Stellar:
+        stars = world.stars()
+        if stars is not None:
+            value = survey.formatSystemStellarString(
+                stars=[(s.luminosityClass(), s.spectralClass(), s.spectralScale()) for s in stars],
+                reporter=reporter)
+        value = world.stars()
 
-    value = accessFn(world)
     if value is None:
         return default
 
@@ -405,16 +599,20 @@ def _worldAttribute(
 
 def formatSector(
         worlds: typing.Collection[survey.RawWorld],
-        format: SectorFormat
+        format: SectorFormat,
+        reporter: typing.Optional[common.Reporter] = None
         ) -> str:
     if format is SectorFormat.T5Column:
-        return formatT5ColumnSector(worlds)
+        return formatT5ColumnSector(worlds=worlds, reporter=reporter)
     elif format is SectorFormat.T5Tab:
-        return formatT5TabSector(worlds)
+        return formatT5TabSector(worlds=worlds, reporter=reporter)
 
     raise RuntimeError(f'Unknown sector format {format}')
 
-def formatT5ColumnSector(worlds: typing.Collection[survey.RawWorld]) -> str:
+def formatT5ColumnSector(
+        worlds: typing.Collection[survey.RawWorld],
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> str:
     content = ''
 
     maxColumnLengths = {}
@@ -444,32 +642,72 @@ def formatT5ColumnSector(worlds: typing.Collection[survey.RawWorld]) -> str:
     content += ' '.join(separators) + '\n'
 
     for world in _sortWorldsByHex(worlds):
-        values = []
-        for columnName, columnAttribute in _T5Column_ColumnNameToAttributeMap.items():
-            value = _worldAttribute(world=world, attribute=columnAttribute, default='')
-            maxLength = maxColumnLengths[columnName]
-            value += ' ' * (maxLength - len(value))
-            values.append(value)
-        content += ' '.join(values) + '\n'
+        if reporter:
+            identifier = _worldAttribute(
+                world=world,
+                attribute=_WorldAttribute.Name,
+                default=None)
+            if not identifier:
+                hex = _worldAttribute(
+                    world=world,
+                    attribute=_WorldAttribute.Hex,
+                    default=None)
+                if hex:
+                    identifier = f'Hex {hex}'
+                else:
+                    identifier = 'Unknown World'
+            reporter.pushPrefix(f'{identifier}: ')
+
+        try:
+            values = []
+            for columnName, columnAttribute in _T5Column_ColumnNameToAttributeMap.items():
+                value = _worldAttribute(world=world, attribute=columnAttribute, default='', reporter=reporter)
+                maxLength = maxColumnLengths[columnName]
+                value += ' ' * (maxLength - len(value))
+                values.append(value)
+            content += ' '.join(values) + '\n'
+        finally:
+            if reporter:
+                reporter.popPrefix()
 
     return content
 
-def formatT5TabSector(worlds: typing.Collection[survey.RawWorld]) -> str:
-    outputColumns = dict(_T5Tab_MandatoryColumnNameToAttributeMap)
-    for columnName, columnAttribute in _T5Tab_OptionalColumnNameToAttributeMap:
-        for world in worlds:
-            value = _worldAttribute(world=world, attribute=columnAttribute, default=None)
-            if value is not None:
-                outputColumns[columnName] = columnAttribute
-                break
-
+def formatT5TabSector(
+        worlds: typing.Collection[survey.RawWorld],
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> str:
+    outputColumns = dict(_T5Tab_ColumnNameToAttributeMap)
     content = '\t'.join(outputColumns.keys())
 
     for world in _sortWorldsByHex(worlds):
-        values = []
-        for columnAttribute in outputColumns.values():
-            value = _worldAttribute(world=world, attribute=columnAttribute, default='')
-            values.append(value)
-        content += '\t'.join(values) + '\n'
+        if reporter:
+            identifier = _worldAttribute(
+                world=world,
+                attribute=_WorldAttribute.Name,
+                default=None)
+            if not identifier:
+                hex = _worldAttribute(
+                    world=world,
+                    attribute=_WorldAttribute.Hex,
+                    default=None)
+                if hex:
+                    identifier = f'Hex {hex}'
+                else:
+                    identifier = 'Unknown World'
+            reporter.pushPrefix(f'{identifier}: ')
+
+        try:
+            values = []
+            for columnAttribute in outputColumns.values():
+                value = _worldAttribute(
+                    world=world,
+                    attribute=columnAttribute,
+                    default='',
+                    reporter=reporter)
+                values.append(value)
+            content += '\t'.join(values) + '\n'
+        finally:
+            if reporter:
+                reporter.popPrefix()
 
     return content

@@ -1,3 +1,4 @@
+import common
 import hashlib
 import logging
 import multiverse
@@ -14,8 +15,10 @@ def isStockUniverseSnapshotNewer() -> bool:
     return multiverse.UniverseManager.instance().checkStockUniverseTimestamp(
         snapshotTimestamp=snapshotTimestamp)
 
+# TODO: Things that call this need to pass a reporter
 def importStockUniverseSnapshot(
-        progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+        progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
+        reporter: typing.Optional[common.Reporter] = None
         ) -> None:
     importTimestamp = multiverse.SnapshotManager.instance().snapshotTimestamp()
     isSnapshotNewer = multiverse.UniverseManager.instance().checkStockUniverseTimestamp(
@@ -67,17 +70,32 @@ def importStockUniverseSnapshot(
                     logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
 
             try:
-                sectorMetadata = multiverse.SnapshotManager.instance().readSectorMetadata(
-                    milieu=milieu,
-                    sector=sectorName)
-                sectorContent = multiverse.SnapshotManager.instance().readSectorContent(
-                    milieu=milieu,
-                    sector=sectorName)
+                if reporter:
+                    reporter.pushPrefix(f'{milieu} {sectorName} Metadata - ')
+                try:
+                    sectorMetadata = multiverse.SnapshotManager.instance().readSectorMetadata(
+                        milieu=milieu,
+                        sector=sectorName)
+                    rawMetadata = survey.parseMetadata(content=sectorMetadata, reporter=reporter)
+                finally:
+                    if reporter:
+                        reporter.popPrefix()
+
+                if reporter:
+                    reporter.pushPrefix(f'{milieu} {sectorName} Sector - ')
+                try:
+                    sectorContent = multiverse.SnapshotManager.instance().readSectorContent(
+                        milieu=milieu,
+                        sector=sectorName)
+                    rawSystems = survey.parseSector(content=sectorContent, reporter=reporter)
+                finally:
+                    if reporter:
+                        reporter.popPrefix()
 
                 dbSector = multiverse.convertRawSectorToDbSector(
                     milieu=milieu,
-                    rawMetadata=survey.parseMetadata(sectorMetadata),
-                    rawSystems=survey.parseSector(sectorContent),
+                    rawMetadata=rawMetadata,
+                    rawSystems=rawSystems,
                     rawStockAllegiances=rawStockAllegiances,
                     rawStockSophonts=rawStockSophonts,
                     rawStockStyleSheet=rawStockStyleSheet)

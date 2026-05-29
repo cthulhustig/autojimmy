@@ -40,10 +40,16 @@ def haveLegacyCustomSectorsBeenImported(directoryPath: str) -> bool:
 def importLegacyCustomSectors(
         directoryPath: str,
         appVersion: str,
-        progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+        progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
+        reporter: typing.Optional[common.Reporter] = None
         ) -> None:
     if haveLegacyCustomSectorsBeenImported(directoryPath):
         raise RuntimeError('Legacy custom sectors have already been imported')
+
+    universePath = os.path.join(directoryPath, 'milieu')
+    if not os.path.isdir(universePath):
+        # No custom universe data so nothing to do
+        return
 
     rawStockAllegiances = survey.parseStockAllegiances(
         content=multiverse.SnapshotManager.instance().readSnapshotStockAllegiances())
@@ -57,7 +63,6 @@ def importLegacyCustomSectors(
         typing.Tuple[str, int, int],
         multiverse.SectorInfo] = {(i.milieu(), i.sectorX(), i.sectorY()): i for i in stockSectorInfos}
 
-    universePath = os.path.join(directoryPath, 'milieu')
     milieuSectors: typing.List[typing.Tuple[
         str, # Milieu
         typing.List[typing.Tuple[
@@ -162,8 +167,25 @@ def importLegacyCustomSectors(
                 with open(sectorPath, 'r', encoding='utf-8-sig') as file:
                     sectorContent = file.read()
 
-                rawMetadata = survey.parseMetadata(content=metadataContent, format=metadataFormat)
-                rawSystems = survey.parseSector(content=sectorContent, format=sectorFormat)
+                reporter.pushPrefix(f'{metadataPath} - ')
+                try:
+                    rawMetadata = survey.parseMetadata(
+                        content=metadataContent,
+                        format=metadataFormat,
+                        reporter=reporter)
+                finally:
+                    if reporter:
+                        reporter.popPrefix()
+
+                reporter.pushPrefix(f'{sectorPath} - ')
+                try:
+                    rawSystems = survey.parseSector(
+                        content=sectorContent,
+                        format=sectorFormat,
+                        reporter=reporter)
+                finally:
+                    if reporter:
+                        reporter.popPrefix()
 
                 # NOTE: If there is a stock sector where this custom sector is going to
                 # be placed, use the same sector id as the stock one. This is important

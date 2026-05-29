@@ -16,24 +16,26 @@ _ValidNobilityCodes = set([
 
 def parseSystemNobilityString(
         string: str,
-        strict: bool = False
-        ) -> typing.Generator[str, None, None]:
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.List[str]:
+    nobilities = []
     for code in string:
         if code not in _ValidNobilityCodes:
-            if not strict:
-                # TODO: This should probably log
-                continue
-            raise ValueError(f'Nobility string "{string}" contains unrecognised value "{code}"')
-
-        yield code
+            if reporter:
+                reporter.addMessage(f'Ignoring invalid Nobility code "{code}"')
+            continue
+        nobilities.append(code)
+    return nobilities
 
 def formatSystemNobilityString(
-        nobilities: typing.Iterable[str]
+        nobilities: typing.Iterable[str],
+        reporter: typing.Optional[common.Reporter] = None
         ) -> str:
     validCodes = set()
     for code in nobilities:
         if code not in _ValidNobilityCodes:
-            raise ValueError(f'Invalid nobility code "{code}"')
+            reporter.addMessage(f'Ignoring invalid Nobility code "{code}"')
+            continue
         validCodes.add(code)
 
     # NOTE: This slightly odd sorting is to maintain the canonical ordering

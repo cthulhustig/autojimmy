@@ -108,24 +108,21 @@ class Culture(object):
             strangeness: typing.Optional[str] = None,
             symbols: typing.Optional[str] = None
             ) -> None:
+        survey.validateOptionalHeterogeneity(name='heterogeneity', value=heterogeneity)
+        survey.validateOptionalAcceptance(name='acceptance', value=acceptance)
+        survey.validateOptionalStrangeness(name='strangeness', value=strangeness)
+        survey.validateOptionalSymbols(name='symbols', value=symbols)
+
         self._valueMap: typing.Dict[Culture.Element, str] = {}
         self._string = None
 
         if heterogeneity is not None:
-            if heterogeneity not in _HeterogeneityDescriptionMap:
-                raise ValueError(f'Invalid culture heterogeneity code "{heterogeneity}"')
             self._valueMap[Culture.Element.Heterogeneity] = heterogeneity
         if acceptance is not None:
-            if acceptance not in _AcceptanceDescriptionMap:
-                raise ValueError(f'Invalid culture acceptance code "{acceptance}"')
             self._valueMap[Culture.Element.Acceptance] = acceptance
         if strangeness is not None:
-            if strangeness not in _StrangenessDescriptionMap:
-                raise ValueError(f'Invalid culture strangeness code "{strangeness}"')
             self._valueMap[Culture.Element.Strangeness] = strangeness
         if symbols is not None:
-            if symbols not in _SymbolsDescriptionMap:
-                raise ValueError(f'Invalid culture symbols code "{symbols}"')
             self._valueMap[Culture.Element.Symbols] = symbols
 
     def string(self) -> str:
@@ -158,7 +155,7 @@ class Culture(object):
             self,
             element: Element
             ) -> str:
-        return Culture._ValueDescriptionsMap[element][self.code(element)]
+        return Culture._ValueDescriptionsMap[element].get(self.code(element), 'Description Unavailable')
 
     def isUnknown(self) -> bool:
         return len(self._valueMap) == 0

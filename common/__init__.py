@@ -11,3 +11,4 @@ from .stringfilter import *
 from .lrucache import *
 from .colour import *
 from .parsers import *
+from .reporter import *

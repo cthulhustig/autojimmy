@@ -1,6 +1,6 @@
 import app
-import astronomer
 import azathoth
+import common
 import gunsmith
 import logging
 import multiverse
@@ -22,8 +22,12 @@ class ImportStockUniverseJob(app.StartupJob):
             self,
             progressCallback: typing.Callable[[str, int, int], typing.Any]
             ) -> None:
+        # TODO: This is a temp hack, the messages need to be displayed to the user
+        reporter = common.LoggingReporter(logLevel=logging.WARNING)
+
         multiverse.importStockUniverseSnapshot(
-            progressCallback=progressCallback)
+            progressCallback=progressCallback,
+            reporter=reporter)
 
         # If the config doesn't have a universe set, set it to the stock universe
         # NOTE: It will be set to an empty string (rather than None) if not set
@@ -57,10 +61,14 @@ class ImportLegacyCustomSectorsJob(app.StartupJob):
             self,
             progressCallback: typing.Callable[[str, int, int], typing.Any]
             ) -> None:
+        # TODO: Need to display any results to the user
+        reporter = common.LoggingReporter(logLevel=logging.WARNING)
+
         multiverse.importLegacyCustomSectors(
             directoryPath=self._directoryPath,
             appVersion=app.AppVersion,
-            progressCallback=progressCallback)
+            progressCallback=progressCallback,
+            reporter=reporter)
 
         # Always update the config to set the universe to the imported custom
         # universe

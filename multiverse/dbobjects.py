@@ -143,7 +143,7 @@ class DbNobility(DbWorldObject):
 
         self._code = code
 
-    def code(self) -> typing.Optional[str]:
+    def code(self) -> str:
         return self._code
 
 class DbTradeCode(DbWorldObject):
@@ -159,7 +159,7 @@ class DbTradeCode(DbWorldObject):
 
         self._code = code
 
-    def code(self) -> typing.Optional[str]:
+    def code(self) -> str:
         return self._code
 
 class DbSophontPopulation(DbWorldObject):
@@ -223,8 +223,8 @@ class DbOwningSystem(DbWorldObject):
             ):
         super().__init__(id=id, worldId=worldId)
 
-        common.validateMandatoryInt(name='hexX', value=hexX)
-        common.validateMandatoryInt(name='hexY', value=hexY)
+        survey.validateMandatoryHexX(name='hexX', value=hexX)
+        survey.validateMandatoryHexY(name='hexY', value=hexY)
         common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
 
         self._hexX = hexX
@@ -251,8 +251,8 @@ class DbColonySystem(DbWorldObject):
             ):
         super().__init__(id=id, worldId=worldId)
 
-        common.validateMandatoryInt(name='hexX', value=hexX)
-        common.validateMandatoryInt(name='hexY', value=hexY)
+        survey.validateMandatoryHexX(name='hexX', value=hexX)
+        survey.validateMandatoryHexY(name='hexY', value=hexY)
         common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
 
         self._hexX = hexX
@@ -400,10 +400,10 @@ class DbWorld(DbBody):
         survey.validateOptionalGovernment(name='government', value=government)
         survey.validateOptionalLawLevel(name='lawLevel', value=lawLevel)
         survey.validateOptionalTechLevel(name='techLevel', value=techLevel)
-        survey.validateOptionalEconomicsResources(name='resources', value=resources)
-        survey.validateOptionalEconomicsLabour(name='labour', value=labour)
-        survey.validateOptionalEconomicsInfrastructure(name='infrastructure', value=infrastructure)
-        survey.validateOptionalEconomicsEfficiency(name='efficiency', value=efficiency)
+        survey.validateOptionalResources(name='resources', value=resources)
+        survey.validateOptionalLabour(name='labour', value=labour)
+        survey.validateOptionalInfrastructure(name='infrastructure', value=infrastructure)
+        survey.validateOptionalEfficiency(name='efficiency', value=efficiency)
         survey.validateOptionalHeterogeneity(name='heterogeneity', value=heterogeneity)
         survey.validateOptionalAcceptance(name='acceptance', value=acceptance)
         survey.validateOptionalStrangeness(name='strangeness', value=strangeness)
@@ -484,16 +484,16 @@ class DbWorld(DbBody):
     def techLevel(self) -> typing.Optional[str]:
         return self._techLevel
 
-    def resources(self ) -> typing.Optional[str]:
+    def resources(self) -> typing.Optional[str]:
         return self._resources
 
-    def labour(self ) -> typing.Optional[str]:
+    def labour(self) -> typing.Optional[str]:
         return self._labour
 
-    def infrastructure(self ) -> typing.Optional[str]:
+    def infrastructure(self) -> typing.Optional[str]:
         return self._infrastructure
 
-    def efficiency(self ) -> typing.Optional[str]:
+    def efficiency(self) -> typing.Optional[str]:
         return self._efficiency
 
     def heterogeneity(self) -> typing.Optional[str]:
@@ -904,8 +904,8 @@ class DbSystem(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateMandatoryInt(name='hexX', value=hexX)
-        common.validateMandatoryInt(name='hexY', value=hexY)
+        survey.validateMandatoryHexX(name='hexX', value=hexX)
+        survey.validateMandatoryHexY(name='hexY', value=hexY)
         common.validateOptionalStr(name='name', value=name, allowEmpty=False)
         common.validateOptionalInt(name='planetoidBeltCount', value=planetoidBeltCount, min=0)
         common.validateOptionalInt(name='gasGiantCount', value=gasGiantCount, min=0)
@@ -1090,10 +1090,10 @@ class DbRoute(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateMandatoryInt(name='startHexX', value=startHexX)
-        common.validateMandatoryInt(name='startHexY', value=startHexY)
-        common.validateMandatoryInt(name='endHexX', value=endHexX)
-        common.validateMandatoryInt(name='endHexY', value=endHexY)
+        survey.validateMandatoryHexX(name='startHexX', value=startHexX)
+        survey.validateMandatoryHexY(name='startHexY', value=startHexY)
+        survey.validateMandatoryHexX(name='endHexX', value=endHexX)
+        survey.validateMandatoryHexY(name='endHexY', value=endHexY)
         common.validateOptionalInt(name='startOffsetX', value=startOffsetX)
         common.validateOptionalInt(name='startOffsetY', value=startOffsetY)
         common.validateOptionalInt(name='endOffsetX', value=endOffsetX)
@@ -1174,7 +1174,7 @@ class DbBorder(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateMandatoryCollection(name='hexes', value=hexes, allowEmpty=False, validationFn=DbBorder._hexTupleValidator)
+        survey.validateMandatoryHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
         common.validateOptionalStr(name='allegianceId', value=allegianceId, allowEmpty=False)
         common.validateOptionalStr(name='style', value=style, allowed=_ValidLineStyles)
         common.validateOptionalHtmlColour(name='colour', value=colour)
@@ -1221,14 +1221,6 @@ class DbBorder(DbSectorObject):
     def wrapLabel(self) -> bool:
         return self._wrapLabel
 
-    @staticmethod
-    def _hexTupleValidator(
-            name: str,
-            value: typing.Tuple[int, int],
-            ) -> None:
-        if len(value) != 2 or not isinstance(value[0], int) or not isinstance(value[1], int):
-            raise ValueError(f'{name} should contain tuples each with 2 integers')
-
 class DbRegion(DbSectorObject):
     def __init__(
             self,
@@ -1244,7 +1236,7 @@ class DbRegion(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateMandatoryCollection(name='hexes', value=hexes, allowEmpty=False, validationFn=DbBorder._hexTupleValidator)
+        survey.validateMandatoryHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
         common.validateOptionalHtmlColour(name='colour', value=colour)
         common.validateOptionalStr(name='label', value=label, allowEmpty=False)
         common.validateOptionalFloat(name='labelWorldX', value=labelWorldX)
@@ -1281,13 +1273,6 @@ class DbRegion(DbSectorObject):
     def wrapLabel(self) -> bool:
         return self._wrapLabel
 
-    def _hexTupleValidator(
-            name: str,
-            value: typing.Tuple[int, int],
-            ) -> None:
-        if len(value) != 2 or not isinstance(value[0], int) or not isinstance(value[1], int):
-            raise ValueError(f'{name} should contain tuples each with 2 integers')
-
 class DbLabel(DbSectorObject):
     def __init__(
             self,
@@ -1302,7 +1287,7 @@ class DbLabel(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateMandatoryStr(name='text', value=text)
+        common.validateMandatoryStr(name='text', value=text, allowEmpty=False)
         common.validateMandatoryFloat(name='worldX', value=worldX)
         common.validateMandatoryFloat(name='worldY', value=worldY)
         common.validateOptionalHtmlColour(name='colour', value=colour)

@@ -42,12 +42,14 @@ class PBG(object):
             planetoidBelts: typing.Optional[str] = None,
             gasGiants: typing.Optional[str] = None
             ) -> None:
+        survey.validateOptionalPopulationMultiplier(name='populationMultiplier', value=populationMultiplier)
+        survey.validateOptionalPlanetoidBelts(name='planetoidBelts', value=planetoidBelts)
+        survey.validateOptionalGasGiants(name='gasGiants', value=gasGiants)
+
         self._valueMap: typing.Dict[PBG.Element, str] = {}
         self._string = None
 
         if populationMultiplier is not None:
-            if populationMultiplier not in _PopulationMultiplierDescriptionMap:
-                raise ValueError(f'Invalid PBG population multiplier "{populationMultiplier}"')
             self._valueMap[PBG.Element.PopulationMultiplier] = populationMultiplier
         if planetoidBelts is not None:
             self._valueMap[PBG.Element.PlanetoidBelts] = planetoidBelts
@@ -83,7 +85,7 @@ class PBG(object):
             self,
             element: Element
             ) -> str:
-        return PBG._ValueDescriptionsMap[element][self.code(element)]
+        return PBG._ValueDescriptionsMap[element].get(self.code(element), 'Description Unavailable')
 
     def isUnknown(self) -> bool:
         return len(self._valueMap) == 0

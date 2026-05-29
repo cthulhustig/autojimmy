@@ -47,8 +47,8 @@ def parseTabStockAllegiances(
             code=code,
             name=name,
             legacy=legacy,
-            base=base,
-            location=location))
+            base=base if base else None,
+            location=location if location else None))
 
     return allegiances
 

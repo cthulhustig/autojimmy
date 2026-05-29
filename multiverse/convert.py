@@ -234,12 +234,6 @@ _ResearchStationTradeCode = 'Rs'
 _ValidLineStyles = set(['solid', 'dashed', 'dotted'])
 _ValidLabelSizes = set(['small', 'large'])
 
-def _formatHexString(hexX: int, hexY: int) -> str:
-    return f'{hexX:02d}{hexY:02d}'
-
-def _parseHexString(string: str) -> typing.Tuple[int, int]:
-    return (int(string[:2]), int(string[-2:]))
-
 # This is based on the sector world bounds and hex world center code in
 # astrometrics. It uses a coordinate space that has the same scale as
 # world space coordinates but is relative to the upper left corner of
@@ -291,19 +285,6 @@ def _hexToSubsectorCode(
     indexY = (hexY - 1) // _SubsectorHeight
     return chr(ord('A') + (indexY * 4) + indexX)
 
-def _parseSystemWorldCount(
-        rawSystemWorldCount: typing.Optional[str]
-        ) -> typing.Optional[int]:
-    if rawSystemWorldCount is None:
-        return None
-
-    try:
-        return int(rawSystemWorldCount)
-    except:
-        # The number of system worlds should be an integer but wasn't
-        # so try parsing it as ehex
-        return survey.ehexToInteger(value=rawSystemWorldCount, default=None)
-
 def _findUsedAllegianceCodes(
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld]
@@ -316,11 +297,10 @@ def _findUsedAllegianceCodes(
                 usedCodes.add(rawAllegianceCode)
 
             rawRemarks = rawWorld.remarks()
-            if rawRemarks:
-                matches = _MilitaryRuleRemarkPattern.findall(rawRemarks)
-                for match in matches:
-                    if match not in _IgnoreAllegianceCodes:
-                        usedCodes.add(match)
+            if rawRemarks and rawRemarks.rulingAllegiances():
+                for rawAllegianceCode in rawRemarks.rulingAllegiances():
+                    if rawAllegianceCode not in _IgnoreAllegianceCodes:
+                        usedCodes.add(rawAllegianceCode)
     if rawMetadata.routes():
         for rawRoute in rawMetadata.routes():
             rawAllegianceCode = rawRoute.allegiance()
@@ -956,26 +936,23 @@ def _createDbSophonts(
             rawRemarks = rawWorld.remarks()
             if not rawRemarks:
                 continue
-            matches = _T5SophontPopulationRemarkPattern.findall(rawRemarks)
-            for match in matches:
-                rawUsedSophontCodes.add(match)
 
-            matches = _LegacySophontPopulationRemarkPattern.findall(rawRemarks)
-            for match in matches:
-                rawUsedSophontCodes.add(match)
+            if rawRemarks.sophontPopulations():
+                for rawPopulation in rawRemarks.sophontPopulations():
+                    rawUsedSophontCodes.add(rawPopulation.sophont())
 
-            matches = _MajorSophontHomeWorldRemarkPattern.findall(rawRemarks)
-            for match in matches:
-                rawUsedSophontNames.add(match)
-                rawMajorSophontNames.add(match)
+            if rawRemarks.majorRaceHomeWorlds():
+                for rawPopulation in rawRemarks.majorRaceHomeWorlds():
+                    rawUsedSophontNames.add(rawPopulation.sophont())
+                    rawMajorSophontNames.add(rawPopulation.sophont())
 
-            matches = _MinorSophontHomeWorldRemarkPattern.findall(rawRemarks)
-            for match in matches:
-                rawUsedSophontNames.add(match)
+            if rawRemarks.minorRaceHomeWorlds():
+                for rawPopulation in rawRemarks.minorRaceHomeWorlds():
+                    rawUsedSophontNames.add(rawPopulation.sophont())
 
-            matches = _DieBackSophontRemarkPattern.findall(rawRemarks)
-            for match in matches:
-                rawUsedSophontNames.add(match)
+            if rawRemarks.dieBackSophonts():
+                for rawSophont in rawRemarks.dieBackSophonts():
+                    rawUsedSophontNames.add(rawSophont)
 
     dbSophontCodeMap: typing.Dict[str, multiverse.DbSophont] = {}
     dbSophontNameMap: typing.Dict[str, multiverse.DbSophont] = {}
@@ -1085,20 +1062,20 @@ def _createDbStars(
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld
         ) -> typing.Optional[typing.List[multiverse.DbStar]]:
-    rawStellar = rawWorld.stellar()
-    if not rawStellar:
+    rawStars = rawWorld.stars()
+    if not rawStars:
         return None
 
     dbStars = []
-    for luminosityClass, spectralClass, spectralScale in survey.parseSystemStellarString(string=rawStellar):
+    for rawStar in rawStars:
         try:
             dbStars.append(multiverse.DbStar(
-                luminosityClass=luminosityClass,
-                spectralClass=spectralClass,
-                spectralScale=spectralScale))
+                luminosityClass=rawStar.luminosityClass(),
+                spectralClass=rawStar.spectralClass(),
+                spectralScale=rawStar.spectralScale()))
         except Exception as ex:
             logging.error('Converter failed to construct star on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                    world=rawWorld.name(),
                     sector=rawMetadata.canonicalName(),
                     milieu=milieu),
                 exc_info=ex)
@@ -1119,28 +1096,41 @@ def _createDbBodies(
     rawUWP = rawWorld.uwp()
     dbStarport = dbWorldSize = dbAtmosphere = dbHydrographics = \
         dbPopulation = dbGovernment = dbLawLevel = dbTechLevel = None
-    if rawUWP:
-        dbStarport, dbWorldSize, dbAtmosphere, dbHydrographics, \
-            dbPopulation, dbGovernment, dbLawLevel, dbTechLevel = \
-            survey.parseSystemUWPString(uwp=rawUWP.upper())
+    if rawUWP is not None:
+        dbStarport = rawUWP.starport()
+        dbWorldSize = rawUWP.worldSize()
+        dbAtmosphere = rawUWP.atmosphere()
+        dbHydrographics = rawUWP.hydrographics()
+        dbPopulation = rawUWP.population()
+        dbGovernment = rawUWP.government()
+        dbLawLevel = rawUWP.lawLevel()
+        dbTechLevel = rawUWP.techLevel()
 
     rawEconomics = rawWorld.economics()
     dbResources = dbLabour = dbInfrastructure = dbEfficiency = None
-    if rawEconomics:
-        dbResources, dbLabour, dbInfrastructure, dbEfficiency = \
-            survey.parseSystemEconomicsString(economics=rawEconomics.upper())
+    if rawEconomics is not None:
+        dbResources = rawEconomics.resources()
+        dbLabour = rawEconomics.labour()
+        dbInfrastructure = rawEconomics.infrastructure()
+        dbEfficiency = rawEconomics.efficiency()
 
     rawCulture = rawWorld.culture()
     dbHeterogeneity = dbAcceptance = dbStrangeness = dbSymbols = None
-    if rawCulture:
-        dbHeterogeneity, dbAcceptance, dbStrangeness, dbSymbols = \
-            survey.parseSystemCultureString(culture=rawCulture.upper())
+    if rawCulture is not None:
+        dbHeterogeneity = rawCulture.heterogeneity()
+        dbAcceptance = rawCulture.acceptance()
+        dbStrangeness = rawCulture.strangeness()
+        dbSymbols = rawCulture.symbols()
 
     rawPBG = rawWorld.pbg()
     dbPopulationMultiplier = None
-    if rawPBG:
-        dbPopulationMultiplier, _, _ = \
-            survey.parseSystemPBGString(pbg=rawPBG.upper())
+    if rawPBG is not None:
+        dbPopulationMultiplier = rawPBG.populationMultiplier()
+        if dbPopulationMultiplier == '0':
+            # The multiplier is 0 so interpret it as 1, as per the Traveller Map
+            # second survey documentation
+            # TODO: This should log that it's happened
+            dbPopulationMultiplier = '1'
 
     dbNobilities = _createDbNobilities(
         milieu=milieu,
@@ -1152,64 +1142,46 @@ def _createDbBodies(
         rawMetadata=rawMetadata,
         rawWorld=rawWorld)
 
-    rawRemarks = rawWorld.remarks()
-    dbTradeCodes = dbSophontPopulations = dbRulingAllegiances = dbOwningSystems = dbColonySystems = \
-        dbResearchStations = dbCustomRemarks = None
-    if rawRemarks:
-        rawTradeCodes, rawMajorHomeWorlds, rawMinorHomeWorlds, rawSophontPopulations, \
-            rawDieBackSophonts, rawOwningSystems, rawColonySystems, rawRulingAllegiances, \
-            rawResearchStations, rawUnrecognisedRemarks = survey.parseSystemRemarksString(rawRemarks)
+    dbSophontPopulations = _createDbSophontPopulations(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        rawWorld=rawWorld,
+        dbSophontCodeMap=dbSophontCodeMap,
+        dbSophontNameMap=dbSophontNameMap)
 
-        dbSophontPopulations = _createDbSophontPopulations(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            rawWorld=rawWorld,
-            rawMajorHomeWorlds=rawMajorHomeWorlds,
-            rawMinorHomeWorlds=rawMinorHomeWorlds,
-            rawSophontPopulations=rawSophontPopulations,
-            rawDieBackSophonts=rawDieBackSophonts,
-            dbSophontCodeMap=dbSophontCodeMap,
-            dbSophontNameMap=dbSophontNameMap)
+    dbOwningSystems = _createDbOwningSystems(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        rawWorld=rawWorld)
 
-        dbOwningSystems = _createDbOwningSystems(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            rawWorld=rawWorld,
-            rawOwningSystems=rawOwningSystems)
+    dbColonySystems = _createDbColonySystems(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        rawWorld=rawWorld)
 
-        dbColonySystems = _createDbColonySystems(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            rawWorld=rawWorld,
-            rawColonySystems=rawColonySystems)
+    dbRulingAllegiances = _createDbRulingAllegiances(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        rawWorld=rawWorld,
+        dbAllegianceCodeMap=dbAllegianceCodeMap)
 
-        dbRulingAllegiances = _createDbRulingAllegiances(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            rawWorld=rawWorld,
-            rawRulingAllegiances=rawRulingAllegiances,
-            dbAllegianceCodeMap=dbAllegianceCodeMap)
+    dbResearchStations = _createDbResearchStations(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        rawWorld=rawWorld)
 
-        dbResearchStations = _createDbResearchStations(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            rawWorld=rawWorld,
-            rawResearchStations=rawResearchStations)
+    dbTradeCodes = _createDbTradeCodes(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        rawWorld=rawWorld,
+        dbSophontPopulations=dbSophontPopulations,
+        dbRulingAllegiances=dbRulingAllegiances,
+        dbResearchStations=dbResearchStations)
 
-        dbTradeCodes = _createDbTradeCodes(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            rawWorld=rawWorld,
-            rawTradeCodes=rawTradeCodes,
-            dbSophontPopulations=dbSophontPopulations,
-            dbRulingAllegiances=dbRulingAllegiances,
-            dbResearchStations=dbResearchStations)
-
-        dbCustomRemarks = _createDbCustomRemarks(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            rawWorld=rawWorld,
-            rawUnrecognisedRemarks=rawUnrecognisedRemarks)
+    dbCustomRemarks = _createDbCustomRemarks(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        rawWorld=rawWorld)
 
     # Only create the main world if there is some data or there is known
     # to be at least one system world
@@ -1220,7 +1192,7 @@ def _createDbBodies(
         dbPopulationMultiplier or dbTradeCodes or dbSophontPopulations or \
         dbRulingAllegiances or dbOwningSystems or dbColonySystems or \
         dbResearchStations or dbCustomRemarks
-    numSystemWorlds = _parseSystemWorldCount(rawWorld.systemWorlds())
+    numSystemWorlds = rawWorld.systemWorlds()
     if not hasData and not numSystemWorlds:
         return None
 
@@ -1260,27 +1232,27 @@ def _createDbNobilities(
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld
         ) -> typing.Optional[typing.List[multiverse.DbNobility]]:
-    rawNobilities = rawWorld.nobility()
+    rawNobilities = rawWorld.nobilities()
     if not rawNobilities:
         return None
 
     dbNobilities = []
     seenNobilities = set()
-    for nobilityCode in survey.parseSystemNobilityString(string=rawNobilities):
-        if nobilityCode in seenNobilities:
+    for rawNobilityCode in rawNobilities:
+        if rawNobilityCode in seenNobilities:
             logging.debug('Converter ignoring duplicate nobility code "{code}" on world {world} in {sector} at {milieu}'.format(
-                code=nobilityCode,
-                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                code=rawNobilityCode,
+                world=rawWorld.name(),
                 sector=rawMetadata.canonicalName(),
                 milieu=milieu))
             continue
-        seenNobilities.add(nobilityCode)
+        seenNobilities.add(rawNobilityCode)
 
         try:
-            dbNobilities.append(multiverse.DbNobility(code=nobilityCode))
+            dbNobilities.append(multiverse.DbNobility(code=rawNobilityCode))
         except Exception as ex:
             logging.error('Converter failed to construct nobility on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                    world=rawWorld.name(),
                     sector=rawMetadata.canonicalName(),
                     milieu=milieu),
                 exc_info=ex)
@@ -1298,21 +1270,21 @@ def _createDbBases(
 
     dbBases = []
     seenBases = set()
-    for baseCode in survey.parseSystemBasesString(string=rawBases):
-        if baseCode in seenBases:
+    for rawBaseCode in rawBases:
+        if rawBaseCode in seenBases:
             logging.debug('Converter ignoring duplicate base code "{code}" on world {world} in {sector} at {milieu}'.format(
-                code=baseCode,
-                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                code=rawBaseCode,
+                world=rawWorld.name(),
                 sector=rawMetadata.canonicalName(),
                 milieu=milieu))
             continue
-        seenBases.add(baseCode)
+        seenBases.add(rawBaseCode)
 
         try:
-            dbBases.append(multiverse.DbBase(code=baseCode))
+            dbBases.append(multiverse.DbBase(code=rawBaseCode))
         except Exception as ex:
             logging.error('Converter failed to construct base on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                    world=rawWorld.name(),
                     sector=rawMetadata.canonicalName(),
                     milieu=milieu),
                 exc_info=ex)
@@ -1323,172 +1295,178 @@ def _createDbSophontPopulations(
         milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
-        rawMajorHomeWorlds: typing.List[typing.Tuple[
-            str, # Sophont Name
-            typing.Optional[int]]], # Population Percentage
-        rawMinorHomeWorlds: typing.List[typing.Tuple[
-            str, # Sophont Name
-            typing.Optional[int]]], # Population Percentage
-        rawSophontPopulations: typing.List[typing.Tuple[
-            str, # Sophont Code
-            typing.Optional[int]]], # Population Percentage
-        rawDieBackSophonts: typing.List[str], # Sophont Names
         dbSophontCodeMap: typing.Mapping[str, multiverse.DbSophont],
         dbSophontNameMap: typing.Mapping[str, multiverse.DbSophont]
-        ) -> typing.Optional[typing.List[multiverse.DbStar]]:
+        ) -> typing.Optional[typing.List[multiverse.DbSophontPopulation]]:
+    remarks = rawWorld.remarks()
+    if remarks is None:
+        return None
+
+    rawMajorHomeWorlds = remarks.majorRaceHomeWorlds()
+    rawMinorHomeWorlds = remarks.minorRaceHomeWorlds()
+    rawSophontPopulations = remarks.sophontPopulations()
+    rawDieBackSophonts = remarks.dieBackSophonts()
     if not rawMajorHomeWorlds and not rawMinorHomeWorlds and not rawSophontPopulations and not rawDieBackSophonts:
         return None
 
-    dbSophontPopulations = []
+    dbSophontPopulations: typing.List[multiverse.DbSophontPopulation] = []
     seenDbSophonts = set()
 
-    for rawSophontName, rawPopulation in rawMajorHomeWorlds:
-        dbSophont = dbSophontNameMap.get(rawSophontName)
-        if not dbSophont:
-            # This should never happen, the remarks should already have been
-            # processed to extract all the used sophont names & codes and
-            # DbSophont instances should have been created for all of them
-            # TODO: Better exception string
-            raise RuntimeError('This shouldn\'t happen')
-        if dbSophont in seenDbSophonts:
-            # There is already a population entry for this sophont so
-            # ignore this one
-            # TODO: This should log and probably inform the user if it's
-            # a custom sector that's being converted
-            # TODO: I think I need to write my own linting code that
-            # will check for things like repeated sophonts or multiple
-            # owning worlds in remarks
-            continue
-        seenDbSophonts.add(dbSophont)
+    if rawMajorHomeWorlds:
+        for rawSophontPopulation in rawMajorHomeWorlds:
+            dbSophont = dbSophontNameMap.get(rawSophontPopulation.sophont())
+            if not dbSophont:
+                # This should never happen, the remarks should already have been
+                # processed to extract all the used sophont names & codes and
+                # DbSophont instances should have been created for all of them
+                # TODO: Better exception string
+                raise RuntimeError('This shouldn\'t happen')
+            if dbSophont in seenDbSophonts:
+                # There is already a population entry for this sophont so
+                # ignore this one
+                # TODO: This should log and probably inform the user if it's
+                # a custom sector that's being converted
+                # TODO: I think I need to write my own linting code that
+                # will check for things like repeated sophonts or multiple
+                # owning worlds in remarks
+                continue
+            seenDbSophonts.add(dbSophont)
 
-        try:
-            dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophontId=dbSophont.id(),
-                percentage=rawPopulation,
-                isHomeWorld=True,
-                isDieBack=False))
-        except Exception as ex:
-            logging.error('Converter failed to construct major home world sophont population on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
-                exc_info=ex)
+            try:
+                dbSophontPopulations.append(multiverse.DbSophontPopulation(
+                    sophontId=dbSophont.id(),
+                    percentage=rawSophontPopulation.percentage(),
+                    isHomeWorld=True,
+                    isDieBack=False))
+            except Exception as ex:
+                logging.error('Converter failed to construct major home world sophont population on world {world} in {sector} at {milieu}'.format(
+                        world=rawWorld.name(),
+                        sector=rawMetadata.canonicalName(),
+                        milieu=milieu),
+                    exc_info=ex)
 
-    for rawSophontName, rawPopulation in rawMinorHomeWorlds:
-        dbSophont = dbSophontNameMap.get(rawSophontName)
-        if not dbSophont:
-            # This should never happen, the remarks should already have been
-            # processed to extract all the used sophont names & codes and
-            # DbSophont instances should have been created for all of them
-            # TODO: Better exception string
-            raise RuntimeError('This shouldn\'t happen')
-        if dbSophont in seenDbSophonts:
-            # There is already a population entry for this sophont so
-            # ignore this one
-            # TODO: This should log and probably inform the user if it's
-            # a custom sector that's being converted
-            continue
-        seenDbSophonts.add(dbSophont)
+    if rawMinorHomeWorlds:
+        for rawSophontPopulation in rawMinorHomeWorlds:
+            dbSophont = dbSophontNameMap.get(rawSophontPopulation.sophont())
+            if not dbSophont:
+                # This should never happen, the remarks should already have been
+                # processed to extract all the used sophont names & codes and
+                # DbSophont instances should have been created for all of them
+                # TODO: Better exception string
+                raise RuntimeError('This shouldn\'t happen')
+            if dbSophont in seenDbSophonts:
+                # There is already a population entry for this sophont so
+                # ignore this one
+                # TODO: This should log and probably inform the user if it's
+                # a custom sector that's being converted
+                continue
+            seenDbSophonts.add(dbSophont)
 
-        try:
-            dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophontId=dbSophont.id(),
-                percentage=rawPopulation,
-                isHomeWorld=True,
-                isDieBack=False))
-        except Exception as ex:
-            logging.error('Converter failed to construct minor home world sophont population on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
-                exc_info=ex)
+            try:
+                dbSophontPopulations.append(multiverse.DbSophontPopulation(
+                    sophontId=dbSophont.id(),
+                    percentage=rawSophontPopulation.percentage(),
+                    isHomeWorld=True,
+                    isDieBack=False))
+            except Exception as ex:
+                logging.error('Converter failed to construct minor home world sophont population on world {world} in {sector} at {milieu}'.format(
+                        world=rawWorld.name(),
+                        sector=rawMetadata.canonicalName(),
+                        milieu=milieu),
+                    exc_info=ex)
 
-    for rawSophontCode, rawPopulation in rawSophontPopulations:
-        dbSophont = dbSophontCodeMap.get(rawSophontCode)
-        if not dbSophont:
-            # This should never happen, the remarks should already have been
-            # processed to extract all the used sophont names & codes and
-            # DbSophont instances should have been created for all of them
-            # TODO: Better exception string
-            raise RuntimeError('This shouldn\'t happen')
-        if dbSophont in seenDbSophonts:
-            # There is already a population entry for this sophont so
-            # ignore this one
-            # TODO: This should log and probably inform the user if it's
-            # a custom sector that's being converted
-            continue
-        seenDbSophonts.add(dbSophont)
+    if rawSophontPopulations:
+        for rawSophontPopulation in rawSophontPopulations:
+            dbSophont = dbSophontCodeMap.get(rawSophontPopulation.sophont())
+            if not dbSophont:
+                # This should never happen, the remarks should already have been
+                # processed to extract all the used sophont names & codes and
+                # DbSophont instances should have been created for all of them
+                # TODO: Better exception string
+                raise RuntimeError('This shouldn\'t happen')
+            if dbSophont in seenDbSophonts:
+                # There is already a population entry for this sophont so
+                # ignore this one
+                # TODO: This should log and probably inform the user if it's
+                # a custom sector that's being converted
+                continue
+            seenDbSophonts.add(dbSophont)
 
-        try:
-            dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophontId=dbSophont.id(),
-                percentage=rawPopulation,
-                isHomeWorld=False,
-                isDieBack=False))
-        except Exception as ex:
-            logging.error('Converter failed to construct sophont population on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
-                exc_info=ex)
+            try:
+                dbSophontPopulations.append(multiverse.DbSophontPopulation(
+                    sophontId=dbSophont.id(),
+                    percentage=rawSophontPopulation.percentage(),
+                    isHomeWorld=False,
+                    isDieBack=False))
+            except Exception as ex:
+                logging.error('Converter failed to construct sophont population on world {world} in {sector} at {milieu}'.format(
+                        world=rawWorld.name(),
+                        sector=rawMetadata.canonicalName(),
+                        milieu=milieu),
+                    exc_info=ex)
 
-    for rawSophontName in rawDieBackSophonts:
-        dbSophont = dbSophontNameMap.get(rawSophontName)
-        if not dbSophont:
-            # This should never happen, the remarks should already have been
-            # processed to extract all the used sophont names & codes and
-            # DbSophont instances should have been created for all of them
-            # TODO: Better exception string
-            raise RuntimeError('This shouldn\'t happen')
-        if dbSophont in seenDbSophonts:
-            # There is already a population entry for this sophont so
-            # ignore this one
-            # TODO: This should log and probably inform the user if it's
-            # a custom sector that's being converted
-            continue
-        seenDbSophonts.add(dbSophont)
+    if rawDieBackSophonts:
+        for rawSophontName in rawDieBackSophonts:
+            dbSophont = dbSophontNameMap.get(rawSophontName)
+            if not dbSophont:
+                # This should never happen, the remarks should already have been
+                # processed to extract all the used sophont names & codes and
+                # DbSophont instances should have been created for all of them
+                # TODO: Better exception string
+                raise RuntimeError('This shouldn\'t happen')
+            if dbSophont in seenDbSophonts:
+                # There is already a population entry for this sophont so
+                # ignore this one
+                # TODO: This should log and probably inform the user if it's
+                # a custom sector that's being converted
+                continue
+            seenDbSophonts.add(dbSophont)
 
-        try:
-            dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                sophontId=dbSophont.id(),
-                percentage=None,
-                isHomeWorld=False,
-                isDieBack=True))
-        except Exception as ex:
-            logging.error('Converter failed to construct die back sophont population on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
-                exc_info=ex)
+            try:
+                dbSophontPopulations.append(multiverse.DbSophontPopulation(
+                    sophontId=dbSophont.id(),
+                    percentage=None,
+                    isHomeWorld=False,
+                    isDieBack=True))
+            except Exception as ex:
+                logging.error('Converter failed to construct die back sophont population on world {world} in {sector} at {milieu}'.format(
+                        world=rawWorld.name(),
+                        sector=rawMetadata.canonicalName(),
+                        milieu=milieu),
+                    exc_info=ex)
 
     return dbSophontPopulations
 
 def _createDbOwningSystems(
         milieu: str,
         rawMetadata: survey.RawMetadata,
-        rawWorld: survey.RawWorld,
-        rawOwningSystems: typing.List[typing.Tuple[
-            int, # Hex X in sector coordinates
-            int, # Hex Y in sector coordinates
-            typing.Optional[str]]], # Sector Abbreviation or None if Current Sector
+        rawWorld: survey.RawWorld
         ) -> typing.Optional[typing.List[multiverse.DbOwningSystem]]:
+    rawRemarks = rawWorld.remarks()
+    if rawRemarks is None:
+        return None
+
+    rawOwningSystems = rawRemarks.owningSystems()
     if not rawOwningSystems:
         return None
 
     dbOwningSystems = []
     seenOwners = set()
-    for hexX, hexY, sectorAbbreviation in rawOwningSystems:
-        if not sectorAbbreviation:
-            sectorAbbreviation = None
-        elif sectorAbbreviation == rawMetadata.abbreviation():
+    for rawHexRef in rawOwningSystems:
+        rawHexX = rawHexRef.x()
+        rawHexY = rawHexRef.y()
+        rawSectorAbbreviation = rawHexRef.sector()
+        if not rawSectorAbbreviation:
+            rawSectorAbbreviation = None
+        elif rawSectorAbbreviation == rawMetadata.abbreviation():
             # If the sector abbreviation is the same as the current sector
             # abbreviation then it can be omitted
-            sectorAbbreviation = None
+            rawSectorAbbreviation = None
 
-        key = (hexX, hexY, sectorAbbreviation)
+        key = (rawHexX, rawHexY, rawSectorAbbreviation)
         if key in seenOwners:
             logging.debug('Converter ignoring duplicate owner world on world {world} in {sector} at {milieu}'.format(
-                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                world=rawWorld.name(),
                 sector=rawMetadata.canonicalName(),
                 milieu=milieu))
             continue
@@ -1496,12 +1474,12 @@ def _createDbOwningSystems(
 
         try:
             dbOwningSystems.append(multiverse.DbOwningSystem(
-                hexX=hexX,
-                hexY=hexY,
-                sectorAbbreviation=sectorAbbreviation))
+                hexX=rawHexX,
+                hexY=rawHexY,
+                sectorAbbreviation=rawSectorAbbreviation))
         except Exception as ex:
             logging.error('Converter failed to construct owner world on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                    world=rawWorld.name(),
                     sector=rawMetadata.canonicalName(),
                     milieu=milieu),
                 exc_info=ex)
@@ -1512,28 +1490,32 @@ def _createDbColonySystems(
         milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
-        rawColonySystems: typing.List[typing.Tuple[
-            int, # Hex X in sector coordinates
-            int, # Hex Y in sector coordinates
-            typing.Optional[str]]], # Sector Abbreviation or None if Current Sector
         ) -> typing.Optional[typing.List[multiverse.DbColonySystem]]:
+    rawRemarks = rawWorld.remarks()
+    if rawRemarks is None:
+        return None
+
+    rawColonySystems = rawRemarks.colonySystems()
     if not rawColonySystems:
         return None
 
     dbColonySystems = []
     seenColonies = set()
-    for hexX, hexY, sectorAbbreviation in rawColonySystems:
-        if not sectorAbbreviation:
-            sectorAbbreviation = None
-        elif sectorAbbreviation == rawMetadata.abbreviation():
+    for rawHexRef in rawColonySystems:
+        rawHexX = rawHexRef.x()
+        rawHexY = rawHexRef.y()
+        rawSectorAbbreviation = rawHexRef.sector()
+        if not rawSectorAbbreviation:
+            rawSectorAbbreviation = None
+        elif rawSectorAbbreviation == rawMetadata.abbreviation():
             # If the sector abbreviation is the same as the current sector
             # abbreviation then it can be omitted
-            sectorAbbreviation = None
+            rawSectorAbbreviation = None
 
-        key = (hexX, hexY, sectorAbbreviation)
+        key = (rawHexX, rawHexY, rawSectorAbbreviation)
         if key in seenColonies:
             logging.debug('Converter ignoring duplicate colony world on world {world} in {sector} at {milieu}'.format(
-                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                world=rawWorld.name(),
                 sector=rawMetadata.canonicalName(),
                 milieu=milieu))
             continue
@@ -1541,12 +1523,12 @@ def _createDbColonySystems(
 
         try:
             dbColonySystems.append(multiverse.DbColonySystem(
-                hexX=hexX,
-                hexY=hexY,
-                sectorAbbreviation=sectorAbbreviation))
+                hexX=rawHexX,
+                hexY=rawHexY,
+                sectorAbbreviation=rawSectorAbbreviation))
         except Exception as ex:
             logging.error('Converter failed to construct colony world on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                    world=rawWorld.name(),
                     sector=rawMetadata.canonicalName(),
                     milieu=milieu),
                 exc_info=ex)
@@ -1557,9 +1539,13 @@ def _createDbRulingAllegiances(
         milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
-        rawRulingAllegiances: typing.List[str], # Allegiance codes
         dbAllegianceCodeMap: typing.Mapping[str, multiverse.DbAllegiance]
         ) -> typing.Optional[typing.List[multiverse.DbRulingAllegiance]]:
+    rawRemarks = rawWorld.remarks()
+    if rawRemarks is None:
+        return None
+
+    rawRulingAllegiances = rawRemarks.rulingAllegiances()
     if not rawRulingAllegiances:
         return None
 
@@ -1568,7 +1554,7 @@ def _createDbRulingAllegiances(
     for rawAllegianceCode in rawRulingAllegiances:
         if rawAllegianceCode in seenRulingAllegiances:
             logging.debug('Converter ignoring duplicate ruling allegiance on world {world} in {sector} at {milieu}'.format(
-                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                world=rawWorld.name(),
                 sector=rawMetadata.canonicalName(),
                 milieu=milieu))
             continue
@@ -1584,7 +1570,7 @@ def _createDbRulingAllegiances(
             dbRulingAllegiances.append(multiverse.DbRulingAllegiance(allegianceId=dbAllegiance.id()))
         except Exception as ex:
             logging.error('Converter failed to construct ruling allegiance on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                    world=rawWorld.name(),
                     sector=rawMetadata.canonicalName(),
                     milieu=milieu),
                 exc_info=ex)
@@ -1594,9 +1580,13 @@ def _createDbRulingAllegiances(
 def _createDbResearchStations(
         milieu: str,
         rawMetadata: survey.RawMetadata,
-        rawWorld: survey.RawWorld,
-        rawResearchStations: typing.List[str]
+        rawWorld: survey.RawWorld
         ) -> typing.Optional[typing.List[multiverse.DbResearchStation]]:
+    rawRemarks = rawWorld.remarks()
+    if rawRemarks is None:
+        return None
+
+    rawResearchStations = rawRemarks.researchStations()
     if not rawResearchStations:
         return None
 
@@ -1605,7 +1595,7 @@ def _createDbResearchStations(
     for rawResearchStation in rawResearchStations:
         if rawResearchStation in seenResearchStations:
             logging.debug('Converter ignoring duplicate research station on world {world} in {sector} at {milieu}'.format(
-                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                world=rawWorld.name(),
                 sector=rawMetadata.canonicalName(),
                 milieu=milieu))
             continue # Skip duplicates
@@ -1615,7 +1605,7 @@ def _createDbResearchStations(
             dbResearchStations.append(multiverse.DbResearchStation(code=rawResearchStation))
         except Exception as ex:
             logging.error('Converter failed to construct research station on world {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                    world=rawWorld.name(),
                     sector=rawMetadata.canonicalName(),
                     milieu=milieu),
                 exc_info=ex)
@@ -1626,11 +1616,15 @@ def _createDbTradeCodes(
         milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
-        rawTradeCodes: typing.Optional[typing.Collection[str]],
         dbSophontPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]],
         dbRulingAllegiances: typing.Optional[typing.Collection[multiverse.DbRulingAllegiance]],
         dbResearchStations: typing.Optional[typing.Collection[multiverse.DbResearchStation]]
         ) -> typing.Optional[typing.List[multiverse.DbTradeCode]]:
+    rawRemarks = rawWorld.remarks()
+    if rawRemarks is None:
+        return None
+
+    rawTradeCodes = rawRemarks.tradeCodes()
     if not rawTradeCodes:
         return None
 
@@ -1640,7 +1634,7 @@ def _createDbTradeCodes(
         if rawTradeCode in seenTradeCodes:
             logging.debug('Converter ignoring duplicate trade code "{code}" on world at {world} in {sector} at {milieu}'.format(
                 code=rawTradeCode,
-                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                world=rawWorld.name(),
                 sector=rawMetadata.canonicalName(),
                 milieu=milieu))
             continue
@@ -1650,7 +1644,7 @@ def _createDbTradeCodes(
             dbTradeCodes.append(multiverse.DbTradeCode(code=rawTradeCode))
         except Exception as ex:
             logging.error('Converter failed to construct trade code on world at {world} in {sector} at {milieu}'.format(
-                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                world=rawWorld.name(),
                 sector=rawMetadata.canonicalName(),
                 milieu=milieu),
                 exc_info=ex)
@@ -1668,7 +1662,7 @@ def _createDbTradeCodes(
                 dbTradeCodes.append(multiverse.DbTradeCode(code=_DieBackTradeCode))
             except Exception as ex:
                 logging.error('Converter failed to construct trade code on world at {world} in {sector} at {milieu}'.format(
-                    world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                    world=rawWorld.name(),
                     sector=rawMetadata.canonicalName(),
                     milieu=milieu),
                     exc_info=ex)
@@ -1680,7 +1674,7 @@ def _createDbTradeCodes(
             dbTradeCodes.append(multiverse.DbTradeCode(code=_MilitaryRuleTradeCode))
         except Exception as ex:
             logging.error('Converter failed to construct trade code on world at {world} in {sector} at {milieu}'.format(
-                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                world=rawWorld.name(),
                 sector=rawMetadata.canonicalName(),
                 milieu=milieu),
                 exc_info=ex)
@@ -1691,7 +1685,7 @@ def _createDbTradeCodes(
             dbTradeCodes.append(multiverse.DbTradeCode(code=_ResearchStationTradeCode))
         except Exception as ex:
             logging.error('Converter failed to construct trade code on world at {world} in {sector} at {milieu}'.format(
-                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                world=rawWorld.name(),
                 sector=rawMetadata.canonicalName(),
                 milieu=milieu),
                 exc_info=ex)
@@ -1701,15 +1695,18 @@ def _createDbTradeCodes(
 def _createDbCustomRemarks(
         milieu: str,
         rawMetadata: survey.RawMetadata,
-        rawWorld: survey.RawWorld,
-        rawUnrecognisedRemarks: typing.Optional[typing.Collection[str]]
+        rawWorld: survey.RawWorld
         ) -> typing.Optional[typing.List[multiverse.DbCustomRemark]]:
-    if not rawUnrecognisedRemarks:
+    rawRemarks = rawWorld.remarks()
+    if rawRemarks is None:
         return None
 
+    rawCustomRemarks = rawRemarks.customRemarks()
+    if not rawCustomRemarks:
+        return None
 
     dbCustomRemarks = []
-    for remark in rawUnrecognisedRemarks:
+    for remark in rawCustomRemarks:
         if not remark:
             continue
 
@@ -1717,7 +1714,7 @@ def _createDbCustomRemarks(
             dbCustomRemarks.append(multiverse.DbCustomRemark(remark=remark))
         except Exception as ex:
             logging.error('Converter failed to construct custom remark on world at {world} in {sector} at {milieu}'.format(
-                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                world=rawWorld.name(),
                 sector=rawMetadata.canonicalName(),
                 milieu=milieu),
                 exc_info=ex)
@@ -1738,10 +1735,9 @@ def _createDbSystems(
     # the invalid data is ignored?
     for systemIndex, rawWorld in enumerate(rawSystems):
         try:
-            rawHex = rawWorld.hex()
-            if not rawHex:
-                assert(False) # TODO: Better error handling
-            dbHexX, dbHexY = _parseHexString(rawHex)
+            dbHexX = rawWorld.x()
+            dbHexY = rawWorld.y()
+            hexString = survey.formatHexString(x=dbHexX, y=dbHexY)
 
             rawSystemName = rawWorld.name()
             dbSystemName = rawSystemName if rawSystemName else None
@@ -1749,10 +1745,11 @@ def _createDbSystems(
             rawPBG = rawWorld.pbg()
             dbPlanetoidBeltCount = dbGasGiantCount = None
             if rawPBG:
-                _, dbPlanetoidBeltCount, dbGasGiantCount = \
-                    survey.parseSystemPBGString(pbg=rawPBG.upper())
+                dbPlanetoidBeltCount = rawPBG.planetoidBeltCount()
                 if dbPlanetoidBeltCount is not None:
                     dbPlanetoidBeltCount = survey.ehexToInteger(dbPlanetoidBeltCount, None)
+
+                dbGasGiantCount = rawPBG.gasGiantCount()
                 if dbGasGiantCount is not None:
                     dbGasGiantCount = survey.ehexToInteger(dbGasGiantCount, None)
 
@@ -1769,7 +1766,12 @@ def _createDbSystems(
             if rawAllegianceCode and not dbAllegiance:
                 # TODO: This should probably log and continue with no allegiance,
                 # if it's a custom sector it should also warn the user
-                raise RuntimeError(f'World at {rawHex} in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
+                raise RuntimeError(
+                    'World at {hex} in {sector} at {milieu} uses undefined allegiance code {allegiance}'.format(
+                        hex=hexString,
+                        sector=rawMetadata.canonicalName(),
+                        milieu=milieu,
+                        allegiance=rawAllegianceCode))
 
             # From the Traveller Map Second Survey documentation the system world count is
             # Main World + Gas Giant Count + Planetoid Belt Count + Other Planetoid Count.
@@ -1785,26 +1787,18 @@ def _createDbSystems(
             # https://travellermap.com/doc/secondsurvey#pbg
             rawSystemWorlds = rawWorld.systemWorlds()
             dbWorldCount = None
-            if rawSystemWorlds:
+            if rawSystemWorlds is not None:
                 numBelts = dbPlanetoidBeltCount if dbPlanetoidBeltCount else 0
                 numGiants = dbGasGiantCount if dbGasGiantCount else 0
                 numBeltsPlusGiants = numBelts + numGiants
-                numSystemWorlds = _parseSystemWorldCount(rawSystemWorlds)
-                if numSystemWorlds is not None:
-                    if numSystemWorlds >= numBeltsPlusGiants:
-                        dbWorldCount = numSystemWorlds - numBeltsPlusGiants
-                    else:
-                        logging.warning('Other world count for world {world} in {sector} at {milieu} is unknown as the world count {total} is lower than the number of known worlds (Main World + {belts} Planetoid Belts + {giants} Gas Giants)'.format(
-                                total=numSystemWorlds,
-                                belts=numBelts,
-                                giants=numGiants,
-                                world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
-                                sector=rawMetadata.canonicalName(),
-                                milieu=milieu))
+                if rawSystemWorlds >= numBeltsPlusGiants:
+                    dbWorldCount = rawSystemWorlds - numBeltsPlusGiants
                 else:
-                    logging.warning('Other world count for world {world} in {sector} at {milieu} is unknown as the system world count "{count}" is invalid'.format(
-                            count=rawSystemWorlds,
-                            world=rawWorld.name() if rawWorld.name() else rawWorld.hex(),
+                    logging.warning('Other world count for world at {hex} in {sector} at {milieu} is unknown as the world count {total} is lower than the number of known worlds (Main World + {belts} Planetoid Belts + {giants} Gas Giants)'.format(
+                            total=rawSystemWorlds,
+                            belts=numBelts,
+                            giants=numGiants,
+                            hex=hexString,
                             sector=rawMetadata.canonicalName(),
                             milieu=milieu))
 
@@ -1861,13 +1855,6 @@ def _createDbRoutes(
 
     if rawMetadata.routes():
         for rawRoute in rawMetadata.routes():
-            rawStartX, rawStartY = _parseHexString(rawRoute.startHex())
-            rawEndX, rawEndY = _parseHexString(rawRoute.endHex())
-            rawStartOffsetX = rawRoute.startOffsetX()
-            rawStartOffsetY = rawRoute.startOffsetY()
-            rawEndOffsetX = rawRoute.endOffsetX()
-            rawEndOffsetY = rawRoute.endOffsetY()
-
             rawAllegianceCode = rawRoute.allegiance()
             dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
             if rawAllegianceCode and not dbAllegiance:
@@ -1918,14 +1905,14 @@ def _createDbRoutes(
                     break
 
             dbRoutes.append(multiverse.DbRoute(
-                startHexX=rawStartX,
-                startHexY=rawStartY,
-                endHexX=rawEndX,
-                endHexY=rawEndY,
-                startOffsetX=rawStartOffsetX if rawStartOffsetX is not None else 0,
-                startOffsetY=rawStartOffsetY if rawStartOffsetY is not None else 0,
-                endOffsetX=rawEndOffsetX if rawEndOffsetX is not None else 0,
-                endOffsetY=rawEndOffsetY if rawEndOffsetY is not None else 0,
+                startHexX=rawRoute.startHexX(),
+                startHexY=rawRoute.startHexY(),
+                endHexX=rawRoute.endHexX(),
+                endHexY=rawRoute.endHexY(),
+                startOffsetX=rawRoute.startOffsetX() if rawRoute.startOffsetX() is not None else 0,
+                startOffsetY=rawRoute.startOffsetY() if rawRoute.startOffsetY() is not None else 0,
+                endOffsetX=rawRoute.endOffsetX() if rawRoute.endOffsetX() is not None else 0,
+                endOffsetY=rawRoute.endOffsetY() if rawRoute.endOffsetY() is not None else 0,
                 type=dbType,
                 style=dbStyle,
                 colour=dbColour,
@@ -1949,10 +1936,7 @@ def _createDbBorders(
 
     if rawMetadata.borders():
         for rawBorder in rawMetadata.borders():
-            dbHexes = []
-            for rawHex in rawBorder.hexes():
-                dbHexes.append(_parseHexString(rawHex))
-
+            dbHexes = rawBorder.hexes()
             if not dbHexes:
                 logging.warning(f'Converter ignoring border with empty hex list in {rawMetadata.canonicalName()} at {milieu}')
                 continue
@@ -1991,13 +1975,13 @@ def _createDbBorders(
             rawLabel = rawBorder.label()
             dbLabel = rawLabel if rawLabel else None
 
-            rawLabelHex = rawBorder.labelHex()
-            rawLabelOffsetX = rawBorder.labelOffsetX()
-            rawLabelOffsetY = rawBorder.labelOffsetY()
+            rawLabelHexX = rawBorder.labelHexX()
+            rawLabelHexY = rawBorder.labelHexY()
             dbLabelX = None
             dbLabelY = None
-            if rawLabelHex:
-                rawLabelHexX, rawLabelHexY = _parseHexString(rawLabelHex)
+            if rawLabelHexX is not None and rawLabelHexY is not None:
+                rawLabelOffsetX = rawBorder.labelOffsetX()
+                rawLabelOffsetY = rawBorder.labelOffsetY()
                 dbLabelX, dbLabelY = _hexToSectorWorldOffset(
                     hexX=rawLabelHexX,
                     hexY=rawLabelHexY,
@@ -2036,10 +2020,7 @@ def _createDbRegions(
 
     if rawMetadata.regions():
         for rawRegion in rawMetadata.regions():
-            dbHexes = []
-            for rawHex in rawRegion.hexes():
-                dbHexes.append(_parseHexString(rawHex))
-
+            dbHexes = rawRegion.hexes()
             if not dbHexes:
                 logging.warning(f'Converter ignoring region with empty hex list in {rawMetadata.canonicalName()} at {milieu}')
                 continue
@@ -2047,13 +2028,13 @@ def _createDbRegions(
             rawLabel = rawRegion.label()
             dbLabel = rawLabel if rawLabel else None
 
-            rawLabelHex = rawRegion.labelHex()
-            rawLabelOffsetX = rawRegion.labelOffsetX()
-            rawLabelOffsetY = rawRegion.labelOffsetY()
+            rawLabelHexX = rawRegion.labelHexX()
+            rawLabelHexY = rawRegion.labelHexY()
             dbLabelX = None
             dbLabelY = None
-            if rawLabelHex:
-                rawLabelHexX, rawLabelHexY = _parseHexString(rawLabelHex)
+            if rawLabelHexX is not None and rawLabelHexY is not None:
+                rawLabelOffsetX = rawRegion.labelOffsetX()
+                rawLabelOffsetY = rawRegion.labelOffsetY()
                 dbLabelX, dbLabelY = _hexToSectorWorldOffset(
                     hexX=rawLabelHexX,
                     hexY=rawLabelHexY,
@@ -2100,7 +2081,8 @@ def _createDbLabels(
                 logging.warning(f'Converter ignoring empty label in {rawMetadata.canonicalName()} at {milieu}')
                 continue
 
-            rawHexX, rawHexY = _parseHexString(rawLabel.hex())
+            rawHexX = rawLabel.hexX()
+            rawHexY = rawLabel.hexY()
             rawOffsetX = rawLabel.offsetX()
             rawOffsetY = rawLabel.offsetY()
             dbX, dbY = _hexToSectorWorldOffset(
@@ -2225,8 +2207,12 @@ def convertRawSectorToDbSector(
 
     rawSectorStyleSheet = None
     if rawMetadata.styleSheet():
-        rawSectorStyleSheet = survey.parseStyleSheet(
-            content=rawMetadata.styleSheet())
+        try:
+            rawSectorStyleSheet = survey.parseStyleSheet(
+                content=rawMetadata.styleSheet())
+        except Exception as Ex:
+            # TODO: Log and continue
+            pass
 
     routeStyleMap = _mergeRouteStyles(
         rawStockStyleSheet=rawStockStyleSheet,
@@ -2405,8 +2391,10 @@ def _createRawRoutes(
                     pass # TODO: Log something
 
             rawRoutes.append(survey.RawRoute(
-                startHex=_formatHexString(dbRoute.startHexX(), dbRoute.startHexY()),
-                endHex=_formatHexString(dbRoute.endHexX(), dbRoute.endHexY()),
+                startHexX=dbRoute.startHexX(),
+                startHexY=dbRoute.startHexY(),
+                endHexX=dbRoute.endHexX(),
+                endHexY=dbRoute.endHexY(),
                 startOffsetX=dbRoute.startOffsetX() if dbRoute.startOffsetX() else None,
                 startOffsetY=dbRoute.startOffsetY() if dbRoute.startOffsetY() else None,
                 endOffsetX=dbRoute.endOffsetX() if dbRoute.endOffsetX() else None,
@@ -2427,10 +2415,6 @@ def _createRawBorders(
     if dbSector.borders():
         rawBorders = []
         for dbBorder in dbSector.borders():
-            hexes = []
-            for x, y in dbBorder.hexes():
-                hexes.append(_formatHexString(x, y))
-
             dbAllegiance = None
             if dbBorder.allegianceId():
                 dbAllegiance = dbIdToAllegianceMap.get(dbBorder.allegianceId())
@@ -2442,8 +2426,7 @@ def _createRawBorders(
                 hexX, hexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
                     worldX=dbBorder.labelWorldX(),
                     worldY=dbBorder.labelWorldY())
-
-                labelHex = _formatHexString(hexX, hexY)
+                labelHex = survey.formatHexString(x=hexX, y=hexY)
 
                 # NOTE: The 0.7 divisor is to mimic how Traveller Map scales the offset
                 # in DrawMicroLabels
@@ -2453,7 +2436,7 @@ def _createRawBorders(
                     labelOffsetY = -labelOffsetY / 0.7
 
             rawBorders.append(survey.RawBorder(
-                hexes=hexes,
+                hexes=dbBorder.hexes(),
                 allegiance=dbAllegiance.code() if dbAllegiance else None, # TODO: Should this be the code or the name
                 showLabel=dbBorder.showLabel(),
                 wrapLabel=dbBorder.wrapLabel(),
@@ -2473,17 +2456,12 @@ def _createRawRegions(
     if dbSector.regions():
         rawRegions = []
         for dbRegion in dbSector.regions():
-            hexes = []
-            for x, y in dbRegion.hexes():
-                hexes.append(_formatHexString(x, y))
-
             labelHex = labelOffsetX = labelOffsetY = None
             if dbRegion.labelWorldX() is not None and dbRegion.labelWorldY() is not None:
                 hexX, hexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
                     worldX=dbRegion.labelWorldX(),
                     worldY=dbRegion.labelWorldY())
-
-                labelHex = _formatHexString(hexX, hexY)
+                labelHex = survey.formatHexString(x=hexX, y=hexY)
 
                 # NOTE: The 0.7 divisor is to mimic how Traveller Map scales the offset
                 # in DrawMicroLabels
@@ -2493,7 +2471,7 @@ def _createRawRegions(
                     labelOffsetY = -labelOffsetY / 0.7
 
             rawRegions.append(survey.RawRegion(
-                hexes=hexes,
+                hexes=dbRegion.hexes(),
                 showLabel=dbRegion.showLabel(),
                 wrapLabel=dbRegion.wrapLabel(),
                 labelHex=labelHex,
@@ -2516,8 +2494,7 @@ def _createRawLabels(
                 hexX, hexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
                     worldX=dbLabel.worldX(),
                     worldY=dbLabel.worldY())
-
-                labelHex = _formatHexString(hexX, hexY)
+                labelHex = survey.formatHexString(x=hexX, y=hexY)
 
                 # NOTE: The 0.7 divisor is to mimic how Traveller Map scales the offset
                 # in DrawMicroLabels
@@ -2576,14 +2553,14 @@ def _createRawMetadata(
         dbIdToAllegianceMap = {}
 
     return survey.RawMetadata(
+        x=dbSector.sectorX(),
+        y=dbSector.sectorY(),
         canonicalName=dbSector.name(),
         alternateNames=_createRawAlternateNames(dbSector=dbSector),
         nameLanguages=_createRawNameLanguages(dbSector=dbSector),
         abbreviation=dbSector.abbreviation(),
         sectorLabel=dbSector.sectorLabel(),
         subsectorNames=_createRawSubsectorNames(dbSector=dbSector),
-        x=dbSector.sectorX(),
-        y=dbSector.sectorY(),
         selected=dbSector.selected(),
         tags=_createRawTags(dbSector=dbSector),
         allegiances=_createRawAllegiances(dbSector=dbSector),
@@ -2622,7 +2599,7 @@ def _createRawWorlds(
                 if not dbSystemAllegiance:
                     pass # TODO: Log something
 
-            rawUWP = survey.formatSystemUWPString(
+            rawUWP = survey.RawUWP(
                 starport=dbMainWorld.starport() if dbMainWorld else None,
                 worldSize=dbMainWorld.worldSize() if dbMainWorld else None,
                 atmosphere=dbMainWorld.atmosphere() if dbMainWorld else None,
@@ -2632,7 +2609,7 @@ def _createRawWorlds(
                 lawLevel=dbMainWorld.lawLevel() if dbMainWorld else None,
                 techLevel=dbMainWorld.techLevel() if dbMainWorld else None)
 
-            rawEconomics = survey.formatSystemEconomicsString(
+            rawEconomics = survey.RawEconomics(
                 resources=dbMainWorld.resources() if dbMainWorld else None,
                 labour=dbMainWorld.labour() if dbMainWorld else None,
                 infrastructure=dbMainWorld.infrastructure() if dbMainWorld else None,
@@ -2642,13 +2619,13 @@ def _createRawWorlds(
                 # in a single ? might break things
                 efficiency=dbMainWorld.efficiency() if dbMainWorld else None)
 
-            rawCulture = survey.formatSystemCultureString(
+            rawCulture = survey.RawCulture(
                 heterogeneity=dbMainWorld.heterogeneity() if dbMainWorld else None,
                 acceptance=dbMainWorld.acceptance() if dbMainWorld else None,
                 strangeness=dbMainWorld.strangeness() if dbMainWorld else None,
                 symbols=dbMainWorld.symbols() if dbMainWorld else None)
 
-            rawPBG = survey.formatSystemPBGString(
+            rawPBG = survey.RawCulture(
                 populationMultiplier=dbMainWorld.populationMultiplier() if dbMainWorld else None,
                 planetoidBelts=survey.ehexFromInteger(value=dbSystem.planetoidBeltCount(), default=None),
                 gasGiants=survey.ehexFromInteger(value=dbSystem.gasGiantCount(), default=None))
@@ -2672,20 +2649,18 @@ def _createRawWorlds(
             rawRemarks = None
             if dbMainWorld:
                 if dbMainWorld.nobilities():
-                    rawNobilities = survey.formatSystemNobilityString(
-                        nobilities=[dbNobility.code() for dbNobility in dbMainWorld.nobilities()])
+                    rawNobilities = [dbNobility.code() for dbNobility in dbMainWorld.nobilities()]
 
                 if dbMainWorld.bases():
-                    rawBases = survey.formatSystemBasesString(
-                        bases=[dbBase.code() for dbBase in dbMainWorld.bases()])
+                    rawBases = [dbBase.code() for dbBase in dbMainWorld.bases()]
 
                 if dbMainWorld.tradeCodes():
                     rawTradeCodes = [dbTradeCode.code() for dbTradeCode in dbMainWorld.tradeCodes()]
 
-                rawMajorRaceHomeWorlds = None
-                rawMinorRaceHomeWorlds = None
-                rawSophontPopulations = None
-                rawDiebackSophonts = None
+                rawMajorRaceHomeWorlds: typing.Optional[typing.List[survey.RawSophontPopulation]] = None
+                rawMinorRaceHomeWorlds: typing.Optional[typing.List[survey.RawSophontPopulation]] = None
+                rawSophontPopulations: typing.Optional[typing.List[survey.RawSophontPopulation]] = None
+                rawDiebackSophonts: typing.Optional[typing.List[str]] = None
                 if dbMainWorld.sophontPopulations():
                     for dbSophontPopulation in dbMainWorld.sophontPopulations():
                         dbSophont = dbIdToSophontMap.get(dbSophontPopulation.sophontId())
@@ -2697,15 +2672,15 @@ def _createRawWorlds(
                             if dbSophont.isMajor():
                                 if rawMajorRaceHomeWorlds is None:
                                     rawMajorRaceHomeWorlds = []
-                                rawMajorRaceHomeWorlds.append((
-                                    dbSophont.name(),
-                                    int(dbSophontPopulation.percentage())))
+                                rawMajorRaceHomeWorlds.append(survey.RawSophontPopulation(
+                                    sophont=dbSophont.name(),
+                                    percentage=dbSophontPopulation.percentage()))
                             else:
                                 if rawMinorRaceHomeWorlds is None:
                                     rawMinorRaceHomeWorlds = []
-                                rawMinorRaceHomeWorlds.append((
-                                    dbSophont.name(),
-                                    dbSophontPopulation.percentage()))
+                                rawMinorRaceHomeWorlds.append(survey.RawSophontPopulation(
+                                    sophont=dbSophont.name(),
+                                    percentage=dbSophontPopulation.percentage()))
 
                         if dbSophontPopulation.isDieBack():
                             if rawDiebackSophonts is None:
@@ -2714,23 +2689,29 @@ def _createRawWorlds(
                         elif not dbSophontPopulation.isHomeWorld():
                             if rawSophontPopulations is None:
                                 rawSophontPopulations = []
-                            rawSophontPopulations.append((
-                                dbSophont.code(),
-                                dbSophontPopulation.percentage()))
+                            rawSophontPopulations.append(survey.RawSophontPopulation(
+                                sophont=dbSophont.code(),
+                                percentage=dbSophontPopulation.percentage()))
 
-                rawOwningSystems = None
+                rawOwningSystems: typing.Optional[typing.List[survey.RawHexRef]] = None
                 if dbMainWorld.owningSystems():
                     rawOwningSystems = []
                     for dbOwner in dbMainWorld.owningSystems():
-                        rawOwningSystems.append((dbOwner.hexX(), dbOwner.hexY(), dbOwner.sectorAbbreviation()))
+                        rawOwningSystems.append(survey.RawHexRef(
+                            x=dbOwner.hexX(),
+                            y=dbOwner.hexY(),
+                            sector=dbOwner.sectorAbbreviation()))
 
-                rawColonySystems = None
+                rawColonySystems: typing.Optional[typing.List[survey.RawHexRef]] = None
                 if dbMainWorld.colonySystems():
                     rawColonySystems = []
                     for dbColony in dbMainWorld.colonySystems():
-                        rawColonySystems.append((dbColony.hexX(), dbColony.hexY(), dbColony.sectorAbbreviation()))
+                        rawOwningSystems.append(survey.RawHexRef(
+                            x=dbColony.hexX(),
+                            y=dbColony.hexY(),
+                            sector=dbColony.sectorAbbreviation()))
 
-                rawRulingAllegiances = None
+                rawRulingAllegiances: typing.Optional[typing.List[str]] = None
                 if dbMainWorld.rulingAllegiances():
                     rawRulingAllegiances = []
                     for dbRuler in dbMainWorld.rulingAllegiances():
@@ -2740,11 +2721,11 @@ def _createRawWorlds(
                             continue
                         rawRulingAllegiances.append(dbRulingAllegiance.name()) # TODO: Should this be name or code?
 
-                rawResearchStations = None
+                rawResearchStations: typing.Optional[typing.List[str]] = None
                 if dbMainWorld.researchStations():
                     rawResearchStations = [dbStation.code() for dbStation in dbMainWorld.researchStations()]
 
-                rawCustomRemarks = None
+                rawCustomRemarks: typing.Optional[typing.List[str]] = None
                 if dbMainWorld.customRemarks():
                     rawCustomRemarks = [dbRemark.remark() for dbRemark in dbMainWorld.customRemarks()]
 
@@ -2752,7 +2733,7 @@ def _createRawWorlds(
                     rawSophontPopulations or rawDiebackSophonts or rawOwningSystems or rawColonySystems or \
                     rawRulingAllegiances or rawResearchStations or rawCustomRemarks
                 if hasRemarks:
-                    rawRemarks = survey.formatSystemRemarksString(
+                    rawRemarks = survey.RawRemarks(
                         tradeCodes=rawTradeCodes,
                         majorRaceHomeWorlds=rawMajorRaceHomeWorlds,
                         minorRaceHomeWorlds=rawMinorRaceHomeWorlds,
@@ -2764,25 +2745,30 @@ def _createRawWorlds(
                         researchStations=rawResearchStations,
                         customRemarks=rawCustomRemarks)
 
-            rawStellar = None
+            rawStars = None
             if dbSystem.stars():
-                rawStars = [(dbStar.luminosityClass(), dbStar.spectralClass(), dbStar.spectralScale()) for dbStar in dbSystem.stars()]
-                rawStellar = survey.formatSystemStellarString(stars=rawStars)
+                rawStars = []
+                for dbStar in dbSystem.stars():
+                    rawStars.append(survey.RawStar(
+                        luminosityClass=dbStar.luminosityClass(),
+                        spectralClass=dbStar.spectralClass(),
+                        spectralScale=dbStar.spectralScale()))
 
             rawWorlds.append(survey.RawWorld(
-                hex=_formatHexString(dbSystem.hexX(), dbSystem.hexY()),
+                x=dbSystem.hexX(),
+                y=dbSystem.hexY(),
                 name=dbSystem.name(),
                 allegiance=dbSystemAllegiance.code() if dbSystemAllegiance else None,
                 zone=dbSystem.zone(),
                 uwp=rawUWP,
                 economics=rawEconomics,
                 culture=rawCulture,
-                nobility=rawNobilities,
+                nobilities=rawNobilities,
                 bases=rawBases,
                 remarks=rawRemarks,
                 pbg=rawPBG,
                 systemWorlds=rawSystemWorldCount,
-                stellar=rawStellar,
+                stars=rawStars,
                 sectorAbbreviation=dbSector.abbreviation(),
                 subSectorCode=_hexToSubsectorCode(hexX=dbSystem.hexX(), hexY=dbSystem.hexY()),
                 # TODO: I'm not sure if I need to bother supporting these

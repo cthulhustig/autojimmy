@@ -16,6 +16,7 @@ _ValidBaseCodes = set([
     'F', # Military Base _AND_ Naval Base
     'G', # Vargr Naval Base
     'H', # Vargr Corsair Base _AND_ Vargr Naval Base
+    'I', # Interface
     'J', # Naval Base
     'K', # Naval Base. This was 'Naval Base (K'kree)' prior to 5th edition
     'L', # Hiver Naval Base
@@ -37,24 +38,27 @@ _ValidBaseCodes = set([
 
 def parseSystemBasesString(
         string: str,
-        strict: bool = False
-        ) -> typing.Generator[str, None, None]:
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.List[str]:
+    bases = []
     for code in string:
         if code not in _ValidBaseCodes:
-            if not strict:
-                # TODO: This should probably log
-                continue
-            raise ValueError(f'Bases string "{string}" contains unrecognised value "{code}"')
-
-        yield code
+            if reporter:
+                reporter.addMessage(f'Ignoring invalid base code "{code}"')
+            continue
+        bases.append(code)
+    return bases
 
 def formatSystemBasesString(
-        bases: typing.Iterable[str]
+        bases: typing.Iterable[str],
+        reporter: typing.Optional[common.Reporter] = None
         ) -> str:
     validCodes = set()
     for code in bases:
         if code not in _ValidBaseCodes:
-            raise ValueError(f'Invalid base code "{code}"')
+            if reporter:
+                reporter.addMessage(f'Ignoring invalid base code "{code}"')
+            continue
         validCodes.add(code)
 
     return ''.join(sorted(validCodes))

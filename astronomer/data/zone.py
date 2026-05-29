@@ -19,7 +19,7 @@ _ZoneTypeToCodeMap = {
 
 _ZoneCodeToTypeMap = {v: k for k, v in _ZoneTypeToCodeMap.items()}
 
-_ZoneTypeToNameMap = {
+_ZoneTypeDescriptionMap = {
     ZoneType.AmberZone: 'Amber Zone',
     ZoneType.RedZone: 'Red Zone',
     ZoneType.Balkanized: 'Balkanized Zone',
@@ -28,14 +28,14 @@ _ZoneTypeToNameMap = {
 }
 
 # This returns a list rather than a set in order to preserve order of least to most significant
-def parseZoneString(zoneString: str) -> typing.Optional[ZoneType]:
+def codeToZoneType(zoneString: str) -> typing.Optional[ZoneType]:
     return _ZoneCodeToTypeMap.get(zoneString)
 
-def zoneTypeCode(zoneType: ZoneType) -> str:
+def zoneTypeToCode(zoneType: ZoneType) -> str:
     return _ZoneTypeToCodeMap.get(zoneType, '')
 
-def zoneTypeName(zoneType: ZoneType) -> str:
-    return _ZoneTypeToNameMap.get(zoneType, '')
+def zoneTypeDescription(zoneType: ZoneType) -> str:
+    return _ZoneTypeDescriptionMap.get(zoneType, '')
 
-def zoneTypeNameMap() -> typing.Mapping[ZoneType, str]:
-    return _ZoneTypeToNameMap
+def zoneTypeDescriptionMap() -> typing.Mapping[ZoneType, str]:
+    return _ZoneTypeDescriptionMap

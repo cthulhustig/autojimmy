@@ -2,11 +2,10 @@ import common
 import re
 import typing
 
-_PBGPattern = re.compile(r'([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])')
-# NOTE: 0 is not a valid option but, as per the Traveller Map second survey documentation,
-# some worlds are specified as having a multiplier of 0 but they should be interpreted as
-# a multiplier of 1
-_ValidPopulationMultiplierCodes = set(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+_PBGPattern = re.compile(r'^\s*([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])\s*$')
+# NOTE: Technically 0 is not a valid option, but, it's allowed as higher level code
+# should interpret it as 1 (as per the Traveller Map second survey documentation)
+_ValidPopulationMultiplierCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
 _ValidPlanetoidBeltsCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
                                 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']) # Any valid ehex
 _ValidGasGiantsCodes = _ValidPlanetoidBeltsCodes
@@ -15,72 +14,72 @@ def _processParsedCode(
         code: str,
         allowed: typing.Set[str],
         name: str,
-        strict: bool
+        reporter: typing.Optional[common.Reporter]
         ) -> typing.Optional[str]:
     if code == '?':
         return None
 
-    if code in allowed:
-        return code
-
-    if not strict:
-        # TODO: This should log something and probably inform the user for custom sectors
+    checkCode = code.upper()
+    if checkCode not in allowed:
+        if reporter:
+            reporter.addMessage(f'Ignoring invalid PBG {name} code "{code}"')
         return None
 
-    raise ValueError(f'Invalid PBG {name} code "{code}"')
+    return checkCode
 
 def parseSystemPBGString(
         pbg: str,
-        strict: bool = False
+        reporter: typing.Optional[common.Reporter] = None
         ) -> typing.Tuple[
             typing.Optional[str], # Population Multiplier
             typing.Optional[str], # Planetoid Belts
             typing.Optional[str]]: # Gas Giants
+    result = _PBGPattern.match(pbg)
+    if not result:
+        if reporter:
+            reporter.addMessage(f'Ignoring invalid PBG string "{pbg}"')
+        return (None, None, None)
+
     # Handle a PBG of XXX as a special case to indicate none of the fields are known
     # (equivalent of ???). This format is used by a number of the Traveller Map
     # sectors. It's important to treat it as a special case rather than treating 'X' as
     # unknown for individual fields as 'X' is a valid value for planetoid belt and gas
     # giant counts.
-    if not strict and pbg == 'XXX':
+    if result[1] == 'X' and result[2] == 'X' and result[3] == 'X':
         return (None, None, None)
 
-    result = _PBGPattern.match(pbg)
-    if not result:
-        if not strict:
-            return (None, None, None, None)
-        raise ValueError(f'Invalid PBG string "{pbg}"')
-
-    multiplierCode = result[1]
-    if not strict and multiplierCode == '0':
-        # Strict parsing is disabled and the multiplier is 0 so interpret it as 1, as
-        # per the Traveller Map second survey documentation
-        multiplierCode = '1'
-
     return (
-        _processParsedCode(code=multiplierCode, allowed=_ValidPopulationMultiplierCodes, name='Population Multiplier', strict=strict),
-        _processParsedCode(code=result[2], allowed=_ValidPlanetoidBeltsCodes, name='Planetoid Belts', strict=strict),
-        _processParsedCode(code=result[3], allowed=_ValidGasGiantsCodes, name='Gas Giants', strict=strict))
+        _processParsedCode(code=result[1], allowed=_ValidPopulationMultiplierCodes, name='Population Multiplier', reporter=reporter),
+        _processParsedCode(code=result[2], allowed=_ValidPlanetoidBeltsCodes, name='Planetoid Belts', reporter=reporter),
+        _processParsedCode(code=result[3], allowed=_ValidGasGiantsCodes, name='Gas Giants', reporter=reporter))
 
 def _processFormatCode(
         code: typing.Optional[str],
         allowed: typing.Set[str],
-        name: str
+        name: str,
+        reporter: typing.Optional[common.Reporter]
         ) -> str:
     if code is None:
         return '?'
-    if code not in allowed:
-        raise ValueError(f'Invalid PBG {name} code "{code}"')
-    return code
+
+    checkCode = code.upper()
+    if checkCode not in allowed:
+        if reporter:
+            reporter.addMessage(f'Ignoring invalid PBG {name} code "{code}"')
+        return '?'
+
+    return checkCode
 
 def formatSystemPBGString(
         populationMultiplier: typing.Optional[str],
         planetoidBelts: typing.Optional[str],
-        gasGiants: typing.Optional[str]
+        gasGiants: typing.Optional[str],
+        reporter: typing.Optional[common.Reporter] = None
         ) -> str:
     return '{multiplier}{belts}{giants}'.format(
-        multiplier=_processFormatCode(code=populationMultiplier, allowed=_ValidPopulationMultiplierCodes, name='Population Multiplier'),
-        belts=_processFormatCode(code=planetoidBelts, allowed=_ValidPlanetoidBeltsCodes, name='Planetoid Belts'),
-        giants=_processFormatCode(code=gasGiants, allowed=_ValidGasGiantsCodes, name='Gas Giants'))
+        multiplier=_processFormatCode(code=populationMultiplier, allowed=_ValidPopulationMultiplierCodes, name='Population Multiplier', reporter=reporter),
+        belts=_processFormatCode(code=planetoidBelts, allowed=_ValidPlanetoidBeltsCodes, name='Planetoid Belts', reporter=reporter),
+        giants=_processFormatCode(code=gasGiants, allowed=_ValidGasGiantsCodes, name='Gas Giants', reporter=reporter))
 
 def _mandatoryPBGElementValidator(
         name: str,
