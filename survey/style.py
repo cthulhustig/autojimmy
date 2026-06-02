@@ -33,6 +33,35 @@ def formatLineStyleString(
         return None
     return lower
 
+def parseLineWidthString(
+        string: str,
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.Optional[float]:
+    try:
+        width = float(string)
+    except:
+        if reporter:
+            reporter.addMessage(f'Ignoring invalid Line width "{string}"')
+        return None
+
+    if width < 0:
+        if reporter:
+            reporter.addMessage(f'Ignoring negative Line Width "{width}"')
+        return None
+
+    return width
+
+def formatLineWidthString(
+        width: float,
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.Optional[str]:
+    if width < 0:
+        if reporter:
+            reporter.addMessage(f'Ignoring negative Line Width "{width}"')
+        return None
+
+    return str(width)
+
 def parseLabelSizeString(
         string: str,
         reporter: typing.Optional[common.Reporter] = None
@@ -76,7 +105,8 @@ def formatHtmlColourString(
     return string
 
 def parseStyleSheet(
-        content: str
+        content: str,
+        reporter: typing.Optional[common.Reporter] = None
         ) -> survey.RawStyleSheet:
     routeStyles: typing.List[survey.RawRouteStyle] = []
     borderStyles: typing.List[survey.RawBorderStyle] = []
@@ -86,8 +116,19 @@ def parseStyleSheet(
         match = _BorderStylePattern.match(styleKey)
         if match:
             tag = match.group(1)
+
             colour = properties.get('color')
+            if colour is not None:
+                colour = survey.parseHtmlColourString(
+                    string=colour,
+                    reporter=reporter)
+
             style = properties.get('style')
+            if style is not None:
+                style = survey.parseLineStyleString(
+                    string=style,
+                    reporter=reporter)
+
             if colour is not None or style is not None:
                 borderStyles.append(survey.RawBorderStyle(
                     tag=tag,
@@ -97,11 +138,25 @@ def parseStyleSheet(
         match = _RouteStylePattern.match(styleKey)
         if match:
             tag = match.group(1)
+
             colour = properties.get('color')
+            if colour is not None:
+                colour = survey.parseHtmlColourString(
+                    string=colour,
+                    reporter=reporter)
+
             style = properties.get('style')
+            if style is not None:
+                style = survey.parseLineStyleString(
+                    string=style,
+                    reporter=reporter)
+
             width = properties.get('width')
             if width is not None:
-                width = float(width)
+                width = survey.parseLineWidthString(
+                    string=width,
+                    reporter=reporter)
+
             if colour is not None or style is not None or width is not None:
                 routeStyles.append(survey.RawRouteStyle(
                     tag=tag,
@@ -130,6 +185,24 @@ def validateOptionalLineStyle(
         name=name,
         value=value.lower() if value is not None else None,
         allowed=_ValidLineStyles)
+
+def validateMandatoryLineWidth(
+        name: str,
+        value: float
+        ) -> float:
+    return common.validateMandatoryFloat(
+        name=name,
+        value=value,
+        min=0)
+
+def validateOptionalLineWidth(
+        name: str,
+        value: typing.Optional[float]
+        ) -> typing.Optional[float]:
+    return common.validateOptionalFloat(
+        name=name,
+        value=value,
+        min=0)
 
 def validateMandatoryLabelSize(
         name: str,

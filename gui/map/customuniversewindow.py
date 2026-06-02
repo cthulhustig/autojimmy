@@ -335,8 +335,11 @@ class CustomUniverseWindow(gui.WindowWidget):
             if reporter:
                 reporter.popPrefix()
 
+        if reporter:
+            reporter.pushPrefix('Stock Allegiances: ')
         try:
-            rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
+            rawStockAllegiances = multiverse.loadSnapshotStockAllegiances(
+                reporter=reporter)
         except:
             message = 'An error occurred when loading stock allegiances.'
             logging.critical(message, exc_info=ex)
@@ -345,9 +348,15 @@ class CustomUniverseWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
             return
+        finally:
+            if reporter:
+                reporter.popPrefix()
 
+        if reporter:
+            reporter.pushPrefix('Stock Sophonts: ')
         try:
-            rawStockSophonts = multiverse.readSnapshotStockSophonts()
+            rawStockSophonts = multiverse.loadSnapshotStockSophonts(
+                reporter=reporter)
         except:
             message = 'An error occurred when loading stock sophonts.'
             logging.critical(message, exc_info=ex)
@@ -356,9 +365,15 @@ class CustomUniverseWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
             return
+        finally:
+            if reporter:
+                reporter.popPrefix()
 
+        if reporter:
+            reporter.pushPrefix('Stock Style Sheet: ')
         try:
-            rawStyleSheet = multiverse.readSnapshotStyleSheet()
+            rawStyleSheet = multiverse.loadSnapshotStyleSheet(
+                reporter=reporter)
         except:
             message = 'An error occurred when loading stock style sheet.'
             logging.critical(message, exc_info=ex)
@@ -367,6 +382,9 @@ class CustomUniverseWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
             return
+        finally:
+            if reporter:
+                reporter.popPrefix()
 
         try:
             newSector = astronomer.convertRawSectorToAstronomerSector(

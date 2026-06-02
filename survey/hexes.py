@@ -181,7 +181,7 @@ def validateMandatoryHexCollection(
         name=name,
         value=value,
         allowEmpty=allowEmpty,
-        validationFn=lambda n, v: _hexTupleValidator(n, v, allowInvalid))
+        validationFn=lambda n, i, v: _hexTupleValidator(n, i, v, allowInvalid))
 
 def validateOptionalHexCollection(
         name: str,
@@ -193,23 +193,24 @@ def validateOptionalHexCollection(
         name=name,
         value=value,
         allowEmpty=allowEmpty,
-        validationFn=lambda n, v: _hexTupleValidator(n, v, allowInvalid))
+        validationFn=lambda n, i, v: _hexTupleValidator(n, i, v, allowInvalid))
 
 @staticmethod
 def _hexTupleValidator(
         name: str,
+        index: int,
         value: typing.Tuple[int, int],
         allowInvalid: bool = False, # Used for Border/Region Label & Path Hexes
         ) -> None:
     if len(value) != 2:
         raise ValueError(f'{name} should contain tuples containing 2 integers')
     common.validateMandatoryInt(
-        name=name + '\\X',
+        name=f'{name}[{index}]\\X',
         value=value[0],
         min=_MinHexX if not allowInvalid else _MinHexX - 1,
         max=_MaxHexX if not allowInvalid else _MaxHexX + 1)
     common.validateMandatoryInt(
-        name=name + '\\Y',
+        name=f'{name}[{index}]\\Y',
         value=value[1],
         min=_MinHexY if not allowInvalid else _MinHexY - 1,
         max=_MaxHexY if not allowInvalid else _MaxHexY + 1)

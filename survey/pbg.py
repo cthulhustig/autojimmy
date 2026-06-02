@@ -48,8 +48,18 @@ def parseSystemPBGString(
     if result[1] == 'X' and result[2] == 'X' and result[3] == 'X':
         return (None, None, None)
 
+    populationMultiplier = result[1]
+    if populationMultiplier == '0':
+        # The multiplier is 0 so interpret it as 1, as per the Traveller Map
+        # second survey documentation
+        populationMultiplier = '1'
+
+        # NOTE: Don't log this as it happens a LOT in stock data
+        #if reporter:
+        #   reporter.addMessage(f'Interpreting Population Multiplier 0 as 1')
+
     return (
-        _processParsedCode(code=result[1], allowed=_ValidPopulationMultiplierCodes, name='Population Multiplier', reporter=reporter),
+        _processParsedCode(code=populationMultiplier, allowed=_ValidPopulationMultiplierCodes, name='Population Multiplier', reporter=reporter),
         _processParsedCode(code=result[2], allowed=_ValidPlanetoidBeltsCodes, name='Planetoid Belts', reporter=reporter),
         _processParsedCode(code=result[3], allowed=_ValidGasGiantsCodes, name='Gas Giants', reporter=reporter))
 

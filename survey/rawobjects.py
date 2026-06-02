@@ -184,18 +184,16 @@ class RawRemarks(object):
             ) -> None:
         super().__init__()
 
-        # TODO: The way this is validating elements is hacky
-        common.validateOptionalCollection(name='tradeCodes', value=tradeCodes, type=str, validationFn=lambda n, v: survey.validateMandatoryTradeCode(name=n, value=v))
-        common.validateOptionalCollection(name='majorRaceHomeWorlds', value=majorRaceHomeWorlds, type=RawSophontPopulation)
-        common.validateOptionalCollection(name='minorRaceHomeWorlds', value=minorRaceHomeWorlds, type=RawSophontPopulation)
-        common.validateOptionalCollection(name='sophontPopulations', value=sophontPopulations, type=RawSophontPopulation)
-        common.validateOptionalCollection(name='dieBackSophonts', value=dieBackSophonts, type=str)
-        common.validateOptionalCollection(name='owningSystems', value=owningSystems, type=RawHexRef)
-        common.validateOptionalCollection(name='colonySystems', value=colonySystems, type=RawHexRef)
-        common.validateOptionalCollection(name='rulingAllegiances', value=rulingAllegiances, type=str)
-        # TODO: The way this is validating elements is hacky
-        common.validateOptionalCollection(name='researchStations', value=researchStations, type=str, validationFn=lambda n, v: survey.validateMandatoryResearchStation(name=n, value=v))
-        common.validateOptionalCollection(name='customRemarks', value=customRemarks, type=str)
+        common.validateOptionalCollection(name='tradeCodes', value=tradeCodes, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryTradeCode(name=f'{n}[{i}]', value=v))
+        common.validateOptionalCollection(name='majorRaceHomeWorlds', value=majorRaceHomeWorlds, elementType=RawSophontPopulation)
+        common.validateOptionalCollection(name='minorRaceHomeWorlds', value=minorRaceHomeWorlds, elementType=RawSophontPopulation)
+        common.validateOptionalCollection(name='sophontPopulations', value=sophontPopulations, elementType=RawSophontPopulation)
+        common.validateOptionalCollection(name='dieBackSophonts', value=dieBackSophonts, elementType=str)
+        common.validateOptionalCollection(name='owningSystems', value=owningSystems, elementType=RawHexRef)
+        common.validateOptionalCollection(name='colonySystems', value=colonySystems, elementType=RawHexRef)
+        common.validateOptionalCollection(name='rulingAllegiances', value=rulingAllegiances, elementType=str)
+        common.validateOptionalCollection(name='researchStations', value=researchStations, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryResearchStation(name=f'{n}[{i}]', value=v))
+        common.validateOptionalCollection(name='customRemarks', value=customRemarks, elementType=str)
 
         self._tradeCodes = list(tradeCodes) if tradeCodes is not None else None
         self._sophontPopulations = list(sophontPopulations) if sophontPopulations is not None else None
@@ -319,14 +317,13 @@ class RawWorld(object):
         common.validateOptionalObject(name='uwp', value=uwp, type=RawUWP)
         common.validateOptionalObject(name='economics', value=economics, type=RawEconomics)
         common.validateOptionalObject(name='culture', value=culture, type=RawCulture)
-        # TODO: The way these are validating elements is hacky
-        common.validateOptionalCollection(name='nobilities', value=nobilities, type=str, validationFn=lambda n, v: survey.validateMandatoryNobility(name=n, value=v))
-        common.validateOptionalCollection(name='bases', value=bases, type=str, validationFn=lambda n, v: survey.validateMandatoryBase(name=n, value=v))
+        common.validateOptionalCollection(name='nobilities', value=nobilities, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryNobility(name=f'{n}[{i}]', value=v))
+        common.validateOptionalCollection(name='bases', value=bases, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryBase(name=n, value=v))
         common.validateOptionalObject(name='remarks', value=remarks, type=RawRemarks)
         common.validateOptionalInt(name='importance', value=importance)
         common.validateOptionalObject(name='pbg', value=pbg, type=RawPBG)
         common.validateOptionalInt(name='systemWorlds', value=systemWorlds, min=0)
-        common.validateOptionalCollection(name=stars, value=stars, type=RawStar)
+        common.validateOptionalCollection(name=stars, value=stars, elementType=RawStar)
 
         self._x = x
         self._y = y
@@ -434,10 +431,12 @@ class RawRoute(object):
             ) -> None:
         super().__init__()
 
-        survey.validateMandatoryHexX(name='startHexX', value=startHexX)
-        survey.validateMandatoryHexY(name='startHexY', value=startHexY)
-        survey.validateMandatoryHexX(name='endHexX', value=endHexX)
-        survey.validateMandatoryHexY(name='endHexY', value=endHexY)
+        # NOTE: The metadata spec says routes can have start/end sectors in the range
+        # 0-33 in X and 0-41 in Y rather than the normal 1-32 and 1-40
+        survey.validateMandatoryHexX(name='startHexX', value=startHexX, allowInvalid=True)
+        survey.validateMandatoryHexY(name='startHexY', value=startHexY, allowInvalid=True)
+        survey.validateMandatoryHexX(name='endHexX', value=endHexX, allowInvalid=True)
+        survey.validateMandatoryHexY(name='endHexY', value=endHexY, allowInvalid=True)
         common.validateOptionalInt(name='startOffsetX', value=startOffsetX)
         common.validateOptionalInt(name='startOffsetY', value=startOffsetY)
         common.validateOptionalInt(name='endOffsetX', value=endOffsetX)
@@ -445,8 +444,8 @@ class RawRoute(object):
         common.validateOptionalStr(name='allegiance', value=allegiance, allowEmpty=False)
         common.validateOptionalStr(name='type', value=type, allowEmpty=False)
         survey.validateOptionalLineStyle(name='style', value=style)
-        common.validateOptionalHtmlColour(name='colour', value=colour)
-        common.validateOptionalFloat(name='width', value=width, min=0)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateOptionalLineWidth(name='width', value=width)
 
         self._startHexX = startHexX
         self._startHexY = startHexY
@@ -530,7 +529,7 @@ class RawBorder(object):
         common.validateOptionalFloat(name='labelOffsetY', value=labelOffsetY)
         common.validateOptionalStr(name='label', value=label, allowEmpty=False)
         survey.validateOptionalLineStyle(name='style', value=style)
-        common.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
 
         self._hexes = list(hexes)
         self._allegiance = allegiance
@@ -602,7 +601,7 @@ class RawRegion(object):
         common.validateOptionalFloat(name='labelOffsetX', value=labelOffsetX)
         common.validateOptionalFloat(name='labelOffsetY', value=labelOffsetY)
         common.validateOptionalStr(name='label', value=label, allowEmpty=False)
-        common.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
 
         self._hexes = list(hexes)
         self._showLabel = showLabel
@@ -658,7 +657,7 @@ class RawLabel(object):
         common.validateMandatoryStr(name='text', value=text, allowEmpty=False)
         survey.validateMandatoryHexX(name='hexX', value=hexX, allowInvalid=True)
         survey.validateMandatoryHexY(name='hexY', value=hexY, allowInvalid=True)
-        common.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
         survey.validateOptionalLabelSize(name='size', value=size)
         common.validateOptionalBool(name='wrap', value=wrap)
         common.validateOptionalFloat(name='offsetX', value=offsetX)
@@ -729,8 +728,6 @@ class RawSource(object):
     def reference(self) -> typing.Optional[str]:
         return self._reference
 
-# TODO: This is ugly and I can probably get rid of it by spitting out
-# the individual components
 class RawSources(object):
     def __init__(
             self,
@@ -742,7 +739,7 @@ class RawSources(object):
 
         common.validateOptionalStr(name='credits', value=credits, allowEmpty=False)
         common.validateOptionalObject(name='primary', value=primary, type=RawSource)
-        common.validateOptionalCollection(name='products', value=products, type=RawSource)
+        common.validateOptionalCollection(name='products', value=products, elementType=RawSource)
 
         self._credits = credits
         self._primary = primary
@@ -757,6 +754,84 @@ class RawSources(object):
     def products(self) -> typing.Optional[typing.Sequence[RawSource]]:
         return common.ConstSequenceRef(self._products) if self._products is not None else None
 
+class RawRouteStyle(object):
+    def __init__(
+            self,
+            tag: typing.Optional[str], # None means this is a default style
+            colour: typing.Optional[str],
+            style: typing.Optional[str],
+            width: typing.Optional[float],
+            ) -> None:
+        super().__init__()
+
+        common.validateOptionalStr(name='tag', value=tag, allowEmpty=False)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateOptionalLineStyle(name='style', value=style)
+        survey.validateOptionalLineWidth(name='width', value=width)
+
+        self._tag = tag
+        self._colour = colour
+        self._style = style
+        self._width = width
+
+    def tag(self) -> typing.Optional[str]:
+        return self._tag
+
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
+
+    def style(self) -> typing.Optional[str]:
+        return self._style
+
+    def width(self) -> typing.Optional[float]:
+        return self._width
+
+class RawBorderStyle(object):
+    def __init__(
+            self,
+            tag: typing.Optional[str], # None means this is a default style
+            colour: typing.Optional[str],
+            style: typing.Optional[str]
+            ) -> None:
+        super().__init__()
+
+        common.validateOptionalStr(name='tag', value=tag, allowEmpty=False)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateOptionalLineStyle(name='style', value=style)
+
+        self._tag = tag
+        self._colour = colour
+        self._style = style
+
+    def tag(self) -> typing.Optional[str]:
+        return self._tag
+
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
+
+    def style(self) -> typing.Optional[str]:
+        return self._style
+
+class RawStyleSheet(object):
+    def __init__(
+            self,
+            routeStyles: typing.Sequence[RawRouteStyle],
+            borderStyles: typing.Sequence[RawBorderStyle],
+            ) -> None:
+        super().__init__()
+
+        common.validateMandatoryCollection(name='routeStyles', value=routeStyles, elementType=RawRouteStyle)
+        common.validateMandatoryCollection(name='borderStyles', value=borderStyles, elementType=RawBorderStyle)
+
+        self._routeStyles = list(routeStyles)
+        self._borderStyles = list(borderStyles)
+
+    def routeStyles(self) -> typing.Sequence[RawRouteStyle]:
+        return common.ConstSequenceRef(self._routeStyles)
+
+    def borderStyles(self) -> typing.Sequence[RawBorderStyle]:
+        return common.ConstSequenceRef(self._borderStyles)
+
 class RawMetadata(object):
     def __init__(
             self,
@@ -769,34 +844,34 @@ class RawMetadata(object):
             sectorLabel: typing.Optional[str],
             subsectorNames: typing.Optional[typing.Mapping[str, str]], # Maps subsector code (A-P) to the name of that sector
             selected: typing.Optional[bool],
-            tags: typing.Optional[str],
+            tags: typing.Optional[typing.Sequence[str]],
             allegiances: typing.Optional[typing.Sequence[RawAllegiance]],
             routes: typing.Optional[typing.Sequence[RawRoute]],
             borders: typing.Optional[typing.Sequence[RawBorder]],
             labels: typing.Optional[typing.Sequence[RawLabel]],
             regions: typing.Optional[typing.Sequence[RawRegion]],
             sources: typing.Optional[RawSources],
-            styleSheet: typing.Optional[str]
+            styleSheet: typing.Optional[RawStyleSheet]
             ) -> None:
         super().__init__()
 
         common.validateMandatoryInt(name='x', value=x)
         common.validateMandatoryInt(name='y', value=y)
         common.validateMandatoryStr(name='canonicalName', value=canonicalName, allowEmpty=False)
-        common.validateOptionalCollection(name='alternateNames', value=alternateNames)
-        # TODO: Need a way to validate the nameLanguages map
+        common.validateOptionalCollection(name='alternateNames', value=alternateNames, elementType=str)
+        common.validateOptionalMapping(name='nameLanguages', value=nameLanguages, keyType=str, valueType=str, validationFn=RawMetadata._validateSectorNameLanguage)
         common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
         common.validateOptionalStr(name='sectorLabel', value=sectorLabel, allowEmpty=False)
-        # TODO: Need a way to validate the subsectorNames map
+        common.validateOptionalMapping(name='subsectorNames', value=subsectorNames, keyType=str, valueType=str, validationFn=RawMetadata._validateSubsectorName)
         common.validateOptionalBool(name='selected', value=selected)
-        common.validateOptionalStr(name='tags', value=tags, allowEmpty=False)
-        common.validateOptionalCollection(name='allegiances', value=allegiances, type=RawAllegiance)
-        common.validateOptionalCollection(name='routes', value=routes, type=RawRoute)
-        common.validateOptionalCollection(name='borders', value=borders, type=RawBorder)
-        common.validateOptionalCollection(name='labels', value=labels, type=RawLabel)
-        common.validateOptionalCollection(name='regions', value=regions, type=RawRegion)
+        common.validateOptionalCollection(name='tags', value=tags, elementType=str)
+        common.validateOptionalCollection(name='allegiances', value=allegiances, elementType=RawAllegiance)
+        common.validateOptionalCollection(name='routes', value=routes, elementType=RawRoute)
+        common.validateOptionalCollection(name='borders', value=borders, elementType=RawBorder)
+        common.validateOptionalCollection(name='labels', value=labels, elementType=RawLabel)
+        common.validateOptionalCollection(name='regions', value=regions, elementType=RawRegion)
         common.validateOptionalObject(name='sources', value=sources, type=RawSources)
-        common.validateOptionalStr(name='styleSheet', value=styleSheet, allowEmpty=False)
+        common.validateOptionalObject(name='styleSheet', value=styleSheet, type=RawStyleSheet)
 
         self._x = x
         self._y = y
@@ -839,11 +914,8 @@ class RawMetadata(object):
             return None
         return self._nameLanguages.get(name, None)
 
-    # TODO: I need a an equivalent of ConstSequenceRef for mappings
-    # _or_ I need to change how this works (I'm not a massive fan of
-    # it, maybe switch to a RawSectorName object)
     def nameLanguages(self) -> typing.Mapping[str, str]:
-        return self._nameLanguages
+        return common.ConstMappingRef(self._nameLanguages) if self._nameLanguages is not None else None
 
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
@@ -851,18 +923,14 @@ class RawMetadata(object):
     def sectorLabel(self) -> typing.Optional[str]:
         return self._sectorLabel
 
-    # TODO: I'm not a massive fan of using a mapping. Would probably
-    # be better to create a RawSubsectorName object and just have
-    # a list of them
     def subsectorNames(self) -> typing.Optional[typing.Mapping[str, str]]:
-        return self._subsectorNames
+        return common.ConstMappingRef(self._subsectorNames) if self._subsectorNames is not None else None
 
     def selected(self) -> typing.Optional[bool]:
         return self._selected
 
-    # TODO: This should probably be split to be held as a list of strings
-    def tags(self) -> typing.Optional[str]:
-        return self._tags
+    def tags(self) -> typing.Optional[typing.Sequence[str]]:
+        return common.ConstSequenceRef(self._tags) if self._tags is not None else None
 
     def allegiances(self) -> typing.Optional[typing.Sequence[RawAllegiance]]:
         return common.ConstSequenceRef(self._allegiances) if self._allegiances is not None else None
@@ -882,8 +950,31 @@ class RawMetadata(object):
     def sources(self) -> typing.Optional[RawSources]:
         return self._sources
 
-    def styleSheet(self) -> typing.Optional[str]:
+    def styleSheet(self) -> typing.Optional[RawStyleSheet]:
         return self._styleSheet
+
+    @staticmethod
+    def _validateSectorNameLanguage(
+            attributeName: str,
+            sectorName: str,
+            nameLanguage: str
+            ) -> None:
+        if len(sectorName) == 0:
+            raise ValueError(f'{attributeName} names can\'t be empty')
+        if len(nameLanguage) == 0:
+            raise ValueError(f'{attributeName} languages can\'t be empty')
+
+    @staticmethod
+    def _validateSubsectorName(
+            attributeName: str,
+            subsectorCode: str,
+            subsectorName: str
+            ) -> None:
+            upperCode = subsectorCode.upper()
+            if len(upperCode) != 1 or (ord(upperCode) < ord('A') or ord(upperCode) > ord('P')):
+                raise ValueError(f'{attributeName} codes must be A-P')
+            if len(subsectorName) == 0:
+                raise ValueError(f'{attributeName} names can\'t be empty')
 
 class RawNameInfo(object):
     def __init__(
@@ -928,7 +1019,7 @@ class RawSectorInfo(object):
         common.validateMandatoryStr(name='milieu', value=milieu, allowEmpty=False)
         common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
         common.validateOptionalStr(name='tags', value=tags, allowEmpty=False)
-        common.validateOptionalCollection(name='nameInfos', value=nameInfos, type=RawNameInfo)
+        common.validateOptionalCollection(name='nameInfos', value=nameInfos, elementType=RawNameInfo)
 
         self._x = x
         self._y = y
@@ -962,7 +1053,7 @@ class RawUniverseInfo(object):
             ) -> None:
         super().__init__()
 
-        common.validateMandatoryCollection(name='sectorInfos', value=sectorInfos, type=RawSectorInfo)
+        common.validateMandatoryCollection(name='sectorInfos', value=sectorInfos, elementType=RawSectorInfo)
 
         self._sectorInfos = list(sectorInfos)
 
@@ -1032,81 +1123,3 @@ class RawStockSophont(object):
 
     def location(self) -> str:
         return self._location
-
-class RawRouteStyle(object):
-    def __init__(
-            self,
-            tag: typing.Optional[str], # None means this is a default style
-            colour: typing.Optional[str],
-            style: typing.Optional[str],
-            width: typing.Optional[float],
-            ) -> None:
-        super().__init__()
-
-        common.validateOptionalStr(name='tag', value=tag, allowEmpty=False)
-        common.validateOptionalHtmlColour(name='colour', value=colour)
-        survey.validateOptionalLineStyle(name='style', value=style)
-        common.validateOptionalFloat(name='width', value=width, min=0)
-
-        self._tag = tag
-        self._colour = colour
-        self._style = style
-        self._width = width
-
-    def tag(self) -> typing.Optional[str]:
-        return self._tag
-
-    def colour(self) -> typing.Optional[str]:
-        return self._colour
-
-    def style(self) -> typing.Optional[str]:
-        return self._style
-
-    def width(self) -> typing.Optional[float]:
-        return self._width
-
-class RawBorderStyle(object):
-    def __init__(
-            self,
-            tag: typing.Optional[str], # None means this is a default style
-            colour: typing.Optional[str],
-            style: typing.Optional[str]
-            ) -> None:
-        super().__init__()
-
-        common.validateOptionalStr(name='tag', value=tag, allowEmpty=False)
-        common.validateOptionalHtmlColour(name='colour', value=colour)
-        survey.validateOptionalLineStyle(name='style', value=style)
-
-        self._tag = tag
-        self._colour = colour
-        self._style = style
-
-    def tag(self) -> typing.Optional[str]:
-        return self._tag
-
-    def colour(self) -> typing.Optional[str]:
-        return self._colour
-
-    def style(self) -> typing.Optional[str]:
-        return self._style
-
-class RawStyleSheet(object):
-    def __init__(
-            self,
-            routeStyles: typing.Sequence[RawRouteStyle],
-            borderStyles: typing.Sequence[RawBorderStyle],
-            ) -> None:
-        super().__init__()
-
-        common.validateMandatoryCollection(name='routeStyles', value=routeStyles, type=RawRouteStyle)
-        common.validateMandatoryCollection(name='borderStyles', value=borderStyles, type=RawBorderStyle)
-
-        self._routeStyles = list(routeStyles)
-        self._borderStyles = list(borderStyles)
-
-    def routeStyles(self) -> typing.Sequence[RawRouteStyle]:
-        return common.ConstSequenceRef(self._routeStyles)
-
-    def borderStyles(self) -> typing.Sequence[RawBorderStyle]:
-        return common.ConstSequenceRef(self._borderStyles)

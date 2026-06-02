@@ -95,10 +95,6 @@ class SnapshotManager(object):
 
     _UniverseInfoFileName = 'universe.json'
 
-    _T5OfficialAllegiancesPath = 't5ss/allegiance_codes.tab'
-    _T5OfficialSophontsPath = 't5ss/sophont_codes.tab'
-    _OTUStyleSheet = 'styles/otu.css'
-
     _instance = None # Singleton instance
     _lock = threading.RLock() # Recursive lock
     _installDir = None
@@ -166,15 +162,6 @@ class SnapshotManager(object):
             milieu,
             escapedName + '.xml')
         return self.readTextResource(filePath=metadataPath)
-
-    def readSnapshotStockAllegiances(self) -> str:
-        return self.readTextResource(filePath=SnapshotManager._T5OfficialAllegiancesPath)
-
-    def readSnapshotStockSophonts(self) -> str:
-        return self.readTextResource(filePath=SnapshotManager._T5OfficialSophontsPath)
-
-    def readSnapshotStyleSheet(self) -> str:
-        return self.readTextResource(filePath=SnapshotManager._OTUStyleSheet)
 
     def snapshotTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:

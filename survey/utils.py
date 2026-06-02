@@ -16,11 +16,11 @@ def readCssContent(content: str) -> typing.Mapping[
     for definition in _DefinitionPattern.findall(content):
         properties = {}
         for key, value in _PropertyPattern.findall(definition[2]):
-            assert(isinstance(key, str))
-            properties[key.lower()] = value
+            key = str(key)
+            properties[key.lower()] = str(value)
 
         for group in _GroupPattern.findall(definition[1]):
-            assert(isinstance(group, str))
+            group = str(group)
 
             # Groups names can use '\ ' to allow a space in the name. These
             # should be replaced when parsed

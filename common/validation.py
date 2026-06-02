@@ -165,7 +165,7 @@ def validateOptionalStr(
             raise TypeError(f'{name} must be an str or None')
 
         if not allowEmpty and not len(value):
-            raise ValueError(f'{name} can\'t be empty or must be None')
+            raise ValueError(f'{name} can\'t have length 0')
 
         if allowed is not None and value not in allowed:
             raise ValueError(f'{name} must be one of [{",".join(allowed)}] or None')
@@ -207,48 +207,89 @@ def validateOptionalObject(
 def validateMandatoryCollection(
         name: str,
         value: typing.Collection[T],
-        type: typing.Optional[typing.Union[typing.Type[T], typing.Tuple[typing.Type[T], ...]]] = None,
+        elementType: typing.Optional[typing.Union[typing.Type[T], typing.Tuple[typing.Type[T], ...]]] = None,
         allowEmpty: bool = True,
-        allowNone: bool = False,
-        validationFn: typing.Optional[typing.Callable[[str, typing.Optional[T]], typing.Any]] = None
+        validationFn: typing.Optional[typing.Callable[[str, int, typing.Optional[T]], typing.Any]] = None
         ) -> typing.Collection[T]:
     if not allowEmpty and not len(value):
         raise ValueError(f'{name} can\'t be empty')
 
-    for obj in value:
-        if obj is not None:
-            if type is not None and not isinstance(obj, type):
-                raise TypeError(f'{name} must contain objects of type {type}')
-        elif not allowNone:
-            raise ValueError(f'{name} can\'t contain None')
+    for index, obj in enumerate(value):
+        if elementType is not None and not isinstance(obj, elementType):
+            raise TypeError(f'{name}[{index}] must be an object of type {elementType}')
 
         if validationFn is not None:
-            validationFn(name, obj)
+            validationFn(name, index, obj)
 
     return value
 
 def validateOptionalCollection(
         name: str,
         value: typing.Optional[typing.Collection[T]],
-        type: typing.Optional[typing.Union[typing.Type[T], typing.Tuple[typing.Type[T], ...]]] = None,
+        elementType: typing.Optional[typing.Union[typing.Type[T], typing.Tuple[typing.Type[T], ...]]] = None,
         allowEmpty: bool = True,
-        allowNone: bool = False,
         validationFn: typing.Optional[typing.Callable[[str, typing.Optional[T]], typing.Any]] = None
         ) -> typing.Optional[typing.Collection[T]]:
     if value is None:
         return value
 
     if not allowEmpty and not len(value):
-        raise ValueError(f'{name} can\'t be empty or must be None')
+        raise ValueError(f'{name} can\'t be empty')
 
-    for obj in value:
-        if obj is not None:
-            if type is not None and not isinstance(obj, type):
-                raise TypeError(f'{name} must contain objects of type {type} or be None')
-        elif not allowNone:
-            raise ValueError(f'{name} can\'t contain None')
+    for index, obj in enumerate(value):
+        if elementType is not None and not isinstance(obj, elementType):
+            raise TypeError(f'{name}[{index}] must be an object of type {elementType}')
 
         if validationFn is not None:
-            validationFn(name, obj)
+            validationFn(name, index, obj)
+
+    return value
+
+K = typing.TypeVar("K")
+V = typing.TypeVar("V")
+def validateMandatoryMapping(
+        name: str,
+        value: typing.Mapping[K, V],
+        keyType: typing.Optional[typing.Union[typing.Type[K], typing.Tuple[typing.Type[K], ...]]] = None,
+        valueType: typing.Optional[typing.Union[typing.Type[V], typing.Tuple[typing.Type[V], ...]]] = None,
+        allowEmpty: bool = True,
+        validationFn: typing.Optional[typing.Callable[[str, K, V], typing.Any]] = None
+        ) -> typing.Mapping[K, V]:
+    if not allowEmpty and not len(value):
+        raise ValueError(f'{name} can\'t be empty')
+
+    for k, v in value.items():
+        if keyType is not None and not isinstance(k, keyType):
+            raise TypeError(f'{name} keys must be objects of type {keyType}')
+        if valueType is not None and not isinstance(v, valueType):
+            raise TypeError(f'{name} values must be objects of type {valueType}')
+
+        if validationFn is not None:
+            validationFn(name, k, v)
+
+    return value
+
+def validateOptionalMapping(
+        name: str,
+        value: typing.Mapping[K, V],
+        keyType: typing.Optional[typing.Union[typing.Type[K], typing.Tuple[typing.Type[K], ...]]] = None,
+        valueType: typing.Optional[typing.Union[typing.Type[V], typing.Tuple[typing.Type[V], ...]]] = None,
+        allowEmpty: bool = True,
+        validationFn: typing.Optional[typing.Callable[[str, K, V], typing.Any]] = None
+        ) -> typing.Mapping[K, V]:
+    if value is None:
+        return value
+
+    if not allowEmpty and not len(value):
+        raise ValueError(f'{name} can\'t be empty')
+
+    for k, v in value.items():
+        if keyType is not None and not isinstance(k, keyType):
+            raise TypeError(f'{name} keys must be objects of type {keyType}')
+        if valueType is not None and not isinstance(v, valueType):
+            raise TypeError(f'{name} values must be objects of type {valueType}')
+
+        if validationFn is not None:
+            validationFn(name, k, v)
 
     return value

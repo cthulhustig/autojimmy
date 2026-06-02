@@ -520,10 +520,25 @@ def parseXMLMetadata(
                 products=products)
 
     styleSheetElement = sectorElement.find('./Stylesheet')
-    styleSheet = styleSheetElement.text if styleSheetElement != None else None
+    styleSheet = None
+    if styleSheetElement is not None and styleSheetElement.text is not None:
+        if reporter:
+            reporter.pushPrefix('Style Sheet: ')
+
+        try:
+            styleSheet = survey.parseStyleSheet(
+                content=styleSheetElement.text,
+                reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
 
     if reporter:
         reporter.pushPrefix('Sector: ')
+
+    tags = _parseStringAttribute(sectorElement, 'Tags', reporter)
+    if tags is not None:
+        tags = tags.split(' ')
 
     try:
         return survey.RawMetadata(
@@ -536,7 +551,7 @@ def parseXMLMetadata(
             sectorLabel=_parseStringAttribute(sectorElement, 'Label', reporter),
             subsectorNames=subsectorNames,
             selected=_parseBoolAttribute(sectorElement, 'Selected', reporter),
-            tags=_parseStringAttribute(sectorElement, 'Tags', reporter),
+            tags=tags,
             allegiances=allegiances,
             routes=routes,
             borders=borders,
@@ -870,6 +885,10 @@ def parseJSONMetadata(
     if reporter:
         reporter.pushPrefix('Sector: ')
 
+    tags = _parseStringAttribute(sectorElement, 'Tags', reporter)
+    if tags is not None:
+        tags = tags.split(' ')
+
     try:
         return survey.RawMetadata(
             x=x,
@@ -881,7 +900,7 @@ def parseJSONMetadata(
             sectorLabel=_parseStringAttribute(sectorElement, 'Label', reporter),
             subsectorNames=subsectorNames,
             selected=_parseBoolAttribute(sectorElement, 'Selected', reporter),
-            tags=_parseStringAttribute(sectorElement, 'Tags', reporter),
+            tags=tags,
             allegiances=allegiances,
             routes=routes,
             borders=borders,
@@ -920,7 +939,7 @@ def formatXMLMetadata(
     # format but the XSD does have them
     # https://travellermap.com/doc/metadata
     if metadata.tags() is not None:
-        sectorAttributes['Tags'] = metadata.tags()
+        sectorAttributes['Tags'] = ' '.join(metadata.tags())
 
     if metadata.abbreviation() is not None:
         sectorAttributes['Abbreviation'] = metadata.abbreviation()
@@ -1187,9 +1206,13 @@ def formatXMLMetadata(
                 if attributes:
                     xml.etree.ElementTree.SubElement(sectorElement, 'Product', attributes)
 
+    # TODO: Writing style sheet is not supported. It would need a reverse of survey.readCssContent.
+    # Currently there is no need for it as the conversion process flattens the style info
+    """
     if metadata.styleSheet() != None:
         styleSheetElement = xml.etree.ElementTree.SubElement(sectorElement, 'StyleSheet')
-        styleSheetElement.text = metadata.styleSheet()
+        styleSheetElement.text = ''
+    """
 
     xml.etree.ElementTree.indent(sectorElement, space="\t", level=0)
     resultBytes: bytes = xml.etree.ElementTree.tostring(
@@ -1208,7 +1231,7 @@ def formatJSONMetadata(
         sectorElement['Selected'] = str(metadata.selected()).lower()
 
     if metadata.tags() is not None:
-        sectorElement['Tags'] = metadata.tags()
+        sectorElement['Tags'] = ' '.join(metadata.tags())
 
     if metadata.abbreviation() is not None:
         sectorElement['Abbreviation'] = metadata.abbreviation()

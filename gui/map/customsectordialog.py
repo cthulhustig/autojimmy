@@ -458,7 +458,7 @@ class _NewSectorDialog(gui.DialogEx):
             return
 
         try:
-            rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
+            rawStockAllegiances = multiverse.loadSnapshotStockAllegiances()
         except:
             message = 'Failed to load stock allegiances.'
             logging.critical(message, exc_info=ex)
@@ -469,7 +469,7 @@ class _NewSectorDialog(gui.DialogEx):
             return
 
         try:
-            rawStockSophonts = multiverse.readSnapshotStockSophonts()
+            rawStockSophonts = multiverse.loadSnapshotStockSophonts()
         except:
             message = 'Failed to load stock sophonts.'
             logging.critical(message, exc_info=ex)
@@ -480,7 +480,7 @@ class _NewSectorDialog(gui.DialogEx):
             return
 
         try:
-            rawStyleSheet = multiverse.readSnapshotStyleSheet()
+            rawStyleSheet = multiverse.loadSnapshotStyleSheet()
         except:
             message = 'Failed to load style sheet.'
             logging.critical(message, exc_info=ex)

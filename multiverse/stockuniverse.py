@@ -26,12 +26,29 @@ def importStockUniverseSnapshot(
     if not isSnapshotNewer:
         return # Nothing to do
 
-    rawStockAllegiances = survey.parseStockAllegiances(
-        content=multiverse.SnapshotManager.instance().readSnapshotStockAllegiances())
-    rawStockSophonts = survey.parseStockSophonts(
-        content=multiverse.SnapshotManager.instance().readSnapshotStockSophonts())
-    rawStockStyleSheet = survey.parseStyleSheet(
-        content=multiverse.SnapshotManager.instance().readSnapshotStyleSheet())
+    if reporter:
+        reporter.pushPrefix('Stock Allegiances: ')
+    try:
+        rawStockAllegiances = multiverse.loadSnapshotStockAllegiances(reporter=reporter)
+    finally:
+        if reporter:
+            reporter.popPrefix()
+
+    if reporter:
+        reporter.pushPrefix('Stock Sophonts: ')
+    try:
+        rawStockSophonts = multiverse.loadSnapshotStockSophonts(reporter=reporter)
+    finally:
+        if reporter:
+            reporter.popPrefix()
+
+    if reporter:
+        reporter.pushPrefix('Stock Style Sheet: ')
+    try:
+        rawStockStyleSheet = multiverse.loadSnapshotStyleSheet(reporter=reporter)
+    finally:
+        if reporter:
+            reporter.popPrefix()
 
     milieuSectors: typing.List[typing.Tuple[
         str, # Milieu

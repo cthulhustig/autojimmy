@@ -13,7 +13,6 @@ class ConstCollectionRef(collections.abc.Collection[T]):
     __slots__ = ("_data",)
 
     def __init__(self, data: typing.Collection[T]) -> None:
-        # NOTE: This just takes a reference to the existing sequence for performance
         self._data = data
 
     def __len__(self) -> int:
@@ -29,7 +28,6 @@ class ConstSequenceRef(collections.abc.Sequence[T]):
     __slots__ = ("_data",)
 
     def __init__(self, data: typing.Sequence[T]) -> None:
-        # NOTE: This just takes a reference to the existing sequence for performance
         self._data = data
 
     @typing.overload
@@ -48,3 +46,24 @@ class ConstSequenceRef(collections.abc.Sequence[T]):
 
     def __contains__(self, item: object) -> bool:
         return item in self._data
+
+K = typing.TypeVar("K")
+V = typing.TypeVar("V")
+
+class ConstMappingRef(collections.abc.Mapping[K, V]):
+    __slots__ = ("_data",)
+
+    def __init__(self, data: typing.Mapping[K, V]) -> None:
+        self._data = data
+
+    def __getitem__(self, key: K) -> V:
+        return self._data[key]
+
+    def __iter__(self) -> typing.Iterator[K]:
+        return iter(self._data)
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __contains__(self, key: object) -> bool:
+        return key in self._data

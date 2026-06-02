@@ -5,8 +5,6 @@ import uuid
 
 _ValidMilieu = set(['IW', 'M0', 'M990', 'M1105', 'M1120', 'M1201', 'M1248', 'M1900'])
 _ValidSubsectorCodes = set(map(chr, range(ord('A'), ord('P') + 1)))
-_ValidLineStyles = set(['solid', 'dashed', 'dotted'])
-_ValidLabelSizes = set(['small', 'large'])
 
 class DbObject(object):
     def __init__(
@@ -556,7 +554,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbNobility)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbNobility)
         if not value:
             return
 
@@ -580,7 +578,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbBase)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbBase)
         if not value:
             return
 
@@ -604,7 +602,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbTradeCode)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbTradeCode)
         if not value:
             return
 
@@ -628,7 +626,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbSophontPopulation)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbSophontPopulation)
         if not value:
             return
 
@@ -652,7 +650,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbRulingAllegiance)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbRulingAllegiance)
         if not value:
             return
 
@@ -676,7 +674,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbOwningSystem)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbOwningSystem)
         if not value:
             return
 
@@ -700,7 +698,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbColonySystem)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbColonySystem)
         if not value:
             return
 
@@ -724,7 +722,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbResearchStation)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbResearchStation)
         if not value:
             return
 
@@ -748,7 +746,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbCustomRemark)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbCustomRemark)
         if not value:
             return
 
@@ -778,11 +776,11 @@ class DbAllegiance(DbSectorObject):
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
         common.validateOptionalStr(name='legacy', value=legacy, allowEmpty=False)
         common.validateOptionalStr(name='base', value=base, allowEmpty=False)
-        common.validateOptionalHtmlColour(name='routeColour', value=routeColour)
-        common.validateOptionalStr(name='routeStyle', value=routeStyle, allowed=_ValidLineStyles)
-        common.validateOptionalFloat(name='routeWidth', value=routeWidth, min=0)
-        common.validateOptionalHtmlColour(name='borderColour', value=borderColour)
-        common.validateOptionalStr(name='borderStyle', value=borderStyle, allowed=_ValidLineStyles)
+        survey.validateOptionalHtmlColour(name='routeColour', value=routeColour)
+        survey.validateOptionalLineStyle(name='routeStyle', value=routeStyle)
+        survey.validateOptionalLineWidth(name='routeWidth', value=routeWidth)
+        survey.validateOptionalHtmlColour(name='borderColour', value=borderColour)
+        survey.validateOptionalLineStyle(name='borderStyle', value=borderStyle)
 
         self._code = code
         self._name = name
@@ -982,7 +980,7 @@ class DbSystem(DbSectorObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbStar)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbStar)
         if not value:
             return
 
@@ -1000,7 +998,7 @@ class DbSystem(DbSectorObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbBody)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbBody)
         if not value:
             return
 
@@ -1090,18 +1088,20 @@ class DbRoute(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        survey.validateMandatoryHexX(name='startHexX', value=startHexX)
-        survey.validateMandatoryHexY(name='startHexY', value=startHexY)
-        survey.validateMandatoryHexX(name='endHexX', value=endHexX)
-        survey.validateMandatoryHexY(name='endHexY', value=endHexY)
+        # TODO: Ideally I wouldn't allow invalid hexes here but I need to have
+        # the conversion process convert invalid hexes to valid hexes with offsets
+        survey.validateMandatoryHexX(name='startHexX', value=startHexX, allowInvalid=True)
+        survey.validateMandatoryHexY(name='startHexY', value=startHexY, allowInvalid=True)
+        survey.validateMandatoryHexX(name='endHexX', value=endHexX, allowInvalid=True)
+        survey.validateMandatoryHexY(name='endHexY', value=endHexY, allowInvalid=True)
         common.validateOptionalInt(name='startOffsetX', value=startOffsetX)
         common.validateOptionalInt(name='startOffsetY', value=startOffsetY)
         common.validateOptionalInt(name='endOffsetX', value=endOffsetX)
         common.validateOptionalInt(name='endOffsetY', value=endOffsetY)
         common.validateOptionalStr(name='type', value=type, allowEmpty=False)
-        common.validateOptionalStr(name='style', value=style, allowed=_ValidLineStyles)
-        common.validateOptionalHtmlColour(name='colour', value=colour)
-        common.validateOptionalFloat(name='width', value=width, min=0)
+        survey.validateOptionalLineStyle(name='style', value=style)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateOptionalLineWidth(name='width', value=width)
         common.validateOptionalStr(name='allegianceId', value=allegianceId, allowEmpty=False)
 
         self._startHexX = startHexX
@@ -1176,8 +1176,8 @@ class DbBorder(DbSectorObject):
 
         survey.validateMandatoryHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
         common.validateOptionalStr(name='allegianceId', value=allegianceId, allowEmpty=False)
-        common.validateOptionalStr(name='style', value=style, allowed=_ValidLineStyles)
-        common.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateOptionalLineStyle(name='style', value=style)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
         common.validateOptionalStr(name='label', value=label, allowEmpty=False)
         common.validateOptionalFloat(name='labelWorldX', value=labelWorldX)
         common.validateOptionalFloat(name='labelWorldY', value=labelWorldY)
@@ -1237,7 +1237,7 @@ class DbRegion(DbSectorObject):
         super().__init__(id=id, sectorId=sectorId)
 
         survey.validateMandatoryHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
-        common.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
         common.validateOptionalStr(name='label', value=label, allowEmpty=False)
         common.validateOptionalFloat(name='labelWorldX', value=labelWorldX)
         common.validateOptionalFloat(name='labelWorldY', value=labelWorldY)
@@ -1290,8 +1290,8 @@ class DbLabel(DbSectorObject):
         common.validateMandatoryStr(name='text', value=text, allowEmpty=False)
         common.validateMandatoryFloat(name='worldX', value=worldX)
         common.validateMandatoryFloat(name='worldY', value=worldY)
-        common.validateOptionalHtmlColour(name='colour', value=colour)
-        common.validateOptionalStr(name='size', value=size, allowed=_ValidLabelSizes)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateOptionalLabelSize(name='size', value=size)
         common.validateMandatoryBool(name='wrap', value=wrap)
 
         self._text = text
@@ -1558,7 +1558,7 @@ class DbSector(DbObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbAlternateName)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbAlternateName)
 
         for alternateName in value:
             currentSectorId = alternateName.sectorId()
@@ -1574,7 +1574,7 @@ class DbSector(DbObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbSubsectorName)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbSubsectorName)
 
         seen = set()
         for subsectorName in value:
@@ -1596,7 +1596,7 @@ class DbSector(DbObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbAllegiance)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbAllegiance)
 
         seen = set()
         for allegiance in value:
@@ -1618,7 +1618,7 @@ class DbSector(DbObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbSophont)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbSophont)
 
         seenCodes = set()
         seenNames = set()
@@ -1648,7 +1648,7 @@ class DbSector(DbObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbSystem)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbSystem)
 
         knownAllegianceIds = knownSophontIds = None
         seenHexes = set()
@@ -1699,7 +1699,7 @@ class DbSector(DbObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbRoute)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbRoute)
 
         for route in value:
             currentSectorId = route.sectorId()
@@ -1715,7 +1715,7 @@ class DbSector(DbObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbBorder)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbBorder)
 
         for border in value:
             currentSectorId = border.sectorId()
@@ -1731,7 +1731,7 @@ class DbSector(DbObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbRegion)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbRegion)
 
         for region in value:
             currentSectorId = region.sectorId()
@@ -1747,7 +1747,7 @@ class DbSector(DbObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbLabel)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbLabel)
 
         for label in value:
             currentSectorId = label.sectorId()
@@ -1763,7 +1763,7 @@ class DbSector(DbObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbTag)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbTag)
 
         for tag in value:
             currentSectorId = tag.sectorId()
@@ -1779,7 +1779,7 @@ class DbSector(DbObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, type=DbProduct)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbProduct)
 
         for tag in value:
             currentSectorId = tag.sectorId()
