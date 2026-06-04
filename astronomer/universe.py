@@ -37,6 +37,10 @@ class Universe(object):
             sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
             placeholderMilieu: typing.Optional[astronomer.Milieu] = None
             ) -> None:
+        common.validateMandatoryStr(name='universeId', value=universeId, allowEmpty=False)
+        common.validateMandatoryCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
+        common.validateOptionalObject(name='placeholderMilieu', value=placeholderMilieu, objectType=astronomer.Milieu)
+
         self._universeId = universeId
         self._milieuDataMap: typing.Dict[astronomer.Milieu, Universe._MilieuData] = {}
         self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}

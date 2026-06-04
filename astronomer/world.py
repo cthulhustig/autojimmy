@@ -64,6 +64,29 @@ class World(astronomer.Entity):
             customRemarks: typing.Optional[typing.Collection[str]] = None
             ) -> None:
         super().__init__(entityId=entityId)
+
+        common.validateMandatoryObject(name='milieu', value=milieu, objectType=astronomer.Milieu)
+        common.validateMandatoryObject(name='hex', value=hex, objectType=astronomer.HexPosition)
+        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
+        common.validateMandatoryBool(name='isNameGenerated', value=isNameGenerated)
+        common.validateOptionalObject(name='allegiance', value=allegiance, objectType=astronomer.Allegiance)
+        common.validateOptionalObject(name='zone', value=zone, objectType=astronomer.ZoneType)
+        common.validateOptionalObject(name='uwp', value=uwp, objectType=astronomer.UWP)
+        common.validateOptionalObject(name='economics', value=economics, objectType=astronomer.Economics)
+        common.validateOptionalObject(name='culture', value=culture, objectType=astronomer.Culture)
+        common.validateOptionalObject(name='nobilities', value=nobilities, objectType=astronomer.Nobilities)
+        common.validateOptionalObject(name='bases', value=bases, objectType=astronomer.Bases)
+        common.validateOptionalInt(name='systemWorlds', value=systemWorlds, min=0)
+        common.validateOptionalObject(name='pbg', value=pbg, objectType=astronomer.PBG)
+        common.validateOptionalObject(name='stellar', value=stellar, objectType=astronomer.Stellar)
+        common.validateOptionalCollection(name='tradeCodes', value=tradeCodes, elementType=traveller.TradeCode)
+        common.validateOptionalCollection(name='sophontPopulations', value=sophontPopulations, elementType=astronomer.SophontPopulation)
+        common.validateOptionalCollection(name='rulingAllegiances', value=rulingAllegiances, elementType=astronomer.Allegiance)
+        common.validateOptionalCollection(name='owningWorldRefs', value=owningWorldRefs, elementType=WorldReference)
+        common.validateOptionalCollection(name='colonyWorldRefs', value=colonyWorldRefs, elementType=WorldReference)
+        common.validateOptionalCollection(name='researchStations', value=researchStations, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryResearchStation(name=f'{n}[{i}]', value=v))
+        common.validateOptionalCollection(name='customRemarks', value=customRemarks, elementType=str)
+
         self._milieu = milieu
         self._hex = hex
         self._name = name

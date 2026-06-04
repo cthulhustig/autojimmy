@@ -1,3 +1,4 @@
+import common
 import enum
 import survey
 import typing
@@ -134,6 +135,8 @@ class Bases(object):
             self,
             bases: typing.Optional[typing.Collection[BaseType]] = None
             ) -> None:
+        common.validateOptionalCollection(name='bases', value=bases, elementType=BaseType)
+
         self._bases = list(bases) if bases else []
         self._string = None
 

@@ -1,4 +1,5 @@
 import astronomer
+import common
 import typing
 
 class Border(astronomer.Region):
@@ -24,6 +25,10 @@ class Border(astronomer.Region):
             labelWorldY=labelWorldY,
             showLabel=showLabel,
             wrapLabel=wrapLabel)
+
+        common.validateOptionalObject(name='allegiance', value=allegiance, objectType=astronomer.Allegiance)
+        common.validateOptionalObject(name='style', value=style, objectType=astronomer.LineStyle)
+
         self._allegiance = allegiance
         self._style = style
 

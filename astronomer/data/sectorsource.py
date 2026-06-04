@@ -1,3 +1,4 @@
+import common
 import typing
 
 class SectorSource(object):
@@ -8,6 +9,11 @@ class SectorSource(object):
             publisher: typing.Optional[str],
             reference: typing.Optional[str]
             ) -> None:
+        common.validateOptionalStr(name='publication', value=publication, allowEmpty=False)
+        common.validateOptionalStr(name='author', value=author, allowEmpty=False)
+        common.validateOptionalStr(name='publisher', value=publisher, allowEmpty=False)
+        common.validateOptionalStr(name='reference', value=reference, allowEmpty=False)
+
         self._publication = publication
         self._author = author
         self._publisher = publisher

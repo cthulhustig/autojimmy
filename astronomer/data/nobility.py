@@ -1,3 +1,4 @@
+import common
 import enum
 import survey
 import typing
@@ -49,6 +50,8 @@ class Nobilities(object):
             self,
             nobilities: typing.Optional[typing.Collection[NobilityType]] = None
             ) -> None:
+        common.validateOptionalCollection(name='nobilities', value=nobilities, elementType=NobilityType)
+
         self._nobilities = list(nobilities) if nobilities else []
         self._string = None
 

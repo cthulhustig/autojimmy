@@ -1,5 +1,7 @@
 import astronomer
+import common
 import enum
+import survey
 import typing
 
 class Label(astronomer.Entity):
@@ -18,6 +20,14 @@ class Label(astronomer.Entity):
             wrap: bool = False
             ) -> None:
         super().__init__(entityId=entityId)
+
+        common.validateMandatoryStr(name='text', value=text, allowEmpty=False)
+        common.validateMandatoryFloat(name='worldX', value=worldX)
+        common.validateMandatoryFloat(name='worldY', value=worldY)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
+        common.validateOptionalObject(name='size', value=size, objectType=Label.Size)
+        common.validateMandatoryBool(name='wrap', value=wrap)
+
         self._text = text
         self._worldX = worldX
         self._worldY = worldY

@@ -47,8 +47,8 @@ class SectorInfo(object):
         common.validateMandatoryInt(name='sectorX', value=sectorX)
         common.validateMandatoryInt(name='sectorY', value=sectorY)
         common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
-        common.validateMandatoryObject(name='createdTimestamp', value=createdTimestamp, type=datetime.datetime)
-        common.validateOptionalObject(name='modifiedTimestamp', value=modifiedTimestamp, type=datetime.datetime)
+        common.validateMandatoryObject(name='createdTimestamp', value=createdTimestamp, objectType=datetime.datetime)
+        common.validateOptionalObject(name='modifiedTimestamp', value=modifiedTimestamp, objectType=datetime.datetime)
         common.validateOptionalStr(name='stockDataHash', value=stockDataHash, allowEmpty=False)
 
         self._id = id

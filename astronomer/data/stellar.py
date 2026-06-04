@@ -108,8 +108,10 @@ class Star(object):
 class Stellar(object):
     def __init__(
             self,
-            stars: typing.Optional[typing.Iterable[Star]] = None
+            stars: typing.Optional[typing.Collection[Star]] = None
             ) -> None:
+        common.validateOptionalCollection(name='stars', value=stars, elementType=Star)
+
         self._stars = list(stars) if stars else []
         self._string = None
 

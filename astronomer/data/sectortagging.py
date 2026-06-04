@@ -22,6 +22,8 @@ class SectorTagging(object):
             self,
             tags: typing.Optional[typing.Collection[SectorTag]] = None
             ) -> None:
+        common.validateOptionalCollection(name='tags', value=tags, elementType=SectorTag)
+
         self._tags = common.OrderedSet(tags) if tags else common.OrderedSet()
 
     def tags(self) -> typing.Collection[SectorTag]:

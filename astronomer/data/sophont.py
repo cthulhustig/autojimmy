@@ -1,3 +1,5 @@
+import common
+import survey
 import typing
 
 class Sophont(object):
@@ -7,6 +9,10 @@ class Sophont(object):
             name: str,
             isMajor: bool
             ) -> None:
+        survey.validateMandatorySophontCode(name='code', value=code)
+        survey.validateMandatorySophontName(name='name', value=name)
+        common.validateMandatoryBool(name='isMajor', value=isMajor)
+
         self._code = code
         self._name = name
         self._isMajor = isMajor
@@ -28,6 +34,11 @@ class SophontPopulation(object):
             isHomeWorld: bool,
             isDieBack: bool
             ) -> None:
+        common.validateMandatoryObject(name='sophont', value=sophont, objectType=Sophont)
+        survey.validateOptionalSophontPercentage(name='percentage', value=percentage)
+        common.validateMandatoryBool(name='isHomeWorld', value=isHomeWorld)
+        common.validateMandatoryBool(name='isDieBack', value=isDieBack)
+
         self._sophont = sophont
         self._percentage = percentage
         self._isHomeWorld = isHomeWorld

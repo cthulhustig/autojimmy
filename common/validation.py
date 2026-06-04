@@ -179,11 +179,11 @@ T = typing.TypeVar("T")
 def validateMandatoryObject(
         name: str,
         value: T,
-        type: typing.Union[typing.Type[T], typing.Tuple[typing.Type[T], ...]],
+        objectType: typing.Union[typing.Type[T], typing.Tuple[typing.Type[T], ...]],
         validationFn: typing.Optional[typing.Callable[[str, T], typing.Any]] = None
         ) -> T:
-    if not isinstance(value, type):
-        raise TypeError(f"{name} must be of type {type}")
+    if not isinstance(value, objectType):
+        raise TypeError(f"{name} must be of type {objectType}")
 
     if validationFn is not None:
         validationFn(name, value)
@@ -193,11 +193,11 @@ def validateMandatoryObject(
 def validateOptionalObject(
         name: str,
         value: typing.Optional[T],
-        type: typing.Union[typing.Type[T], typing.Tuple[typing.Type[T], ...]],
+        objectType: typing.Union[typing.Type[T], typing.Tuple[typing.Type[T], ...]],
         validationFn: typing.Optional[typing.Callable[[str, typing.Optional[T]], typing.Any]] = None
         ) -> typing.Optional[T]:
-    if value is not None and not isinstance(value, type):
-        raise TypeError(f'{name} must be of type {type} or None')
+    if value is not None and not isinstance(value, objectType):
+        raise TypeError(f'{name} must be of type {objectType} or None')
 
     if validationFn is not None:
         validationFn(name, value)

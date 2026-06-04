@@ -18,7 +18,7 @@ class UniverseInfo(object):
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
         common.validateMandatoryStr(name='description', value=description, allowEmpty=True)
         common.validateMandatoryBool(name='isStock', value=isStock)
-        common.validateOptionalObject(name='snapshotTimestamp', value=snapshotTimestamp, type=datetime.datetime)
+        common.validateOptionalObject(name='snapshotTimestamp', value=snapshotTimestamp, objectType=datetime.datetime)
 
         self._id = id
         self._name = name

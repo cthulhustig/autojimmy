@@ -314,14 +314,14 @@ class RawWorld(object):
         common.validateOptionalStr(name='name', value=name, allowEmpty=False)
         survey.validateOptionalAllegianceCode(name='allegianceCode', value=allegianceCode)
         survey.validateOptionalZone(name='zone', value=zone)
-        common.validateOptionalObject(name='uwp', value=uwp, type=RawUWP)
-        common.validateOptionalObject(name='economics', value=economics, type=RawEconomics)
-        common.validateOptionalObject(name='culture', value=culture, type=RawCulture)
+        common.validateOptionalObject(name='uwp', value=uwp, objectType=RawUWP)
+        common.validateOptionalObject(name='economics', value=economics, objectType=RawEconomics)
+        common.validateOptionalObject(name='culture', value=culture, objectType=RawCulture)
         common.validateOptionalCollection(name='nobilities', value=nobilities, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryNobility(name=f'{n}[{i}]', value=v))
         common.validateOptionalCollection(name='bases', value=bases, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryBase(name=n, value=v))
-        common.validateOptionalObject(name='remarks', value=remarks, type=RawRemarks)
+        common.validateOptionalObject(name='remarks', value=remarks, objectType=RawRemarks)
         common.validateOptionalInt(name='importance', value=importance)
-        common.validateOptionalObject(name='pbg', value=pbg, type=RawPBG)
+        common.validateOptionalObject(name='pbg', value=pbg, objectType=RawPBG)
         common.validateOptionalInt(name='systemWorlds', value=systemWorlds, min=0)
         common.validateOptionalCollection(name=stars, value=stars, elementType=RawStar)
 
@@ -738,7 +738,7 @@ class RawSources(object):
         super().__init__()
 
         common.validateOptionalStr(name='credits', value=credits, allowEmpty=False)
-        common.validateOptionalObject(name='primary', value=primary, type=RawSource)
+        common.validateOptionalObject(name='primary', value=primary, objectType=RawSource)
         common.validateOptionalCollection(name='products', value=products, elementType=RawSource)
 
         self._credits = credits
@@ -870,8 +870,8 @@ class RawMetadata(object):
         common.validateOptionalCollection(name='borders', value=borders, elementType=RawBorder)
         common.validateOptionalCollection(name='labels', value=labels, elementType=RawLabel)
         common.validateOptionalCollection(name='regions', value=regions, elementType=RawRegion)
-        common.validateOptionalObject(name='sources', value=sources, type=RawSources)
-        common.validateOptionalObject(name='styleSheet', value=styleSheet, type=RawStyleSheet)
+        common.validateOptionalObject(name='sources', value=sources, objectType=RawSources)
+        common.validateOptionalObject(name='styleSheet', value=styleSheet, objectType=RawStyleSheet)
 
         self._x = x
         self._y = y

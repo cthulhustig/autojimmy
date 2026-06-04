@@ -1,4 +1,6 @@
 import astronomer
+import common
+import survey
 import typing
 
 class Region(astronomer.Entity):
@@ -39,6 +41,15 @@ class Region(astronomer.Entity):
             wrapLabel: bool = False
             ) -> None:
         super().__init__(entityId=entityId)
+
+        common.validateMandatoryCollection(name='hexes', value=hexes, elementType=astronomer.HexPosition)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
+        common.validateOptionalStr(name='label', value=label, allowEmpty=False)
+        common.validateOptionalFloat(name='labelWorldX', value=labelWorldX)
+        common.validateOptionalFloat(name='labelWorldY', value=labelWorldY)
+        common.validateMandatoryBool(name='showLabel', value=showLabel)
+        common.validateMandatoryBool(name='wrapLabel', value=wrapLabel)
+
         self._hexes = list(hexes)
         self._colour = colour
         self._label = label

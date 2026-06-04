@@ -11,24 +11,48 @@ class Sector(astronomer.Entity):
             milieu: astronomer.Milieu,
             position: astronomer.SectorPosition,
             name: str,
-            alternateNames: typing.Optional[typing.Iterable[str]] = None,
+            alternateNames: typing.Optional[typing.Collection[str]] = None,
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
-            worlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
-            allegiances: typing.Optional[typing.Iterable[astronomer.Allegiance]] = None,
-            sophonts: typing.Optional[typing.Iterable[astronomer.Sophont]] = None,
-            routes: typing.Optional[typing.Iterable[astronomer.Route]] = None,
-            borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
-            regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
-            labels: typing.Optional[typing.Iterable[astronomer.Label]] = None,
+            worlds: typing.Optional[typing.Collection[astronomer.World]] = None,
+            allegiances: typing.Optional[typing.Collection[astronomer.Allegiance]] = None,
+            sophonts: typing.Optional[typing.Collection[astronomer.Sophont]] = None,
+            routes: typing.Optional[typing.Collection[astronomer.Route]] = None,
+            borders: typing.Optional[typing.Collection[astronomer.Border]] = None,
+            regions: typing.Optional[typing.Collection[astronomer.Region]] = None,
+            labels: typing.Optional[typing.Collection[astronomer.Label]] = None,
             selected: bool = False,
             tagging: typing.Optional[astronomer.SectorTagging] = None,
             credits: typing.Optional[str] = None,
             source: typing.Optional[astronomer.SectorSource] = None,
-            products: typing.Optional[typing.Iterable[astronomer.SectorSource]] = None
+            products: typing.Optional[typing.Collection[astronomer.SectorSource]] = None
             ) -> None:
         super().__init__(entityId=entityId)
+
+        common.validateMandatoryBool(name='isCustom', value=isCustom)
+        common.validateMandatoryObject(name='milieu', value=milieu, objectType=astronomer.Milieu)
+        common.validateMandatoryObject(name='position', value=position, objectType=astronomer.SectorPosition)
+        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
+        # TODO: This should check that the names aren't empty strings
+        common.validateMandatoryCollection(name='alternateNames', value=alternateNames, elementType=str)
+        common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
+        common.validateOptionalStr(name='sectorLabel', value=sectorLabel, allowEmpty=False)
+        # TODO: This should check that the codes are A-P and names aren't empty
+        common.validateOptionalMapping(name='subsectorNames', value=subsectorNames, keyType=str, valueType=str)
+        common.validateOptionalCollection(name='worlds', value=worlds, elementType=astronomer.World)
+        common.validateOptionalCollection(name='allegiances', value=allegiances, elementType=astronomer.Allegiance)
+        common.validateOptionalCollection(name='sophonts', value=sophonts, elementType=astronomer.Sophont)
+        common.validateOptionalCollection(name='routes', value=routes, elementType=astronomer.Route)
+        common.validateOptionalCollection(name='borders', value=borders, elementType=astronomer.Border)
+        common.validateOptionalCollection(name='regions', value=regions, elementType=astronomer.Region)
+        common.validateOptionalCollection(name='labels', value=labels, elementType=astronomer.Label)
+        common.validateMandatoryBool(name='selected', value=selected)
+        common.validateOptionalObject(name='tagging', value=tagging, objectType=astronomer.SectorTagging)
+        common.validateOptionalStr(name='credits', value=credits, allowEmpty=False)
+        common.validateOptionalObject(name='source', value=source, objectType=astronomer.SectorSource)
+        common.validateOptionalCollection(name='products', value=products, elementType=astronomer.SectorSource)
+
         self._isCustom = isCustom
         self._milieu = milieu
         self._position = position

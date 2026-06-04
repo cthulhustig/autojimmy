@@ -1,4 +1,6 @@
 import astronomer
+import common
+import survey
 import typing
 
 class Allegiance(object):
@@ -14,6 +16,16 @@ class Allegiance(object):
             borderColour: typing.Optional[str] = None,
             borderStyle: typing.Optional[astronomer.LineStyle] = None
             ) -> None:
+        survey.validateMandatoryAllegianceCode(name='code', value=code)
+        survey.validateMandatoryAllegianceName(name='name', value=name)
+        survey.validateOptionalAllegianceCode(name='legacyCode', value=legacyCode)
+        survey.validateOptionalAllegianceCode(name='baseCode', value=baseCode)
+        survey.validateOptionalHtmlColour(name='routeColour', value=routeColour)
+        common.validateOptionalObject(name='routeStyle', value=routeStyle, objectType=astronomer.LineStyle)
+        survey.validateOptionalLineWidth(name='routeWidth', value=routeWidth)
+        survey.validateOptionalHtmlColour(name='borderColour', value=borderColour)
+        common.validateOptionalObject(name='borderStyle', value=borderStyle, objectType=astronomer.LineStyle)
+
         self._code = code
         self._name = name
         self._legacyCode = legacyCode
