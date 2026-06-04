@@ -12,6 +12,7 @@ class Sector(astronomer.Entity):
             position: astronomer.SectorPosition,
             name: str,
             alternateNames: typing.Optional[typing.Collection[str]] = None,
+            nameLanguages: typing.Optional[typing.Mapping[str, str]] = None, # Maps names to the language that name is in
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
@@ -35,7 +36,8 @@ class Sector(astronomer.Entity):
         common.validateMandatoryObject(name='position', value=position, objectType=astronomer.SectorPosition)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
         # TODO: This should check that the names aren't empty strings
-        common.validateMandatoryCollection(name='alternateNames', value=alternateNames, elementType=str)
+        common.validateOptionalCollection(name='alternateNames', value=alternateNames, elementType=str)
+        common.validateOptionalMapping(name='nameLanguages', value=nameLanguages, keyType=str, valueType=str)
         common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
         common.validateOptionalStr(name='sectorLabel', value=sectorLabel, allowEmpty=False)
         # TODO: This should check that the codes are A-P and names aren't empty
@@ -58,6 +60,7 @@ class Sector(astronomer.Entity):
         self._position = position
         self._name = name
         self._alternateNames = list(alternateNames) if alternateNames else []
+        self._nameLanguages = dict(nameLanguages) if nameLanguages else {}
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
         self._worlds = list(worlds) if worlds else []
@@ -87,10 +90,8 @@ class Sector(astronomer.Entity):
                 self._subsectorCodeToWorldsMap[subsectorCode] = subsectorWorlds
             subsectorWorlds.append(world)
 
-        self._allegiances: typing.List[astronomer.Allegiance] = []
         self._allegianceCodeMap: typing.Dict[str, astronomer.Allegiance] = {}
-        for allegiance in allegiances:
-            self._allegiances.append(allegiance)
+        for allegiance in self._allegiances:
             self._allegianceCodeMap[allegiance.code()] = allegiance
 
         self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
@@ -108,6 +109,9 @@ class Sector(astronomer.Entity):
 
     def alternateNames(self) -> typing.Sequence[str]:
         return common.ConstSequenceRef(self._alternateNames)
+
+    def nameLanguage(self, name: str) -> typing.Optional[str]:
+        return self._nameLanguages.get(name)
 
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation

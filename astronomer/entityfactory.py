@@ -19,6 +19,7 @@ class EntityFactoryInterface(object):
             position: astronomer.SectorPosition,
             name: str,
             alternateNames: typing.Optional[typing.Iterable[str]] = None,
+            nameLanguages: typing.Optional[typing.Mapping[str, str]] = None, # Maps names to the language that name is in
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
@@ -137,6 +138,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             position: astronomer.SectorPosition,
             name: str,
             alternateNames: typing.Optional[typing.Iterable[str]] = None,
+            nameLanguages: typing.Optional[typing.Mapping[str, str]] = None, # Maps names to the language that name is in
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
@@ -160,6 +162,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             position=position,
             name=name,
             alternateNames=alternateNames,
+            nameLanguages=nameLanguages,
             abbreviation=abbreviation,
             sectorLabel=sectorLabel,
             subsectorNames=subsectorNames,

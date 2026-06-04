@@ -55,11 +55,11 @@ def loadUniverseFromDatabase(
                     milieu=sector.milieu().value))
         except Exception as ex:
             logging.error(
-                'Failed to load sector {name} at ({x}, {y}) from {milieu.value}'.format(
-                    name=sector.name(),
-                    x=sector.position().sectorX(),
-                    y=sector.position().sectorY(),
-                    milieu=sector.milieu().value),
+                'Failed to load sector {name} at ({x}, {y}) from {milieu}'.format(
+                    name=dbSector.name(),
+                    x=dbSector.sectorX(),
+                    y=dbSector.sectorY(),
+                    milieu=dbSector.milieu()),
                 exc_info=ex)
             continue
 
