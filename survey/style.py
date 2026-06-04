@@ -18,7 +18,7 @@ def parseLineStyleString(
     lower = string.lower()
     if lower not in _ValidLineStyles:
         if reporter:
-            reporter.addMessage('Ignoring invalid Line Style "{string}"')
+            reporter.addMessage(f'Ignoring invalid Line Style "{string}"')
         return None
     return lower
 
@@ -29,7 +29,7 @@ def formatLineStyleString(
     lower = style.lower()
     if lower not in _ValidLineStyles:
         if reporter:
-            reporter.addMessage('Ignoring invalid Line Style "{string}"')
+            reporter.addMessage(f'Ignoring invalid Line Style "{style}"')
         return None
     return lower
 
@@ -69,18 +69,18 @@ def parseLabelSizeString(
     lower = string.lower()
     if lower not in _ValidLabelSizes:
         if reporter:
-            reporter.addMessage('Ignoring invalid Label Size "{string}"')
+            reporter.addMessage(f'Ignoring invalid Label Size "{string}"')
         return None
     return lower
 
-def formatLineStyleString(
-        style: str,
+def formatLabelSizeString(
+        size: str,
         reporter: typing.Optional[common.Reporter] = None
         ) -> typing.Optional[str]:
-    lower = style.lower()
+    lower = size.lower()
     if lower not in _ValidLabelSizes:
         if reporter:
-            reporter.addMessage('Ignoring invalid Line Style "{string}"')
+            reporter.addMessage(f'Ignoring invalid Label Size "{size}"')
         return None
     return lower
 
@@ -90,7 +90,7 @@ def parseHtmlColourString(
         ) -> typing.Optional[str]:
     if not common.isValidHtmlColour(string):
         if reporter:
-            reporter.addMessage('Ignoring invalid HTML Colour "{string}"')
+            reporter.addMessage(f'Ignoring invalid HTML Colour "{string}"')
         return None
     return string
 
@@ -100,7 +100,7 @@ def formatHtmlColourString(
         ) -> typing.Optional[str]:
     if not common.isValidHtmlColour(string):
         if reporter:
-            reporter.addMessage('Ignoring invalid HTML Colour "{string}"')
+            reporter.addMessage(f'Ignoring invalid HTML Colour "{string}"')
         return None
     return string
 

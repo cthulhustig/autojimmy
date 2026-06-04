@@ -5,19 +5,27 @@ import survey
 import typing
 import xml.etree.ElementTree
 
+# TODO: I think I want to add my own custom Sophonts elements to the metadata (similar to how
+# allegiances are defined).
+# Things to support
+# - Name
+# - Code
+# - Language
+# Things that will need updated
+# - Raw metadata reader
+# - Raw metadata writer
+# - Database schema will need updated to add an optional language field to sophonts
+# - Database sophont object will need updated to store language
+# - Astro 2 Db converter will need updated to pass the language
+# - Db 2 AStro converter will need updated to pass the language
+# - Raw 2 Db converter will need updated to combine sophonts defined in the metadata and sophonts referenced in the sector in the same way as it does for allegiances
+# - Db 2 Raw converter will need updated to create sophonts in the RawMetadata
+
 class MetadataFormat(enum.Enum):
     JSON = 0
     XML = 1
 
 _XmlFloatDecimalPlaces = 2
-
-def _isAllDashes(string: str) -> bool:
-    if not string:
-        return False # Empty string isn't all dashes
-    for c in string:
-        if c != '-':
-            return False
-    return True
 
 def _parseStringAttribute(
         attributeMap: typing.Mapping[str, typing.Any],
@@ -105,6 +113,26 @@ def _parseSystemHexAttribute(
             reporter.addMessage(f'Ignoring invalid {attributeName} attribute "{value}"')
         return (None, None)
     return (x, y)
+
+def _parseAllegianceCodeAttribute(
+        attributeMap: typing.Mapping[str, typing.Any],
+        attributeName: str,
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.Optional[str]:
+    value = attributeMap.get(attributeName)
+    if value is None:
+        return None
+    return survey.parseAllegianceCodeString(string=value, reporter=reporter)
+
+def _parseAllegianceNameAttribute(
+        attributeMap: typing.Mapping[str, typing.Any],
+        attributeName: str,
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.Optional[str]:
+    value = attributeMap.get(attributeName)
+    if value is None:
+        return None
+    return survey.parseAllegianceNameString(string=value, reporter=reporter)
 
 def _parseLineWidthAttribute(
         attributeMap: typing.Mapping[str, typing.Any],
@@ -284,7 +312,7 @@ def parseXMLMetadata(
                 reporter.pushPrefix(f'Allegiance {index + 1}: ')
 
             try:
-                code = _parseStringAttribute(element, 'Code', reporter)
+                code = _parseAllegianceCodeAttribute(element, 'Code', reporter)
                 if not code:
                     if reporter:
                         reporter.addMessage('Ignoring Allegiance with no valid Code attribute')
@@ -294,13 +322,18 @@ def parseXMLMetadata(
                     if reporter:
                         reporter.addMessage('Ignoring Allegiance with no name text')
                     continue
+                name = survey.parseAllegianceNameString(
+                    string=element.text,
+                    reporter=reporter)
+                if not name:
+                    if reporter:
+                        reporter.addMessage('Ignoring Allegiance with invalid name')
+                    continue
 
-                # Ignore allegiances that are just a sequence of '-'
-                if not _isAllDashes(code):
-                    allegiances.append(survey.RawAllegiance(
-                        code=code,
-                        name=element.text,
-                        base=_parseStringAttribute(element, 'Base', reporter)))
+                allegiances.append(survey.RawAllegiance(
+                    code=code,
+                    name=name,
+                    base=_parseAllegianceCodeAttribute(element, 'Base', reporter)))
             finally:
                 if reporter:
                     reporter.popPrefix()
@@ -335,7 +368,7 @@ def parseXMLMetadata(
                     startOffsetY=_parseIntAttribute(element, 'StartOffsetY', reporter),
                     endOffsetX=_parseIntAttribute(element, 'EndOffsetX', reporter),
                     endOffsetY=_parseIntAttribute(element, 'EndOffsetY', reporter),
-                    allegiance=_parseStringAttribute(element, 'Allegiance', reporter),
+                    allegianceCode=_parseAllegianceCodeAttribute(element, 'Allegiance', reporter),
                     type=_parseStringAttribute(element, 'Type', reporter),
                     style=_parseLineStyleAttribute(element, 'Style', reporter),
                     colour=_parseHtmlColourAttribute(element, 'Color', reporter),
@@ -370,8 +403,8 @@ def parseXMLMetadata(
 
                 borders.append(survey.RawBorder(
                     hexes=path,
-                    allegiance=_parseStringAttribute(element, 'Allegiance', reporter),
-                    showLabel= _parseBoolAttribute(element, 'ShowLabel', reporter),
+                    allegianceCode=_parseAllegianceCodeAttribute(element, 'Allegiance', reporter),
+                    showLabel=_parseBoolAttribute(element, 'ShowLabel', reporter),
                     wrapLabel=_parseBoolAttribute(element, 'WrapLabel', reporter),
                     labelHexX=labelHexX,
                     labelHexY=labelHexY,
@@ -455,32 +488,25 @@ def parseXMLMetadata(
                 if reporter:
                     reporter.popPrefix()
 
-    creditsElements = sectorElement.find('./Credits')
-    primaryElements = sectorElement.find('./DataFile')
+    creditsElement = sectorElement.find('./Credits')
+    dataFileElement = sectorElement.find('./DataFile')
     productsElements = sectorElement.findall('./Product')
     sources = None
-    if creditsElements is not None or primaryElements is not None or productsElements is not None:
+    if creditsElement is not None or dataFileElement is not None or productsElements is not None:
         credits = None
-        if creditsElements:
-            if reporter:
-                reporter.pushPrefix('Credits: ')
-
-            credits = creditsElements.text
-            if not credits:
-                if reporter:
-                    reporter.addMessage('Ignoring empty Credits')
-                credits = None
+        if creditsElement is not None and creditsElement.text:
+            credits = creditsElement.text
 
         primary = None
-        if primaryElements != None:
+        if dataFileElement is not None:
             if reporter:
                 reporter.pushPrefix('DataFile: ')
 
             try:
-                publication = _parseStringAttribute(primaryElements, 'Source', reporter)
-                author = _parseStringAttribute(primaryElements, 'Author', reporter)
-                publisher = _parseStringAttribute(primaryElements, 'Publisher', reporter)
-                reference = _parseStringAttribute(primaryElements, 'Ref', reporter)
+                publication = _parseStringAttribute(dataFileElement, 'Source', reporter)
+                author = _parseStringAttribute(dataFileElement, 'Author', reporter)
+                publisher = _parseStringAttribute(dataFileElement, 'Publisher', reporter)
+                reference = _parseStringAttribute(dataFileElement, 'Ref', reporter)
                 if publication or author or publisher or reference:
                     primary = survey.RawSource(
                         publication=publication,
@@ -492,7 +518,7 @@ def parseXMLMetadata(
                     reporter.popPrefix()
 
         products = None
-        if productsElements != None:
+        if productsElements is not None:
             products = []
             for index, element in enumerate(productsElements):
                 if reporter:
@@ -652,24 +678,22 @@ def parseJSONMetadata(
                     reporter.pushPrefix(f'Allegiance {index + 1}: ')
 
                 try:
-                    code = _parseStringAttribute(element, 'Code', reporter)
+                    code = _parseAllegianceCodeAttribute(element, 'Code', reporter)
                     if not code:
                         if reporter:
                             reporter.addMessage('Ignoring Allegiance with no valid Code attribute')
                         continue
 
-                    name = _parseStringAttribute(element, 'Name', reporter)
+                    name = _parseAllegianceNameAttribute(element, 'Name', reporter)
                     if not name:
                         if reporter:
                             reporter.addMessage('Ignoring Allegiance with no valid Name attribute')
                         continue
 
-                    # Ignore allegiances that are just a sequence of '-'
-                    if not _isAllDashes(code):
-                        allegiances.append(survey.RawAllegiance(
-                            code=code,
-                            name=name,
-                            base=_parseStringAttribute(element, 'Base', reporter)))
+                    allegiances.append(survey.RawAllegiance(
+                        code=code,
+                        name=name,
+                        base=_parseAllegianceCodeAttribute(element, 'Base', reporter)))
                 finally:
                     if reporter:
                         reporter.popPrefix()
@@ -704,7 +728,7 @@ def parseJSONMetadata(
                     startOffsetY=_parseIntAttribute(element, 'StartOffsetY', reporter),
                     endOffsetX=_parseIntAttribute(element, 'EndOffsetX', reporter),
                     endOffsetY=_parseIntAttribute(element, 'EndOffsetY', reporter),
-                    allegiance=_parseStringAttribute(element, 'Allegiance', reporter),
+                    allegianceCode=_parseAllegianceCodeAttribute(element, 'Allegiance', reporter),
                     type=_parseStringAttribute(element, 'Type', reporter),
                     style=_parseLineStyleAttribute(element, 'Style', reporter),
                     colour=_parseHtmlColourAttribute(element, 'Color', reporter),
@@ -740,7 +764,7 @@ def parseJSONMetadata(
 
                 borders.append(survey.RawBorder(
                     hexes=path,
-                    allegiance=_parseStringAttribute(element, 'Allegiance', reporter),
+                    allegianceCode=_parseAllegianceCodeAttribute(element, 'Allegiance', reporter),
                     showLabel=_parseBoolAttribute(element, 'ShowLabel', reporter),
                     wrapLabel=_parseBoolAttribute(element, 'WrapLabel', reporter),
                     labelHexX=labelHexX,
@@ -978,12 +1002,27 @@ def formatXMLMetadata(
     allegiances = metadata.allegiances()
     if allegiances:
         allegiancesElement = xml.etree.ElementTree.SubElement(sectorElement, 'Allegiances')
-        for allegiance in sorted(allegiances, key=lambda a: a.code()):
-            attributes = {'Code': allegiance.code()}
-            if allegiance.base():
-                attributes['Base'] = allegiance.base()
+        for allegianceCode in sorted(allegiances, key=lambda a: a.code()):
+            attributes = {}
+
+            code = survey.formatAllegianceCodeString(
+                string=allegianceCode.code(),
+                reporter=reporter)
+            if code is not None:
+                attributes['Code'] = code
+
+            if allegianceCode.base() is not None:
+                base = survey.formatAllegianceCodeString(
+                    string=allegianceCode.base(),
+                    reporter=reporter)
+                if base is not None:
+                    attributes['Base'] = base
+
             allegianceElement = xml.etree.ElementTree.SubElement(allegiancesElement, 'Allegiance', attributes)
-            allegianceElement.text = allegiance.name()
+
+            name = survey.formatAllegianceNameString(string=allegianceCode.name(), reporter=reporter)
+            if name is not None:
+                allegianceElement.text = name
 
     routes = metadata.routes()
     if routes:
@@ -1017,8 +1056,12 @@ def formatXMLMetadata(
                     attributes['EndOffsetX'] = str(route.endOffsetX())
                 if route.endOffsetY() is not None:
                     attributes['EndOffsetY'] = str(route.endOffsetY())
-                if route.allegiance() is not None:
-                    attributes['Allegiance'] = route.allegiance()
+                if route.allegianceCode() is not None:
+                    allegianceCode = survey.formatAllegianceCodeString(
+                        string=route.allegianceCode(),
+                        reporter=reporter)
+                    if allegianceCode is not None:
+                        attributes['Allegiance'] = allegianceCode
                 if route.type() is not None:
                     attributes['Type'] = route.type()
                 if route.style() is not None:
@@ -1042,8 +1085,13 @@ def formatXMLMetadata(
 
             try:
                 attributes = {}
-                if border.allegiance() is not None:
-                    attributes['Allegiance'] = border.allegiance()
+
+                if border.allegianceCode():
+                    allegianceCode = survey.formatAllegianceCodeString(
+                        string=border.allegianceCode(),
+                        reporter=reporter)
+                    if allegianceCode:
+                        attributes['Allegiance'] = allegianceCode
                 # NOTE: Only write out show label and wrap if they are not the
                 # default (true and false respectively)
                 if border.showLabel() is not None and not border.showLabel():
@@ -1104,7 +1152,7 @@ def formatXMLMetadata(
                         allowInvalid=True,
                         reporter=reporter)
                     if labelPosition is not None:
-                        regionElement['LabelPosition'] = labelPosition
+                        attributes['LabelPosition'] = labelPosition
                 if region.labelOffsetX() is not None:
                     attributes['LabelOffsetX'] = common.formatNumber(
                         number=region.labelOffsetX(),
@@ -1268,12 +1316,28 @@ def formatJSONMetadata(
     if allegiances:
         allegiancesElement = []
         sectorElement['Allegiances'] = allegiancesElement
-        for allegiance in sorted(allegiances, key=lambda a: a.code()):
-            allegianceElement = {
-                'Name': allegiance.name(),
-                'Code': allegiance.code()}
-            if allegiance.base() is not None:
-                allegianceElement['Base'] = allegiance.base()
+        for allegianceCode in sorted(allegiances, key=lambda a: a.code()):
+            allegianceElement = {}
+
+            name = survey.formatAllegianceNameString(
+                string=allegianceCode.name(),
+                reporter=reporter)
+            if name is not None:
+                allegianceElement['Name'] = name
+
+            code = survey.formatAllegianceCodeString(
+                string=allegianceCode.code(),
+                reporter=reporter)
+            if code is not None:
+                allegianceElement['Code'] = code
+
+            if allegianceCode.base() is not None:
+                base = survey.formatAllegianceCodeString(
+                    string=allegianceCode.base(),
+                    reporter=reporter)
+                if base is not None:
+                    allegianceElement['Base'] = base
+
             allegiancesElement.append(allegianceElement)
 
     routes = metadata.routes()
@@ -1309,8 +1373,12 @@ def formatJSONMetadata(
                     routeElement['EndOffsetX'] = route.endOffsetX()
                 if route.endOffsetY() is not None:
                     routeElement['EndOffsetY'] = route.endOffsetY()
-                if route.allegiance() is not None:
-                    routeElement['Allegiance'] = route.allegiance()
+                if route.allegianceCode() is not None:
+                    allegianceCode = survey.formatAllegianceCodeString(
+                        string=route.allegianceCode(),
+                        reporter=reporter)
+                    if allegianceCode is not None:
+                        routeElement['Allegiance'] = allegianceCode
                 if route.type() is not None:
                     routeElement['Type'] = route.type()
                 if route.style() is not None:
@@ -1334,13 +1402,21 @@ def formatJSONMetadata(
                 reporter.pushPrefix(f'Border {index + 1}: ')
 
             try:
-                borderElement = {
-                    'Path': survey.formatHexListString(
-                        hexes=border.hexes(),
-                        allowInvalid=True,
-                        reporter=reporter)}
-                if border.allegiance() is not None:
-                    borderElement['Allegiance'] = border.allegiance()
+                borderElement = {}
+
+                path = survey.formatHexListString(
+                    hexes=border.hexes(),
+                    allowInvalid=True,
+                    reporter=reporter)
+                if path is not None:
+                    borderElement['Path'] = path
+
+                if border.allegianceCode() is not None:
+                    allegianceCode = survey.formatAllegianceCodeString(
+                        string=border.allegianceCode(),
+                        reporter=reporter)
+                    if allegianceCode:
+                        borderElement['Allegiance'] = allegianceCode
                 # NOTE: Only write out show label and wrap if they are not the
                 # default (true and false respectively)
                 if border.showLabel() is not None and not border.showLabel():
@@ -1380,11 +1456,15 @@ def formatJSONMetadata(
                 reporter.pushPrefix(f'Region {index + 1}: ')
 
             try:
-                regionElement = {
-                    'Path': survey.formatHexListString(
-                        hexes=region.hexes(),
-                        allowInvalid=True,
-                        reporter=reporter)}
+                regionElement = {}
+
+                path = survey.formatHexListString(
+                    hexes=region.hexes(),
+                    allowInvalid=True,
+                    reporter=reporter)
+                if path is not None:
+                    regionElement['Path'] = path
+
                 # NOTE: Only write out show label and wrap if they are not the
                 # default (true and false respectively)
                 if region.showLabel() is not None and not region.showLabel():

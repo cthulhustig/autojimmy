@@ -173,7 +173,7 @@ class DbSophontPopulation(DbWorldObject):
         super().__init__(id=id, worldId=worldId)
 
         common.validateMandatoryStr(name='sophontId', value=sophontId, allowEmpty=False)
-        common.validateOptionalInt(name='percentage', value=percentage, min=0, max=100)
+        survey.validateOptionalSophontPercentage(name='percentage', value=percentage)
         common.validateMandatoryBool(name='isHomeWorld', value=isHomeWorld)
         common.validateMandatoryBool(name='isDieBack', value=isDieBack)
 
@@ -772,10 +772,10 @@ class DbAllegiance(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-        common.validateOptionalStr(name='legacy', value=legacy, allowEmpty=False)
-        common.validateOptionalStr(name='base', value=base, allowEmpty=False)
+        survey.validateMandatoryAllegianceCode(name='code', value=code)
+        survey.validateMandatoryAllegianceName(name='name', value=name)
+        survey.validateOptionalAllegianceCode(name='legacy', value=legacy)
+        survey.validateOptionalAllegianceCode(name='base', value=base)
         survey.validateOptionalHtmlColour(name='routeColour', value=routeColour)
         survey.validateOptionalLineStyle(name='routeStyle', value=routeStyle)
         survey.validateOptionalLineWidth(name='routeWidth', value=routeWidth)
@@ -830,8 +830,8 @@ class DbSophont(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
+        survey.validateMandatorySophontCode(name='code', value=code)
+        survey.validateMandatorySophontName(name='name', value=name)
         common.validateMandatoryBool(name='isMajor', value=isMajor)
 
         self._code = code

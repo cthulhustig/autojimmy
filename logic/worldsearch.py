@@ -264,7 +264,10 @@ class ZoneFiler(WorldFilter):
         if not operationString:
             return None
 
-        return f'Zone {operationString} {astronomer.zoneTypeDescription(self._value)}'
+        zone = astronomer.zoneTypeDescription(self._value)
+        if not zone:
+            zone = 'Unknown'
+        return f'Zone {operationString} {zone}'
 
     def match(
             self,

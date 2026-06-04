@@ -130,8 +130,8 @@ class RawSophontPopulation(object):
             ) -> None:
         super().__init__()
 
-        common.validateMandatoryStr(name='sophont', value=sophont, allowEmpty=False)
-        common.validateOptionalInt(name='percentage', value=percentage, min=0, max=100)
+        survey.validateMandatorySophontName(name='sophont', value=sophont)
+        survey.validateOptionalSophontPercentage(name='percentage', value=percentage)
 
         self._sophont = sophont
         self._percentage = percentage
@@ -188,10 +188,10 @@ class RawRemarks(object):
         common.validateOptionalCollection(name='majorRaceHomeWorlds', value=majorRaceHomeWorlds, elementType=RawSophontPopulation)
         common.validateOptionalCollection(name='minorRaceHomeWorlds', value=minorRaceHomeWorlds, elementType=RawSophontPopulation)
         common.validateOptionalCollection(name='sophontPopulations', value=sophontPopulations, elementType=RawSophontPopulation)
-        common.validateOptionalCollection(name='dieBackSophonts', value=dieBackSophonts, elementType=str)
+        common.validateOptionalCollection(name='dieBackSophonts', value=dieBackSophonts, elementType=str, validationFn=lambda n, i, v: survey.validateMandatorySophontName(name=f'{n}[{i}]', value=v))
         common.validateOptionalCollection(name='owningSystems', value=owningSystems, elementType=RawHexRef)
         common.validateOptionalCollection(name='colonySystems', value=colonySystems, elementType=RawHexRef)
-        common.validateOptionalCollection(name='rulingAllegiances', value=rulingAllegiances, elementType=str)
+        common.validateOptionalCollection(name='rulingAllegiances', value=rulingAllegiances, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryAllegianceCode(name=f'{n}[{i}]', value=v))
         common.validateOptionalCollection(name='researchStations', value=researchStations, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryResearchStation(name=f'{n}[{i}]', value=v))
         common.validateOptionalCollection(name='customRemarks', value=customRemarks, elementType=str)
 
@@ -294,7 +294,7 @@ class RawWorld(object):
             x: int,
             y: int,
             name: typing.Optional[str] = None,
-            allegiance: typing.Optional[str] = None,
+            allegianceCode: typing.Optional[str] = None,
             zone: typing.Optional[str] = None,
             uwp: typing.Optional[RawUWP] = None,
             economics: typing.Optional[RawEconomics] = None,
@@ -312,7 +312,7 @@ class RawWorld(object):
         survey.validateMandatoryHexX(name='x', value=x)
         survey.validateMandatoryHexY(name='y', value=y)
         common.validateOptionalStr(name='name', value=name, allowEmpty=False)
-        common.validateOptionalStr(name='allegiance', value=allegiance, allowEmpty=False)
+        survey.validateOptionalAllegianceCode(name='allegianceCode', value=allegianceCode)
         survey.validateOptionalZone(name='zone', value=zone)
         common.validateOptionalObject(name='uwp', value=uwp, type=RawUWP)
         common.validateOptionalObject(name='economics', value=economics, type=RawEconomics)
@@ -328,7 +328,7 @@ class RawWorld(object):
         self._x = x
         self._y = y
         self._name = name
-        self._allegiance = allegiance
+        self._allegianceCode = allegianceCode
         self._zone = zone
         self._uwp = uwp
         self._economics = economics
@@ -350,8 +350,8 @@ class RawWorld(object):
     def name(self) -> typing.Optional[str]:
         return self._name
 
-    def allegiance(self) -> typing.Optional[str]:
-        return self._allegiance
+    def allegianceCode(self) -> typing.Optional[str]:
+        return self._allegianceCode
 
     def zone(self) -> typing.Optional[str]:
         return self._zone
@@ -395,9 +395,9 @@ class RawAllegiance(object):
             ) -> None:
         super().__init__()
 
-        common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-        common.validateOptionalStr(name='base', value=base, allowEmpty=False)
+        survey.validateMandatoryAllegianceCode(name='code', value=code)
+        survey.validateMandatoryAllegianceName(name='name', value=name)
+        survey.validateOptionalAllegianceCode(name='base', value=base)
 
         self._code = code
         self._name = name
@@ -423,7 +423,7 @@ class RawRoute(object):
             startOffsetY: typing.Optional[int],
             endOffsetX: typing.Optional[int],
             endOffsetY: typing.Optional[int],
-            allegiance: typing.Optional[str],
+            allegianceCode: typing.Optional[str],
             type: typing.Optional[str],
             style: typing.Optional[str],
             colour: typing.Optional[str],
@@ -441,7 +441,7 @@ class RawRoute(object):
         common.validateOptionalInt(name='startOffsetY', value=startOffsetY)
         common.validateOptionalInt(name='endOffsetX', value=endOffsetX)
         common.validateOptionalInt(name='endOffsetY', value=endOffsetY)
-        common.validateOptionalStr(name='allegiance', value=allegiance, allowEmpty=False)
+        survey.validateOptionalAllegianceCode(name='allegianceCode', value=allegianceCode)
         common.validateOptionalStr(name='type', value=type, allowEmpty=False)
         survey.validateOptionalLineStyle(name='style', value=style)
         survey.validateOptionalHtmlColour(name='colour', value=colour)
@@ -455,7 +455,7 @@ class RawRoute(object):
         self._startOffsetY = startOffsetY
         self._endOffsetX = endOffsetX
         self._endOffsetY = endOffsetY
-        self._allegiance = allegiance
+        self._allegianceCode = allegianceCode
         self._type = type
         self._style = style
         self._colour = colour
@@ -485,8 +485,8 @@ class RawRoute(object):
     def endOffsetY(self) -> typing.Optional[int]:
         return self._endOffsetY
 
-    def allegiance(self) -> typing.Optional[str]:
-        return self._allegiance
+    def allegianceCode(self) -> typing.Optional[str]:
+        return self._allegianceCode
 
     def type(self) -> typing.Optional[str]:
         return self._type
@@ -506,7 +506,7 @@ class RawBorder(object):
     def __init__(
             self,
             hexes: typing.Sequence[typing.Tuple[int, int]],
-            allegiance: typing.Optional[str],
+            allegianceCode: typing.Optional[str],
             showLabel: typing.Optional[bool],
             wrapLabel: typing.Optional[bool],
             labelHexX: typing.Optional[int],
@@ -520,7 +520,7 @@ class RawBorder(object):
         super().__init__()
 
         survey.validateMandatoryHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
-        common.validateOptionalStr(name='allegiance', value=allegiance, allowEmpty=False)
+        survey.validateOptionalAllegianceCode(name='allegianceCode', value=allegianceCode)
         common.validateOptionalBool(name='showLabel', value=showLabel)
         common.validateOptionalBool(name='wrapLabel', value=wrapLabel)
         survey.validateOptionalHexX(name='labelHexX', value=labelHexX, allowInvalid=True)
@@ -532,7 +532,7 @@ class RawBorder(object):
         survey.validateOptionalHtmlColour(name='colour', value=colour)
 
         self._hexes = list(hexes)
-        self._allegiance = allegiance
+        self._allegianceCode = allegianceCode
         self._showLabel = showLabel
         self._wrapLabel = wrapLabel
         self._labelHexX = labelHexX
@@ -546,8 +546,8 @@ class RawBorder(object):
     def hexes(self) -> typing.Sequence[typing.Tuple[int, int]]:
         return common.ConstSequenceRef(self._hexes)
 
-    def allegiance(self) -> typing.Optional[str]:
-        return self._allegiance
+    def allegianceCode(self) -> typing.Optional[str]:
+        return self._allegianceCode
 
     def showLabel(self) -> typing.Optional[bool]:
         return self._showLabel

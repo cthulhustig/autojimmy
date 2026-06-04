@@ -220,16 +220,6 @@ def _sectorWorldOffsetToHex(
 
     return (hexX, hexY, worldOffsetX if worldOffsetX else None, worldOffsetY if worldOffsetY else None)
 
-_SubsectorWidth = 8 # parsecs
-_SubsectorHeight = 10 # parsecs
-def _hexToSubsectorCode(
-        hexX: int,
-        hexY: int
-        ) -> str:
-    indexX = (hexX - 1) // _SubsectorWidth
-    indexY = (hexY - 1) // _SubsectorHeight
-    return chr(ord('A') + (indexY * 4) + indexX)
-
 def _findUsedAllegianceCodes(
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld]
@@ -237,7 +227,7 @@ def _findUsedAllegianceCodes(
     usedCodes: typing.Set[str] = set()
     if rawSystems:
         for rawWorld in rawSystems:
-            rawAllegianceCode = rawWorld.allegiance()
+            rawAllegianceCode = rawWorld.allegianceCode()
             if rawAllegianceCode and rawAllegianceCode not in _IgnoreAllegianceCodes:
                 usedCodes.add(rawAllegianceCode)
 
@@ -248,12 +238,12 @@ def _findUsedAllegianceCodes(
                         usedCodes.add(rawAllegianceCode)
     if rawMetadata.routes():
         for rawRoute in rawMetadata.routes():
-            rawAllegianceCode = rawRoute.allegiance()
+            rawAllegianceCode = rawRoute.allegianceCode()
             if rawAllegianceCode and rawAllegianceCode not in _IgnoreAllegianceCodes:
                 usedCodes.add(rawAllegianceCode)
     if rawMetadata.borders():
         for rawBorder in rawMetadata.borders():
-            rawAllegianceCode = rawBorder.allegiance()
+            rawAllegianceCode = rawBorder.allegianceCode()
             if rawAllegianceCode and rawAllegianceCode not in _IgnoreAllegianceCodes:
                 usedCodes.add(rawAllegianceCode)
     return usedCodes
@@ -1734,7 +1724,7 @@ def _createDbSystems(
                     # In the database a green zone is represented by null
                     dbZone = None
 
-            rawAllegianceCode = rawWorld.allegiance()
+            rawAllegianceCode = rawWorld.allegianceCode()
             dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
             if rawAllegianceCode and not dbAllegiance:
                 # This should never happen. The worlds should already have been processed
@@ -1827,7 +1817,7 @@ def _createDbRoutes(
 
     if rawMetadata.routes():
         for rawRoute in rawMetadata.routes():
-            rawAllegianceCode = rawRoute.allegiance()
+            rawAllegianceCode = rawRoute.allegianceCode()
             dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
             if rawAllegianceCode and not dbAllegiance:
                 # This should never happen. The routes should already have been processed
@@ -1926,7 +1916,7 @@ def _createDbBorders(
                 logging.warning(f'Converter ignoring border with empty hex list in {rawMetadata.canonicalName()} at {milieu}')
                 continue
 
-            rawAllegianceCode = rawBorder.allegiance()
+            rawAllegianceCode = rawBorder.allegianceCode()
             dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
             if rawAllegianceCode and not dbAllegiance:
                 # This should never happen. The borders should already have been processed
@@ -2370,7 +2360,7 @@ def _createRawRoutes(
                 startOffsetY=dbRoute.startOffsetY() if dbRoute.startOffsetY() else None,
                 endOffsetX=dbRoute.endOffsetX() if dbRoute.endOffsetX() else None,
                 endOffsetY=dbRoute.endOffsetY() if dbRoute.endOffsetY() else None,
-                allegiance=dbAllegiance.code() if dbAllegiance else None, # TODO: Should this be the code or the name
+                allegianceCode=dbAllegiance.code() if dbAllegiance else None, # TODO: Should this be the code or the name
                 type=dbRoute.type(),
                 style=dbRoute.style(),
                 colour=dbRoute.colour(),
@@ -2398,12 +2388,11 @@ def _createRawBorders(
                         sector=dbSector.name(),
                         milieu=dbSector.milieu()))
 
-            labelHex = labelOffsetX = labelOffsetY = None
+            labelHexX = labelHexY = labelOffsetX = labelOffsetY = None
             if dbBorder.labelWorldX() is not None and dbBorder.labelWorldY() is not None:
-                hexX, hexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
+                labelHexX, labelHexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
                     worldX=dbBorder.labelWorldX(),
                     worldY=dbBorder.labelWorldY())
-                labelHex = survey.formatHexString(x=hexX, y=hexY)
 
                 # NOTE: The 0.7 divisor is to mimic how Traveller Map scales the offset
                 # in DrawMicroLabels
@@ -2414,10 +2403,11 @@ def _createRawBorders(
 
             rawBorders.append(survey.RawBorder(
                 hexes=dbBorder.hexes(),
-                allegiance=dbAllegiance.code() if dbAllegiance else None, # TODO: Should this be the code or the name
+                allegianceCode=dbAllegiance.code() if dbAllegiance else None, # TODO: Should this be the code or the name
                 showLabel=dbBorder.showLabel(),
                 wrapLabel=dbBorder.wrapLabel(),
-                labelHex=labelHex,
+                labelHexX=labelHexX,
+                labelHexY=labelHexY,
                 labelOffsetX=labelOffsetX,
                 labelOffsetY=labelOffsetY,
                 label=dbBorder.label(),
@@ -2433,12 +2423,11 @@ def _createRawRegions(
     if dbSector.regions():
         rawRegions = []
         for dbRegion in dbSector.regions():
-            labelHex = labelOffsetX = labelOffsetY = None
+            labelHexX = labelHexY = labelOffsetX = labelOffsetY = None
             if dbRegion.labelWorldX() is not None and dbRegion.labelWorldY() is not None:
-                hexX, hexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
+                labelHexX, labelHexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
                     worldX=dbRegion.labelWorldX(),
                     worldY=dbRegion.labelWorldY())
-                labelHex = survey.formatHexString(x=hexX, y=hexY)
 
                 # NOTE: The 0.7 divisor is to mimic how Traveller Map scales the offset
                 # in DrawMicroLabels
@@ -2451,7 +2440,8 @@ def _createRawRegions(
                 hexes=dbRegion.hexes(),
                 showLabel=dbRegion.showLabel(),
                 wrapLabel=dbRegion.wrapLabel(),
-                labelHex=labelHex,
+                labelHexX=labelHexX,
+                labelHexY=labelHexY,
                 labelOffsetX=labelOffsetX,
                 labelOffsetY=labelOffsetY,
                 label=dbRegion.label(),
@@ -2466,12 +2456,11 @@ def _createRawLabels(
     if dbSector.labels():
         rawLabels = []
         for dbLabel in dbSector.labels():
-            labelHex = labelOffsetX = labelOffsetY = None
+            labelHexX = labelHexY = labelOffsetX = labelOffsetY = None
             if dbLabel.worldX() is not None and dbLabel.worldY() is not None:
-                hexX, hexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
+                labelHexX, labelHexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
                     worldX=dbLabel.worldX(),
                     worldY=dbLabel.worldY())
-                labelHex = survey.formatHexString(x=hexX, y=hexY)
 
                 # NOTE: The 0.7 divisor is to mimic how Traveller Map scales the offset
                 # in DrawMicroLabels
@@ -2482,7 +2471,8 @@ def _createRawLabels(
 
             rawLabels.append(survey.RawLabel(
                 text=dbLabel.text(),
-                hex=labelHex,
+                hexX=labelHexX,
+                hexY=labelHexY,
                 offsetX=labelOffsetX,
                 offsetY=labelOffsetY,
                 colour=dbLabel.colour(),
@@ -2607,10 +2597,10 @@ def _createRawWorlds(
                 strangeness=dbMainWorld.strangeness() if dbMainWorld else None,
                 symbols=dbMainWorld.symbols() if dbMainWorld else None)
 
-            rawPBG = survey.RawCulture(
+            rawPBG = survey.RawPBG(
                 populationMultiplier=dbMainWorld.populationMultiplier() if dbMainWorld else None,
-                planetoidBelts=survey.ehexFromInteger(value=dbSystem.planetoidBeltCount(), default=None),
-                gasGiants=survey.ehexFromInteger(value=dbSystem.gasGiantCount(), default=None))
+                planetoidBeltCount=survey.ehexFromInteger(value=dbSystem.planetoidBeltCount(), default=None),
+                gasGiantCount=survey.ehexFromInteger(value=dbSystem.gasGiantCount(), default=None))
 
             numPlanetoidBelt = dbSystem.planetoidBeltCount()
             numGasGiants = dbSystem.gasGiantCount()
@@ -2694,7 +2684,7 @@ def _createRawWorlds(
                 if dbMainWorld.colonySystems():
                     rawColonySystems = []
                     for dbColony in dbMainWorld.colonySystems():
-                        rawOwningSystems.append(survey.RawHexRef(
+                        rawColonySystems.append(survey.RawHexRef(
                             x=dbColony.hexX(),
                             y=dbColony.hexY(),
                             sector=dbColony.sectorAbbreviation()))
@@ -2713,7 +2703,7 @@ def _createRawWorlds(
                                 sector=dbSector.name(),
                                 milieu=dbSector.milieu()))
                             continue
-                        rawRulingAllegiances.append(dbRulingAllegiance.name()) # TODO: Should this be name or code?
+                        rawRulingAllegiances.append(dbRulingAllegiance.code())
 
                 rawResearchStations: typing.Optional[typing.List[str]] = None
                 if dbMainWorld.researchStations():
@@ -2752,7 +2742,7 @@ def _createRawWorlds(
                 x=dbSystem.hexX(),
                 y=dbSystem.hexY(),
                 name=dbSystem.name(),
-                allegiance=dbSystemAllegiance.code() if dbSystemAllegiance else None,
+                allegianceCode=dbSystemAllegiance.code() if dbSystemAllegiance else None,
                 zone=dbSystem.zone(),
                 uwp=rawUWP,
                 economics=rawEconomics,
@@ -2763,8 +2753,6 @@ def _createRawWorlds(
                 pbg=rawPBG,
                 systemWorlds=rawSystemWorldCount,
                 stars=rawStars,
-                sectorAbbreviation=dbSector.abbreviation(),
-                subSectorCode=_hexToSubsectorCode(hexX=dbSystem.hexX(), hexY=dbSystem.hexY()),
                 # TODO: I'm not sure if I need to bother supporting these
                 importance=None))
 

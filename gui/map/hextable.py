@@ -684,7 +684,8 @@ class HexTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.Zone:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, astronomer.zoneTypeToCode(world.zone()))
+                        zoneCode = astronomer.zoneTypeToCode(world.zone())
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, zoneCode if zoneCode else '<Unknown>')
                         tagLevel = self._worldTagging.calculateZoneTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.StarPort:
@@ -1077,10 +1078,10 @@ class HexTable(gui.FrozenColumnListTable):
             return gui.createStringToolTip('Dead Space')
 
         if columnType == self.ColumnType.Zone:
-            zone = world.zone()
+            zone = astronomer.zoneTypeDescription(world.zone())
             if not zone:
                 return None
-            return gui.createStringToolTip(astronomer.zoneTypeDescription(zone))
+            return gui.createStringToolTip(zone)
         elif columnType == self.ColumnType.StarPort:
             return gui.createStringToolTip(world.uwp().description(astronomer.UWP.Element.StarPort))
         elif columnType == self.ColumnType.TechLevel:

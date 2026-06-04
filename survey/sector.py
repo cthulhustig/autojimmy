@@ -113,6 +113,12 @@ def _createWorld(
             reporter.addMessage('Ignoring system with no hex')
         return None
 
+    systemAllegianceCode = attributes.get(_WorldAttribute.Allegiance)
+    if systemAllegianceCode is not None:
+        systemAllegianceCode = survey.parseAllegianceCodeString(
+            string=systemAllegianceCode,
+            reporter=reporter)
+
     zone = attributes.get(_WorldAttribute.Zone)
     if zone is not None:
         zone = survey.parseSystemZoneString(zone=zone, reporter=reporter)
@@ -224,11 +230,7 @@ def _createWorld(
         x=hexX,
         y=hexY,
         name=attributes.get(_WorldAttribute.Name),
-        # TODO: Allegiance should probably have some kind of validation. I expect
-        # there should be at least a valid character set. I probably want to avoid
-        # things like brackets as they'd break some of the remarks formatting where
-        # it wraps names in brackets.
-        allegiance=attributes.get(_WorldAttribute.Allegiance),
+        allegianceCode=systemAllegianceCode,
         zone=zone,
         uwp=uwp,
         economics=economics,
@@ -580,14 +582,13 @@ def _worldAttribute(
                 count=systemWorlds,
                 reporter=reporter)
     elif attribute is _WorldAttribute.Allegiance:
-        value = world.allegiance()
+        value = world.allegianceCode()
     elif attribute is _WorldAttribute.Stellar:
         stars = world.stars()
         if stars is not None:
             value = survey.formatSystemStellarString(
                 stars=[(s.luminosityClass(), s.spectralClass(), s.spectralScale()) for s in stars],
                 reporter=reporter)
-        value = world.stars()
 
     if value is None:
         return default

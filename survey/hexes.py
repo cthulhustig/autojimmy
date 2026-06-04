@@ -124,7 +124,7 @@ def formatHexListString(
             if reporter:
                 reporter.addMessage(f'Ignoring Hex List with invalid hex "{x}, {y}" at index {index}')
             return None
-        strings.append()
+        strings.append(hex)
     return ' '.join(strings)
 
 def validateMandatoryHexX(

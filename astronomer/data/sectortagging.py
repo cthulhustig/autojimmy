@@ -2,8 +2,9 @@ import common
 import enum
 import typing
 
-# TODO: This probably needs to support arbitrary tags so the user
-# can add their own
+# TODO: This needs to support arbitrary tags. The fact it doesn't means
+# I will loose any tags I don't explicitly cover if the user imports a
+# sector then exports it.
 
 class SectorTag(enum.Enum):
     Official = 'Official'

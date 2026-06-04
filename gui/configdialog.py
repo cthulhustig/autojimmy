@@ -613,11 +613,19 @@ class ConfigDialog(gui.DialogEx):
         self._tabWidget.addTab(tab, 'Rules')
 
     def _setupTaggingTabs(self) -> None:
+        zoneDescriptions = {}
+        zoneAliases = {}
+        for zone in astronomer.ZoneType:
+            description = astronomer.zoneTypeDescription(zone)
+            code = astronomer.zoneTypeToCode(zone)
+            if description and code:
+                zoneDescriptions[zone] = description
+                zoneAliases[zone] = code
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Zone,
             displayName='Zone',
-            keyDescriptions={zone: astronomer.zoneTypeDescription(zone) for zone in astronomer.ZoneType},
-            keyAliases={zone: astronomer.zoneTypeToCode(zone) for zone in astronomer.ZoneType})
+            keyDescriptions=zoneDescriptions,
+            keyAliases=zoneAliases)
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.StarPort,

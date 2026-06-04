@@ -15,6 +15,7 @@ class WorldReference(object):
         self._hexX = hexX
         self._hexY = hexY
         self._sectorAbbreviation = sectorAbbreviation
+        self._string = None
 
     def hexX(self) -> int:
         return self._hexX
@@ -24,6 +25,17 @@ class WorldReference(object):
 
     def sectorAbbreviation(self) -> typing.Optional[str]:
         return self._sectorAbbreviation
+
+    def string(self) -> str:
+        if self._string is None:
+            if self._sectorAbbreviation is None:
+                self._string = survey.formatHexString(x=self._hexX, y=self._hexY)
+            else:
+                self._string = astronomer.formatSectorHex(
+                    sectorName=self._sectorAbbreviation,
+                    offsetX=self._hexX,
+                    offsetY=self._hexY)
+        return self._string
 
 class World(astronomer.Entity):
     def __init__(
@@ -254,7 +266,7 @@ class World(astronomer.Entity):
     def sophontCount(self) -> int:
         return len(self._sophontPopulationMap)
 
-    def rulingAllegiances(self) -> typing.Optional[astronomer.Allegiance]:
+    def rulingAllegiances(self) -> typing.Sequence[astronomer.Allegiance]:
         return common.ConstSequenceRef(self._rulingAllegiances)
 
     def ownerCount(self) -> int:
@@ -269,8 +281,8 @@ class World(astronomer.Entity):
     def colonyWorldReferences(self) -> typing.Sequence[WorldReference]:
         return common.ConstSequenceRef(self._colonyWorldRefs)
 
-    def researchStations(self) -> typing.Optional[str]:
-        return self._researchStations
+    def researchStations(self) -> typing.Sequence[str]:
+        return common.ConstSequenceRef(self._researchStations)
 
     def researchStationCount(self) -> int:
         return len(self._researchStations)

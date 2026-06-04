@@ -2,6 +2,8 @@ from .utils import *
 from .ehex import *
 from .rawobjects import *
 from .hexes import *
+from .sophont import *
+from .allegiance import *
 from .uwp import *
 from .economics import *
 from .culture import *

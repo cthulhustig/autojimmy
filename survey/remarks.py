@@ -1,5 +1,6 @@
 import common
 import re
+import survey
 import typing
 
 # Most of these are based on the descriptions here https://travellermap.com/doc/secondsurvey
@@ -17,7 +18,11 @@ _ValidTradeCodes = set([
 ])
 
 # Military Rule - "Mr(XXXX)" where XXXX is controlling allegiance short code
-_MilitaryRulePattern = re.compile(r'^Mr\(\s*(\S{4})\s*\)$')
+# NOTE: It's important that the pattern here is kept in sync with the pattern
+# used to validate allegiance codes in allegiance.py
+# NOTE: Although the Second Survey spec shows the allegiance code as being
+# 4 characters, I've also added support for legacy 1 & 2 character codes
+_MilitaryRulePattern = re.compile(r'^Mr\(\s*([0-9A-Za-z\-\']{1,4})\s*\)$')
 
 # Research Station - "RsX" where X is optional grade of station
 # I believe the optional character references the specific research stations
@@ -97,27 +102,30 @@ _SophontMinorRaceUnofficialPattern = re.compile(r'^\(\s*(?=\S)(.+?)\s*\)(0|[1-9]
 
 # T5 Sophont Population: "CODE#" where CODE is the sophont code and # is the
 # population percentage in 10 precent intervals or W if 100%.
+# NOTE: It's important that the pattern here is kept in sync with the pattern
+# used to validate sophont code in sophont.py
 # NOTE: I support an optional ':' separator between the code and population.
 # It's not part of the of the second survey spec but some sector files do use
 # it.
-# NOTE: I've used \S (anything that's not a space) for the code (rather than \w)
-# as there are some uses of none alphabetic characters (notably Za'tW in M1105
-# Wrenton)
 # NOTE: The docs only have 'W' as meaning 100% for but I've allowed 'w' in order
 # to be more accepting
 # NOTE: The percentage can be set to '?' to mean unknown population. It's not
 # mentioned documentation but they are used in the Traveller Map sectors
-_T5SophontPopulationPattern = re.compile(r'^(\S{4}):?([0-9wW?])$')
+_T5SophontPopulationPattern = re.compile(r'^([0-9A-Za-z\-\']{4}):?([0-9wW?])$')
 
 # Unofficial T5 Sophont Population: "CODE###%" where CODE is the sophont code
 # and ### is the population percentage in the range 0-100
+# NOTE: It's important that the pattern here is kept in sync with the pattern
+# used to validate sophont code in sophont.py
 # NOTE: This format isn't covered by the documentation but it is used in the
 # Traveller Map data
-_T5SophontPopulationUnofficialPattern = re.compile(r'^(\S{4}):?(0|[1-9][0-9]?|100)%$')
+_T5SophontPopulationUnofficialPattern = re.compile(r'^([0-9A-Za-z\-\']{4}):?(0|[1-9][0-9]?|100)%$')
 
 # Legacy Sophont Populations: "X:#" where X is one of the legacy single letter
 # sophont codes and # is the population percentage in 10 percent intervals or w
 # if 100%.
+# NOTE: It's important that the pattern here is kept in sync with the pattern
+# used to validate sophont code in sophont.py
 # NOTE: I've made the ':' separator optional as a separator isn't required due
 # to the fields being a fixed length
 # NOTE: The docs only have 'w' as meaning 100% for but I've allowed 'W' in order
@@ -129,6 +137,8 @@ _LegacySophontPopulationPattern = re.compile(r'^([ACDFHIMVXZ]):?([0-9wW?])$')
 # Unofficial Legacy Sophont Populations: "X:###%" where X is one of the legacy
 # single letter sophont codes and ### is the population percentage in the range
 # 0-100
+# NOTE: It's important that the pattern here is kept in sync with the pattern
+# used to validate sophont code in sophont.py
 # NOTE: This format isn't covered by the documentation but it is used in the
 # Traveller Map data
 _LegacySophontPopulationUnofficialPattern = re.compile(r'^([ACDFHIMVXZ]):?(0|[1-9][0-9]?|100)%$')
@@ -351,7 +361,15 @@ def parseSystemRemarksString(
 
         result = _MilitaryRulePattern.match(remark)
         if result:
-            rulingAllegiances.append(result.group(1))
+            allegianceCode = survey.parseAllegianceCodeString(
+                string=result.group(1))
+            if not allegianceCode:
+                if reporter:
+                    reporter.addMessage('Ignoring Military Rule remark with invalid Allegiance Code "{code}"'.format(
+                        code=result.group(1)))
+                continue
+
+            rulingAllegiances.append(allegianceCode)
 
             if 'Mr' not in tradeCodes:
                 tradeCodes.append('Mr')
@@ -500,7 +518,7 @@ def formatSystemRemarksString(
 
     return ' '.join(remarks)
 
-def _mandatoryPatternValidator(
+def _mandatoryStringValidator(
         name: str,
         value: str,
         element: str,
@@ -509,7 +527,7 @@ def _mandatoryPatternValidator(
     if value not in allowed:
         raise ValueError(f'{name} must be a valid {element}')
 
-def _optionalPatternValidator(
+def _optionalStringValidator(
         name: str,
         value: str,
         element: str,
@@ -522,7 +540,7 @@ def validateMandatoryTradeCode(name: str, value: str) -> str:
     return common.validateMandatoryStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _mandatoryPatternValidator(
+        validationFn=lambda name, value: _mandatoryStringValidator(
             name=name,
             value=value,
             element='Trade Code',
@@ -532,7 +550,7 @@ def validateOptionalTradeCode(name: str, value: typing.Optional[str]) -> typing.
     return common.validateOptionalStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _optionalPatternValidator(
+        validationFn=lambda name, value: _optionalStringValidator(
             name=name,
             value=value,
             element='Trade Code',
@@ -542,7 +560,7 @@ def validateMandatoryResearchStation(name: str, value: str) -> str:
     return common.validateMandatoryStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _mandatoryPatternValidator(
+        validationFn=lambda name, value: _mandatoryStringValidator(
             name=name,
             value=value,
             element='Research Station',
@@ -552,8 +570,14 @@ def validateOptionalResearchStation(name: str, value: typing.Optional[str]) -> t
     return common.validateOptionalStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _optionalPatternValidator(
+        validationFn=lambda name, value: _optionalStringValidator(
             name=name,
             value=value,
             element='Research Station',
             allowed=_ValidResearchStations))
+
+def validateMandatorySophontPercentage(name: str, value: int) -> int:
+    return common.validateMandatoryInt(name=name, value=value, min=0, max=100)
+
+def validateOptionalSophontPercentage(name: str, value: typing.Optional[int]) -> typing.Optional[int]:
+    return common.validateOptionalInt(name=name, value=value, min=0, max=100)

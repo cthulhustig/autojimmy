@@ -31,11 +31,11 @@ _ZoneTypeDescriptionMap = {
 def codeToZoneType(zoneString: str) -> typing.Optional[ZoneType]:
     return _ZoneCodeToTypeMap.get(zoneString)
 
-def zoneTypeToCode(zoneType: ZoneType) -> str:
-    return _ZoneTypeToCodeMap.get(zoneType, '')
+def zoneTypeToCode(zoneType: ZoneType) -> typing.Optional[str]:
+    return _ZoneTypeToCodeMap.get(zoneType)
 
-def zoneTypeDescription(zoneType: ZoneType) -> str:
-    return _ZoneTypeDescriptionMap.get(zoneType, '')
+def zoneTypeDescription(zoneType: ZoneType) -> typing.Optional[str]:
+    return _ZoneTypeDescriptionMap.get(zoneType)
 
 def zoneTypeDescriptionMap() -> typing.Mapping[ZoneType, str]:
     return _ZoneTypeDescriptionMap

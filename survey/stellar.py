@@ -48,7 +48,7 @@ def formatSystemStellarString(
         ) -> str:
     string = ''
     for luminosityClass, spectralClass, spectralScale in stars:
-        isValid = False
+        isValid = True
 
         if luminosityClass not in _ValidLuminosityClasses:
             if reporter:

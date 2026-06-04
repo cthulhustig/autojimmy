@@ -98,12 +98,12 @@ def createHexToolTip(
     toolTip += f'<li>Sector Position: ({hex.sectorX()}, {hex.sectorY()})</li>'
 
     if world:
-        zone = world.zone()
+        zone = astronomer.zoneTypeDescription(world.zone())
         if zone:
             tagLevel = worldTagging.calculateZoneTagLevel(world=world) if worldTagging else None
             toolTip += '<li><span style="{style}">Zone: {zone}</span></li>'.format(
                 style=formatTaggingStyle(level=tagLevel),
-                zone=html.escape(astronomer.zoneTypeDescription(zone)))
+                zone=html.escape(zone))
 
     refuellingTypes = []
     if world:

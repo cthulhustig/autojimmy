@@ -11,9 +11,6 @@ def _mapDbMilieuToAstronomerMilieu(milieu: str) -> typing.Optional[astronomer.Mi
         return None
     return astronomer.Milieu[milieu]
 
-def _mapAstronomerMilieuToDbMilieu(milieu: astronomer.Milieu) -> str:
-    return milieu.value
-
 _DbToAstronomerLineStyleMap = {
     'solid': astronomer.LineStyle.Solid,
     'dashed': astronomer.LineStyle.Dashed,
@@ -46,7 +43,7 @@ def _mapDbLabelSizeToAstronomerLabelSize(
     lowerSize = size.lower()
     mappedSize = _DbToAstronomerLabelSizeMap.get(lowerSize)
     if not mappedSize:
-        None
+        return None
     return mappedSize
 
 _AstronomerToDbLabelSizeMap = {v: k for k, v in _DbToAstronomerLabelSizeMap.items()}
@@ -983,15 +980,19 @@ def _createDbAlternateNames(
         sectorLogName: str
         ) -> typing.List[multiverse.DbAlternateName]:
     dbAlternateNames: typing.List[multiverse.DbAlternateName] = []
-    for name in astroSector.alternateNames():
+    for astroName in astroSector.alternateNames():
         try:
             dbAlternateNames.append(multiverse.DbAlternateName(
-                name=name,
+                name=astroName,
                 # TODO: I'm loosing the language because it's not stored in the
                 # astronomer model
                 language=None))
         except Exception as ex:
-            pass # TODO: Log something
+            logging.warning('Failed to create Alternate Name {name} when converting {sector}'.format(
+                    name=astroName,
+                    sector=sectorLogName),
+                exc_info=ex)
+
     return dbAlternateNames
 
 def _createDbSubsectorNames(
@@ -1008,7 +1009,11 @@ def _createDbSubsectorNames(
                 code=code,
                 name=name))
         except Exception as ex:
-            pass # TODO: Log something
+            logging.warning('Failed to create Subsector Name {name} when converting {sector}'.format(
+                    name=code,
+                    sector=sectorLogName),
+                exc_info=ex)
+
     return dbSubsectorNames
 
 def _createDbAllegiances(
@@ -1017,19 +1022,27 @@ def _createDbAllegiances(
         ) -> typing.Dict[astronomer.Allegiance, multiverse.DbAllegiance]:
     astroAllegianceToDbAllegianceMap: typing.Dict[astronomer.Allegiance, multiverse.DbAllegiance] = {}
     for astroAllegiance in astroSector.allegiances():
+        astroRouteStyle = astroAllegiance.routeStyle()
+        dbRouteStyle = None
+        if astroRouteStyle:
+            dbRouteStyle = _mapAstronomerLineStyleToDbLineStyle(astroRouteStyle)
+            if dbRouteStyle is None:
+                logging.warning('Ignoring invalid Route Line Style {style} when converting Allegiance {allegiance} in {sector}'.format(
+                    style=astroRouteStyle.name,
+                    allegiance=astroAllegiance.name(),
+                    sector=sectorLogName))
+
+        astroBorderStyle = astroAllegiance.borderStyle()
+        dbBorderStyle = None
+        if astroBorderStyle:
+            dbBorderStyle = _mapAstronomerLineStyleToDbLineStyle(astroBorderStyle)
+            if dbBorderStyle is None:
+                logging.warning('Ignoring invalid Border Line Style {style} when converting Allegiance {allegiance} in {sector}'.format(
+                    style=astroBorderStyle.name,
+                    allegiance=astroAllegiance.name(),
+                    sector=sectorLogName))
+
         try:
-            dbRouteStyle = None
-            if astroAllegiance.routeStyle():
-                dbRouteStyle = _mapAstronomerLineStyleToDbLineStyle(astroAllegiance.routeStyle())
-                if dbRouteStyle is None:
-                    pass # TODO: Log something
-
-            dbBorderStyle = None
-            if astroAllegiance.borderStyle():
-                dbBorderStyle = _mapAstronomerLineStyleToDbLineStyle(astroAllegiance.borderStyle())
-                if dbBorderStyle is None:
-                    pass # TODO: Log something
-
             astroAllegianceToDbAllegianceMap[astroAllegiance] = multiverse.DbAllegiance(
                 code=astroAllegiance.code(),
                 name=astroAllegiance.name(),
@@ -1041,7 +1054,10 @@ def _createDbAllegiances(
                 borderColour=astroAllegiance.borderColour(),
                 borderStyle=dbBorderStyle)
         except Exception as ex:
-            pass # TODO: Log something
+            logging.warning('Failed to create Allegiance {allegiance} when converting {sector}'.format(
+                    allegiance=astroAllegiance.name(),
+                    sector=sectorLogName),
+                exc_info=ex)
 
     return astroAllegianceToDbAllegianceMap
 
@@ -1057,7 +1073,10 @@ def _createDbSophonts(
                 name=astroSophont.name(),
                 isMajor=astroSophont.isMajor())
         except Exception as ex:
-            pass # TODO: Log something
+            logging.warning('Failed to create Sophont {sophont} when converting {sector}'.format(
+                    sophont=astroSophont.name(),
+                    sector=sectorLogName),
+                exc_info=ex)
 
     return astroSophontToDbSophontMap
 
@@ -1068,132 +1087,179 @@ def _createDbSystems(
         sectorLogName: str
         ) -> typing.List[multiverse.DbSystem]:
     dbSystems: typing.List[multiverse.DbSystem] = []
-    for world in astroSector.worlds():
-        try:
-            hexPos = world.hex()
+    for astroWorld in astroSector.worlds():
+        hexPos = astroWorld.hex()
 
-            dbSystemAllegiance = astroAllegianceToDbAllegianceMap.get(world.allegiance())
+        dbSystemName = astroWorld.name() if not astroWorld.isNameGenerated() else None
+
+        systemLogName = '{system} in {sector}'.format(
+            system=astroWorld.name() if not astroWorld.isNameGenerated() else survey.formatHexString(x=hexPos.offsetX(), y=hexPos.offsetY()),
+            sector=sectorLogName)
+
+        astroSystemAllegiance = astroWorld.allegiance()
+        dbSystemAllegiance = None
+        if astroSystemAllegiance:
+            dbSystemAllegiance = astroAllegianceToDbAllegianceMap.get(astroSystemAllegiance)
             if dbSystemAllegiance is None:
-                pass # TODO: Log something
+                logging.warning('Ignoring unknown System Allegiance {allegiance} when converting {system}'.format(
+                    allegiance=astroSystemAllegiance.name(),
+                    system=systemLogName))
 
-            stellar = world.stellar()
-            dbStars: typing.List[multiverse.DbStar] = []
-            for star in stellar.stars():
-                try:
-                    dbStars.append(multiverse.DbStar(
-                        luminosityClass=star.code(astronomer.Star.Element.LuminosityClass),
-                        spectralClass=star.code(astronomer.Star.Element.SpectralClass),
-                        spectralScale=star.code(astronomer.Star.Element.SpectralScale)))
-                except Exception as ex:
-                    print(ex)
-                    pass # TODO: Log something
+        astroStellar = astroWorld.stellar()
+        dbStars: typing.List[multiverse.DbStar] = []
+        for astroStar in astroStellar.stars():
+            try:
+                dbStars.append(multiverse.DbStar(
+                    luminosityClass=astroStar.code(astronomer.Star.Element.LuminosityClass),
+                    spectralClass=astroStar.code(astronomer.Star.Element.SpectralClass),
+                    spectralScale=astroStar.code(astronomer.Star.Element.SpectralScale)))
+            except Exception as ex:
+                logging.warning('Failed to create Star {star} when converting {system}'.format(
+                        star=astroStar.string(),
+                        system=systemLogName),
+                    exc_info=ex)
 
-            nobilities = world.nobilities()
-            dbNobilities: typing.List[multiverse.DbNobility] = []
-            for nobilityType in astronomer.NobilityType:
-                try:
-                    if not nobilities.hasNobility(nobilityType):
-                        continue
-                    dbNobilities.append(multiverse.DbNobility(
-                        code=nobilities.code(nobilityType)))
-                except Exception as ex:
-                    print(ex)
-                    pass # TODO: Log something
+        astroNobilities = astroWorld.nobilities()
+        dbNobilities: typing.List[multiverse.DbNobility] = []
+        for astroNobilityType in astronomer.NobilityType:
+            try:
+                if not astroNobilities.hasNobility(astroNobilityType):
+                    continue
+                dbNobilities.append(multiverse.DbNobility(
+                    code=astroNobilities.code(astroNobilityType)))
+            except Exception as ex:
+                logging.warning('Failed to create Nobility {nobility} when converting {system}'.format(
+                        nobility=astroNobilityType.name,
+                        system=systemLogName),
+                    exc_info=ex)
 
-            bases = world.bases()
-            dbBases: typing.List[multiverse.DbBase] = []
-            for baseType in astronomer.BaseType:
-                try:
-                    if not bases.hasBase(baseType):
-                        continue
-                    dbBases.append(multiverse.DbBase(
-                        code=bases.code(baseType)))
-                except Exception as ex:
-                    print(ex)
-                    pass # TODO: Log something
+        astroBases = astroWorld.bases()
+        dbBases: typing.List[multiverse.DbBase] = []
+        for astroBaseType in astronomer.BaseType:
+            try:
+                if not astroBases.hasBase(astroBaseType):
+                    continue
+                dbBases.append(multiverse.DbBase(
+                    code=astroBases.code(astroBaseType)))
+            except Exception as ex:
+                logging.warning('Failed to create Base {base} when converting {system}'.format(
+                        base=astroBaseType.name,
+                        system=systemLogName),
+                    exc_info=ex)
 
-            dbTradeCodes: typing.List[multiverse.DbTradeCode] = []
-            for tradeCode in world.tradeCodes():
-                try:
-                    dbTradeCodes.append(multiverse.DbTradeCode(
-                        code=traveller.tradeCodeString(tradeCode)))
-                except Exception as ex:
-                    print(ex)
-                    pass # TODO: Log something
+        dbTradeCodes: typing.List[multiverse.DbTradeCode] = []
+        for astroTradeCode in astroWorld.tradeCodes():
+            try:
+                dbTradeCodes.append(multiverse.DbTradeCode(
+                    code=traveller.tradeCodeString(astroTradeCode)))
+            except Exception as ex:
+                logging.warning('Failed to create Trade Code {code} when converting {system}'.format(
+                        code=astroTradeCode.name,
+                        system=systemLogName),
+                    exc_info=ex)
 
-            dbSophontPopulations: typing.List[multiverse.DbSophontPopulation] = []
-            for population in world.sophonts():
-                try:
-                    dbSophont = astroSophontToDbSophontMap.get(population.sophont())
-                    if dbSophont is None:
-                        # TODO: Log something
-                        continue
+        dbSophontPopulations: typing.List[multiverse.DbSophontPopulation] = []
+        for astroPopulation in astroWorld.sophonts():
+            astroSophont = astroPopulation.sophont()
+            dbSophont = None
+            if astroSophont:
+                dbSophont = astroSophontToDbSophontMap.get(astroSophont)
+                if dbSophont is None:
+                    logging.warning('Ignoring Sophont Population using unknown Sophont {sophont} when converting {system}'.format(
+                        sophont=astroSophont.name(),
+                        system=systemLogName))
+                    continue
 
-                    dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                        sophontId=dbSophont.id(),
-                        percentage=population.percentage(),
-                        isHomeWorld=population.isHomeWorld(),
-                        isDieBack=population.isDieBack()))
-                except Exception as ex:
-                    print(ex)
-                    pass # TODO: Log something
+            try:
+                dbSophontPopulations.append(multiverse.DbSophontPopulation(
+                    sophontId=dbSophont.id(),
+                    percentage=astroPopulation.percentage(),
+                    isHomeWorld=astroPopulation.isHomeWorld(),
+                    isDieBack=astroPopulation.isDieBack()))
+            except Exception as ex:
+                logging.warning('Failed to create Sophont Population for Sophont {sophont} when converting {system}'.format(
+                        sophont=astroSophont.name(),
+                        system=systemLogName),
+                    exc_info=ex)
 
-            dbRulingAllegiances: typing.List[multiverse.DbRulingAllegiance] = []
-            for allegiance in world.rulingAllegiances():
-                try:
-                    dbRulingAllegiance = astroAllegianceToDbAllegianceMap.get(allegiance)
-                    if dbRulingAllegiance is None:
-                        # TODO: Log something
-                        continue
+        dbRulingAllegiances: typing.List[multiverse.DbRulingAllegiance] = []
+        for astroRulingAllegiance in astroWorld.rulingAllegiances():
+            dbRulingAllegiance = astroAllegianceToDbAllegianceMap.get(astroRulingAllegiance)
+            if dbRulingAllegiance is None:
+                logging.warning('Ignoring Ruling Allegiance using unknown Allegiance {allegiance} when converting {system}'.format(
+                    allegiance=astroRulingAllegiance.name(),
+                    system=systemLogName))
+                continue
 
-                    dbRulingAllegiances.append(multiverse.DbRulingAllegiance(
-                        allegianceId=dbRulingAllegiance.id()))
-                except Exception as ex:
-                    print(ex)
-                    pass # TODO: Log something
+            try:
+                dbRulingAllegiances.append(multiverse.DbRulingAllegiance(
+                    allegianceId=dbRulingAllegiance.id()))
+            except Exception as ex:
+                logging.warning('Failed to create Ruling Allegiance for Allegiance {allegiance} when converting {system}'.format(
+                        allegiance=astroRulingAllegiance.name(),
+                        system=systemLogName),
+                    exc_info=ex)
 
-            dbOwningSystems: typing.List[multiverse.DbOwningSystem] = []
-            for worldRef in world.ownerWorldReferences():
-                try:
-                    dbOwningSystems.append(multiverse.DbOwningSystem(
-                        hexX=worldRef.hexX(),
-                        hexY=worldRef.hexY(),
-                        sectorAbbreviation=worldRef.sectorAbbreviation()))
-                except Exception as ex:
-                    print(ex)
-                    pass # TODO: Log something
+        dbOwningSystems: typing.List[multiverse.DbOwningSystem] = []
+        for astroWorldRef in astroWorld.ownerWorldReferences():
+            try:
+                dbOwningSystems.append(multiverse.DbOwningSystem(
+                    hexX=astroWorldRef.hexX(),
+                    hexY=astroWorldRef.hexY(),
+                    sectorAbbreviation=astroWorldRef.sectorAbbreviation()))
+            except Exception as ex:
+                logging.warning('Failed to create Owning System {owner} when converting {system}'.format(
+                        owner=astroWorldRef.string(),
+                        system=systemLogName),
+                    exc_info=ex)
 
-            dbColonySystems: typing.List[multiverse.DbColonySystem] = []
-            for worldRef in world.colonyWorldReferences():
-                try:
-                    dbColonySystems.append(multiverse.DbColonySystem(
-                        hexX=worldRef.hexX(),
-                        hexY=worldRef.hexY(),
-                        sectorAbbreviation=worldRef.sectorAbbreviation()))
-                except Exception as ex:
-                    print(ex)
-                    pass # TODO: Log something
+        dbColonySystems: typing.List[multiverse.DbColonySystem] = []
+        for astroWorldRef in astroWorld.colonyWorldReferences():
+            try:
+                dbColonySystems.append(multiverse.DbColonySystem(
+                    hexX=astroWorldRef.hexX(),
+                    hexY=astroWorldRef.hexY(),
+                    sectorAbbreviation=astroWorldRef.sectorAbbreviation()))
+            except Exception as ex:
+                logging.warning('Failed to create Colony System {colony} when converting {system}'.format(
+                        colony=astroWorldRef.string(),
+                        system=systemLogName),
+                    exc_info=ex)
 
-            dbResearchStations: typing.List[multiverse.DbResearchStation] = []
-            for code in world.researchStations():
+        dbResearchStations: typing.List[multiverse.DbResearchStation] = []
+        for code in astroWorld.researchStations():
+            try:
                 dbResearchStations.append(multiverse.DbResearchStation(code=code))
+            except Exception as ex:
+                logging.warning('Failed to create Research Station {station} when converting {system}'.format(
+                        station=code,
+                        system=systemLogName),
+                    exc_info=ex)
 
-            dbCustomRemarks: typing.List[multiverse.DbCustomRemark] = []
-            for remark in world.customRemarks():
+        dbCustomRemarks: typing.List[multiverse.DbCustomRemark] = []
+        for remark in astroWorld.customRemarks():
+            try:
                 dbCustomRemarks.append(multiverse.DbCustomRemark(remark=remark))
+            except Exception as ex:
+                logging.warning('Failed to create Custom Remark {remark} when converting {system}'.format(
+                        remark=remark,
+                        system=systemLogName),
+                    exc_info=ex)
 
-            uwp = world.uwp()
-            economics = world.economics()
-            culture = world.culture()
-            pbg = world.pbg()
-            dbBodies: typing.List[multiverse.DbBody] = []
+        uwp = astroWorld.uwp()
+        economics = astroWorld.economics()
+        culture = astroWorld.culture()
+        pbg = astroWorld.pbg()
+        dbBodies: typing.List[multiverse.DbBody] = []
+
+        try:
             dbBodies.append(multiverse.DbWorld(
                 # NOTE: Astronomer worlds currently use the system id rather than
                 # the world id. This will change when I add support for editing
                 # worlds
                 id=None,
                 orbitIndex=1, # TODO: Not sure about this
-                name=world.name() if not world.isNameGenerated() else None,
+                name=dbSystemName,
                 isMainWorld=True,
                 starport=uwp.code(astronomer.UWP.Element.StarPort, default=None),
                 worldSize=uwp.code(astronomer.UWP.Element.WorldSize, default=None),
@@ -1221,37 +1287,53 @@ def _createDbSystems(
                 colonySystems=dbColonySystems,
                 researchStations=dbResearchStations,
                 customRemarks=dbCustomRemarks))
+        except Exception as ex:
+            logging.warning('Failed to create Main World when converting {system}'.format(
+                    system=systemLogName),
+                exc_info=ex)
 
-            numSystemWorlds = world.numberOfSystemWorlds()
-            numPlanetoidBelts = world.numberOfPlanetoidBelts()
-            numGasGiants = world.numberOfGasGiants()
-            numOtherWorlds = None
-            if numSystemWorlds is not None:
-                numOtherWorlds = numSystemWorlds
-                if numPlanetoidBelts is not None:
-                    numOtherWorlds -= numPlanetoidBelts
-                if numGasGiants is not None:
-                    numOtherWorlds -= numGasGiants
-                if numOtherWorlds < 0:
-                    numOtherWorlds = None
+        numSystemWorlds = astroWorld.numberOfSystemWorlds()
+        numPlanetoidBelts = astroWorld.numberOfPlanetoidBelts()
+        numGasGiants = astroWorld.numberOfGasGiants()
+        numOtherWorlds = None
+        if numSystemWorlds is not None:
+            numOtherWorlds = numSystemWorlds
+            if numPlanetoidBelts is not None:
+                numOtherWorlds -= numPlanetoidBelts
+            if numGasGiants is not None:
+                numOtherWorlds -= numGasGiants
+            if numOtherWorlds < 0:
+                numOtherWorlds = None
 
+        astroZone = astroWorld.zone()
+        dbZone = None
+        if astroZone:
+            dbZone = astronomer.zoneTypeToCode(astroZone)
+            if dbZone is None:
+                logging.warning('Ignoring unknown Zone {zone} when converting {system}'.format(
+                    zone=astroZone.value,
+                    system=systemLogName))
+
+        try:
             dbSystems.append(multiverse.DbSystem(
-                id=world.entityId(),
+                id=astroWorld.entityId(),
                 hexX=hexPos.offsetX(),
                 hexY=hexPos.offsetY(),
-                name=world.name() if not world.isNameGenerated() else None,
+                name=dbSystemName,
                 planetoidBeltCount=numPlanetoidBelts,
                 gasGiantCount=numGasGiants,
                 worldCount=numOtherWorlds,
-                zone=astronomer.zoneTypeToCode(world.zone()) if world.zone() else None,
+                zone=dbZone,
                 allegianceId=dbSystemAllegiance.id() if dbSystemAllegiance else None,
                 stars=dbStars,
                 bodies=dbBodies,
                 # TODO: Support notes
                 notes=None))
         except Exception as ex:
-            print(ex)
-            pass # TODO: Log something
+            logging.warning('Failed to create System {id} when converting {system}'.format(
+                    id=astroWorld.entityId(),
+                    system=systemLogName),
+                exc_info=ex)
 
     return dbSystems
 
@@ -1262,26 +1344,34 @@ def _createDbRoutes(
         ) -> typing.List[multiverse.DbRoute]:
     sectorPos = astroSector.position()
     dbRoutes: typing.List[multiverse.DbRoute] = []
-    for route in astroSector.routes():
+    for astroRoute in astroSector.routes():
+        startHex = astroRoute.startHex()
+        endHex = astroRoute.endHex()
+
+        astroLineStyle = astroRoute.style()
+        dbLineStyle = None
+        if astroLineStyle:
+            dbLineStyle = _mapAstronomerLineStyleToDbLineStyle(astroLineStyle)
+            if dbLineStyle is None:
+                logging.warning('Ignoring invalid Line Style {style} when converting Route {route} in {sector}'.format(
+                    style=astroLineStyle.name,
+                    route=astroRoute.entityId(),
+                    sector=sectorLogName))
+
+        astroAllegiance = astroRoute.allegiance()
+        dbAllegiance = None
+        if astroAllegiance:
+            dbAllegiance = astroAllegianceToDbAllegianceMap.get(astroAllegiance)
+            if dbAllegiance is None:
+                logging.warning('Ignoring unknown Allegiance {allegiance} when converting Route {route} in {sector}'.format(
+                    allegiance=astroAllegiance.name(),
+                    route=astroRoute.entityId(),
+                    sector=sectorLogName))
+
         try:
-            startHex = route.startHex()
-            endHex = route.endHex()
-
-            dbLineStyle = None
-            if route.style():
-                dbLineStyle = _mapAstronomerLineStyleToDbLineStyle(route.style())
-                if dbLineStyle is None:
-                    pass # TODO: Log something
-
-            dbAllegiance = None
-            if route.allegiance():
-                dbAllegiance = astroAllegianceToDbAllegianceMap.get(route.allegiance())
-                if dbAllegiance is None:
-                    pass # TODO: Log something
-
             # TODO: Need to check the start/end offsets are being calculated correctly
             dbRoutes.append(multiverse.DbRoute(
-                id=route.entityId(),
+                id=astroRoute.entityId(),
                 startHexX=startHex.offsetX(),
                 startHexY=startHex.offsetY(),
                 startOffsetX=startHex.sectorX() - sectorPos.sectorX(),
@@ -1290,13 +1380,16 @@ def _createDbRoutes(
                 endHexY=endHex.offsetY(),
                 endOffsetX=endHex.sectorX() - sectorPos.sectorX(),
                 endOffsetY=endHex.sectorY() - sectorPos.sectorY(),
-                type=route.routeType(),
+                type=astroRoute.routeType(),
                 style=dbLineStyle,
-                colour=route.colour(),
-                width=route.width(),
+                colour=astroRoute.colour(),
+                width=astroRoute.width(),
                 allegianceId=dbAllegiance.id() if dbAllegiance else None))
         except Exception as ex:
-            pass # TODO: Log something
+            logging.warning('Failed to create Route {route} when converting {sector}'.format(
+                    route=astroRoute.entityId(),
+                    sector=sectorLogName),
+                exc_info=ex)
 
     return dbRoutes
 
@@ -1307,26 +1400,36 @@ def _createDbBorders(
         ) -> typing.List[multiverse.DbBorder]:
     dbBorders: typing.List[multiverse.DbBorder] = []
     for astroBorder in astroSector.borders():
-        try:
-            dbHexes: typing.List[typing.Tuple[int, int]] = []
-            for hex in astroBorder.hexes():
-                dbHexes.append(hex.offset())
+        dbHexes: typing.List[typing.Tuple[int, int]] = []
+        for hex in astroBorder.hexes():
+            dbHexes.append(hex.offset())
 
-            dbAllegiance = astroAllegianceToDbAllegianceMap.get(astroBorder.allegiance())
+        astroAllegiance = astroBorder.allegiance()
+        dbAllegiance = None
+        if astroAllegiance:
+            dbAllegiance = astroAllegianceToDbAllegianceMap.get(astroAllegiance)
             if dbAllegiance is None:
-                pass # TODO: Log something
+                logging.warning('Ignoring unknown Allegiance {allegiance} when converting Border {border} in {sector}'.format(
+                    allegiance=astroAllegiance.name(),
+                    border=astroBorder.entityId(),
+                    sector=sectorLogName))
 
-            dbStyle = None
-            if astroBorder.style():
-                dbStyle = _mapAstronomerLineStyleToDbLineStyle(astroBorder.style())
-                if dbStyle is None:
-                    pass # TODO: Log something
+        astroLineStyle = astroBorder.style()
+        dbLineStyle = None
+        if astroLineStyle:
+            dbLineStyle = _mapAstronomerLineStyleToDbLineStyle(astroLineStyle)
+            if dbLineStyle is None:
+                logging.warning('Ignoring invalid Line Style {style} when converting Border {border} in {sector}'.format(
+                    style=astroLineStyle.name,
+                    border=astroBorder.entityId(),
+                    sector=sectorLogName))
 
+        try:
             dbBorders.append(multiverse.DbBorder(
                 id=astroBorder.entityId(),
                 hexes=dbHexes,
                 allegianceId=dbAllegiance.id() if dbAllegiance else None,
-                style=dbStyle,
+                style=dbLineStyle,
                 colour=astroBorder.colour(),
                 label=astroBorder.label(),
                 labelWorldX=astroBorder.labelWorldX(),
@@ -1334,7 +1437,10 @@ def _createDbBorders(
                 showLabel=astroBorder.showLabel(),
                 wrapLabel=astroBorder.wrapLabel()))
         except Exception as ex:
-            pass # TODO: Log something
+            logging.warning('Failed to create Border {border} when converting {sector}'.format(
+                    border=astroBorder.entityId(),
+                    sector=sectorLogName),
+                exc_info=ex)
 
     return dbBorders
 
@@ -1344,11 +1450,11 @@ def _createDbRegions(
         ) -> typing.List[multiverse.DbRegion]:
     dbRegions: typing.List[multiverse.DbRegion] = []
     for astroRegion in astroSector.regions():
-        try:
-            dbHexes: typing.List[typing.Tuple[int, int]] = []
-            for hex in astroRegion.hexes():
-                dbHexes.append(hex.offset())
+        dbHexes: typing.List[typing.Tuple[int, int]] = []
+        for hex in astroRegion.hexes():
+            dbHexes.append(hex.offset())
 
+        try:
             dbRegions.append(multiverse.DbRegion(
                 id=astroRegion.entityId(),
                 hexes=dbHexes,
@@ -1359,7 +1465,10 @@ def _createDbRegions(
                 showLabel=astroRegion.showLabel(),
                 wrapLabel=astroRegion.wrapLabel()))
         except Exception as ex:
-            pass # TODO: Log something
+            logging.warning('Failed to create Region {region} when converting {sector}'.format(
+                    region=astroRegion.entityId(),
+                    sector=sectorLogName),
+                exc_info=ex)
 
     return dbRegions
 
@@ -1369,13 +1478,17 @@ def _createDbLabels(
         ) -> typing.List[multiverse.DbLabel]:
     dbLabels: typing.List[multiverse.DbLabel] = []
     for astroLabel in astroSector.labels():
-        try:
-            dbSize = None
-            if astroLabel.size():
-                dbSize = _mapAstronomerLabelSizeToDbLabelSize(astroLabel.size())
-                if dbSize is None:
-                    pass # TODO: Log something
+        astroSize = astroLabel.size()
+        dbSize = None
+        if astroSize:
+            dbSize = _mapAstronomerLabelSizeToDbLabelSize(astroSize)
+            if dbSize is None:
+                logging.warning('Ignoring invalid Size {size} when converting Label {label} in {sector}'.format(
+                    size=astroSize.name,
+                    label=astroLabel.entityId(),
+                    sector=sectorLogName))
 
+        try:
             dbLabels.append(multiverse.DbLabel(
                 id=astroLabel.entityId(),
                 text=astroLabel.text(),
@@ -1385,7 +1498,10 @@ def _createDbLabels(
                 size=dbSize,
                 wrap=astroLabel.wrap()))
         except Exception as ex:
-            pass # TODO: Log something
+            logging.warning('Failed to create Label {label} when converting {sector}'.format(
+                    label=astroLabel.entityId(),
+                    sector=sectorLogName),
+                exc_info=ex)
 
     return dbLabels
 
@@ -1400,7 +1516,10 @@ def _createDbTags(
             try:
                 dbTags.append(multiverse.DbTag(tag=astroTag.value))
             except Exception as ex:
-                pass # TODO: Log something
+                logging.warning('Failed to create Tag {tag} when converting {sector}'.format(
+                        tag=astroTag.value,
+                        sector=sectorLogName),
+                    exc_info=ex)
 
     return dbTags
 
@@ -1417,7 +1536,9 @@ def _createDbProducts(
                 publisher=astroProduct.publisher(),
                 reference=astroProduct.reference()))
         except Exception as ex:
-            pass # TODO: Log something
+            logging.warning('Failed to create Product when converting {sector}'.format(
+                    sector=sectorLogName),
+                exc_info=ex)
 
     return dbProducts
 
