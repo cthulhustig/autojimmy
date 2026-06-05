@@ -1621,9 +1621,7 @@ class RenderContext(object):
                 tagging = sector.tagging()
                 shouldDim = sector.isCustom() if tagging else False
                 if not shouldDim:
-                    shouldDim = not tagging.contains(astronomer.SectorTag.Official) and \
-                        not tagging.contains(astronomer.SectorTag.Preserve) and \
-                        not tagging.contains(astronomer.SectorTag.InReview)
+                    shouldDim = not tagging.hasOfficial() and not tagging.hasPreserve() and not tagging.hasInReview()
                 if shouldDim:
                     clipPath = self._sectorCache.clipPath(
                         sectorPos=sector.position())
@@ -1637,23 +1635,23 @@ class RenderContext(object):
                 tagging = sector.tagging()
                 if tagging is None:
                     continue
-                if tagging.contains(astronomer.SectorTag.Official):
+                if tagging.hasOfficial():
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerRed))
-                elif tagging.contains(astronomer.SectorTag.InReview):
+                elif tagging.hasInReview():
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Orange))
-                elif tagging.contains(astronomer.SectorTag.Unreviewed):
+                elif tagging.hasUnreviewed():
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerAmber))
-                elif tagging.contains(astronomer.SectorTag.Apocryphal):
+                elif tagging.hasApocryphal():
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Magenta))
-                elif tagging.contains(astronomer.SectorTag.Preserve):
+                elif tagging.hasPreserve():
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerGreen))

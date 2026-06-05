@@ -168,7 +168,7 @@ class Sector(astronomer.Entity):
     def tagging(self) -> typing.Optional[astronomer.SectorTagging]:
         return self._tagging
 
-    def hasTag(self, tag: astronomer.SectorTag) -> bool:
+    def hasTag(self, tag: str) -> bool:
         if self._tagging is None:
             return False
         return self._tagging.contains(tag)

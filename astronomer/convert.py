@@ -812,26 +812,9 @@ def _createAstronomerTagging(
     if not dbTags:
         return None
 
-    astroTags = []
-    for dbTag in dbTags:
-        # TODO: This means I'm throwing away tags I don't recognise
-        tag = astronomer.stringToSectorTag(dbTag.tag())
-        if not tag:
-            # NOTE: This is disabled as it's very spammy
-            #logging.warning('Ignoring sector tag {objectId} with unknown value "{value}" when loading sector {sectorId} ({name})'.format(
-            #    objectId=dbTag.id(),
-            #    value=dbTag.tag(),
-            #    sectorId=dbSector.id(),
-            #    name=sectorLoggingName))
-            continue
-        astroTags.append(tag)
-
-    if not astroTags:
-        return None
-
     astroTagging = None
     try:
-        astroTagging = astronomer.SectorTagging(tags=astroTags)
+        astroTagging = astronomer.SectorTagging(tags=[dbTag.tag() for dbTag in dbTags])
     except Exception as ex:
         logging.warning('Failed to create sector tagging when loading sector {sectorId} ({name})'.format(
                 sectorId=dbSector.id(),
@@ -1553,10 +1536,10 @@ def _createDbTags(
     if astroTagging:
         for astroTag in astroTagging.tags():
             try:
-                dbTags.append(multiverse.DbTag(tag=astroTag.value))
+                dbTags.append(multiverse.DbTag(tag=astroTag))
             except Exception as ex:
                 logging.warning('Failed to create Tag {tag} when converting {sector}'.format(
-                        tag=astroTag.value,
+                        tag=astroTag,
                         sector=sectorLogName),
                     exc_info=ex)
 
@@ -1583,7 +1566,7 @@ def _createDbProducts(
 
 def convertAstronomerSectorToDbSector(astroSector: astronomer.Sector) -> multiverse.DbSector:
     sectorName = astroSector.name()
-    sectorLanguage = astroSector.nameLanguage(sectorLogName)
+    sectorLanguage = astroSector.nameLanguage(sectorName)
     sectorPos = astroSector.position()
     milieu = astroSector.milieu()
 
