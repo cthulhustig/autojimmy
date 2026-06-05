@@ -655,7 +655,6 @@ class UniverseDb(object):
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     database.ColumnDef(columnName='start_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='start_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    # TODO: finish_hex_* might be better than end_hex_*. I'd need to rename elsewhere to match though
                     database.ColumnDef(columnName='end_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='end_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='start_offset_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),

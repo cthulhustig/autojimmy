@@ -15,7 +15,6 @@ def isStockUniverseSnapshotNewer() -> bool:
     return multiverse.UniverseManager.instance().checkStockUniverseTimestamp(
         snapshotTimestamp=snapshotTimestamp)
 
-# TODO: Things that call this need to pass a reporter
 def importStockUniverseSnapshot(
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
         reporter: typing.Optional[common.Reporter] = None

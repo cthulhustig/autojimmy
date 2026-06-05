@@ -1299,7 +1299,7 @@ def _createDbSystems(
                 # the world id. This will change when I add support for editing
                 # worlds
                 id=None,
-                orbitIndex=1, # TODO: Not sure about this
+                orbitIndex=1,
                 name=dbSystemName,
                 isMainWorld=True,
                 starport=uwp.code(astronomer.UWP.Element.StarPort, default=None),

@@ -9,8 +9,6 @@ import typing
 # TODO: The conversion process needs to give better error/warning/info
 # feedback to the user when converting custom sectors (converting the
 # default universe should just log)
-# TODO: Need code to allow export from db to file. I deleted the old
-# code that did it as it had bit rotted
 # TODO: A lot of places where I'm constructing DB objects, I should
 # wrap them in a try/except and log and continue if they throw.
 # - UPDATE: With recent changes I think it should maybe be the other way
@@ -2360,7 +2358,7 @@ def _createRawRoutes(
                 startOffsetY=dbRoute.startOffsetY() if dbRoute.startOffsetY() else None,
                 endOffsetX=dbRoute.endOffsetX() if dbRoute.endOffsetX() else None,
                 endOffsetY=dbRoute.endOffsetY() if dbRoute.endOffsetY() else None,
-                allegianceCode=dbAllegiance.code() if dbAllegiance else None, # TODO: Should this be the code or the name
+                allegianceCode=dbAllegiance.code() if dbAllegiance else None,
                 type=dbRoute.type(),
                 style=dbRoute.style(),
                 colour=dbRoute.colour(),
@@ -2403,7 +2401,7 @@ def _createRawBorders(
 
             rawBorders.append(survey.RawBorder(
                 hexes=dbBorder.hexes(),
-                allegianceCode=dbAllegiance.code() if dbAllegiance else None, # TODO: Should this be the code or the name
+                allegianceCode=dbAllegiance.code() if dbAllegiance else None,
                 showLabel=dbBorder.showLabel(),
                 wrapLabel=dbBorder.wrapLabel(),
                 labelHexX=labelHexX,
@@ -2663,7 +2661,7 @@ def _createRawWorlds(
                         if dbSophontPopulation.isDieBack():
                             if rawDiebackSophonts is None:
                                 rawDiebackSophonts = []
-                            rawDiebackSophonts.append(dbSophont.name()) # TODO: Should this be the name or code
+                            rawDiebackSophonts.append(dbSophont.name())
                         elif not dbSophontPopulation.isHomeWorld():
                             if rawSophontPopulations is None:
                                 rawSophontPopulations = []

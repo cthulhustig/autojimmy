@@ -220,6 +220,7 @@ def importLegacyCustomSectors(
                 dbSectors.append(dbSector)
             except Exception as ex:
                 # TODO: Log something but continue
+                print(ex)
                 continue
 
     if progressCallback:

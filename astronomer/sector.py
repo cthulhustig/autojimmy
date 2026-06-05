@@ -37,6 +37,7 @@ class Sector(astronomer.Entity):
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
         # TODO: This should check that the names aren't empty strings
         common.validateOptionalCollection(name='alternateNames', value=alternateNames, elementType=str)
+        # TODO: This should check that the names and languages aren't empty strings
         common.validateOptionalMapping(name='nameLanguages', value=nameLanguages, keyType=str, valueType=str)
         common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
         common.validateOptionalStr(name='sectorLabel', value=sectorLabel, allowEmpty=False)

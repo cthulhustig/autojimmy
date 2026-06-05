@@ -26,14 +26,6 @@ import uuid
 # maybe I need some kind of low level basic type namespace.
 # I've left the _RegenerateTradeCodesToolTip text as it could be a basis for the
 # option when I add it to the custom universe creation dialog
-# TODO: For the problem of how to notify the user of non-critical errors at the
-# point they import a custom sector. If I have a list of the issues, I could
-# display them to the user after I've converted to DbObjects but before I write
-# it to the DB
-
-
-# TODO: Need to handle creation of creating a custom universe if the user had
-# custom sectors in the previous version
 # TODO: Top level functions should log that they were called
 
 class UniverseManager(object):

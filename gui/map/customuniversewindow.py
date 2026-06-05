@@ -24,14 +24,8 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 # TODO: A list of which sectors have been modified so the user can jump between them
 # TODO: If you delete a custom sector it could give the user the option to restore the equivalent sector from the stock database
 # TODO: Option to update unmodified sectors to the versions from the stock database
-
-# TODO: Sector selection
-# - Need to update MapWidgetEx to support selection of different types of object either hexes or sectors
-#   - Selected sectors will be identified by the sector index rather than the sector object
-# - Need to update MapWidgetEx to be able to draw something to indicate which sectors are selected
-#   - I think it might make sense to make the _MapOverlay class public so anything can implement
-#     overlays. Probably makes sense to add some kind of support for depth ordering at the same
-#     time
+# TODO: When creating a custom universe, give the option to not include sectors with the Faraway tag
+# - This will mean not using a DB file copy to create the new sector
 
 class CustomUniverseWindow(gui.WindowWidget):
     def __init__(self) -> None:
@@ -464,10 +458,10 @@ class CustomUniverseWindow(gui.WindowWidget):
         reporter = common.LoggingReporter(logLevel=logging.WARNING)
 
         try:
-            # TODO: Need to update formatMetadata to take a reporter
             content = survey.formatMetadata(
                 metadata=rawMetadata,
-                format=metadataFileFormat)
+                format=metadataFileFormat,
+                reporter=reporter)
             with open(metadataFilePath, 'w', encoding='utf-8-sig') as file:
                 file.write(content)
         except Exception as ex:

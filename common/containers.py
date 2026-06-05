@@ -1,12 +1,6 @@
 import collections.abc
 import typing
 
-# TODO: There are probably a lot of places that can be updated to use this
-# rather than returning a copy of the list. Anywhere I'm doing "return list("
-# This should let me get rid of a load of yield accessors.
-# IMPORTANT: Need to be careful the caller doesn't expect to be getting a
-# mutable copy of the list from the function
-
 T = typing.TypeVar("T")
 
 class ConstCollectionRef(collections.abc.Collection[T]):
