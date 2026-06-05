@@ -1002,9 +1002,13 @@ def convertRawSectorToAstronomerSector(
 def _createDbAlternateNames(
         astroSector: astronomer.Sector,
         sectorLogName: str
-        ) -> typing.List[multiverse.DbAlternateName]:
+        ) -> typing.Optional[typing.List[multiverse.DbAlternateName]]:
+    astroAlternateNames = astroSector.alternateNames()
+    if not astroAlternateNames:
+        return None
+
     dbAlternateNames: typing.List[multiverse.DbAlternateName] = []
-    for astroName in astroSector.alternateNames():
+    for astroName in astroAlternateNames:
         try:
             dbAlternateNames.append(multiverse.DbAlternateName(
                 name=astroName,
@@ -1020,13 +1024,16 @@ def _createDbAlternateNames(
 def _createDbSubsectorNames(
         astroSector: astronomer.Sector,
         sectorLogName: str
-        ) -> typing.List[multiverse.DbSubsectorName]:
-    dbSubsectorNames: typing.List[multiverse.DbSubsectorName] = []
+        ) -> typing.Optional[typing.List[multiverse.DbSubsectorName]]:
+    dbSubsectorNames = None
     for code in map(chr, range(ord('A'), ord('P') + 1)):
         try:
             name = astroSector.subsectorName(code)
             if name is None:
                 continue
+
+            if dbSubsectorNames is None:
+                dbSubsectorNames = []
             dbSubsectorNames.append(multiverse.DbSubsectorName(
                 code=code,
                 name=name))
@@ -1041,9 +1048,13 @@ def _createDbSubsectorNames(
 def _createDbAllegiances(
         astroSector: astronomer.Sector,
         sectorLogName: str
-        ) -> typing.Dict[astronomer.Allegiance, multiverse.DbAllegiance]:
-    astroAllegianceToDbAllegianceMap: typing.Dict[astronomer.Allegiance, multiverse.DbAllegiance] = {}
-    for astroAllegiance in astroSector.allegiances():
+        ) -> typing.Optional[typing.Dict[astronomer.Allegiance, multiverse.DbAllegiance]]:
+    astroAllegiances = astroSector.allegiances()
+    if not astroAllegiances:
+        return None
+
+    astroAllegianceToDbAllegianceMap = {}
+    for astroAllegiance in astroAllegiances:
         astroRouteStyle = astroAllegiance.routeStyle()
         dbRouteStyle = None
         if astroRouteStyle:
@@ -1086,9 +1097,13 @@ def _createDbAllegiances(
 def _createDbSophonts(
         astroSector: astronomer.Sector,
         sectorLogName: str
-        ) -> typing.Dict[astronomer.Sophont, multiverse.DbSophont]:
-    astroSophontToDbSophontMap: typing.Dict[astronomer.Sophont, multiverse.DbSophont] = {}
-    for astroSophont in astroSector.sophonts():
+        ) -> typing.Optional[typing.Dict[astronomer.Sophont, multiverse.DbSophont]]:
+    astroSophonts = astroSector.sophonts()
+    if not astroSophonts:
+        return None
+
+    astroSophontToDbSophontMap = {}
+    for astroSophont in astroSophonts:
         try:
             astroSophontToDbSophontMap[astroSophont] = multiverse.DbSophont(
                 code=astroSophont.code(),
@@ -1104,12 +1119,16 @@ def _createDbSophonts(
 
 def _createDbSystems(
         astroSector: astronomer.Sector,
-        astroAllegianceToDbAllegianceMap: typing.Mapping[astronomer.Allegiance, multiverse.DbAllegiance],
-        astroSophontToDbSophontMap: typing.Mapping[astronomer.Sophont, multiverse.DbSophont],
-        sectorLogName: str
-        ) -> typing.List[multiverse.DbSystem]:
-    dbSystems: typing.List[multiverse.DbSystem] = []
-    for astroWorld in astroSector.worlds():
+        sectorLogName: str,
+        astroAllegianceToDbAllegianceMap: typing.Optional[typing.Mapping[astronomer.Allegiance, multiverse.DbAllegiance]],
+        astroSophontToDbSophontMap: typing.Optional[typing.Mapping[astronomer.Sophont, multiverse.DbSophont]]
+        ) -> typing.Optional[typing.List[multiverse.DbSystem]]:
+    astroWorlds = astroSector.worlds()
+    if not astroWorlds:
+        return None
+
+    dbSystems = []
+    for astroWorld in astroWorlds:
         hexPos = astroWorld.hex()
 
         dbSystemName = astroWorld.name() if not astroWorld.isNameGenerated() else None
@@ -1121,7 +1140,7 @@ def _createDbSystems(
         astroSystemAllegiance = astroWorld.allegiance()
         dbSystemAllegiance = None
         if astroSystemAllegiance:
-            dbSystemAllegiance = astroAllegianceToDbAllegianceMap.get(astroSystemAllegiance)
+            dbSystemAllegiance = astroAllegianceToDbAllegianceMap.get(astroSystemAllegiance) if astroAllegianceToDbAllegianceMap else None
             if dbSystemAllegiance is None:
                 logging.warning('Ignoring unknown System Allegiance {allegiance} when converting {system}'.format(
                     allegiance=astroSystemAllegiance.name(),
@@ -1185,7 +1204,7 @@ def _createDbSystems(
             astroSophont = astroPopulation.sophont()
             dbSophont = None
             if astroSophont:
-                dbSophont = astroSophontToDbSophontMap.get(astroSophont)
+                dbSophont = astroSophontToDbSophontMap.get(astroSophont) if astroSophontToDbSophontMap else None
                 if dbSophont is None:
                     logging.warning('Ignoring Sophont Population using unknown Sophont {sophont} when converting {system}'.format(
                         sophont=astroSophont.name(),
@@ -1206,7 +1225,7 @@ def _createDbSystems(
 
         dbRulingAllegiances: typing.List[multiverse.DbRulingAllegiance] = []
         for astroRulingAllegiance in astroWorld.rulingAllegiances():
-            dbRulingAllegiance = astroAllegianceToDbAllegianceMap.get(astroRulingAllegiance)
+            dbRulingAllegiance = astroAllegianceToDbAllegianceMap.get(astroRulingAllegiance) if astroAllegianceToDbAllegianceMap else None
             if dbRulingAllegiance is None:
                 logging.warning('Ignoring Ruling Allegiance using unknown Allegiance {allegiance} when converting {system}'.format(
                     allegiance=astroRulingAllegiance.name(),
@@ -1361,12 +1380,16 @@ def _createDbSystems(
 
 def _createDbRoutes(
         astroSector: astronomer.Sector,
-        astroAllegianceToDbAllegianceMap: typing.Mapping[astronomer.Allegiance, multiverse.DbAllegiance],
-        sectorLogName: str
-        ) -> typing.List[multiverse.DbRoute]:
+        sectorLogName: str,
+        astroAllegianceToDbAllegianceMap: typing.Mapping[astronomer.Allegiance, multiverse.DbAllegiance]
+        ) -> typing.Optional[typing.List[multiverse.DbRoute]]:
+    astroRoutes = astroSector.routes()
+    if not astroRoutes:
+        return None
+
     sectorPos = astroSector.position()
-    dbRoutes: typing.List[multiverse.DbRoute] = []
-    for astroRoute in astroSector.routes():
+    dbRoutes = []
+    for astroRoute in astroRoutes:
         startHex = astroRoute.startHex()
         endHex = astroRoute.endHex()
 
@@ -1383,7 +1406,7 @@ def _createDbRoutes(
         astroAllegiance = astroRoute.allegiance()
         dbAllegiance = None
         if astroAllegiance:
-            dbAllegiance = astroAllegianceToDbAllegianceMap.get(astroAllegiance)
+            dbAllegiance = astroAllegianceToDbAllegianceMap.get(astroAllegiance) if astroAllegianceToDbAllegianceMap else None
             if dbAllegiance is None:
                 logging.warning('Ignoring unknown Allegiance {allegiance} when converting Route {route} in {sector}'.format(
                     allegiance=astroAllegiance.name(),
@@ -1417,19 +1440,19 @@ def _createDbRoutes(
 
 def _createDbBorders(
         astroSector: astronomer.Sector,
-        astroAllegianceToDbAllegianceMap: typing.Mapping[astronomer.Allegiance, multiverse.DbAllegiance],
-        sectorLogName: str
-        ) -> typing.List[multiverse.DbBorder]:
-    dbBorders: typing.List[multiverse.DbBorder] = []
-    for astroBorder in astroSector.borders():
-        dbHexes: typing.List[typing.Tuple[int, int]] = []
-        for hex in astroBorder.hexes():
-            dbHexes.append(hex.offset())
+        sectorLogName: str,
+        astroAllegianceToDbAllegianceMap: typing.Optional[typing.Mapping[astronomer.Allegiance, multiverse.DbAllegiance]]
+        ) -> typing.Optional[typing.List[multiverse.DbBorder]]:
+    astroBorders = astroSector.borders()
+    if not astroBorders:
+        return None
 
+    dbBorders = []
+    for astroBorder in astroBorders:
         astroAllegiance = astroBorder.allegiance()
         dbAllegiance = None
         if astroAllegiance:
-            dbAllegiance = astroAllegianceToDbAllegianceMap.get(astroAllegiance)
+            dbAllegiance = astroAllegianceToDbAllegianceMap.get(astroAllegiance) if astroAllegianceToDbAllegianceMap else None
             if dbAllegiance is None:
                 logging.warning('Ignoring unknown Allegiance {allegiance} when converting Border {border} in {sector}'.format(
                     allegiance=astroAllegiance.name(),
@@ -1449,7 +1472,7 @@ def _createDbBorders(
         try:
             dbBorders.append(multiverse.DbBorder(
                 id=astroBorder.entityId(),
-                hexes=dbHexes,
+                hexes=[hex.offset() for hex in astroBorder.hexes()],
                 allegianceId=dbAllegiance.id() if dbAllegiance else None,
                 style=dbLineStyle,
                 colour=astroBorder.colour(),
@@ -1469,17 +1492,17 @@ def _createDbBorders(
 def _createDbRegions(
         astroSector: astronomer.Sector,
         sectorLogName: str
-        ) -> typing.List[multiverse.DbRegion]:
-    dbRegions: typing.List[multiverse.DbRegion] = []
-    for astroRegion in astroSector.regions():
-        dbHexes: typing.List[typing.Tuple[int, int]] = []
-        for hex in astroRegion.hexes():
-            dbHexes.append(hex.offset())
+        ) -> typing.Optional[typing.List[multiverse.DbRegion]]:
+    astroRegions = astroSector.regions()
+    if not astroRegions:
+        return None
 
+    dbRegions = []
+    for astroRegion in astroRegions:
         try:
             dbRegions.append(multiverse.DbRegion(
                 id=astroRegion.entityId(),
-                hexes=dbHexes,
+                hexes=[hex.offset() for hex in astroRegion.hexes()],
                 colour=astroRegion.colour(),
                 label=astroRegion.label(),
                 labelWorldX=astroRegion.labelWorldX(),
@@ -1497,9 +1520,13 @@ def _createDbRegions(
 def _createDbLabels(
         astroSector: astronomer.Sector,
         sectorLogName: str
-        ) -> typing.List[multiverse.DbLabel]:
-    dbLabels: typing.List[multiverse.DbLabel] = []
-    for astroLabel in astroSector.labels():
+        ) -> typing.Optional[typing.List[multiverse.DbLabel]]:
+    astroLabels = astroSector.labels()
+    if not astroLabels:
+        return None
+
+    dbLabels = []
+    for astroLabel in astroLabels:
         astroSize = astroLabel.size()
         dbSize = None
         if astroSize:
@@ -1530,27 +1557,33 @@ def _createDbLabels(
 def _createDbTags(
         astroSector: astronomer.Sector,
         sectorLogName: str
-        ) -> typing.List[multiverse.DbTag]:
+        ) -> typing.Optional[typing.List[multiverse.DbTag]]:
     astroTagging = astroSector.tagging()
+    if not astroTagging:
+        return None
+
     dbTags: typing.List[multiverse.DbTag] = []
-    if astroTagging:
-        for astroTag in astroTagging.tags():
-            try:
-                dbTags.append(multiverse.DbTag(tag=astroTag))
-            except Exception as ex:
-                logging.warning('Failed to create Tag {tag} when converting {sector}'.format(
-                        tag=astroTag,
-                        sector=sectorLogName),
-                    exc_info=ex)
+    for astroTag in astroTagging.tags():
+        try:
+            dbTags.append(multiverse.DbTag(tag=astroTag))
+        except Exception as ex:
+            logging.warning('Failed to create Tag {tag} when converting {sector}'.format(
+                    tag=astroTag,
+                    sector=sectorLogName),
+                exc_info=ex)
 
     return dbTags
 
 def _createDbProducts(
         astroSector: astronomer.Sector,
         sectorLogName: str
-        ) -> typing.List[multiverse.DbProduct]:
-    dbProducts: typing.List[multiverse.DbProduct] = []
-    for astroProduct in astroSector.products():
+        ) -> typing.Optional[typing.List[multiverse.DbProduct]]:
+    astroProducts = astroSector.products()
+    if not astroProducts:
+        return None
+
+    dbProducts = []
+    for astroProduct in astroProducts:
         try:
             dbProducts.append(multiverse.DbProduct(
                 publication=astroProduct.publication(),
@@ -1594,19 +1627,19 @@ def convertAstronomerSectorToDbSector(astroSector: astronomer.Sector) -> multive
 
     dbSystems = _createDbSystems(
         astroSector=astroSector,
+        sectorLogName=sectorLogName,
         astroAllegianceToDbAllegianceMap=astroAllegianceToDbAllegianceMap,
-        astroSophontToDbSophontMap=astroSophontToDbSophontMap,
-        sectorLogName=sectorLogName)
+        astroSophontToDbSophontMap=astroSophontToDbSophontMap)
 
     dbRoutes = _createDbRoutes(
         astroSector=astroSector,
-        astroAllegianceToDbAllegianceMap=astroAllegianceToDbAllegianceMap,
-        sectorLogName=sectorLogName)
+        sectorLogName=sectorLogName,
+        astroAllegianceToDbAllegianceMap=astroAllegianceToDbAllegianceMap)
 
     dbBorders = _createDbBorders(
         astroSector=astroSector,
-        astroAllegianceToDbAllegianceMap=astroAllegianceToDbAllegianceMap,
-        sectorLogName=sectorLogName)
+        sectorLogName=sectorLogName,
+        astroAllegianceToDbAllegianceMap=astroAllegianceToDbAllegianceMap)
 
     dbRegions = _createDbRegions(
         astroSector=astroSector,
@@ -1638,8 +1671,8 @@ def convertAstronomerSectorToDbSector(astroSector: astronomer.Sector) -> multive
         selected=astroSector.selected(),
         alternateNames=dbAlternateNames,
         subsectorNames=dbSubsectorNames,
-        allegiances=astroAllegianceToDbAllegianceMap.values(),
-        sophonts=astroSophontToDbSophontMap.values(),
+        allegiances=astroAllegianceToDbAllegianceMap.values() if astroAllegianceToDbAllegianceMap else None,
+        sophonts=astroSophontToDbSophontMap.values() if astroSophontToDbSophontMap else None,
         systems=dbSystems,
         routes=dbRoutes,
         borders=dbBorders,
