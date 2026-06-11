@@ -3,7 +3,7 @@ import cartographer
 import math
 import typing
 
-class RectSelector(object):
+class RectSelector(cartographer.AbstractSelector):
     def __init__(
             self,
             milieu: astronomer.Milieu,
@@ -29,23 +29,17 @@ class RectSelector(object):
         self._tightPlaceholderSectors: typing.Optional[typing.List[astronomer.Sector]] = None
         self._sloppyPlaceholderSectors: typing.Optional[typing.List[astronomer.Sector]] = None
 
-    def rect(self) -> cartographer.RectangleF:
-        return cartographer.RectangleF(self._rect)
-
     def setRect(self, rect: cartographer.RectangleF) -> None:
         if rect == self._rect:
             return
         self._rect = cartographer.RectangleF(rect)
-        self._invalidate()
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
+        self.clearCaches()
 
     def setMilieu(self, milieu: astronomer.Milieu) -> None:
         if milieu is self._milieu:
             return
         self._milieu = milieu
-        self._invalidate()
+        self.clearCaches()
 
     def sectorSlop(self) -> float:
         return self._sectorSlop
@@ -61,7 +55,7 @@ class RectSelector(object):
         self._worldSlop = slop
         self._sloppyWorlds = None
 
-    def sectors(self, tight: bool = False) -> typing.Iterable[astronomer.Sector]:
+    def sectors(self, tight: bool = False) -> typing.Collection[astronomer.Sector]:
         sectors = self._tightSectors if tight else self._sloppySectors
         if sectors is not None:
             return sectors
@@ -70,7 +64,7 @@ class RectSelector(object):
 
         return self._tightSectors if tight else self._sloppySectors
 
-    def worlds(self, tight: bool = False) -> typing.Iterable[astronomer.World]:
+    def worlds(self, tight: bool = False) -> typing.Collection[astronomer.World]:
         worlds = self._tightWorlds if tight else self._sloppyWorlds
         if worlds is not None:
             return worlds
@@ -79,7 +73,7 @@ class RectSelector(object):
 
         return self._tightWorlds if tight else self._sloppyWorlds
 
-    def placeholderSectors(self, tight: bool = False) -> typing.Iterable[astronomer.Sector]:
+    def placeholderSectors(self, tight: bool = False) -> typing.Collection[astronomer.Sector]:
         sectors = self._tightPlaceholderSectors if tight else self._sloppyPlaceholderSectors
         if sectors is not None:
             return sectors
@@ -88,7 +82,7 @@ class RectSelector(object):
 
         return self._tightPlaceholderSectors if tight else self._sloppyPlaceholderSectors
 
-    def placeholderWorlds(self, tight: bool = False) -> typing.Iterable[astronomer.World]:
+    def placeholderWorlds(self, tight: bool = False) -> typing.Collection[astronomer.World]:
         placeholders = self._tightPlaceholderWorlds if tight else self._sloppyPlaceholderWorlds
         if placeholders is not None:
             return placeholders
@@ -97,7 +91,7 @@ class RectSelector(object):
 
         return self._tightPlaceholderWorlds if tight else self._sloppyPlaceholderWorlds
 
-    def _invalidate(self) -> None:
+    def clearCaches(self) -> None:
         self._tightSectors = self._sloppySectors = None
         self._tightWorlds = self._sloppyWorlds = None
         self._tightPlaceholderWorlds = self._sloppyPlaceholderWorlds = None

@@ -505,7 +505,7 @@ class MapPen(cartographer.AbstractPen):
     def setStyle(
             self,
             style: cartographer.LineStyle,
-            pattern: typing.Optional[typing.List[float]] = None
+            pattern: typing.Optional[typing.Sequence[float]] = None
             ) -> None:
         self._style = style
         self._pattern = list(pattern) if self._style is cartographer.LineStyle.Custom else None
@@ -751,9 +751,6 @@ class MapGraphics(cartographer.AbstractGraphics):
             ) -> MapMatrix:
         return MapMatrix(m11=m11, m12=m12, m21=m21, m22=m22, dx=dx, dy=dy)
 
-    def copyMatrix(self, other: MapMatrix) -> MapMatrix:
-        return MapMatrix(other=other)
-
     def createBrush(self, colour: str = '') -> MapBrush:
         return MapBrush(colour=colour)
 
@@ -803,6 +800,10 @@ class MapGraphics(cartographer.AbstractGraphics):
             QtGui.QPainter.RenderHint.SmoothPixmapTransform,
             antialias)
 
+    def setWorldToImageTransform(self, matrix: MapMatrix) -> None:
+        self._painter.setTransform(
+            matrix.qtTransform() * self._painter.transform())
+
     def scaleTransform(self, scaleX: float, scaleY: float) -> None:
         if scaleX == 1.0 and scaleY == 1.0:
             return
@@ -823,10 +824,6 @@ class MapGraphics(cartographer.AbstractGraphics):
         transform = self._painter.transform()
         transform.rotate(degrees, QtCore.Qt.Axis.ZAxis)
         self._painter.setTransform(transform)
-
-    def multiplyTransform(self, matrix: MapMatrix) -> None:
-        self._painter.setTransform(
-            matrix.qtTransform() * self._painter.transform())
 
     def intersectClipPath(self, path: MapPath) -> None:
         newClip = QtGui.QPainterPath()
@@ -979,6 +976,45 @@ class MapGraphics(cartographer.AbstractGraphics):
         textRect = font.qtMeasureText(text)
         scale = font.emSize() / qtFont.pointSizeF()
 
+        if format == cartographer.TextAlignment.Baseline:
+            textOrigin = QtCore.QPointF(0, 0)
+        elif format == cartographer.TextAlignment.Centered:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - (textRect.width() / 2),
+                -textRect.y() - (textRect.height() / 2))
+        elif format == cartographer.TextAlignment.TopLeft:
+            textOrigin = QtCore.QPointF(
+                -textRect.x(),
+                -textRect.y())
+        elif format == cartographer.TextAlignment.TopCenter:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - (textRect.width() / 2),
+                -textRect.y())
+        elif format == cartographer.TextAlignment.TopRight:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - textRect.width(),
+                -textRect.y())
+        elif format == cartographer.TextAlignment.MiddleLeft:
+            textOrigin = QtCore.QPointF(
+                -textRect.x(),
+                -textRect.y() - (textRect.height() / 2))
+        elif format == cartographer.TextAlignment.MiddleRight:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - textRect.width(),
+                -textRect.y() - (textRect.height() / 2))
+        elif format == cartographer.TextAlignment.BottomLeft:
+            textOrigin = QtCore.QPointF(
+                -textRect.x(),
+                -textRect.y() - textRect.height())
+        elif format == cartographer.TextAlignment.BottomCenter:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - (textRect.width() / 2),
+                -textRect.y() - textRect.height())
+        elif format == cartographer.TextAlignment.BottomRight:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - textRect.width(),
+                -textRect.y() - textRect.height())
+
         self._painter.save()
         try:
             transform = QtGui.QTransform()
@@ -995,45 +1031,6 @@ class MapGraphics(cartographer.AbstractGraphics):
             # current pen
             qtBrush = brush.qtBrush()
             self._painter.setPen(qtBrush.color())
-
-            if format == cartographer.TextAlignment.Baseline:
-                textOrigin = QtCore.QPointF(0, 0)
-            elif format == cartographer.TextAlignment.Centered:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - (textRect.width() / 2),
-                    -textRect.y() - (textRect.height() / 2))
-            elif format == cartographer.TextAlignment.TopLeft:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x(),
-                    -textRect.y())
-            elif format == cartographer.TextAlignment.TopCenter:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - (textRect.width() / 2),
-                    -textRect.y())
-            elif format == cartographer.TextAlignment.TopRight:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - textRect.width(),
-                    -textRect.y())
-            elif format == cartographer.TextAlignment.MiddleLeft:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x(),
-                    -textRect.y() - (textRect.height() / 2))
-            elif format == cartographer.TextAlignment.MiddleRight:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - textRect.width(),
-                    -textRect.y() - (textRect.height() / 2))
-            elif format == cartographer.TextAlignment.BottomLeft:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x(),
-                    -textRect.y() - textRect.height())
-            elif format == cartographer.TextAlignment.BottomCenter:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - (textRect.width() / 2),
-                    -textRect.y() - textRect.height())
-            elif format == cartographer.TextAlignment.BottomRight:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - textRect.width(),
-                    -textRect.y() - textRect.height())
 
             self._painter.drawText(textOrigin, text)
         finally:

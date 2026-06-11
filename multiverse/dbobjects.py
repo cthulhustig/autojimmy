@@ -15,6 +15,17 @@ class DbObject(object):
 
         common.validateOptionalStr(name='id', value=id, allowEmpty=False)
 
+        # TODO: Some testing showed that switching to uuid7 is 10% faster when
+        # importing the custom universe (2 seconds less). Unfortunately it's
+        # only part of the standard library in Python 3.14+.
+        # - Add some code that checks Python version and uses uuid7 if available.
+        #   It should be something that gets run once when the py file is loaded
+        #   rather than something is checked every time an object is constructed.
+        #   Store the function as a global variable or something like that.
+        # - I should upgrade my install to Python 3.14+ before I do any serious
+        #   testing of the db/editor changes
+        # - I should also update the build machine to Python 3.14+
+        # https://andersmurphy.com/2026/06/05/the-perils-of-uuid-primary-keys-in-sqlite.html
         self._id = id if id is not None else str(uuid.uuid4())
 
     def id(self) -> str:

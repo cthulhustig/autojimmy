@@ -134,8 +134,11 @@ class SectorCache(object):
             self,
             sectorPos: astronomer.SectorPosition
             ) -> typing.Optional[cartographer.AbstractPointList]:
-        worlds = self._worldsCache.get(sectorPos)
-        if worlds is not None:
+        # NOTE: Use -1 as the default so we can differentiate between a sector
+        # that is not in the cache and one that is in the cache but is set to
+        # None as it has no worlds
+        worlds = self._worldsCache.get(sectorPos, -1)
+        if worlds != -1:
             return worlds
 
         sector = self._universe.sectorByPosition(
@@ -154,7 +157,7 @@ class SectorCache(object):
                 x=centerX * astronomer.ParsecScaleX,
                 y=centerY * astronomer.ParsecScaleY))
 
-        worlds = self._graphics.createPointList(points=points)
+        worlds = self._graphics.createPointList(points=points) if points else None
         self._worldsCache[sectorPos] = worlds
         return worlds
 

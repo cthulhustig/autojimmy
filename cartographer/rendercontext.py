@@ -3,8 +3,28 @@ import cartographer
 import common
 import enum
 import re
+import sys
 import math
 import typing
+
+# This calculates the bounds of a subsector without the sector offset
+# (i.e. the bounds for the subsectors in the sector located at the
+# universe origin)
+def _referenceSubsectorBounds(code: str) -> cartographer.RectangleF:
+    index = ord(code) - ord('A')
+
+    indexX = index % 4
+    indexY = index // 4
+
+    left = -astronomer.ReferenceHexX + (indexX * astronomer.SubsectorWidth)
+    top = -astronomer.ReferenceHexY + (indexY * astronomer.SubsectorHeight)
+    width = astronomer.SubsectorWidth
+    height = astronomer.SubsectorHeight
+
+    return cartographer.RectangleF(left, top, width, height)
+
+_SubsectorReferenceBounds = [(code, _referenceSubsectorBounds(code)) for code in map(chr, range(ord('A'), ord('P') + 1))]
+
 
 class RenderContext(object):
     class LayerAction(object):
@@ -15,6 +35,7 @@ class RenderContext(object):
                 ) -> None:
             self.id = id
             self.action = action
+            self.enabled = True
 
     class WorldLayer(enum.Enum):
         Background = 0
@@ -63,31 +84,21 @@ class RenderContext(object):
     def __init__(
             self,
             universe: astronomer.Universe,
-            graphics: cartographer.AbstractGraphics,
-            worldCenterX: float,
-            worldCenterY: float,
-            scale: float,
-            outputPixelX: int,
-            outputPixelY: int,
             milieu: astronomer.Milieu,
+            graphics: cartographer.AbstractGraphics,
             style: cartographer.MapStyle,
             options: cartographer.RenderOptions,
             imageStore: cartographer.ImageStore,
             vectorStore: cartographer.VectorStore,
-            labelStore: cartographer.LabelStore
+            labelStore: cartographer.LabelStore,
+            selector: typing.Optional[cartographer.AbstractSelector] = None
             ) -> None:
         self._universe = universe
-        self._graphics = graphics
-        self._worldCenterX = worldCenterX
-        self._worldCenterY = worldCenterY
-        self._scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
-        self._outputPixelWidth = outputPixelX
-        self._outputPixelHeight = outputPixelY
-        self._outputClipRect = None
-        self._options = options
         self._milieu = milieu
+        self._graphics = graphics
+        self._options = options
         self._styleSheet = cartographer.StyleSheet(
-            scale=self._scale,
+            scale=RenderContext._MaxScale, # This will be updated when render is called
             options=self._options,
             style=style,
             graphics=self._graphics)
@@ -110,10 +121,10 @@ class RenderContext(object):
             graphics=self._graphics)
         self._selector = cartographer.RectSelector(
             milieu=self._milieu,
-            universe=self._universe)
+            universe=self._universe) if selector is None else selector
+        self._scale = None
         self._worldOutputRect = None
         self._worldViewRect = None
-        self._imageSpaceToWorldSpace = None
         self._worldSpaceToImageSpace = None
 
         self._hexOutlinePath = self._graphics.createPath(
@@ -131,42 +142,7 @@ class RenderContext(object):
         self._galaxyImageRect = cartographer.RectangleF(-18257, -26234, 36551, 32462)
         self._riftImageRect = cartographer.RectangleF(-1374, -827, 2769, 1754)
 
-        self._parsecGrid: typing.Optional[cartographer.AbstractPointList] = None
-
         self._createLayers()
-        self._updateView()
-
-    def setView(
-            self,
-            worldCenterX: float,
-            worldCenterY: float,
-            scale: float,
-            outputPixelWidth: int,
-            outputPixelHeight: int,
-            clipRect: typing.Optional[typing.Tuple[int, int, int, int]] = None
-            ) -> None:
-        scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
-        scaleUpdated = scale != self._scale
-
-        self._worldCenterX = worldCenterX
-        self._worldCenterY = worldCenterY
-        self._scale = scale
-        self._outputPixelWidth = outputPixelWidth
-        self._outputPixelHeight = outputPixelHeight
-
-        if clipRect:
-            self._outputClipRect = cartographer.RectangleF(*clipRect)
-        else:
-            self._outputClipRect = None
-
-        # NOTE: Updating the style sheet must be done before updating the view
-        # as it needs to know if it should create a new parsec grid
-        self._styleSheet.scale = self._scale
-
-        self._updateView()
-
-        if scaleUpdated:
-            self._updateLayerOrder()
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
@@ -202,26 +178,76 @@ class RenderContext(object):
         self._styleSheet.options = options
         self._updateLayerOrder()
 
-    def render(self) -> None:
-        with self._graphics.save():
-            if self._outputClipRect:
-                self._graphics.intersectClipRect(self._outputClipRect)
+    def renderArea(
+            self,
+            worldCenterX: float,
+            worldCenterY: float,
+            scale: float,
+            outputPixelWidth: int,
+            outputPixelHeight: int,
+            clipRect: typing.Optional[typing.Tuple[int, int, int, int]] = None
+            ) -> cartographer.RectangleF:
+        self._updateView(
+            worldCenterX=worldCenterX,
+            worldCenterY=worldCenterY,
+            scale=scale,
+            outputPixelWidth=outputPixelWidth,
+            outputPixelHeight=outputPixelHeight,
+            clipRect=clipRect)
+        self._renderLayers(clipRect=clipRect)
+        return cartographer.RectangleF(self._worldViewRect)
+    
+    # TODO: This needs improved and probably renamed
+    def renderUniverse(
+            self,
+            scale: float
+            ) -> None:
+        scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
+        scaleUpdated = scale != self._scale
 
-            # Overall, rendering is all in world-space; individual steps may transform back
-            # to image-space as needed.
-            self._graphics.multiplyTransform(self._imageSpaceToWorldSpace)
+        self._scale = scale
+        self._styleSheet.scale = self._scale
 
-            for layer in self._layers:
-                #with common.DebugTimer(string=str(layer.action)):
-                # See the comment where _layers is defined for why this call looks
-                # a bit odd
-                layer.action(self)
+        self._worldOutputRect = cartographer.RectangleF(
+            -(sys.float_info.max / 2),
+            -(sys.float_info.max / 2),
+            sys.float_info.max,
+            sys.float_info.max)
+        self._worldViewRect = self._worldOutputRect
+
+        self._worldSpaceToImageSpace = self._graphics.createIdentityMatrix()
+        
+        if scaleUpdated:
+            self._updateLayerOrder()        
+
+        self._renderLayers()
 
     def clearCaches(self) -> None:
+        self._selector.clearCaches()
         self._sectorCache.clear()
         self._worldCache.clear()
         self._gridCache.clear()
         self._starfieldCache.clear()
+
+    def enableLayer(self, layerId: cartographer.LayerId) -> None:
+        layer = self._idToLayerMap.get(layerId)
+        if layer:
+            layer.enabled = True
+
+    def disableLayer(self, layerId: cartographer.LayerId) -> None:
+        layer = self._idToLayerMap.get(layerId)
+        if layer:
+            layer.enabled = False
+
+    def enableAllLayers(self) -> None:
+        for layer in self._idToLayerMap.values():
+            if layer:
+                layer.enabled = True
+
+    def disableAllLayers(self) -> None:
+        for layer in self._idToLayerMap.values():
+            if layer:
+                layer.enabled = False
 
     def _createLayers(self) -> None:
         # NOTE: It is VERY IMPORTANT that unbound functions are used in this array rather than
@@ -233,7 +259,7 @@ class RenderContext(object):
         # loop detection automatically based on the amount of memory that is currently allocated,
         # it runs it based on the number of allocations being made (which my memory usage doesn't
         # seem to trigger very reliably)
-        self._layers: typing.List[RenderContext.LayerAction] = [
+        self._orderedLayers: typing.List[RenderContext.LayerAction] = [
             RenderContext.LayerAction(cartographer.LayerId.Background_Solid, RenderContext._drawBackground),
 
             RenderContext.LayerAction(cartographer.LayerId.Background_NebulaTexture, RenderContext._drawNebulaBackground),
@@ -257,12 +283,12 @@ class RenderContext(object):
             RenderContext.LayerAction(cartographer.LayerId.Micro_BordersBackground, RenderContext._drawMicroBordersBackground),
             RenderContext.LayerAction(cartographer.LayerId.Micro_BordersForeground, RenderContext._drawMicroBordersForeground),
             RenderContext.LayerAction(cartographer.LayerId.Micro_Routes, RenderContext._drawMicroRoutes),
-            RenderContext.LayerAction(cartographer.LayerId.Micro_BorderExplicitLabels, RenderContext._drawMicroLabels),
+            RenderContext.LayerAction(cartographer.LayerId.Micro_Labels, RenderContext._drawMicroLabels),
 
             RenderContext.LayerAction(cartographer.LayerId.Names_Sector, RenderContext._drawSectorNames),
             RenderContext.LayerAction(cartographer.LayerId.Macro_GovernmentRiftRouteNames, RenderContext._drawMacroNames),
             RenderContext.LayerAction(cartographer.LayerId.Macro_CapitalsAndHomeWorlds, RenderContext._drawCapitalsAndHomeWorlds),
-            RenderContext.LayerAction(cartographer.LayerId.Mega_GalaxyScaleLabels, RenderContext._drawMegaLabels),
+            RenderContext.LayerAction(cartographer.LayerId.Mega_Labels, RenderContext._drawMegaLabels),
 
             RenderContext.LayerAction(cartographer.LayerId.Worlds_Background, RenderContext._drawWorldsBackground),
             RenderContext.LayerAction(cartographer.LayerId.Worlds_Foreground, RenderContext._drawWorldsForeground),
@@ -276,58 +302,82 @@ class RenderContext(object):
             RenderContext.LayerAction(cartographer.LayerId.Overlay_AncientsWorlds, RenderContext._drawAncientWorldsOverlay),
             RenderContext.LayerAction(cartographer.LayerId.Overlay_ReviewStatus, RenderContext._drawSectorReviewStatusOverlay),
         ]
+        self._idToLayerMap = {layer.id: layer for layer in self._orderedLayers}
 
         self._updateLayerOrder()
 
     def _updateLayerOrder(self) -> None:
-        self._layers.sort(key=lambda l: self._styleSheet.layerOrder.index(l.id))
+        self._orderedLayers.sort(key=lambda l: self._styleSheet.layerOrder.index(l.id))
 
-    def _updateView(self):
-        worldOutputWidth = self._outputPixelWidth / (self._scale * astronomer.ParsecScaleX)
-        worldOutputHeight = self._outputPixelHeight / (self._scale * astronomer.ParsecScaleY)
-        viewAreaChanged = (self._worldOutputRect is None) or \
-            (worldOutputWidth != self._worldOutputRect.width()) or \
-            (worldOutputHeight != self._worldOutputRect.height())
+    def _updateView(
+            self,
+            worldCenterX: float,
+            worldCenterY: float,
+            scale: float,
+            outputPixelWidth: int,
+            outputPixelHeight: int,
+            clipRect: typing.Optional[typing.Tuple[int, int, int, int]] = None
+            ) -> None:
+        scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
+        scaleUpdated = scale != self._scale
+
+        self._scale = scale
+        self._styleSheet.scale = self._scale
+
+        worldOutputWidth = outputPixelWidth / (self._scale * astronomer.ParsecScaleX)
+        worldOutputHeight = outputPixelHeight / (self._scale * astronomer.ParsecScaleY)
 
         self._worldOutputRect = cartographer.RectangleF(
-            x=self._worldCenterX - (worldOutputWidth / 2),
-            y=self._worldCenterY - (worldOutputHeight / 2),
+            x=worldCenterX - (worldOutputWidth / 2),
+            y=worldCenterY - (worldOutputHeight / 2),
             width=worldOutputWidth,
             height=worldOutputHeight)
 
         self._worldViewRect = self._worldOutputRect
-        if self._outputClipRect:
-            worldClipOffsetX = self._outputClipRect.x() / (self._scale * astronomer.ParsecScaleX)
-            worldClipOffsetY = self._outputClipRect.y() / (self._scale * astronomer.ParsecScaleY)
-            worldClipWidth = self._outputClipRect.width() / (self._scale * astronomer.ParsecScaleX)
-            worldClipHeight = self._outputClipRect.height() / (self._scale * astronomer.ParsecScaleY)
+        if clipRect:
+            clipX, clipY, clipWidth, clipHeight = clipRect
+            worldClipOffsetX = clipX / (self._scale * astronomer.ParsecScaleX)
+            worldClipOffsetY = clipY / (self._scale * astronomer.ParsecScaleY)
+            worldClipWidth = clipWidth / (self._scale * astronomer.ParsecScaleX)
+            worldClipHeight = clipHeight / (self._scale * astronomer.ParsecScaleY)
             self._worldViewRect = cartographer.RectangleF(
                 x=self._worldOutputRect.x() + worldClipOffsetX,
                 y=self._worldOutputRect.y() + worldClipOffsetY,
                 width=worldClipWidth,
                 height=worldClipHeight)
 
-        # This needs to be done after _worldViewRect is calculated
         self._selector.setRect(self._worldViewRect)
 
-        m = self._graphics.createIdentityMatrix()
-        m.scalePrepend(
+        self._worldSpaceToImageSpace = self._graphics.createIdentityMatrix()
+        self._worldSpaceToImageSpace.scalePrepend(
             sx=self._scale * astronomer.ParsecScaleX,
             sy=self._scale * astronomer.ParsecScaleY)
-        m.translatePrepend(
+        self._worldSpaceToImageSpace.translatePrepend(
             dx=-self._worldOutputRect.left(),
             dy=-self._worldOutputRect.top())
-        self._imageSpaceToWorldSpace = self._graphics.copyMatrix(other=m)
-        m.invert()
-        self._worldSpaceToImageSpace = self._graphics.copyMatrix(other=m)
+        
+        if scaleUpdated:
+            self._updateLayerOrder()
 
-        if self._styleSheet.parsecGrid.visible:
-            if viewAreaChanged or not self._parsecGrid:
-                self._parsecGrid = self._gridCache.grid(
-                    parsecWidth=int(math.ceil(self._worldOutputRect.width())),
-                    parsecHeight=int(math.ceil(self._worldOutputRect.height())))
-        else:
-            self._parsecGrid = None
+    def _renderLayers(
+            self,
+            clipRect: typing.Optional[typing.Tuple[int, int, int, int]] = None
+            ) -> None:
+        with self._graphics.save():
+            if clipRect:
+                self._graphics.intersectClipRect(cartographer.RectangleF(*clipRect))
+
+            # Overall, rendering is all in world-space; individual steps may transform back
+            # to image-space as needed.
+            self._graphics.setWorldToImageTransform(self._worldSpaceToImageSpace)
+
+            for layer in self._orderedLayers:
+                if not layer.enabled:
+                    continue
+
+                # See the comment where _layers is defined for why this call looks
+                # a bit odd
+                layer.action(self)
 
     def _drawBackground(self) -> None:
         self._graphics.setSmoothingMode(
@@ -566,13 +616,16 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        if self._parsecGrid:
+        parsecGrid = self._gridCache.grid(
+            parsecWidth=int(math.ceil(self._worldOutputRect.width())),
+            parsecHeight=int(math.ceil(self._worldOutputRect.height())))
+        if parsecGrid:
             with self._graphics.save():
                 offsetX = math.floor(self._worldViewRect.left())
                 offsetY = math.floor(self._worldViewRect.top()) + (0.5 if offsetX % 2 else 0)
                 self._graphics.translateTransform(dx=offsetX, dy=offsetY)
                 self._graphics.drawLines(
-                    points=self._parsecGrid,
+                    points=parsecGrid,
                     pen=self._styleSheet.parsecGrid.linePen)
 
         if self._styleSheet.numberAllHexes and (self._styleSheet.worldDetails & cartographer.WorldDetails.Hex) != 0:
@@ -614,49 +667,33 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        minX = int(math.floor(self._worldViewRect.left()))
-        minY = int(math.floor(self._worldViewRect.top()))
-        maxX = int(math.ceil(self._worldViewRect.right()))
-        maxY = int(math.ceil(self._worldViewRect.bottom()))
+        # Bloat the view rect so that we draw one subsector more in each dimension.
+        # This is done to allow for subsectors with long names that extend into
+        # neighbouring subsectors. This makes the assumption that a name will never
+        # extend further than one neighbouring subsector. If a name does extend
+        # further than this, you may get odd draw issues with the name popping in
+        # and out as you scroll.
+        drawRect = cartographer.RectangleF(self._worldViewRect)
+        drawRect.inflate(astronomer.SubsectorWidth, astronomer.SubsectorHeight)
 
-        for x in range(minX, maxX + astronomer.SubsectorWidth, astronomer.SubsectorWidth):
-            for y in range(minY, maxY + astronomer.SubsectorHeight, astronomer.SubsectorHeight):
-                hexPos = astronomer.HexPosition(
-                    absoluteX=x,
-                    absoluteY=y)
-                sector = self._universe.sectorByPosition(
-                    milieu=self._milieu,
-                    position=hexPos)
-                if not sector:
-                    continue
-
-                subsectorName = sector.subsectorName(code=hexPos.subsectorCode())
+        for sector in self._selector.sectors():
+            sectorPos = sector.position()
+            sectorOffsetX = sectorPos.sectorX() * astronomer.SectorWidth
+            sectorOffsetY = sectorPos.sectorY() * astronomer.SectorHeight
+            for code, referenceBounds in _SubsectorReferenceBounds:
+                subsectorName = sector.subsectorName(code)
                 if not subsectorName:
                     continue
 
-                indexX = (hexPos.offsetX() - 1) // astronomer.SubsectorWidth
-                indexY = (hexPos.offsetY() - 1) // astronomer.SubsectorHeight
+                subsectorBounds = cartographer.RectangleF(referenceBounds)
+                subsectorBounds.translate(sectorOffsetX, sectorOffsetY)
 
-                ulHex = astronomer.HexPosition(
-                    sectorX=hexPos.sectorX(),
-                    sectorY=hexPos.sectorY(),
-                    offsetX=(indexX * astronomer.SubsectorWidth) + 1,
-                    offsetY=(indexY * astronomer.SubsectorHeight) + 1)
-                brHex = astronomer.HexPosition(
-                    sectorX=hexPos.sectorX(),
-                    sectorY=hexPos.sectorY(),
-                    offsetX=ulHex.offsetX() + (astronomer.SubsectorWidth - 1),
-                    offsetY=ulHex.offsetY() + (astronomer.SubsectorHeight - 1))
-                left = ulHex.absoluteX() - 1
-                top = ulHex.absoluteY() - 1
-                right = brHex.absoluteX()
-                bottom = brHex.absoluteY()
+                if not subsectorBounds.intersects(self._worldViewRect):
+                    continue
 
                 self._drawLabel(
                     text=subsectorName,
-                    center=cartographer.PointF(
-                        x=(left + right) / 2,
-                        y=(top + bottom) / 2),
+                    center=subsectorBounds.centre(),
                     font=self._styleSheet.subsectorNames.font,
                     brush=self._styleSheet.subsectorNames.textBrush,
                     labelStyle=self._styleSheet.subsectorNames.textStyle)
@@ -1135,7 +1172,7 @@ class RenderContext(object):
                                 image=worldInfo.worldImage,
                                 rect=rect)
 
-            for placeholder in self._selector.placeholderWorlds(True):
+            for placeholder in self._selector.placeholderWorlds(tight=True):
                 with self._graphics.save():
                     placeholderHex = placeholder.hex()
                     centerX, centerY = placeholderHex.worldCenter()
@@ -2371,3 +2408,4 @@ class RenderContext(object):
     @staticmethod
     def _wrapLabelText(text: str) -> str:
         return RenderContext._TextWrapPattern.sub('\n', text)
+

@@ -40,6 +40,17 @@ class LRUCache(typing.Generic[K, V]):
 
     def pop(self) -> typing.Tuple[K, V]:
         return self._mapping.popitem(False)
+    
+    # NOTE: Iterating over keys/values/items from oldest to newest.
+    # This intentionally does not update used ordering
+    def keys(self) -> typing.Iterable[K]:
+        return self._mapping.keys()
+
+    def values(self) -> typing.Iterable[V]:
+        return self._mapping.values()
+    
+    def items(self) -> typing.Iterable[typing.Tuple[K, V]]:
+        return self._mapping.items()
 
     def ensureCapacity(self, capacity: int) -> None:
         if capacity > self._capacity:

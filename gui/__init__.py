@@ -49,6 +49,7 @@ from .map.primitives import *
 from .map.mapscale import *
 from .map.utils import *
 from .map.mapgraphics import *
+from .map.mapbounds import *
 from .map.thumbnail import *
 from .map.tooltips import *
 from .map.hextooltipprovider import *
