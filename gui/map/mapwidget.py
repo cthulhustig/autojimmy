@@ -607,13 +607,15 @@ class MapWidget(QtWidgets.QWidget):
 
         self._updateView()
 
-        # TODO: Need to remove registration when map is destroyed to avoid leaks
         # TODO: Having the tile cache invalidated by each MapWidget is problematic
         # as it will happen multiple times for each edit. What I really want to
         # happen is the tile cache gets notified once then, once the new tiles have
         # been generated, each MapWidget is told to redraw.
         azathoth.UniverseEditor.instance().addPreUpdateObserver(self._handleUniversePreUpdate)
         azathoth.UniverseEditor.instance().addPreUpdateObserver(self._handleUniversePostUpdate)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._handleUniversePostUpdate)
 
     def universe(self) -> astronomer.Universe:
         return self._universe
