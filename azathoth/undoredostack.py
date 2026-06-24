@@ -13,6 +13,9 @@ class UndoRedoStack(object):
             self._undoStack.pop(0)
         self._redoStack.clear()
 
+    def canUndo(self) -> bool:
+        return len(self._undoStack) > 0
+
     def undo(self) -> typing.Optional[azathoth.EditCommandInterface]:
         if not self._undoStack:
             return None
@@ -21,6 +24,9 @@ class UndoRedoStack(object):
         self._redoStack.append(command)
 
         return command
+
+    def canRedo(self) -> bool:
+        return len(self._redoStack) > 0
 
     def redo(self) -> typing.Optional[azathoth.EditCommandInterface]:
         if not self._redoStack:

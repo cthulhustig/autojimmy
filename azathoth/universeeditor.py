@@ -18,7 +18,7 @@ class UniverseEditor(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _preUpdateObservers = common.ObserverSet[azathoth.ChangeEvent]()
-    _postUpdateObservers = common.ObserverSet[azathoth.ChangeEvent]()    
+    _postUpdateObservers = common.ObserverSet[azathoth.ChangeEvent]()
     _entityFactory = azathoth.EditableEntityFactory()
     _universe: azathoth.EditableUniverse = None
     _undoStack = azathoth.UndoRedoStack(maxDepth=_UndoStackSize)
@@ -82,9 +82,15 @@ class UniverseEditor(object):
     def revertChanges(self) -> None:
         pass
 
+    def canUndo(self) -> bool:
+        return self._undoStack.canUndo()
+
     def undo(self) -> None:
         command = self._undoStack.undo()
         self._revertCommand(command=command)
+
+    def canRedo(self) -> bool:
+        return self._undoStack.canRedo()
 
     def redo(self) -> None:
         command = self._undoStack.redo()
@@ -119,7 +125,7 @@ class UniverseEditor(object):
             observers=self._postUpdateObservers,
             changeEvent=changeEvent,
             errorMsg='Editor observer threw an exception when handling post revert notification')
-        
+
     @staticmethod
     def _notifyObservers(
             observers: common.ObserverSet[azathoth.ChangeEvent],
@@ -128,4 +134,4 @@ class UniverseEditor(object):
             ) -> None:
         observers.notify(
             changeEvent,
-            exceptionCallback=lambda ex: logging.error(errorMsg, exc_info=ex))        
+            exceptionCallback=lambda ex: logging.error(errorMsg, exc_info=ex))

@@ -3,6 +3,7 @@ import astronomer
 import azathoth
 import cartographer
 import common
+import enum
 import gui
 import logging
 import multiverse
@@ -28,6 +29,13 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 # - This will mean not using a DB file copy to create the new sector
 
 class CustomUniverseWindow(gui.WindowWidget):
+    class Actions(enum.StrEnum):
+        Undo = 'undo'
+        Redo = 'redo'
+
+        ImportSector = 'import'
+        ExportSector = 'export'
+
     def __init__(self) -> None:
         super().__init__(
             title='Custom Universe',
@@ -79,26 +87,15 @@ class CustomUniverseWindow(gui.WindowWidget):
 
         windowLayout = QtWidgets.QVBoxLayout()
         windowLayout.addWidget(self._splitter)
+
+        self._actions: typing.Dict[CustomUniverseWindow.Actions, QtWidgets.QAction] = {}
+        self._createActions()
+
         self.resize(640, 480)
         self.setLayout(windowLayout)
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         super().firstShowEvent(e)
-
-    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
-        # TODO: This is a massive hack
-        if event.key() == QtCore.Qt.Key.Key_V:
-            selection = self._mapWidget.selectedSectors()
-            if selection:
-                selection = selection[0]
-            if selection:
-                self._importSector(
-                    #metadataFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.xml',
-                    #sectorFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.tab',
-                    metadataFilePath='E:\\Projects\\autojimmy\\test-second-survey-metadata.xml',
-                    sectorFilePath='E:\\Projects\\autojimmy\\test-second-survey-sector.sec',
-                    sectorPos=selection)
-                event.accept()
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -136,6 +133,46 @@ class CustomUniverseWindow(gui.WindowWidget):
         self._settings.endGroup()
 
         super().saveSettings()
+
+    def _createActions(self) -> None:
+        action = QtWidgets.QAction('Undo', self)
+        action.triggered.connect(self._undo)
+        action.setShortcut(QtGui.QKeySequence.StandardKey.Undo)
+        self._actions[CustomUniverseWindow.Actions.Undo] = action
+        self.addAction(action)
+
+        action = QtWidgets.QAction('Redo', self)
+        action.triggered.connect(self._redo)
+        action.setShortcut(QtGui.QKeySequence.StandardKey.Redo)
+        self._actions[CustomUniverseWindow.Actions.Redo] = action
+        self.addAction(action)
+
+        action = QtWidgets.QAction('Import Sector', self)
+        action.triggered.connect(self._importSector)
+        # TODO: Use proper shortcut when I get passed hacky debug import
+        #action.setShortcut(QtGui.QKeySequence('Ctrl+I'))
+        action.setShortcut(QtGui.QKeySequence('Ctrl+V'))
+        self._actions[CustomUniverseWindow.Actions.ImportSector] = action
+        self.addAction(action)
+
+        action = QtWidgets.QAction('Export Sector', self)
+        action.triggered.connect(self._exportSector)
+        # TODO: Is there a more standard shortcut for export (import as well)
+        action.setShortcut(QtGui.QKeySequence('Ctrl+E'))
+        self._actions[CustomUniverseWindow.Actions.ExportSector] = action
+        self.addAction(action)
+
+        self._syncActionState()
+
+    def _syncActionState(self) -> None:
+        hasSelection = self._mapWidget.hasSelection()
+        hasSelectedSector = hasSelection and self._mapWidget.selectionCategory() is gui.MapWidgetEx.SelectionCategory.SectorSelection
+
+        self._actions[CustomUniverseWindow.Actions.Undo].setEnabled(azathoth.UniverseEditor.instance().canUndo())
+        self._actions[CustomUniverseWindow.Actions.Redo].setEnabled(azathoth.UniverseEditor.instance().canRedo())
+
+        self._actions[CustomUniverseWindow.Actions.ImportSector].setEnabled(hasSelectedSector)
+        self._actions[CustomUniverseWindow.Actions.ExportSector].setEnabled(hasSelectedSector)
 
     def _appConfigChanged(
             self,
@@ -221,6 +258,8 @@ class CustomUniverseWindow(gui.WindowWidget):
         else:
             self._sectorTable.clearSelection()
 
+        self._syncActionState()
+
     def _mapShowContextMenu(
             self,
             pos: QtCore.QPoint
@@ -245,12 +284,20 @@ class CustomUniverseWindow(gui.WindowWidget):
         menu.addActions(actions)
         menu.exec(QtGui.QCursor.pos())
 
-    def _importSector(
-            self,
-            metadataFilePath: str,
-            sectorFilePath: str,
-            sectorPos: typing.Optional[astronomer.SectorPosition]
-            ) -> None:
+    def _importSector(self) -> None:
+        selection = self._mapWidget.selectedSectors()
+        sectorPos = None
+        if selection:
+            sectorPos = selection[0]
+        if not sectorPos:
+            return
+
+        # TODO: This should display a dialog to let the user select which files to import
+        #metadataFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.xml'
+        #sectorFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.tab'
+        metadataFilePath='E:\\Projects\\autojimmy\\test-second-survey-metadata.xml'
+        sectorFilePath='E:\\Projects\\autojimmy\\test-second-survey-sector.sec'
+
         universe = azathoth.UniverseEditor.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
@@ -404,6 +451,7 @@ class CustomUniverseWindow(gui.WindowWidget):
                 command=azathoth.ReplaceSectorCommand(
                     oldSector=oldSector,
                     newSector=newSector))
+            self._syncActionState()
         except Exception as ex:
             message = 'An error occurred when importing sector.'
             logging.critical(message, exc_info=ex)
@@ -482,6 +530,38 @@ class CustomUniverseWindow(gui.WindowWidget):
                 file.write(content)
         except Exception as ex:
             message = f'An error occurred when writing the sector file'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+    def _undo(self) -> None:
+        if not azathoth.UniverseEditor.instance().canUndo():
+            return
+
+        try:
+            azathoth.UniverseEditor.instance().undo()
+            self._syncActionState()
+        except Exception as ex:
+            message = 'An error occurred while performing undo.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+    def _redo(self) -> None:
+        if not azathoth.UniverseEditor.instance().canRedo():
+            return
+
+        try:
+            azathoth.UniverseEditor.instance().redo()
+            self._syncActionState()
+        except Exception as ex:
+            message = 'An error occurred while performing redo.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

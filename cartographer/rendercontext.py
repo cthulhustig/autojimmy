@@ -197,7 +197,6 @@ class RenderContext(object):
         self._renderLayers(clipRect=clipRect)
         return cartographer.RectangleF(self._worldViewRect)
     
-    # TODO: This needs improved and probably renamed
     def renderUniverse(
             self,
             scale: float
