@@ -6,6 +6,9 @@ import threading
 import typing
 import weakref
 
+# TODO: Need to have controls other than map subscribe to be notified when changes
+# occur and update their state when they do
+
 class UniverseEditor(object):
     # To mimic the behaviour of Traveller Map, the world position data for
     # M1105 is used as placeholders if the specified milieu doesn't have
@@ -37,7 +40,7 @@ class UniverseEditor(object):
                     cls._instance = cls.__new__(cls)
         return cls._instance
 
-    def universe(self) -> astronomer.Universe:
+    def universe(self) -> azathoth.EditableUniverse:
         return self._universe
 
     def loadUniverse(

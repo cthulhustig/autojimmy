@@ -1,4 +1,5 @@
 import azathoth
+import common
 import typing
 
 class ReplaceSectorCommand(azathoth.EditCommandInterface):
@@ -8,6 +9,9 @@ class ReplaceSectorCommand(azathoth.EditCommandInterface):
             newSector: typing.Optional[azathoth.EditableSector]
             ) -> None:
         super().__init__()
+
+        common.validateOptionalObject(name='oldSector', value=oldSector, objectType=azathoth.EditableSector)
+        common.validateOptionalObject(name='newSector', value=newSector, objectType=azathoth.EditableSector)
 
         if oldSector and newSector:
             if oldSector.milieu() != newSector.milieu():

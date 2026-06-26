@@ -196,7 +196,7 @@ class RenderContext(object):
             clipRect=clipRect)
         self._renderLayers(clipRect=clipRect)
         return cartographer.RectangleF(self._worldViewRect)
-    
+
     def renderUniverse(
             self,
             scale: float
@@ -215,9 +215,9 @@ class RenderContext(object):
         self._worldViewRect = self._worldOutputRect
 
         self._worldSpaceToImageSpace = self._graphics.createIdentityMatrix()
-        
+
         if scaleUpdated:
-            self._updateLayerOrder()        
+            self._updateLayerOrder()
 
         self._renderLayers()
 
@@ -723,6 +723,9 @@ class RenderContext(object):
             for sector in self._selector.sectors():
                 sectorRoutes = self._sectorCache.routeLines(
                     sectorPos=sector.position())
+                if not sectorRoutes:
+                    continue
+
                 for route in sectorRoutes:
                     routeColour = route.colour()
                     routeWidth = route.width()

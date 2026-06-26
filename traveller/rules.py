@@ -5,9 +5,9 @@ import typing
 # mapping to CargoRecord serialization/deserialization as the names are store
 # in the file files
 class RuleSystem(enum.Enum):
-    MGT = 'Mongoose Traveller'
-    MGT2 = 'Mongoose Traveller 2e'
-    MGT2022 = 'Mongoose Traveller Update 2022'
+    MGT = 'Mongoose'
+    MGT2 = 'Mongoose 2e'
+    MGT2022 = 'Mongoose Update 2022'
 
 class StarPortFuelType(enum.Enum):
     AllTypes = 'All Types'

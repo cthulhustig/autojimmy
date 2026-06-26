@@ -292,153 +292,28 @@ class CustomUniverseWindow(gui.WindowWidget):
         if not sectorPos:
             return
 
-        # TODO: This should display a dialog to let the user select which files to import
-        #metadataFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.xml'
-        #sectorFilePath='C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\Test Sectors\\Rocket🚀.tab'
-        metadataFilePath='E:\\Projects\\autojimmy\\test-second-survey-metadata.xml'
-        sectorFilePath='E:\\Projects\\autojimmy\\test-second-survey-sector.sec'
-
         universe = azathoth.UniverseEditor.instance().universe()
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
         oldSector = universe.sectorByPosition(
             milieu=milieu,
             position=sectorPos)
-        if oldSector:
-            # TODO: Confirmation prompt
-            # TODO: If it's not an existing sector then I'm going to need a different
-            # command as it won't be a replace
-            pass
-
-        # TODO: Need to display any messages that are reported to the user
-        reporter = common.LoggingReporter(logLevel=logging.WARNING)
-
-        _, metadataFileName = os.path.split(metadataFilePath)
-        reporter.pushPrefix(f'{metadataFileName} - ')
-        try:
-            with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
-                sectorMetadata = file.read()
-            rawMetadata = survey.parseMetadata(
-                content=sectorMetadata,
-                reporter=reporter)
-            if sectorPos:
-                # TODO: This is crap
-                rawMetadata = survey.RawMetadata(
-                    x=sectorPos.sectorX(),
-                    y=sectorPos.sectorY(),
-                    canonicalName=rawMetadata.canonicalName(),
-                    alternateNames=rawMetadata.alternateNames(),
-                    nameLanguages=rawMetadata.nameLanguages(),
-                    abbreviation=rawMetadata.abbreviation(),
-                    sectorLabel=rawMetadata.sectorLabel(),
-                    subsectorNames=rawMetadata.subsectorNames(),
-                    selected=rawMetadata.selected(),
-                    tags=rawMetadata.tags(),
-                    allegiances=rawMetadata.allegiances(),
-                    routes=rawMetadata.routes(),
-                    borders=rawMetadata.borders(),
-                    labels=rawMetadata.labels(),
-                    regions=rawMetadata.regions(),
-                    sources=rawMetadata.sources(),
-                    styleSheet=rawMetadata.styleSheet())
-        except Exception as ex:
-            message = 'An error occurred when loading sector metadata.'
+        if oldSector is not None and not isinstance(oldSector, azathoth.EditableSector):
+            message = 'Old sector is not editable.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
                 exception=ex)
             return
-        finally:
-            if reporter:
-                reporter.popPrefix()
 
-        # Try to parse the sector format now to prevent it failing after the user has waited
-        # to create the posters. This is only really needed for cases where Traveller Map is
-        # happy with the format but my parser isn't
-        _, sectorFileName = os.path.split(sectorFilePath)
-        reporter.pushPrefix(f'{sectorFileName} - ')
-        try:
-            with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
-                sectorData = file.read()
-            rawSystems = survey.parseSector(
-                content=sectorData,
-                reporter=reporter)
-        except Exception as ex:
-            message = 'An error occurred when loading sector world data.'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
+        importDlg = gui.ImportSectorDialog(sectorPos=sectorPos, parent=self)
+        if importDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
-        finally:
-            if reporter:
-                reporter.popPrefix()
 
-        if reporter:
-            reporter.pushPrefix('Stock Allegiances: ')
-        try:
-            rawStockAllegiances = multiverse.loadSnapshotStockAllegiances(
-                reporter=reporter)
-        except:
-            message = 'An error occurred when loading stock allegiances.'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-        finally:
-            if reporter:
-                reporter.popPrefix()
-
-        if reporter:
-            reporter.pushPrefix('Stock Sophonts: ')
-        try:
-            rawStockSophonts = multiverse.loadSnapshotStockSophonts(
-                reporter=reporter)
-        except:
-            message = 'An error occurred when loading stock sophonts.'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-        finally:
-            if reporter:
-                reporter.popPrefix()
-
-        if reporter:
-            reporter.pushPrefix('Stock Style Sheet: ')
-        try:
-            rawStyleSheet = multiverse.loadSnapshotStyleSheet(
-                reporter=reporter)
-        except:
-            message = 'An error occurred when loading stock style sheet.'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-        finally:
-            if reporter:
-                reporter.popPrefix()
-
-        try:
-            newSector = astronomer.convertRawSectorToAstronomerSector(
-                milieu=milieu,
-                rawMetadata=rawMetadata,
-                rawSystems=rawSystems,
-                isCustom=True,
-                rawStockAllegiances=rawStockAllegiances,
-                rawStockSophonts=rawStockSophonts,
-                rawStockStyleSheet=rawStyleSheet,
-                entityFactory=azathoth.UniverseEditor.instance().entityFactory())
-        except Exception as ex:
-            message = 'An error occurred when converting data.'
+        newSector = importDlg.sector()
+        if not newSector:
+            message = 'Invalid sector.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

@@ -1,5 +1,6 @@
 import astronomer
 import azathoth
+import common
 import typing
 
 class EditableUniverse(astronomer.Universe):
@@ -19,6 +20,9 @@ class EditableUniverse(astronomer.Universe):
             oldSector: typing.Optional[azathoth.EditableSector],
             newSector: typing.Optional[azathoth.EditableSector]
             ) -> None:
+        common.validateOptionalObject(name='oldSector', value=oldSector, objectType=azathoth.EditableSector)
+        common.validateOptionalObject(name='newSector', value=newSector, objectType=azathoth.EditableSector)
+
         if oldSector and newSector:
             if oldSector.milieu() != newSector.milieu():
                 raise ValueError(f'Sectors have different milieu ({oldSector.milieu().value} vs {newSector.milieu().value})')

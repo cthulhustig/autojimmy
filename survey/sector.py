@@ -294,7 +294,7 @@ def parseSector(
         content: str,
         format: typing.Optional[SectorFormat] = None,
         reporter: typing.Optional[common.Reporter] = None
-        ) -> typing.Collection[survey.RawWorld]:
+        ) -> typing.List[survey.RawWorld]:
     if format is None:
         format = detectSectorFormat(content=content)
         if format is None:
@@ -310,7 +310,7 @@ def parseSector(
 def parseT5ColumnSector(
         content: str,
         reporter: typing.Optional[common.Reporter] = None
-        ) -> typing.Collection[survey.RawWorld]:
+        ) -> typing.List[survey.RawWorld]:
     worlds = []
     columnNames = None
     columnAttributes = None
@@ -402,7 +402,7 @@ def _parseT5ColumnWorld(
 def parseT5TabSector(
         content: str,
         reporter: typing.Optional[common.Reporter] = None
-        ) -> typing.Collection[survey.RawWorld]:
+        ) -> typing.List[survey.RawWorld]:
     worlds = []
     columnNames = None
     columnAttributes = None

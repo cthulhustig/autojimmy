@@ -16,7 +16,7 @@ class BoundsGraphics(cartographer.AbstractGraphics):
 
     def bounds(self) -> typing.Optional[cartographer.RectangleF]:
         return self._bounds
-    
+
     def reset(self) -> None:
         self._bounds = None
 
@@ -316,7 +316,7 @@ class BoundsGraphics(cartographer.AbstractGraphics):
 
     def _convertPoint(self, point: cartographer.PointF) -> QtCore.QPointF:
         return QtCore.QPointF(point.x(), point.y())
-    
+
     def _convertRect(
             self,
             rect: cartographer.RectangleF
@@ -330,7 +330,7 @@ class _BoundsSelector(cartographer.AbstractSelector):
         # Sets are used for the sectors/worlds to prevent objects getting added
         # multiple times and therefore getting "rendered" multiple times.
         self._sectors = set()
-        self._worlds = set()     
+        self._worlds = set()
 
     def setObjects(self, objects: typing.Optional[typing.Collection[typing.Union[astronomer.Sector, astronomer.World]]]) -> None:
         self._objects.clear()
@@ -411,7 +411,7 @@ class RenderBoundsCalculator(object):
     def setMilieu(self, milieu) -> None:
         if self._milieu is not milieu:
             return
-        
+
         self._milieu = milieu
         self._renderer = None
 
@@ -421,7 +421,7 @@ class RenderBoundsCalculator(object):
             scale: float
             ) -> typing.Optional[cartographer.RectangleF]:
         if self._renderer is None:
-            self._createRenderer()        
+            self._createRenderer()
 
         self._renderer.disableAllLayers()
         self._renderer.enableLayer(cartographer.LayerId.Micro_Routes)
@@ -435,14 +435,14 @@ class RenderBoundsCalculator(object):
         self._renderer.enableLayer(cartographer.LayerId.Worlds_Overlays)
 
         self._graphics.reset()
-        
+
         self._selector.setObjects(objects)
         try:
             self._renderer.renderUniverse(scale=scale)
             return self._graphics.bounds()
         finally:
             self._selector.setObjects(None)
-        
+
     def clearCaches(self) -> None:
         if self._renderer:
             self._renderer.clearCaches()

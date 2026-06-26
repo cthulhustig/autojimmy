@@ -1,4 +1,5 @@
 import astronomer
+import common
 import traveller
 import typing
 
@@ -57,4 +58,5 @@ class EditableWorld(astronomer.World):
         return self._sectorId
 
     def setSectorId(self, sectorId: str) -> None:
+        common.validateMandatoryStr(name='sectorId', value=sectorId, allowEmpty=False)
         self._sectorId = sectorId

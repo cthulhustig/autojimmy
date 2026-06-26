@@ -1,4 +1,5 @@
 import astronomer
+import common
 import typing
 
 class EditableRegion(astronomer.Region):
@@ -28,4 +29,5 @@ class EditableRegion(astronomer.Region):
         return self._sectorId
 
     def setSectorId(self, sectorId: str) -> None:
+        common.validateMandatoryStr(name='sectorId', value=sectorId, allowEmpty=False)
         self._sectorId = sectorId

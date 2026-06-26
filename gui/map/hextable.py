@@ -1388,8 +1388,9 @@ class HexTable(gui.FrozenColumnListTable):
             hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         try:
-            mapWindow = gui.WindowManager.instance().createMapWindow()
+            mapWindow = gui.MapWindow()
             mapWindow.highlightHexes(hexes=hexes)
+            gui.WindowManager.instance().manageWindow(window=mapWindow)
         except Exception as ex:
             message = 'Failed to show hexes(s) on map'
             logging.error(message, exc_info=ex)

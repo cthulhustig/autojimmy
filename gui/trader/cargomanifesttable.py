@@ -698,8 +698,9 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             worlds: typing.Iterable[astronomer.World]
             ) -> None:
         try:
-            mapWindow = gui.WindowManager.instance().createMapWindow()
+            mapWindow = gui.MapWindow()
             mapWindow.highlightHexes(hexes=[world.hex() for world in worlds])
+            gui.WindowManager.instance().manageWindow(window=mapWindow)
         except Exception as ex:
             message = 'Failed to show world(s) on map'
             logging.error(message, exc_info=ex)
@@ -713,8 +714,9 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             route: logic.JumpRoute
             ) -> None:
         try:
-            mapWindow = gui.WindowManager.instance().createMapWindow()
+            mapWindow = gui.MapWindow()
             mapWindow.setJumpRoute(jumpRoute=route)
+            gui.WindowManager.instance().manageWindow(window=mapWindow)
         except Exception as ex:
             message = 'Failed to show jump route on map'
             logging.error(message, exc_info=ex)

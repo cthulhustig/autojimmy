@@ -7,6 +7,9 @@ class Reporter(object):
         self._messageList = []
         self._prefixStack = []
 
+    def hasMessages(self) -> bool:
+        return len(self._messageList) > 0
+
     def messages(self) -> typing.Sequence[str]:
         return common.ConstSequenceRef(self._messageList)
 
