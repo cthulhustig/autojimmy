@@ -33,6 +33,7 @@ class CustomUniverseWindow(gui.WindowWidget):
         Undo = 'undo'
         Redo = 'redo'
 
+        DeleteSector = 'delete'
         ImportSector = 'import'
         ExportSector = 'export'
 
@@ -145,6 +146,12 @@ class CustomUniverseWindow(gui.WindowWidget):
         action.triggered.connect(self._redo)
         action.setShortcut(QtGui.QKeySequence.StandardKey.Redo)
         self._actions[CustomUniverseWindow.Actions.Redo] = action
+        self.addAction(action)
+
+        action = QtWidgets.QAction('Delete Sector', self)
+        action.triggered.connect(self._deleteSector)
+        action.setShortcut(QtGui.QKeySequence.StandardKey.Delete)
+        self._actions[CustomUniverseWindow.Actions.DeleteSector] = action
         self.addAction(action)
 
         action = QtWidgets.QAction('Import Sector', self)
@@ -284,6 +291,44 @@ class CustomUniverseWindow(gui.WindowWidget):
         menu.addActions(actions)
         menu.exec(QtGui.QCursor.pos())
 
+    def _deleteSector(self) -> None:
+        selection = self._mapWidget.selectedSectors()
+        sectorPos = None
+        if selection:
+            sectorPos = selection[0]
+        if not sectorPos:
+            return
+
+        universe = azathoth.UniverseEditor.instance().universe()
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+
+        oldSector = universe.sectorByPosition(
+            milieu=milieu,
+            position=sectorPos)
+        if oldSector is not None and not isinstance(oldSector, azathoth.EditableSector):
+            message = 'Old sector is not editable.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            azathoth.UniverseEditor.instance().executeCommand(
+                command=azathoth.ReplaceSectorCommand(
+                    oldSector=oldSector,
+                    newSector=None))
+            self._syncActionState()
+        except Exception as ex:
+            message = 'An error occurred when deleting the sector.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
     def _importSector(self) -> None:
         selection = self._mapWidget.selectedSectors()
         sectorPos = None
@@ -328,7 +373,7 @@ class CustomUniverseWindow(gui.WindowWidget):
                     newSector=newSector))
             self._syncActionState()
         except Exception as ex:
-            message = 'An error occurred when importing sector.'
+            message = 'An error occurred when importing the sector.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

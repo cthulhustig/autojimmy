@@ -69,7 +69,7 @@ class UniverseEditor(object):
         self._preUpdateObservers.register(handler)
 
     def addPostUpdateObserver(self, handler: typing.Callable[[azathoth.ChangeEvent], None]) -> None:
-        self._preUpdateObservers.register(handler)
+        self._postUpdateObservers.register(handler)
 
     def removeObserver(self, handler: typing.Callable[[azathoth.ChangeEvent], None]) -> None:
         self._preUpdateObservers.unregister(handler)

@@ -612,7 +612,7 @@ class MapWidget(QtWidgets.QWidget):
         # happen is the tile cache gets notified once then, once the new tiles have
         # been generated, each MapWidget is told to redraw.
         azathoth.UniverseEditor.instance().addPreUpdateObserver(self._handleUniversePreUpdate)
-        azathoth.UniverseEditor.instance().addPreUpdateObserver(self._handleUniversePostUpdate)
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._handleUniversePostUpdate)
 
     def __del__(self) -> None:
         azathoth.UniverseEditor.instance().removeObserver(self._handleUniversePostUpdate)
