@@ -65,5 +65,6 @@ def loadUniverseFromDatabase(
 
     return entityFactory.createUniverse(
         universeId=universeId,
+        isCustom=not universeInfo.isStock(),
         sectors=sectors,
         placeholderMilieu=placeholderMilieu)

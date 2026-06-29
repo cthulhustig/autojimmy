@@ -64,6 +64,7 @@ from .map.hextable import *
 from .map.sectortable import *
 from .map.hextablemanagerwidget import *
 from .map.hexdetailswindow import *
+from .map.createuniversedialog import *
 from .map.importsectordialog import *
 from .map.customuniversewindow import *
 from .trader.tooltips import *

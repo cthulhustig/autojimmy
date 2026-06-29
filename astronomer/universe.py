@@ -34,6 +34,7 @@ class Universe(object):
     def __init__(
             self,
             universeId: str,
+            isCustom: bool,
             sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
             placeholderMilieu: typing.Optional[astronomer.Milieu] = None
             ) -> None:
@@ -42,6 +43,7 @@ class Universe(object):
         common.validateOptionalObject(name='placeholderMilieu', value=placeholderMilieu, objectType=astronomer.Milieu)
 
         self._universeId = universeId
+        self._isCustom = isCustom
         self._milieuDataMap: typing.Dict[astronomer.Milieu, Universe._MilieuData] = {}
         self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
         self._placeholderMilieu = placeholderMilieu
@@ -51,6 +53,9 @@ class Universe(object):
 
     def universeId(self) -> str:
         return self._universeId
+
+    def isCustom(self) -> bool:
+        return self._isCustom
 
     def sectorNames(
             self,

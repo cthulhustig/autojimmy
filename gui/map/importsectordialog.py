@@ -22,8 +22,8 @@ class ImportSectorDialog(gui.DialogEx):
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
-            title='New Custom Sector',
-            configSection='NewCustomSectorDialog',
+            title='Import Sector',
+            configSection='ImportSectorDialog',
             parent=parent)
 
         self._sectorPos = sectorPos

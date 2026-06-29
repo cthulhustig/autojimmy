@@ -5,6 +5,7 @@
 import depschecker
 
 import app
+import astronomer
 import enum
 import gui
 import gunsmith
@@ -22,6 +23,55 @@ import sys
 import uuid
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
+
+# TODO: Initial universe creation/management
+# - All universes are custom universes that can be edited and they only contain data for a single Milieu
+#       - Avoids confusion as to why you can't edit the "stock" universe
+#       - When a new universe is created, if the user wants stock data, its imported from files at that point
+#           - I don't think I want to give an option to let the user choose if FarAway sectors are imported as
+#           there are so few of them it doesn't warrant it. I think I either want to always include them or always
+#           exclude them.
+#       - Rather than the current sector metadata, I think I want to have a sector_source table that tracks what the source was for sectors
+#           - Rather than index by sector id, it will be indexed by sector position
+#           - Should store the source data hash in the same way as the current sector metadata
+#           - Will need to have wrapper objects so the data can be read and written from the application layer
+#       - Rather than store timestamps per source sector, the timestamp of the map snapshot it was imported from should be stored
+#           - IMPORTANT: This is currently stored in the registry database but should be stored in the universe
+#       - The Milieu the source data was taken from will also need to be stored in the universe database
+#           - This is needed so, if we pull in updates from map snapshot, we know which Milieu to pull them from
+#       - Downside of this is doing auto updates when the stock traveller map changes so I'll need a method to import
+#           - Need to display a list of any custom sectors that have updates and let the user choose what to do
+#           - I'll probably also need to store if the user chose to not import far away as you wouldn't want to import them as part of the update
+# - Update Process
+#    1. Read timestamp from universe DB and compare it with snapshot timestamp
+#       - If the universe DB timestamp is greater or equal, nothing to do
+#       - If there is no universe DB timestamp, nothing to do (the universe was created as an empty universe)
+#    2. Read metadata and sector files from map snapshot using Milieu specified in universe DB
+#       - If no Milieu is set, it means the universe was created as an empty universe, need to prompt for which Milieu to use
+#    3. Read sector_source info from universe DB
+#    4. Compare the map snapshot and sector_source info to see what has changed
+#       - If a sector is in the map snapshot but not in the sector_source, add it to the added list
+#       - If a sector is not in the map snapshot but is in the sector_source, add it to the deleted list
+#       - If a sector is in both, the file hashes need to be compared, if they are different add it to the modified list
+#    5. For each sector added/modified/deleted lists, check if there is a sector in the universe at that location and,
+#       if there is check if it's marked as being custom (i.e. modified since the universe was created). If it is, the
+#       user needs prompted if it should be updated.
+#       - If the user chooses not to update one of the sectors, remove it from the corresponded added/modified/deleted lists
+#    6. Delete any sectors on the deleted list
+#    7. Add any sectors on the added list        
+#    8. Replace any sectors on the modified list
+# - The fact Universes should be single milieu only means
+#      - A load of code can be deleted, no need to have the config option, no need for windows to handle it changing
+#      - If the user wants a different Milieu, they can create a new universe (and have it import the stock data for that Milieu)
+# - IMPORTANT: Will need to handle the case where the user has created an empty Universe and then chooses to sync the map snapshot into it
+#      - This should be possible but the user will need to specify which Milieu they want
+#      - Once they specify which Millie, the one they chose needs to be written to the universe DB
+# - If there is no universe when user starts app, they are shown the create universe dialog
+#       - Lets them choose if they want to import stock data, including which Milieu to import from
+#       - Will need an additional check that isn't usually part to the create universe dialog that asks if they want to import legacy custom sectors
+# - Drop placeholder Milieu support
+#       - It's a pain in the ass to maintain
+#       - It's going to be problematic when editing the universe
 
 _SingletonAppId = 'd2b192d8-4007-4588-bb80-8bd9721e9bcc'
 
@@ -211,7 +261,7 @@ class MainWindow(QtWidgets.QMainWindow):
         refereeGroupBox.setLayout(refereeLayout)
 
         self._customUniverseButton = QtWidgets.QPushButton('Custom Universe...', self)
-        self._customUniverseButton.clicked.connect(gui.WindowManager.instance().showCustomUniverseWindow)
+        self._customUniverseButton.clicked.connect(self._showCustomUniverseWindow)
 
         self._downloadButton = QtWidgets.QPushButton('Download Universe Data...', self)
         self._downloadButton.clicked.connect(self._downloadUniverse)
@@ -302,6 +352,17 @@ class MainWindow(QtWidgets.QMainWindow):
             gui.MessageBoxEx.information(
                 parent=self,
                 text=f'Some changes will only be applied when {app.AppName} is restarted.')
+
+    def _showCustomUniverse(self) -> None:
+        universe = astronomer.WorldManager.instance().universe()
+        if not universe.isCustom():
+            # TODO: Display a message box explaining you need to create a custom universe
+            # TODO: If there are no custom universes in the registry, just display a simple dialog to create a new universe
+            # TODO: If there are existing custom universes (it's just they aren't selected), display a universe manager window
+            # that lets the user create a new one _or_ switch to an existing one
+            pass
+
+        gui.WindowManager.instance().showCustomUniverseWindow()
 
     # TODO: If the the current universe is a custom universe this should probably give
     # a warning telling the user that their universe won't update.

@@ -7,11 +7,13 @@ class EditableUniverse(astronomer.Universe):
     def __init__(
             self,
             universeId: str,
+            isCustom: bool,
             sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
             placeholderMilieu: typing.Optional[astronomer.Milieu] = None
             ) -> None:
         super().__init__(
             universeId=universeId,
+            isCustom=isCustom,
             sectors=sectors,
             placeholderMilieu=placeholderMilieu)
 
