@@ -362,12 +362,6 @@ class _BoundsSelector(cartographer.AbstractSelector):
     def worlds(self, tight: bool = False) -> typing.Iterable[astronomer.World]:
         return common.ConstCollectionRef(self._worlds)
 
-    def placeholderSectors(self, tight: bool = False) -> typing.Iterable[astronomer.Sector]:
-        return []
-
-    def placeholderWorlds(self, tight: bool = False) -> typing.Iterable[astronomer.World]:
-        return []
-
     def clearCaches(self):
         pass
 

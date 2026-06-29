@@ -35,18 +35,15 @@ class Universe(object):
             self,
             universeId: str,
             isCustom: bool,
-            sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
-            placeholderMilieu: typing.Optional[astronomer.Milieu] = None
+            sectors: typing.Collection[astronomer.Sector] # Sectors for all milieu
             ) -> None:
         common.validateMandatoryStr(name='universeId', value=universeId, allowEmpty=False)
         common.validateMandatoryCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
-        common.validateOptionalObject(name='placeholderMilieu', value=placeholderMilieu, objectType=astronomer.Milieu)
 
         self._universeId = universeId
         self._isCustom = isCustom
         self._milieuDataMap: typing.Dict[astronomer.Milieu, Universe._MilieuData] = {}
         self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
-        self._placeholderMilieu = placeholderMilieu
 
         for sector in sectors:
             self._addSector(sector=sector)
@@ -96,24 +93,20 @@ class Universe(object):
     def sectors(
             self,
             milieu: astronomer.Milieu,
-            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.Sector], bool] = None
             ) -> typing.List[astronomer.Sector]:
         return list(self.yieldSectors(
             milieu=milieu,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders))
+            filterCallback=filterCallback))
 
     def worlds(
             self,
             milieu: astronomer.Milieu,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.List[astronomer.World]:
         return list(self.yieldWorlds(
             milieu=milieu,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders))
+            filterCallback=filterCallback))
 
     def worldBySectorHex(
             self,
@@ -126,99 +119,71 @@ class Universe(object):
     def worldByPosition(
             self,
             milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition,
-            includePlaceholders: bool = False
+            hex: astronomer.HexPosition
             ) -> typing.Optional[astronomer.World]:
         milieuData = self._milieuDataMap.get(milieu)
-        world = milieuData.positionToWorldMap.get(hex.absolute()) if milieuData else None
-
-        if not world and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            sectorPos = hex.sectorPosition()
-            if not milieuData or sectorPos.elements() not in milieuData.positionToSectorMap:
-                world = self.worldByPosition(
-                    milieu=self._placeholderMilieu,
-                    hex=hex,
-                    includePlaceholders=False)
-
-        return world
+        return milieuData.positionToWorldMap.get(hex.absolute()) if milieuData else None
 
     def sectorByPosition(
             self,
             milieu: astronomer.Milieu,
-            position: typing.Union[astronomer.SectorPosition, astronomer.HexPosition],
-            includePlaceholders: bool = False
+            position: typing.Union[astronomer.SectorPosition, astronomer.HexPosition]
             ) -> typing.Optional[astronomer.Sector]:
         if isinstance(position, astronomer.HexPosition):
             position = position.sectorPosition()
 
         milieuData = self._milieuDataMap.get(milieu)
-        sector = milieuData.positionToSectorMap.get(position.elements()) if milieuData else None
-
-        if not sector and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            sector = self.sectorByPosition(
-                milieu=self._placeholderMilieu,
-                position=position,
-                includePlaceholders=False)
-
-        return sector
+        return milieuData.positionToSectorMap.get(position.elements()) if milieuData else None
 
     def sectorsInArea(
             self,
             milieu: astronomer.Milieu,
             upperLeft: astronomer.HexPosition,
             lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.Sector], bool] = None
             ) -> typing.List[astronomer.Sector]:
         return list(self.yieldSectorsInArea(
             milieu=milieu,
             upperLeft=upperLeft,
             lowerRight=lowerRight,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders))
+            filterCallback=filterCallback))
 
     def worldsInArea(
             self,
             milieu: astronomer.Milieu,
             upperLeft: astronomer.HexPosition,
             lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.List[astronomer.World]:
         return list(self.yieldWorldsInArea(
             milieu=milieu,
             upperLeft=upperLeft,
             lowerRight=lowerRight,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders))
+            filterCallback=filterCallback))
 
     def worldsInRadius(
             self,
             milieu: astronomer.Milieu,
             center: astronomer.HexPosition,
             searchRadius: int,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.List[astronomer.World]:
         return list(self.yieldWorldsInRadius(
             milieu=milieu,
             center=center,
             radius=searchRadius,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders))
+            filterCallback=filterCallback))
 
     def worldsInFlood(
             self,
             milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.List[astronomer.World]:
         return list(self.yieldWorldsInFlood(
             milieu=milieu,
             hex=hex,
-            filterCallback=filterCallback,
-            includePlaceholders=includePlaceholders))
+            filterCallback=filterCallback))
 
     def entityById(
             self,
@@ -229,19 +194,13 @@ class Universe(object):
     def formatSectorHex(
             self,
             milieu: astronomer.Milieu,
-            hex: astronomer.HexPosition,
-            includePlaceholders: bool = False
+            hex: astronomer.HexPosition
             ) -> str:
         milieuData = self._milieuDataMap.get(milieu)
 
         sectorX, sectorY, offsetX, offsetY = hex.relative()
         sectorPos = (sectorX, sectorY)
         sector = milieuData.positionToSectorMap.get(sectorPos) if milieuData else None
-
-        if not sector and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
-            if placeholderData:
-                sector = placeholderData.positionToSectorMap.get(sectorPos)
 
         return astronomer.formatSectorHex(
             sectorName=sector.name() if sector else f'{sectorX}:{sectorY}',
@@ -383,8 +342,7 @@ class Universe(object):
 
         worlds = self.worldsInFlood(
             hex=hex,
-            milieu=milieu,
-            includePlaceholders=True)
+            milieu=milieu)
         if len(worlds) < Universe._MinMainWorldCount:
             return None
 
@@ -397,8 +355,7 @@ class Universe(object):
     def yieldSectors(
             self,
             milieu: astronomer.Milieu,
-            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.Sector], bool] = None
             ) -> typing.Generator[astronomer.Sector, None, None]:
         milieuData = self._milieuDataMap.get(milieu)
         if milieuData:
@@ -406,27 +363,14 @@ class Universe(object):
                 if not filterCallback or filterCallback(sector):
                     yield sector
 
-        if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
-            if placeholderData:
-                for sector in placeholderData.positionToSectorMap.values():
-                    sectorPos = sector.position()
-                    if not milieuData or sectorPos.elements() not in milieuData.positionToSectorMap:
-                        if not filterCallback or filterCallback(sector):
-                            yield sector
-
     def yieldSectorsInArea(
             self,
             milieu: astronomer.Milieu,
             upperLeft: astronomer.HexPosition,
             lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.Sector], bool] = None
             ) -> typing.Generator[astronomer.Sector, None, None]:
         milieuData = self._milieuDataMap.get(milieu)
-        placeholderData = None
-        if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
 
         startX, finishX = common.minmax(upperLeft.sectorX(), lowerRight.sectorX())
         startY, finishY = common.minmax(upperLeft.sectorY(), lowerRight.sectorY())
@@ -437,9 +381,6 @@ class Universe(object):
             while y <= finishY:
                 key = (x, y)
                 sector = milieuData.positionToSectorMap.get(key) if milieuData else None
-                if not sector and placeholderData:
-                    sector = placeholderData.positionToSectorMap.get(key)
-
                 if sector and (not filterCallback or filterCallback(sector)):
                     yield sector
                 y += 1
@@ -448,8 +389,7 @@ class Universe(object):
     def yieldWorlds(
             self,
             milieu: astronomer.Milieu,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.Generator[astronomer.World, None, None]:
         milieuData = self._milieuDataMap.get(milieu)
         if milieuData:
@@ -457,28 +397,14 @@ class Universe(object):
                 if not filterCallback or filterCallback(world):
                     yield world
 
-        if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
-            if placeholderData:
-                for sector in placeholderData.positionToSectorMap.values():
-                    sectorPos = sector.position()
-                    if not milieuData or sectorPos.elements() not in milieuData.positionToSectorMap:
-                        for world in sector.worlds():
-                            if not filterCallback or filterCallback(world):
-                                yield world
-
     def yieldWorldsInArea(
             self,
             milieu: astronomer.Milieu,
             upperLeft: astronomer.HexPosition,
             lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.Generator[astronomer.World, None, None]:
         milieuData = self._milieuDataMap.get(milieu)
-        placeholderData = None
-        if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
 
         startX, finishX = common.minmax(upperLeft.absoluteX(), lowerRight.absoluteX())
         startY, finishY = common.minmax(upperLeft.absoluteY(), lowerRight.absoluteY())
@@ -489,11 +415,6 @@ class Universe(object):
             while y <= finishY:
                 key = (x, y)
                 world = milieuData.positionToWorldMap.get(key) if milieuData else None
-                if not world and placeholderData:
-                    sectorPos = astronomer.absoluteSpaceToSectorPos(key)
-                    if not milieuData or sectorPos not in milieuData.positionToSectorMap:
-                        world = placeholderData.positionToWorldMap.get(key)
-
                 if world and ((not filterCallback) or filterCallback(world)):
                     yield world
                 y += 1
@@ -504,13 +425,9 @@ class Universe(object):
             milieu: astronomer.Milieu,
             center: astronomer.HexPosition,
             radius: int,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.Generator[astronomer.World, None, None]:
         milieuData = self._milieuDataMap.get(milieu)
-        placeholderData = None
-        if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
 
         minLength = radius + 1
         maxLength = (radius * 2) + 1
@@ -544,11 +461,6 @@ class Universe(object):
             for y in range(startY, finishY + 1):
                 key = (x, y)
                 world = milieuData.positionToWorldMap.get(key) if milieuData else None
-                if not world and placeholderData:
-                    sectorPos = astronomer.absoluteSpaceToSectorPos(key)
-                    if not milieuData or sectorPos not in milieuData.positionToSectorMap:
-                        world = placeholderData.positionToWorldMap.get(key)
-
                 if world and ((not filterCallback) or filterCallback(world)):
                     yield world
 
@@ -556,20 +468,12 @@ class Universe(object):
             self,
             milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None,
-            includePlaceholders: bool = False
+            filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.Generator[astronomer.World, None, None]:
         milieuData = self._milieuDataMap.get(milieu)
-        placeholderData = None
-        if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
 
         key = hex.absolute()
         world = milieuData.positionToWorldMap.get(key) if milieuData else None
-        if not world and placeholderData:
-            sectorPos = astronomer.absoluteSpaceToSectorPos(key)
-            if not milieuData or sectorPos not in milieuData.positionToSectorMap:
-                world = placeholderData.positionToWorldMap.get(key)
         if not world:
             return
 
@@ -586,11 +490,6 @@ class Universe(object):
 
                 key = adjacentHex.absolute()
                 adjacentWorld = milieuData.positionToWorldMap.get(key) if milieuData else None
-                if not adjacentWorld and placeholderData:
-                    sectorPos = astronomer.absoluteSpaceToSectorPos(key)
-                    if not milieuData or sectorPos not in milieuData.positionToSectorMap:
-                        adjacentWorld = placeholderData.positionToWorldMap.get(key)
-
                 if adjacentWorld and (adjacentWorld not in seen):
                     todo.append(adjacentWorld)
                     seen.add(adjacentWorld)

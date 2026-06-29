@@ -8,14 +8,12 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             self,
             universeId: str,
             isCustom: bool,
-            sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
-            placeholderMilieu: typing.Optional[astronomer.Milieu] = None
+            sectors: typing.Collection[astronomer.Sector] # Sectors for all milieu
             ) -> astronomer.Universe:
         return azathoth.EditableUniverse(
             universeId=universeId,
             isCustom=isCustom,
-            sectors=sectors,
-            placeholderMilieu=placeholderMilieu)
+            sectors=sectors)
 
     def createSector(
             self,

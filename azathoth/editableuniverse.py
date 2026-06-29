@@ -8,14 +8,12 @@ class EditableUniverse(astronomer.Universe):
             self,
             universeId: str,
             isCustom: bool,
-            sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
-            placeholderMilieu: typing.Optional[astronomer.Milieu] = None
+            sectors: typing.Collection[astronomer.Sector] # Sectors for all milieu
             ) -> None:
         super().__init__(
             universeId=universeId,
             isCustom=isCustom,
-            sectors=sectors,
-            placeholderMilieu=placeholderMilieu)
+            sectors=sectors)
 
     def replaceSector(
             self,

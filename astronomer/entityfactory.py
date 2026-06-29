@@ -7,8 +7,7 @@ class EntityFactoryInterface(object):
             self,
             universeId: str,
             isCustom: bool,
-            sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
-            placeholderMilieu: typing.Optional[astronomer.Milieu] = None
+            sectors: typing.Collection[astronomer.Sector] # Sectors for all milieu
             ) -> astronomer.Universe:
         raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createUniverse')
 
@@ -124,14 +123,12 @@ class DefaultEntityFactory(EntityFactoryInterface):
             self,
             universeId: str,
             isCustom: bool,
-            sectors: typing.Collection[astronomer.Sector], # Sectors for all milieu
-            placeholderMilieu: typing.Optional[astronomer.Milieu] = None
+            sectors: typing.Collection[astronomer.Sector] # Sectors for all milieu
             ) -> astronomer.Universe:
         return astronomer.Universe(
             universeId=universeId,
             isCustom=isCustom,
-            sectors=sectors,
-            placeholderMilieu=placeholderMilieu)
+            sectors=sectors)
 
     def createSector(
             self,

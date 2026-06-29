@@ -410,11 +410,5 @@ class AbstractSelector(object):
     def worlds(self, tight: bool = False) -> typing.Collection[astronomer.World]:
         raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement worlds')
 
-    def placeholderSectors(self, tight: bool = False) -> typing.Collection[astronomer.Sector]:
-        raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement placeholderSectors')
-
-    def placeholderWorlds(self, tight: bool = False) -> typing.Collection[astronomer.World]:
-        raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement placeholderWorlds')
-    
     def clearCaches(self) -> None:
         raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement clearCaches')

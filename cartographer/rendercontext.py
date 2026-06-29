@@ -1174,40 +1174,6 @@ class RenderContext(object):
                                 image=worldInfo.worldImage,
                                 rect=rect)
 
-            for placeholder in self._selector.placeholderWorlds(tight=True):
-                with self._graphics.save():
-                    placeholderHex = placeholder.hex()
-                    centerX, centerY = placeholderHex.worldCenter()
-                    self._graphics.translateTransform(
-                        dx=centerX / scaleX,
-                        dy=centerY / scaleY)
-
-                    self._drawWorldLabel(
-                        bkStyle=self._styleSheet.placeholder.textBackgroundStyle,
-                        bkBrush=self._styleSheet.worlds.textBrush,
-                        textBrush=self._styleSheet.placeholder.textBrush,
-                        position=self._styleSheet.placeholder.position,
-                        font=self._styleSheet.placeholder.font,
-                        text=self._styleSheet.placeholder.content)
-
-                    if not self._styleSheet.numberAllHexes and renderHex:
-                        if renderSubsector:
-                            numberText = '{hexX:02d}{hexY:02d}'.format(
-                                hexX=int((placeholderHex.offsetX() - 1) % astronomer.SubsectorWidth) + 1,
-                                hexY=int((placeholderHex.offsetY() - 1) % astronomer.SubsectorHeight) + 1)
-                        else:
-                            numberText = '{hexX:02d}{hexY:02d}'.format(
-                                hexX=placeholderHex.offsetX(),
-                                hexY=placeholderHex.offsetY())
-
-                        self._graphics.drawString(
-                            text=numberText,
-                            font=self._styleSheet.hexNumber.font,
-                            brush=self._styleSheet.hexNumber.textBrush,
-                            x=self._styleSheet.hexNumber.position.x(),
-                            y=self._styleSheet.hexNumber.position.y(),
-                            format=cartographer.TextAlignment.TopCenter)
-
     def _drawWorldsForeground(self) -> None:
         if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay:
             return
@@ -1238,12 +1204,6 @@ class RenderContext(object):
                     tip=cartographer.PenTip.Round) # Rounded end cap so a circle is drawn
 
                 for sector in self._selector.sectors(tight=True):
-                    worlds = self._sectorCache.isotropicWorldPoints(
-                        sectorPos=sector.position())
-                    if worlds:
-                        self._graphics.drawPoints(points=worlds, pen=pen)
-
-                for sector in self._selector.placeholderSectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
                         sectorPos=sector.position())
                     if worlds:
@@ -2290,7 +2250,7 @@ class RenderContext(object):
             return self._styleSheet.amberZone
         if worldInfo.isRedZone:
             return self._styleSheet.redZone
-        if self._styleSheet.greenZone.visible and not worldInfo.isPlaceholder:
+        if self._styleSheet.greenZone.visible:
             return self._styleSheet.greenZone
         return None
 

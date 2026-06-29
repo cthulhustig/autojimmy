@@ -5,7 +5,6 @@ import typing
 
 def loadUniverseFromDatabase(
         universeId: str,
-        placeholderMilieu: typing.Optional[astronomer.Milieu] = None,
         entityFactory: typing.Optional[astronomer.EntityFactoryInterface] = None,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
         ) -> astronomer.Universe:
@@ -66,5 +65,4 @@ def loadUniverseFromDatabase(
     return entityFactory.createUniverse(
         universeId=universeId,
         isCustom=not universeInfo.isStock(),
-        sectors=sectors,
-        placeholderMilieu=placeholderMilieu)
+        sectors=sectors)

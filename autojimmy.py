@@ -42,24 +42,36 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 #       - Downside of this is doing auto updates when the stock traveller map changes so I'll need a method to import
 #           - Need to display a list of any custom sectors that have updates and let the user choose what to do
 #           - I'll probably also need to store if the user chose to not import far away as you wouldn't want to import them as part of the update
+# - First Startup
+#   1. Create a universe for each Milieu in the map snapshot
+#   2. Load custom sectors for each Milieu into corresponding universe
+#   3. Add flag indicating custom sectors have been imported
+#   3. Prompt the user asking which universe to load
+#   4. Set the selected universe as the active universe in the config file
+# - Normal Startup
+#   1. Load the active universe
+#       - If it succeeds, nothing more to do
+#   2. Display Universe Management dialog so user can create a universe
+#       - Shouldn't let the user proceed until they create a universe (disable OK button)
+#       - If they cancel the app should exit
 # - Update Process
-#    1. Read timestamp from universe DB and compare it with snapshot timestamp
-#       - If the universe DB timestamp is greater or equal, nothing to do
-#       - If there is no universe DB timestamp, nothing to do (the universe was created as an empty universe)
-#    2. Read metadata and sector files from map snapshot using Milieu specified in universe DB
-#       - If no Milieu is set, it means the universe was created as an empty universe, need to prompt for which Milieu to use
-#    3. Read sector_source info from universe DB
-#    4. Compare the map snapshot and sector_source info to see what has changed
-#       - If a sector is in the map snapshot but not in the sector_source, add it to the added list
-#       - If a sector is not in the map snapshot but is in the sector_source, add it to the deleted list
-#       - If a sector is in both, the file hashes need to be compared, if they are different add it to the modified list
-#    5. For each sector added/modified/deleted lists, check if there is a sector in the universe at that location and,
-#       if there is check if it's marked as being custom (i.e. modified since the universe was created). If it is, the
-#       user needs prompted if it should be updated.
-#       - If the user chooses not to update one of the sectors, remove it from the corresponded added/modified/deleted lists
-#    6. Delete any sectors on the deleted list
-#    7. Add any sectors on the added list        
-#    8. Replace any sectors on the modified list
+#   1. Read timestamp from universe DB and compare it with snapshot timestamp
+#      - If the universe DB timestamp is greater or equal, nothing to do
+#      - If there is no universe DB timestamp, nothing to do (the universe was created as an empty universe)
+#   2. Read metadata and sector files from map snapshot using Milieu specified in universe DB
+#      - If no Milieu is set, it means the universe was created as an empty universe, need to prompt for which Milieu to use
+#   3. Read sector_source info from universe DB
+#   4. Compare the map snapshot and sector_source info to see what has changed
+#      - If a sector is in the map snapshot but not in the sector_source, add it to the added list
+#      - If a sector is not in the map snapshot but is in the sector_source, add it to the deleted list
+#      - If a sector is in both, the file hashes need to be compared, if they are different add it to the modified list
+#   5. For each sector added/modified/deleted lists, check if there is a sector in the universe at that location and,
+#      if there is check if it's marked as being custom (i.e. modified since the universe was created). If it is, the
+#      user needs prompted if it should be updated.
+#      - If the user chooses not to update one of the sectors, remove it from the corresponded added/modified/deleted lists
+#   6. Delete any sectors on the deleted list
+#   7. Add any sectors on the added list
+#   8. Replace any sectors on the modified list
 # - The fact Universes should be single milieu only means
 #      - A load of code can be deleted, no need to have the config option, no need for windows to handle it changing
 #      - If the user wants a different Milieu, they can create a new universe (and have it import the stock data for that Milieu)
@@ -69,9 +81,6 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 # - If there is no universe when user starts app, they are shown the create universe dialog
 #       - Lets them choose if they want to import stock data, including which Milieu to import from
 #       - Will need an additional check that isn't usually part to the create universe dialog that asks if they want to import legacy custom sectors
-# - Drop placeholder Milieu support
-#       - It's a pain in the ass to maintain
-#       - It's going to be problematic when editing the universe
 
 _SingletonAppId = 'd2b192d8-4007-4588-bb80-8bd9721e9bcc'
 
@@ -261,7 +270,7 @@ class MainWindow(QtWidgets.QMainWindow):
         refereeGroupBox.setLayout(refereeLayout)
 
         self._customUniverseButton = QtWidgets.QPushButton('Custom Universe...', self)
-        self._customUniverseButton.clicked.connect(self._showCustomUniverseWindow)
+        self._customUniverseButton.clicked.connect(self._showCustomUniverse)
 
         self._downloadButton = QtWidgets.QPushButton('Download Universe Data...', self)
         self._downloadButton.clicked.connect(self._downloadUniverse)

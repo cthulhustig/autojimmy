@@ -23,12 +23,6 @@ class RectSelector(cartographer.AbstractSelector):
         self._tightWorlds: typing.Optional[typing.List[astronomer.World]] = None
         self._sloppyWorlds: typing.Optional[typing.List[astronomer.World]] = None
 
-        self._tightPlaceholderWorlds: typing.Optional[typing.List[astronomer.World]] = None
-        self._sloppyPlaceholderWorlds: typing.Optional[typing.List[astronomer.World]] = None
-
-        self._tightPlaceholderSectors: typing.Optional[typing.List[astronomer.Sector]] = None
-        self._sloppyPlaceholderSectors: typing.Optional[typing.List[astronomer.Sector]] = None
-
     def setRect(self, rect: cartographer.RectangleF) -> None:
         if rect == self._rect:
             return
@@ -73,29 +67,9 @@ class RectSelector(cartographer.AbstractSelector):
 
         return self._tightWorlds if tight else self._sloppyWorlds
 
-    def placeholderSectors(self, tight: bool = False) -> typing.Collection[astronomer.Sector]:
-        sectors = self._tightPlaceholderSectors if tight else self._sloppyPlaceholderSectors
-        if sectors is not None:
-            return sectors
-
-        self._cacheSectors(tight=tight)
-
-        return self._tightPlaceholderSectors if tight else self._sloppyPlaceholderSectors
-
-    def placeholderWorlds(self, tight: bool = False) -> typing.Collection[astronomer.World]:
-        placeholders = self._tightPlaceholderWorlds if tight else self._sloppyPlaceholderWorlds
-        if placeholders is not None:
-            return placeholders
-
-        self._cacheWorlds(tight=tight)
-
-        return self._tightPlaceholderWorlds if tight else self._sloppyPlaceholderWorlds
-
     def clearCaches(self) -> None:
         self._tightSectors = self._sloppySectors = None
         self._tightWorlds = self._sloppyWorlds = None
-        self._tightPlaceholderWorlds = self._sloppyPlaceholderWorlds = None
-        self._tightPlaceholderSectors = self._sloppyPlaceholderSectors = None
 
     def _cacheSectors(
             self,
@@ -119,27 +93,13 @@ class RectSelector(cartographer.AbstractSelector):
                 offsetX=0,
                 offsetY=0)
 
-            usePlaceholders = self._milieu is not astronomer.Milieu.M1105
-            sloppySectors = self._universe.sectorsInArea(
+            self._sloppySectors = self._universe.sectorsInArea(
                 milieu=self._milieu,
                 upperLeft=upperLeft,
-                lowerRight=lowerRight,
-                includePlaceholders=usePlaceholders)
-            if not usePlaceholders:
-                self._sloppySectors = sloppySectors
-                self._sloppyPlaceholderSectors = []
-            else:
-                self._sloppySectors = []
-                self._sloppyPlaceholderSectors = []
-                for sector in sloppySectors:
-                    if sector.milieu() is self._milieu:
-                        self._sloppySectors.append(sector)
-                    else:
-                        self._sloppyPlaceholderSectors.append(sector)
+                lowerRight=lowerRight)
 
             if not self._sectorSlop:
                 self._tightSectors = self._sloppySectors
-                self._tightPlaceholderSectors = self._sloppyPlaceholderSectors
 
         if tight and self._tightSectors is None: # Specifically None to not recalculate if there are no sectors
             rect = cartographer.RectangleF()
@@ -150,13 +110,6 @@ class RectSelector(cartographer.AbstractSelector):
                 rect.setRect(x=left, y=top, width=width, height=height)
                 if self._rect.intersects(other=rect):
                     self._tightSectors.append(sector)
-
-            self._tightPlaceholderSectors = []
-            for sector in self._sloppyPlaceholderSectors:
-                left, top, width, height = sector.position().worldBounds()
-                rect.setRect(x=left, y=top, width=width, height=height)
-                if self._rect.intersects(other=rect):
-                    self._tightPlaceholderSectors.append(sector)
 
     def _cacheWorlds(
             self,
@@ -174,27 +127,13 @@ class RectSelector(cartographer.AbstractSelector):
                 absoluteX=int(math.ceil(rect.right())),
                 absoluteY=int(math.ceil(rect.bottom())))
 
-            usePlaceholders = self._milieu is not astronomer.Milieu.M1105
-            sloppyWorlds = self._universe.worldsInArea(
+            self._sloppyWorlds = self._universe.worldsInArea(
                 milieu=self._milieu,
                 upperLeft=upperLeft,
-                lowerRight=lowerRight,
-                includePlaceholders=usePlaceholders)
-            if not usePlaceholders:
-                self._sloppyWorlds = sloppyWorlds
-                self._sloppyPlaceholderWorlds = []
-            else:
-                self._sloppyWorlds = []
-                self._sloppyPlaceholderWorlds = []
-                for world in sloppyWorlds:
-                    if world.milieu() is self._milieu:
-                        self._sloppyWorlds.append(world)
-                    else:
-                        self._sloppyPlaceholderWorlds.append(world)
+                lowerRight=lowerRight)
 
             if not self._worldSlop:
                 self._tightWorlds = self._sloppyWorlds
-                self._tightPlaceholderWorlds = self._sloppyPlaceholderWorlds
 
         if tight and self._tightWorlds is None: # Specifically None to not recalculate if there are no worlds
             rect = cartographer.RectangleF()
@@ -205,10 +144,3 @@ class RectSelector(cartographer.AbstractSelector):
                 rect.setRect(x=left, y=top, width=width, height=height)
                 if self._rect.intersects(other=rect):
                     self._tightWorlds.append(world)
-
-            self._tightPlaceholderWorlds = []
-            for world in self._sloppyPlaceholderWorlds:
-                left, top, width, height = world.hex().worldBounds()
-                rect.setRect(x=left, y=top, width=width, height=height)
-                if self._rect.intersects(other=rect):
-                    self._tightPlaceholderWorlds.append(world)

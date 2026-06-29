@@ -10,12 +10,6 @@ import weakref
 # occur and update their state when they do
 
 class UniverseEditor(object):
-    # To mimic the behaviour of Traveller Map, the world position data for
-    # M1105 is used as placeholders if the specified milieu doesn't have
-    # a sector at that location. The world details may not be valid for the
-    # specified milieu but the position is
-    _PlaceholderMilieu = astronomer.Milieu.M1105
-
     _UndoStackSize = 4 # TODO: This should be a lot higher
 
     _instance = None # Singleton instance
@@ -53,7 +47,6 @@ class UniverseEditor(object):
 
         self._universe = astronomer.loadUniverseFromDatabase(
             universeId=universeId,
-            placeholderMilieu=UniverseEditor._PlaceholderMilieu,
             entityFactory=self._entityFactory,
             progressCallback=progressCallback)
 

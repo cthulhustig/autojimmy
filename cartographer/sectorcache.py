@@ -143,8 +143,7 @@ class SectorCache(object):
 
         sector = self._universe.sectorByPosition(
             milieu=self._milieu,
-            position=sectorPos,
-            includePlaceholders=True)
+            position=sectorPos)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
