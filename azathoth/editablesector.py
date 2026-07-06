@@ -6,8 +6,6 @@ class EditableSector(astronomer.Sector):
     def __init__(
             self,
             entity: str,
-            isCustom: bool,
-            milieu: astronomer.Milieu,
             position: astronomer.SectorPosition,
             name: str,
             alternateNames: typing.Optional[typing.Iterable[str]] = None,
@@ -30,8 +28,6 @@ class EditableSector(astronomer.Sector):
             ) -> None:
         super().__init__(
             entityId=entity,
-            isCustom=isCustom,
-            milieu=milieu,
             position=position,
             name=name,
             alternateNames=alternateNames,

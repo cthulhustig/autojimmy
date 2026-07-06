@@ -10,7 +10,6 @@ class HexTooltipProvider(object):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Collection[app.MapOption],
@@ -20,7 +19,6 @@ class HexTooltipProvider(object):
         super().__init__()
 
         self._universe = universe
-        self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._mapStyle = mapStyle
         self._mapOptions = set(mapOptions)
@@ -32,12 +30,6 @@ class HexTooltipProvider(object):
 
     def setUniverse(self, universe: astronomer.Universe) -> None:
         self._universe = universe
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
-
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        self._milieu = milieu
 
     def rules(self) -> traveller.Rules:
         return traveller.Rules(self._rules)
@@ -72,7 +64,6 @@ class HexTooltipProvider(object):
     def tooltip(self, hex: astronomer.HexPosition) -> str:
         return gui.createHexToolTip(
             universe=self._universe,
-            milieu=self._milieu,
             hex=hex,
             rules=self._rules,
             # Always show hex images

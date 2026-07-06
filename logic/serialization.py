@@ -369,6 +369,11 @@ def deserialiseWorldFiltersList(
 # They're optional though so didn't require an up tick of the version.
 # Calculations are stored using Calculation v1.0 format
 
+# TODO: Need to do something about the fact I'm not specifying the
+# Milieu for the universe now. Maybe I need to, it wouldn't do much
+# but would allow this to work and there is some other stuff (e.g.
+# Empress Wave)
+
 
 _JumpRouteVersion = packaging.version.Version('2.0')
 
@@ -397,7 +402,9 @@ def _serialiseLogistics(
         logistics: logic.RouteLogistics,
         includeCalculations: bool
         ) -> typing.Dict[str, typing.Any]:
-    jsonData = {'milieu': _MilieuToString[logistics.milieu()]}
+    # TODO: Need to do something about this, see comment at top of file
+    #jsonData = {'milieu': _MilieuToString[logistics.milieu()]}
+    jsonData = {}
 
     if logistics.perJumpOverheads():
         jsonData['overheads'] = common.serialiseCalculation(
@@ -443,6 +450,8 @@ def _deserialiseLogistics(
         route: logic.JumpRoute,
         universe: astronomer.Universe
         ) -> logic.RouteLogistics:
+    # TODO: Need to do something about this, see comment at top of file
+    """
     milieu = jsonData.get('milieu')
     if milieu is None:
         raise RuntimeError('Jump route logistics are missing milieu property')
@@ -451,6 +460,7 @@ def _deserialiseLogistics(
     if milieu not in _StringToMilieu:
         raise RuntimeError(f'Jump route logistics milieu property has invalid value {milieu}')
     milieu = _StringToMilieu[milieu]
+    """
 
     jsonOverheads = jsonData.get('overheads')
     overheads = None
@@ -497,7 +507,6 @@ def _deserialiseLogistics(
                 berthingCost = common.deserialiseCalculation(jsonData=berthingCost)
 
             world = universe.worldByPosition(
-                milieu=milieu,
                 hex=route.nodeAt(routeIndex))
 
             pitStops.append(logic.PitStop(
@@ -508,10 +517,9 @@ def _deserialiseLogistics(
                 fuelCost=fuelCost,
                 berthingCost=berthingCost))
 
-        refuelling = logic.RefuellingPlan(milieu=milieu, pitStops=pitStops)
+        refuelling = logic.RefuellingPlan(pitStops=pitStops)
 
     return logic.RouteLogistics(
-        milieu=milieu,
         jumpRoute=route,
         refuellingPlan=refuelling,
         perJumpOverheads=overheads)

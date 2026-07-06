@@ -303,10 +303,8 @@ class PitStop(object):
 class RefuellingPlan(object):
     def __init__(
             self,
-            milieu: astronomer.Milieu,
             pitStops: typing.Sequence[PitStop]
             ) -> None:
-        self._milieu = milieu
         self._pitStops = list(pitStops)
         self._routeIndexMap = {}
         for pitStop in self._pitStops:
@@ -347,9 +345,6 @@ class RefuellingPlan(object):
             lhs=self._totalFuelCost,
             rhs=self._totalBerthingCosts,
             name='Total Refuelling Plan Cost')
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
 
     def pitStop(self, routeIndex: int) -> typing.Optional[PitStop]:
         if routeIndex not in self._routeIndexMap:
@@ -554,7 +549,6 @@ class _CalculationContext:
 
 def calculateRefuellingPlan(
         universe: astronomer.Universe,
-        milieu: astronomer.Milieu,
         jumpRoute: logic.JumpRoute,
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -608,7 +602,6 @@ def calculateRefuellingPlan(
 
     calculationContext = _processRoute(
         universe=universe,
-        milieu=milieu,
         jumpRoute=jumpRoute,
         shipFuelCapacity=shipFuelCapacity,
         shipStartingFuel=shipStartingFuel,
@@ -619,7 +612,6 @@ def calculateRefuellingPlan(
         return None
 
     return _createRefuellingPlan(
-        milieu=milieu,
         calculationContext=calculationContext,
         pitCostCalculator=pitCostCalculator,
         includeRefuellingCosts=includeRefuellingCosts,
@@ -627,7 +619,6 @@ def calculateRefuellingPlan(
 
 def _processRoute(
         universe: astronomer.Universe,
-        milieu: astronomer.Milieu,
         jumpRoute: logic.JumpRoute,
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
@@ -653,7 +644,7 @@ def _processRoute(
         while reachableNodeIndex <= finishNodeIndex:
             fromHex = jumpRoute.nodeAt(reachableNodeIndex - 1)
             toHex = jumpRoute.nodeAt(reachableNodeIndex)
-            toWorld = universe.worldByPosition(milieu=milieu, hex=toHex)
+            toWorld = universe.worldByPosition(hex=toHex)
             parsecs = fromHex.parsecsTo(toHex)
             totalParsecs += parsecs
             if parsecsToNextWorld == None:
@@ -670,7 +661,7 @@ def _processRoute(
             reachableNodeIndex += 1
 
         nodePos = jumpRoute.nodeAt(index=nodeIndex)
-        world = universe.worldByPosition(milieu=milieu, hex=nodePos)
+        world = universe.worldByPosition(hex=nodePos)
         refuellingType = None
         fuelCostPerTon = None
         berthingCost = None
@@ -832,7 +823,6 @@ def _processNode(
     return bestFinalCost
 
 def _createRefuellingPlan(
-        milieu: astronomer.Milieu,
         calculationContext: _CalculationContext,
         pitCostCalculator: PitStopCostCalculator,
         includeRefuellingCosts: bool,
@@ -914,6 +904,4 @@ def _createRefuellingPlan(
                 fuelCost=fuelCost,
                 berthingCost=berthingCost))
 
-    return RefuellingPlan(
-        milieu=milieu,
-        pitStops=pitStops)
+    return RefuellingPlan(pitStops=pitStops)

@@ -73,7 +73,6 @@ class WaypointTable(gui.HexTable):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -81,7 +80,6 @@ class WaypointTable(gui.HexTable):
             ) -> None:
         super().__init__(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours,
@@ -196,9 +194,7 @@ class WaypointTable(gui.HexTable):
             row: int,
             hex: astronomer.HexPosition
             ) -> int:
-        world = self._universe.worldByPosition(
-            milieu=self._milieu,
-            hex=hex)
+        world = self._universe.worldByPosition(hex=hex)
 
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns
         # have been updated

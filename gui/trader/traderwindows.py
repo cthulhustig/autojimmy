@@ -28,14 +28,12 @@ class _WorldSaleScoreTable(gui.WorldTradeScoreTable):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
             columns: typing.Iterable[typing.Union[gui.WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]] = AllColumns) -> None:
         super().__init__(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours,
@@ -61,7 +59,6 @@ class _BaseTraderWindow(gui.WindowWidget):
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
             universe=astronomer.WorldManager.instance().universe(),
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
@@ -281,7 +278,6 @@ class _BaseTraderWindow(gui.WindowWidget):
 
     def _setupTradeOptionControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         outcomeColours = app.Config.instance().value(option=app.ConfigOption.OutcomeColours)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
@@ -304,7 +300,6 @@ class _BaseTraderWindow(gui.WindowWidget):
 
         self._tradeOptionsTable = gui.TradeOptionsTable(
             universe=universe,
-            milieu=milieu,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -350,12 +345,6 @@ class _BaseTraderWindow(gui.WindowWidget):
             self._hexTooltipProvider.setUniverse(universe=universe)
             self._tradeOptionsTable.setUniverse(universe=universe)
             # Changing universe invalidates existing trade options as the world
-            # data they were generated from has changed
-            self._clearTradeOptions()
-        elif option is app.ConfigOption.Milieu:
-            self._hexTooltipProvider.setMilieu(milieu=newValue)
-            self._tradeOptionsTable.setMilieu(milieu=newValue)
-            # Changing milieu invalidates existing trade options as the world
             # data they were generated from has changed
             self._clearTradeOptions()
         elif option is app.ConfigOption.Rules:
@@ -1107,7 +1096,6 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _setupPurchaseWorldControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -1118,7 +1106,6 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         self._purchaseWorldWidget = gui.HexSelectToolWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -1141,7 +1128,6 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _setupSaleWorldControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -1152,13 +1138,11 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         self._saleWorldsTable = _WorldSaleScoreTable(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
         self._saleWorldsWidget = gui.HexTableManagerWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -1625,9 +1609,6 @@ class WorldTraderWindow(_BaseTraderWindow):
             universe = astronomer.WorldManager.instance().universe()
             self._purchaseWorldWidget.setUniverse(universe=universe)
             self._saleWorldsWidget.setUniverse(universe=universe)
-        elif option is app.ConfigOption.Milieu:
-            self._purchaseWorldWidget.setMilieu(milieu=newValue)
-            self._saleWorldsWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._purchaseWorldWidget.setRules(rules=newValue)
             self._saleWorldsWidget.setRules(rules=newValue)
@@ -2189,7 +2170,6 @@ class WorldTraderWindow(_BaseTraderWindow):
                 return
 
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None
@@ -2241,12 +2221,10 @@ class WorldTraderWindow(_BaseTraderWindow):
         elif routeOptimisation == logic.RouteOptimisation.StrictXBoat:
             jumpCostCalculator = logic.StrictXBoatCostCalculator(
                 universe=universe,
-                milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LooseXBoat:
             jumpCostCalculator = logic.LooseXBoatCostCalculator(
                 universe=universe,
-                milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -2260,7 +2238,6 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._traderJob = jobs.SingleWorldTraderJob(
                 parent=self,
                 universe=universe,
-                milieu=milieu,
                 rules=rules,
                 purchaseWorld=self._purchaseWorldWidget.selectedWorld(),
                 saleWorlds=self._saleWorldsWidget.worlds(),
@@ -2599,7 +2576,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
     def _setupSaleWorldControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -2610,7 +2586,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
         self._saleWorldsWidget = gui.HexTableManagerWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -2634,7 +2609,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
     def _setupPurchaseWorldControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -2645,7 +2619,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
         self._purchaseWorldsWidget = gui.HexTableManagerWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -2682,9 +2655,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             universe = astronomer.WorldManager.instance().universe()
             self._purchaseWorldsWidget.setUniverse(universe=universe)
             self._saleWorldsWidget.setUniverse(universe=universe)
-        elif option is app.ConfigOption.Milieu:
-            self._purchaseWorldsWidget.setMilieu(milieu=newValue)
-            self._saleWorldsWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._purchaseWorldsWidget.setRules(rules=newValue)
             self._saleWorldsWidget.setRules(rules=newValue)
@@ -2857,7 +2827,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 return
 
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None
@@ -2913,12 +2882,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         elif routeOptimisation == logic.RouteOptimisation.StrictXBoat:
             jumpCostCalculator = logic.StrictXBoatCostCalculator(
                 universe=universe,
-                milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LooseXBoat:
             jumpCostCalculator = logic.LooseXBoatCostCalculator(
                 universe=universe,
-                milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -2932,7 +2899,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             self._traderJob = jobs.MultiWorldTraderJob(
                 parent=self,
                 universe=universe,
-                milieu=milieu,
                 rules=rules,
                 purchaseWorlds=self._purchaseWorldsWidget.worlds(),
                 saleWorlds=self._saleWorldsWidget.worlds(),

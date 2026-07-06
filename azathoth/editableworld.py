@@ -7,7 +7,6 @@ class EditableWorld(astronomer.World):
     def __init__(
             self,
             entityId: str,
-            milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
             name: str,
             isNameGenerated: bool,
@@ -31,7 +30,6 @@ class EditableWorld(astronomer.World):
             ) -> None:
         super().__init__(
             entityId=entityId,
-            milieu=milieu,
             hex=hex,
             name=name,
             isNameGenerated=isNameGenerated,

@@ -252,7 +252,6 @@ class HexTable(gui.FrozenColumnListTable):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -262,7 +261,6 @@ class HexTable(gui.FrozenColumnListTable):
         super().__init__(parent)
 
         self._universe = universe
-        self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
@@ -308,16 +306,6 @@ class HexTable(gui.FrozenColumnListTable):
             return
 
         self._universe = universe
-        self._syncContent()
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
-
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        if milieu is self._milieu:
-            return
-
-        self._milieu = milieu
         self._syncContent()
 
     def rules(self) -> traveller.Rules:
@@ -628,7 +616,7 @@ class HexTable(gui.FrozenColumnListTable):
         try:
             uwp = economics = culture = pbg = worldTagColour = None
 
-            world = self._universe.worldByPosition(milieu=self._milieu, hex=hex)
+            world = self._universe.worldByPosition(hex=hex)
             if world:
                 uwp = world.uwp()
                 economics = world.economics()
@@ -662,9 +650,7 @@ class HexTable(gui.FrozenColumnListTable):
                         tagColour = self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Sector:
                     tableItem = gui.TableWidgetItemEx()
-                    sector = self._universe.sectorByPosition(
-                        milieu=self._milieu,
-                        position=hex)
+                    sector = self._universe.sectorByPosition(position=hex)
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
                         sector.name() if sector else '<Unnamed>')
@@ -672,9 +658,7 @@ class HexTable(gui.FrozenColumnListTable):
                     tagColour = worldTagColour if world else self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Subsector:
                     tableItem = gui.TableWidgetItemEx()
-                    sector = self._universe.sectorByPosition(
-                        milieu=self._milieu,
-                        position=hex)
+                    sector = self._universe.sectorByPosition(position=hex)
                     subsectorName = sector.subsectorName(code=hex.subsectorCode()) if sector else None
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
@@ -963,13 +947,11 @@ class HexTable(gui.FrozenColumnListTable):
                                 ownerSector = None
                                 if ownerWorldRef.sectorAbbreviation():
                                     matchSectors = self._universe.sectorsByAbbreviation(
-                                        milieu=self._milieu,
                                         abbreviation=ownerWorldRef.sectorAbbreviation())
                                     if matchSectors:
                                         ownerSector = next(iter(matchSectors))
                                 else:
                                     ownerSector = self._universe.sectorByPosition(
-                                        milieu=self._milieu,
                                         position=hex.sectorPosition())
 
                                 ownerWorld = None
@@ -978,9 +960,7 @@ class HexTable(gui.FrozenColumnListTable):
                                         sectorPos=ownerSector.position(),
                                         offsetX=ownerWorldRef.hexX(),
                                         offsetY=ownerWorldRef.hexY())
-                                    ownerWorld = self._universe.worldByPosition(
-                                        milieu=self._milieu,
-                                        hex=ownerHex)
+                                    ownerWorld = self._universe.worldByPosition(hex=ownerHex)
 
                                 if ownerWorld:
                                     tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld)
@@ -1001,13 +981,11 @@ class HexTable(gui.FrozenColumnListTable):
                                 colonySector = None
                                 if colonyWorldRef.sectorAbbreviation():
                                     matchSectors = self._universe.sectorsByAbbreviation(
-                                        milieu=self._milieu,
                                         abbreviation=colonyWorldRef.sectorAbbreviation())
                                     if matchSectors:
                                         colonySector = next(iter(matchSectors))
                                 else:
                                     colonySector = self._universe.sectorByPosition(
-                                        milieu=self._milieu,
                                         position=hex.sectorPosition())
 
                                 colonyWorld = None
@@ -1016,9 +994,7 @@ class HexTable(gui.FrozenColumnListTable):
                                         sectorPos=colonySector.position(),
                                         offsetX=colonyWorldRef.hexX(),
                                         offsetY=colonyWorldRef.hexY())
-                                    colonyWorld = self._universe.worldByPosition(
-                                        milieu=self._milieu,
-                                        hex=colonyHex)
+                                    colonyWorld = self._universe.worldByPosition(hex=colonyHex)
 
                                 if colonyWorld:
                                     tagLevel = self._worldTagging.calculateWorldTagLevel(world=colonyWorld)
@@ -1070,9 +1046,7 @@ class HexTable(gui.FrozenColumnListTable):
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=hex)
             elif world:
-                return self._universe.canonicalHexName(
-                    milieu=self._milieu,
-                    hex=world.hex())
+                return self._universe.canonicalHexName(hex=world.hex())
 
         if world == None:
             return gui.createStringToolTip('Dead Space')
@@ -1243,13 +1217,11 @@ class HexTable(gui.FrozenColumnListTable):
                     ownerSector = None
                     if ownerWorldRef.sectorAbbreviation():
                         matchSectors = self._universe.sectorsByAbbreviation(
-                            milieu=self._milieu,
                             abbreviation=ownerWorldRef.sectorAbbreviation())
                         if matchSectors:
                             ownerSector = next(iter(matchSectors))
                     else:
                         ownerSector = self._universe.sectorByPosition(
-                            milieu=self._milieu,
                             position=hex.sectorPosition())
 
                     ownerWorld = None
@@ -1258,14 +1230,12 @@ class HexTable(gui.FrozenColumnListTable):
                             sectorPos=ownerSector.position(),
                             offsetX=ownerWorldRef.hexX(),
                             offsetY=ownerWorldRef.hexY())
-                        ownerWorld = self._universe.worldByPosition(
-                            milieu=self._milieu,
-                            hex=ownerHex)
+                        ownerWorld = self._universe.worldByPosition(hex=ownerHex)
 
                     if ownerWorld:
                         ownerString = '{world} ({hex})'.format(
                             world=ownerWorld.name(),
-                            hex=self._universe.formatSectorHex(milieu=self._milieu, hex=ownerHex))
+                            hex=self._universe.formatSectorHex(hex=ownerHex))
                         listStrings.append(ownerString)
                         if self._worldTagging:
                             tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld)
@@ -1291,13 +1261,11 @@ class HexTable(gui.FrozenColumnListTable):
                     colonySector = None
                     if colonyWorldRef.sectorAbbreviation():
                         matchSectors = self._universe.sectorsByAbbreviation(
-                            milieu=self._milieu,
                             abbreviation=colonyWorldRef.sectorAbbreviation())
                         if matchSectors:
                             colonySector = next(iter(matchSectors))
                     else:
                         colonySector = self._universe.sectorByPosition(
-                            milieu=self._milieu,
                             position=hex.sectorPosition())
 
                     colonyWorld = None
@@ -1306,14 +1274,12 @@ class HexTable(gui.FrozenColumnListTable):
                             sectorPos=colonySector.position(),
                             offsetX=colonyWorldRef.hexX(),
                             offsetY=colonyWorldRef.hexY())
-                        colonyWorld = self._universe.worldByPosition(
-                            milieu=self._milieu,
-                            hex=colonyHex)
+                        colonyWorld = self._universe.worldByPosition(hex=colonyHex)
 
                     if colonyWorld:
                         colonyString = '{world} ({hex})'.format(
                             world=colonyWorld.name(),
-                            hex=self._universe.formatSectorHex(milieu=self._milieu, hex=colonyHex))
+                            hex=self._universe.formatSectorHex(hex=colonyHex))
                         listStrings.append(colonyString)
                         if self._worldTagging:
                             tagLevel = self._worldTagging.calculateWorldTagLevel(world=colonyWorld)

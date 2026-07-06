@@ -19,6 +19,7 @@ from .common.messageboxex import *
 from .common.autoselectmessagebox import *
 from .common.inputdialogex import *
 from .common.textwindow import *
+from .common.listwidgetex import *
 from .common.listtable import *
 from .common.listselectdialog import *
 from .common.fullsizetextwidget import *
@@ -45,6 +46,7 @@ from .common.infodialog import *
 from .common.singletonapplication import *
 from .common.plotwidgetex import *
 from .common.tooltips import *
+from .common.progressjobdialog import *
 from .map.mapscale import *
 from .map.utils import *
 from .map.mapgraphics import *
@@ -64,9 +66,10 @@ from .map.hextable import *
 from .map.sectortable import *
 from .map.hextablemanagerwidget import *
 from .map.hexdetailswindow import *
-from .map.createuniversedialog import *
-from .map.importsectordialog import *
-from .map.customuniversewindow import *
+from .universe.importsectordialog import *
+from .universe.createuniversedialog import *
+from .universe.universemanagerdialog import *
+from .universe.customuniversewindow import *
 from .trader.tooltips import *
 from .trader.skillspinbox import *
 from .trader.shipcontrols import *
@@ -121,7 +124,6 @@ from .diceroller.dicerolldisplaywidget import *
 from .diceroller.dicerollerconfigwidget import *
 from .diceroller.dicerollhistorywidget import *
 from .diceroller.dicerollerwindow import *
-from .startupprogressdialog import *
 from .downloadprogressdialog import *
 from .windowmanager import *
 from .configdialog import *

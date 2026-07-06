@@ -377,23 +377,15 @@ class WorldInfo(object):
 class WorldCache(object):
     def __init__(
             self,
-            milieu: astronomer.Milieu,
             universe: astronomer.Universe,
             imageStore: cartographer.ImageStore,
             capacity: int
             ) -> None:
-        self._milieu = milieu
         self._universe = universe
         self._imageStore = imageStore
         self._infoCache = common.LRUCache[
             astronomer.HexPosition,
             WorldInfo](capacity=capacity)
-
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        if milieu is self._milieu:
-            return
-        self._milieu = milieu
-        self._infoCache.clear()
 
     def ensureCapacity(self, capacity) -> None:
         self._infoCache.ensureCapacity(capacity=capacity)
@@ -404,9 +396,7 @@ class WorldCache(object):
             ) -> WorldInfo:
         worldInfo = self._infoCache.get(hex)
         if not worldInfo:
-            world = self._universe.worldByPosition(
-                milieu=self._milieu,
-                hex=hex)
+            world = self._universe.worldByPosition(hex=hex)
             if not world:
                 return None
             worldInfo = WorldInfo(

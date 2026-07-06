@@ -84,7 +84,6 @@ class RenderContext(object):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             graphics: cartographer.AbstractGraphics,
             style: cartographer.MapStyle,
             options: cartographer.RenderOptions,
@@ -94,7 +93,6 @@ class RenderContext(object):
             selector: typing.Optional[cartographer.AbstractSelector] = None
             ) -> None:
         self._universe = universe
-        self._milieu = milieu
         self._graphics = graphics
         self._options = options
         self._styleSheet = cartographer.StyleSheet(
@@ -106,11 +104,9 @@ class RenderContext(object):
         self._vectorStore = vectorStore
         self._labelStore = labelStore
         self._sectorCache = cartographer.SectorCache(
-            milieu=self._milieu,
             universe=self._universe,
             graphics=self._graphics)
         self._worldCache = cartographer.WorldCache(
-            milieu=self._milieu,
             universe=self._universe,
             imageStore=self._imageStore,
             capacity=RenderContext._WorldCacheCapacity)
@@ -120,7 +116,6 @@ class RenderContext(object):
         self._starfieldCache = cartographer.StarfieldCache(
             graphics=self._graphics)
         self._selector = cartographer.RectSelector(
-            milieu=self._milieu,
             universe=self._universe) if selector is None else selector
         self._scale = None
         self._worldOutputRect = None
@@ -143,20 +138,6 @@ class RenderContext(object):
         self._riftImageRect = cartographer.RectangleF(-1374, -827, 2769, 1754)
 
         self._createLayers()
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
-
-    def setMilieu(
-            self,
-            milieu: astronomer.Milieu
-            ) -> None:
-        if milieu is self._milieu:
-            return
-        self._milieu = milieu
-        self._sectorCache.setMilieu(milieu=self._milieu)
-        self._worldCache.setMilieu(milieu=self._milieu)
-        self._selector.setMilieu(milieu=self._milieu)
 
     def style(self) -> cartographer.MapStyle:
         return self._styleSheet.style
@@ -1618,8 +1599,8 @@ class RenderContext(object):
                 colour=self._styleSheet.backgroundBrush.colour()))
             for sector in self._selector.sectors(tight=True):
                 tagging = sector.tagging()
-                shouldDim = sector.isCustom() if tagging else False
-                if not shouldDim:
+                shouldDim = True
+                if tagging:
                     shouldDim = not tagging.hasOfficial() and not tagging.hasPreserve() and not tagging.hasInReview()
                 if shouldDim:
                     clipPath = self._sectorCache.clipPath(

@@ -6,16 +6,13 @@ class EntityFactoryInterface(object):
     def createUniverse(
             self,
             universeId: str,
-            isCustom: bool,
-            sectors: typing.Collection[astronomer.Sector] # Sectors for all milieu
+            sectors: typing.Collection[astronomer.Sector]
             ) -> astronomer.Universe:
         raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createUniverse')
 
     def createSector(
             self,
             entityId: str,
-            isCustom: bool,
-            milieu: astronomer.Milieu,
             position: astronomer.SectorPosition,
             name: str,
             alternateNames: typing.Optional[typing.Iterable[str]] = None,
@@ -41,7 +38,6 @@ class EntityFactoryInterface(object):
     def createWorld(
             self,
             entityId: str,
-            milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
             name: str,
             isNameGenerated: bool,
@@ -122,19 +118,15 @@ class DefaultEntityFactory(EntityFactoryInterface):
     def createUniverse(
             self,
             universeId: str,
-            isCustom: bool,
-            sectors: typing.Collection[astronomer.Sector] # Sectors for all milieu
+            sectors: typing.Collection[astronomer.Sector]
             ) -> astronomer.Universe:
         return astronomer.Universe(
             universeId=universeId,
-            isCustom=isCustom,
             sectors=sectors)
 
     def createSector(
             self,
             entityId: str,
-            isCustom: bool,
-            milieu: astronomer.Milieu,
             position: astronomer.SectorPosition,
             name: str,
             alternateNames: typing.Optional[typing.Iterable[str]] = None,
@@ -157,8 +149,6 @@ class DefaultEntityFactory(EntityFactoryInterface):
             ) -> astronomer.Sector:
         return astronomer.Sector(
             entityId=entityId,
-            isCustom=isCustom,
-            milieu=milieu,
             position=position,
             name=name,
             alternateNames=alternateNames,
@@ -182,7 +172,6 @@ class DefaultEntityFactory(EntityFactoryInterface):
     def createWorld(
             self,
             entityId: str,
-            milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
             name: str,
             isNameGenerated: bool,
@@ -206,7 +195,6 @@ class DefaultEntityFactory(EntityFactoryInterface):
             ) -> astronomer.World:
         return astronomer.World(
             entityId=entityId,
-            milieu=milieu,
             hex=hex,
             name=name,
             isNameGenerated=isNameGenerated,

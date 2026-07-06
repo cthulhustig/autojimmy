@@ -102,7 +102,6 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
             universe=astronomer.WorldManager.instance().universe(),
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
@@ -279,7 +278,6 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
     def _setupWorldSelectControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -290,7 +288,6 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         self._saleWorldWidget = gui.HexSelectToolWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -535,9 +532,6 @@ class SaleCalculatorWindow(gui.WindowWidget):
             universe = astronomer.WorldManager.instance().universe()
             self._hexTooltipProvider.setUniverse(universe=universe)
             self._saleWorldWidget.setUniverse(universe=universe)
-        elif option is app.ConfigOption.Milieu:
-            self._hexTooltipProvider.setMilieu(milieu=newValue)
-            self._saleWorldWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._saleWorldWidget.setRules(rules=newValue)

@@ -151,7 +151,6 @@ class _RefuellingPlanTable(gui.HexTable):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             outcomeColours: app.OutcomeColours,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -160,7 +159,6 @@ class _RefuellingPlanTable(gui.HexTable):
             ) -> None:
         super().__init__(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours,
@@ -204,9 +202,7 @@ class _RefuellingPlanTable(gui.HexTable):
             row: int,
             hex: astronomer.HexPosition
             ) -> int:
-        world = self._universe.worldByPosition(
-            milieu=self._milieu,
-            hex=hex)
+        world = self._universe.worldByPosition(hex=hex)
 
         # Disable sorting while updating a row. We don't want any sorting to occur
         # until all columns have been updated
@@ -275,7 +271,6 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Iterable[app.MapOption],
@@ -289,7 +284,6 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
 
         self._startWidget = gui.HexSelectToolWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -304,7 +298,6 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
 
         self._finishWidget = gui.HexSelectToolWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -327,10 +320,6 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
     def setUniverse(self, universe: astronomer.Universe) -> None:
         self._startWidget.setUniverse(universe=universe)
         self._finishWidget.setUniverse(universe=universe)
-
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        self._startWidget.setMilieu(milieu=milieu)
-        self._finishWidget.setMilieu(milieu=milieu)
 
     def setRules(self, rules: traveller.Rules) -> None:
         self._startWidget.setRules(rules=rules)
@@ -734,7 +723,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
             universe=astronomer.WorldManager.instance().universe(),
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
@@ -990,7 +978,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _setupStartFinishControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -1002,7 +989,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._selectStartFinishWidget = _StartFinishSelectWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -1139,7 +1125,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _setupWaypointControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         routingType = app.Config.instance().value(option=app.ConfigOption.RoutingType)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
@@ -1151,13 +1136,11 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._waypointsTable = gui.WaypointTable(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
         self._waypointsWidget = gui.HexTableManagerWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -1197,7 +1180,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _setupAvoidLocationsControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -1211,7 +1193,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._avoidHexesWidget = gui.HexTableManagerWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -1258,7 +1239,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _setupJumpRouteControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -1297,7 +1277,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._jumpRouteTable = gui.HexTable(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -1335,7 +1314,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._refuellingPlanTable = _RefuellingPlanTable(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
@@ -1362,7 +1340,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._mapWidget = gui.MapWidgetEx(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             style=mapStyle,
             options=mapOptions,
@@ -1492,15 +1469,6 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteTable.setUniverse(universe=universe)
             self._refuellingPlanTable.setUniverse(universe=universe)
             self._mapWidget.setUniverse(universe=universe)
-            self._updateJumpOverlays()
-        elif option is app.ConfigOption.Milieu:
-            self._hexTooltipProvider.setMilieu(milieu=newValue)
-            self._selectStartFinishWidget.setMilieu(milieu=newValue)
-            self._waypointsWidget.setMilieu(milieu=newValue)
-            self._avoidHexesWidget.setMilieu(milieu=newValue)
-            self._jumpRouteTable.setMilieu(milieu=newValue)
-            self._refuellingPlanTable.setMilieu(milieu=newValue)
-            self._mapWidget.setMilieu(milieu=newValue)
             self._updateJumpOverlays()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
@@ -1664,7 +1632,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
         # Fuel based route calculation
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None
@@ -1679,7 +1646,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
-            startWorld = universe.worldByPosition(milieu=milieu, hex=startHex)
+            startWorld = universe.worldByPosition(hex=startHex)
             if startWorld and not pitCostCalculator.refuellingType(world=startWorld):
                 message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy.'
                 if self._shipCurrentFuelSpinBox.value() <= 0:
@@ -1712,7 +1679,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             fuelIssueWorldStrings = []
             for waypointHex in self._waypointsWidget.hexes():
-                waypointWorld = universe.worldByPosition(milieu=milieu, hex=waypointHex)
+                waypointWorld = universe.worldByPosition(hex=waypointHex)
                 if waypointWorld and not pitCostCalculator.refuellingType(world=waypointWorld):
                     fuelIssueWorldStrings.append(waypointWorld.name())
 
@@ -1767,12 +1734,10 @@ class JumpRouteWindow(gui.WindowWidget):
         elif routeOptimisation == logic.RouteOptimisation.StrictXBoat:
             jumpCostCalculator = logic.StrictXBoatCostCalculator(
                 universe=universe,
-                milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LooseXBoat:
             jumpCostCalculator = logic.LooseXBoatCostCalculator(
                 universe=universe,
-                milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -1791,7 +1756,6 @@ class JumpRouteWindow(gui.WindowWidget):
                 parent=self,
                 routingType=routingType,
                 universe=universe,
-                milieu=milieu,
                 hexSequence=hexSequence,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
@@ -1843,10 +1807,9 @@ class JumpRouteWindow(gui.WindowWidget):
     def _jumpRouteJobFinished(self, result: typing.Union[typing.Optional[logic.JumpRoute], Exception]) -> None:
         if isinstance(result, Exception):
             universe = astronomer.WorldManager.instance().universe()
-            milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
             startHex, finishHex = self._selectStartFinishWidget.hexes()
-            startString = universe.canonicalHexName(milieu=milieu, hex=startHex)
-            finishString = universe.canonicalHexName(milieu=milieu, hex=finishHex)
+            startString = universe.canonicalHexName(hex=startHex)
+            finishString = universe.canonicalHexName(hex=finishHex)
             message = f'Failed to calculate jump route between {startString} and {finishString}'
             logging.error(message, exc_info=result)
             gui.MessageBoxEx.critical(
@@ -1976,10 +1939,9 @@ class JumpRouteWindow(gui.WindowWidget):
         isCurrentAvoidHex = self._avoidHexesWidget.containsHex(hex=hex)
 
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         isValidStartFinish = isValidWaypoint = \
             self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace or \
-            universe.worldByPosition(milieu=milieu, hex=hex) != None
+            universe.worldByPosition(hex=hex) != None
         isValidAvoidHex = not isCurrentAvoidHex
 
         startHex, finishHex = self._selectStartFinishWidget.hexes()
@@ -2211,27 +2173,6 @@ class JumpRouteWindow(gui.WindowWidget):
             if not dlg.includeLogistics():
                 routeLogistics = None
 
-            if routeLogistics:
-                logisticsMilieu = routeLogistics.milieu()
-                currentMilieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
-                if logisticsMilieu is not currentMilieu:
-                    text = 'The logistics for the imported jump route are not from the current milieu\n' \
-                        f'Current: {currentMilieu.value}\n' \
-                        f'Imported: {logisticsMilieu.value}\n' \
-                        '\nDo you want to import them?'
-                    answer = gui.MessageBoxEx.question(
-                        parent=self,
-                        text=text,
-                        buttons=QtWidgets.QMessageBox.StandardButton.Yes | \
-                        QtWidgets.QMessageBox.StandardButton.No | \
-                        QtWidgets.QMessageBox.StandardButton.Cancel)
-                    if answer == QtWidgets.QMessageBox.StandardButton.Cancel:
-                        return # User cancelled
-
-                    if answer == QtWidgets.QMessageBox.StandardButton.No:
-                        # Ignore logistics but continue importing route
-                        routeLogistics = None
-
         if not jumpRoute:
             message = f'No jump route found in "{dlg.filePath()}"'
             logging.error(message, exc_info=ex)
@@ -2411,7 +2352,6 @@ class JumpRouteWindow(gui.WindowWidget):
         if startHex and showWorldTaggingOverlay:
             try:
                 universe = astronomer.WorldManager.instance().universe()
-                milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
                 worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
                 taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
@@ -2422,7 +2362,6 @@ class JumpRouteWindow(gui.WindowWidget):
                     tagLevelColours[tagLevel] = colour
 
                 worlds = universe.worldsInRadius(
-                    milieu=milieu,
                     center=startHex,
                     searchRadius=jumpRating,
                     # Don't highlight start/finish worlds
@@ -2663,7 +2602,6 @@ class JumpRouteWindow(gui.WindowWidget):
             return
 
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
         pitCostCalculator = logic.PitStopCostCalculator(
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
@@ -2675,7 +2613,6 @@ class JumpRouteWindow(gui.WindowWidget):
         try:
             routeLogistics = logic.calculateRouteLogistics(
                 universe=universe,
-                milieu=milieu,
                 jumpRoute=jumpRoute,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
@@ -2692,8 +2629,8 @@ class JumpRouteWindow(gui.WindowWidget):
         except Exception as ex:
             startHex = jumpRoute.startNode()
             finishHex = jumpRoute.finishNode()
-            startString = universe.canonicalHexName(milieu=milieu, hex=startHex)
-            finishString = universe.canonicalHexName(milieu=milieu, hex=finishHex)
+            startString = universe.canonicalHexName(hex=startHex)
+            finishString = universe.canonicalHexName(hex=finishHex)
             message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
                 start=startString,
                 finish=finishString)

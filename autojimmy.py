@@ -9,6 +9,7 @@ import astronomer
 import enum
 import gui
 import gunsmith
+import jobs
 import locale
 import logging
 import multiprocessing
@@ -18,7 +19,6 @@ import os
 import pathlib
 import qasync
 import robots
-import startup
 import sys
 import uuid
 import typing
@@ -114,7 +114,7 @@ class _SnapshotCheckResult(enum.Enum):
     ExitRequested = 3
     Cancelled = 4
 
-def _snapshotUpdateCheck(
+def _updateSnapshot(
         isStartup: bool,
         parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> _SnapshotCheckResult:
@@ -184,18 +184,72 @@ def _snapshotUpdateCheck(
         if result == QtWidgets.QDialog.DialogCode.Accepted else \
         _SnapshotCheckResult.Cancelled
 
+def _firstRunSetup(appDir: str) -> bool: # True if the app should continue, False if it should exit
+    # TODO: Check if this is the first time tha app has been run
+    isFirstRun = True
+
+    if not isFirstRun:
+        return True # Nothing to do
+
+    progressDlg = gui.ProgressJobDialog()
+    progressDlg.addJob(job=jobs.CreateDefaultUniversesJob())
+
+    legacyCustomSectorsDir = os.path.join(appDir, 'custom_map')
+    if os.path.exists(legacyCustomSectorsDir):
+        progressDlg.addJob(job=jobs.ImportLegacyCustomSectorsJob(
+            directoryPath=legacyCustomSectorsDir))
+
+    result = progressDlg.exec()
+
+    # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
+    # when exec is called on the application
+    # https://doc.qt.io/qt-6/qobject.html#deleteLater
+    progressDlg.deleteLater()
+
+    return result == QtWidgets.QDialog.DialogCode.Accepted
+
+def _loadData() -> bool: # True if the app should continue, False if it should exit
+    universeId = app.Config.instance().value(option=app.ConfigOption.Universe)
+    universeInfo = multiverse.UniverseManager.instance().universeInfoById(universeId) if universeId else None
+    if universeInfo is None:
+        if universeId:
+            message = f'Selected Universe {universeId!r} is unknown'
+            logging.error(message)
+            gui.MessageBoxEx.critical(message)
+
+        universeManager = gui.UniverseManagerDialog()
+
+        universeManager.exec()
+        universeId = app.Config.instance().value(option=app.ConfigOption.Universe)
+        universeInfo = multiverse.UniverseManager.instance().universeInfoById(universeId) if universeId else None
+        if not universeInfo:
+            return False # User didn't create a universe so can't continue
+
+    progressDlg = gui.ProgressJobDialog()
+    progressDlg.addJob(job=jobs.LoadUniverseJob())
+    progressDlg.addJob(job=jobs.LoadWeaponsJob())
+    progressDlg.addJob(job=jobs.LoadRobotsJob())
+    result = progressDlg.exec()
+
+    # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
+    # when exec is called on the application
+    # https://doc.qt.io/qt-6/qobject.html#deleteLater
+    progressDlg.deleteLater()
+
+    return result == QtWidgets.QDialog.DialogCode.Accepted
+
 def _pushConfigChangeToWorldManager(
         option: app.ConfigOption,
         oldValue: typing.Any,
         newValue: typing.Any
         ) -> None:
     if option is app.ConfigOption.Universe:
-        startupProgressDlg = gui.StartupProgressDialog()
+        startupProgressDlg = gui.ProgressJobDialog()
 
         # TODO: I don't like the fact this is reinitialising the whole
         # world manager. Should probably have it's own job rather than
         # reusing
-        startupProgressDlg.addJob(job=startup.InitWorldManager())
+        startupProgressDlg.addJob(job=jobs.LoadUniverseJob())
 
         if startupProgressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             # TODO: Not sure how best to handle errors
@@ -363,21 +417,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 text=f'Some changes will only be applied when {app.AppName} is restarted.')
 
     def _showCustomUniverse(self) -> None:
-        universe = astronomer.WorldManager.instance().universe()
-        if not universe.isCustom():
-            # TODO: Display a message box explaining you need to create a custom universe
-            # TODO: If there are no custom universes in the registry, just display a simple dialog to create a new universe
-            # TODO: If there are existing custom universes (it's just they aren't selected), display a universe manager window
-            # that lets the user create a new one _or_ switch to an existing one
-            pass
-
         gui.WindowManager.instance().showCustomUniverseWindow()
 
     # TODO: If the the current universe is a custom universe this should probably give
     # a warning telling the user that their universe won't update.
     def _downloadUniverse(self) -> None:
         try:
-            result = _snapshotUpdateCheck(isStartup=False, parent=self)
+            result = _updateSnapshot(isStartup=False, parent=self)
             if result == _SnapshotCheckResult.NoUpdate:
                 gui.MessageBoxEx.information(
                     parent=self,
@@ -522,7 +568,7 @@ def main() -> None:
         # Check if there is new universe data available BEFORE the app loads the
         # local snapshot so it can be updated without restarting
         try:
-            result = _snapshotUpdateCheck(isStartup=True)
+            result = _updateSnapshot(isStartup=True)
             if result == _SnapshotCheckResult.ExitRequested:
                 sys.exit(0)
         except Exception as ex:
@@ -537,42 +583,11 @@ def main() -> None:
         multiversePath = os.path.join(appDir, 'multiverse')
         multiverse.UniverseManager.initialise(multiversePath=multiversePath)
 
-        shouldSyncStockUniverse = False
-        try:
-            shouldSyncStockUniverse = multiverse.isStockUniverseSnapshotNewer()
-        except Exception as ex:
-            logging.warning('Failed to compare stock universe snapshot age.', exc_info=ex)
-
-        # Check if we need to import legacy custom sectors
-        # TODO: At some point in the future I should be able to remove this
-        legacyCustomSectorsDir = os.path.join(appDir, 'custom_map')
-        shouldImportLegacyCustomSectors = False
-        try:
-            shouldImportLegacyCustomSectors = not multiverse.haveLegacyCustomSectorsBeenImported(
-                directoryPath=legacyCustomSectorsDir)
-        except Exception as ex:
-            logging.warning('Failed to check for imported legacy custom sectors.', exc_info=ex)
-
-        startupProgressDlg = gui.StartupProgressDialog()
-
-        if shouldSyncStockUniverse:
-            startupProgressDlg.addJob(job=startup.ImportStockUniverseJob())
-
-        if shouldImportLegacyCustomSectors:
-            startupProgressDlg.addJob(job=startup.ImportLegacyCustomSectorsJob(
-                directoryPath=legacyCustomSectorsDir))
-
-        startupProgressDlg.addJob(job=startup.InitWorldManager())
-        startupProgressDlg.addJob(job=startup.LoadWeaponsJob())
-        startupProgressDlg.addJob(job=startup.LoadRobotsJob())
-
-        if startupProgressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+        if not _firstRunSetup(appDir=appDir):
             sys.exit(1)
 
-        # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
-        # when exec is called on the application
-        # https://doc.qt.io/qt-6/qobject.html#deleteLater
-        startupProgressDlg.deleteLater()
+        if not _loadData():
+            sys.exit(1)
 
         # Register a callback that will push config changes (i.e. switching universe) to
         # the world manager

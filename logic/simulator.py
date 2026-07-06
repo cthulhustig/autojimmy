@@ -68,7 +68,6 @@ class Simulator(object):
     def run(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             startHex: astronomer.HexPosition,
             startingFunds: int,
             shipTonnage: int,
@@ -92,7 +91,6 @@ class Simulator(object):
             simulationLength: typing.Optional[int] = None # Length in simulated hours
             ) -> None:
         self._universe = universe
-        self._milieu = milieu
         self._shipTonnage = shipTonnage
         self._shipJumpRating = shipJumpRating
         self._shipCargoCapacity = shipCargoCapacity
@@ -139,9 +137,7 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
-        currentWorld = self._universe.worldByPosition(
-            milieu=self._milieu,
-            hex=self._currentHex)
+        currentWorld = self._universe.worldByPosition(hex=self._currentHex)
 
         if not self._cargoManifest:
             # No current cargo manifest so buy something on the current world
@@ -150,7 +146,6 @@ class Simulator(object):
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
             worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
             self._nearbyWorlds = self._universe.worldsInRadius(
-                milieu=self._milieu,
                 center=self._currentHex,
                 searchRadius=self._searchRadius,
                 filterCallback=worldFilterCallback)
@@ -222,9 +217,7 @@ class Simulator(object):
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex = jumpRoute.nodeAt(self._jumpRouteIndex)
-                nextWorld = self._universe.worldByPosition(
-                    milieu=self._milieu,
-                    hex=nextHex)
+                nextWorld = self._universe.worldByPosition(hex=nextHex)
                 self._logMessage('Travelling from {src} to {dst}'.format(
                     src=self._formatWorldLogString(world=currentWorld),
                     dst=self._formatWorldLogString(world=nextWorld)))
@@ -331,7 +324,6 @@ class Simulator(object):
 
         trader = logic.Trader(
             universe=self._universe,
-            milieu=self._milieu,
             rules=self._rules,
             tradeOptionCallback=lambda tradeOption: tradeOptions.append(tradeOption),
             traderInfoCallback=lambda infoMessage: infoMessages.append(infoMessage),
@@ -663,7 +655,7 @@ class Simulator(object):
             ) -> str:
         return '{world} ({hex})'.format(
             world=world.name(),
-            hex=self._universe.formatSectorHex(milieu=self._milieu, hex=world.hex()))
+            hex=self._universe.formatSectorHex(hex=world.hex()))
 
     @staticmethod
     def _sortCargoManifestsInPlace(cargoManifests: typing.List[logic.CargoManifest]) -> None:

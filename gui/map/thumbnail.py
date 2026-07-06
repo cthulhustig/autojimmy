@@ -26,7 +26,6 @@ def _initThumbnailRenderer():
 
 def generateThumbnail(
         universe: astronomer.Universe,
-        milieu: astronomer.Milieu,
         hex: astronomer.HexPosition,
         width: int,
         height: int,
@@ -39,7 +38,6 @@ def generateThumbnail(
     centerX, centerY = hex.worldCenter()
     renderer = cartographer.RenderContext(
         universe=universe,
-        milieu=milieu,
         graphics=_thumbnailGraphics,
         style=style,
         options=gui.mapOptionsToRenderOptions(options),

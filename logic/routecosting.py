@@ -278,12 +278,10 @@ class StrictXBoatCostCalculator(logic.JumpCostCalculatorInterface):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             shipJumpRating: int
             ) -> None:
         super().__init__()
         self._universe = universe
-        self._milieu = milieu
         self._shipJumpRating = shipJumpRating
 
     def initialise(
@@ -304,7 +302,7 @@ class StrictXBoatCostCalculator(logic.JumpCostCalculatorInterface):
             ) -> typing.Tuple[
                 typing.Optional[float], # Cost from current to next world
                 typing.Any]: # New cost context
-        for routeWorld in self._universe.yieldConnectedWorlds(hex=currentHex, milieu=self._milieu):
+        for routeWorld in self._universe.yieldConnectedWorlds(hex=currentHex):
             if routeWorld.hex() == nextHex:
                 return (1, None)
 
@@ -324,12 +322,10 @@ class LooseXBoatCostCalculator(logic.JumpCostCalculatorInterface):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             shipJumpRating: int
             ) -> None:
         super().__init__()
         self._universe = universe
-        self._milieu = milieu
         self._shipJumpRating = shipJumpRating
 
     def initialise(
@@ -350,7 +346,7 @@ class LooseXBoatCostCalculator(logic.JumpCostCalculatorInterface):
             ) -> typing.Tuple[
                 typing.Optional[float], # Cost from current to next world
                 typing.Any]: # New cost context
-        nextIsEndpoint = self._universe.hasRoutes(hex=nextHex, milieu=self._milieu)
+        nextIsEndpoint = self._universe.hasRoutes(hex=nextHex)
         return (1 if nextIsEndpoint else 100000, None)
 
     def estimate(

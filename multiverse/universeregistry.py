@@ -10,21 +10,15 @@ class UniverseInfo(object):
             self,
             id: str,
             name: str,
-            description: str = '',
-            isStock: bool = False,
-            snapshotTimestamp: typing.Optional[datetime.datetime] = None
+            description: str = ''
             ) -> None:
         common.validateMandatoryStr(name='id', value=id, allowEmpty=False)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
         common.validateMandatoryStr(name='description', value=description, allowEmpty=True)
-        common.validateMandatoryBool(name='isStock', value=isStock)
-        common.validateOptionalObject(name='snapshotTimestamp', value=snapshotTimestamp, objectType=datetime.datetime)
 
         self._id = id
         self._name = name
         self._description = description
-        self._isStock = isStock
-        self._snapshotTimestamp = snapshotTimestamp
 
     def id(self) -> str:
         return self._id
@@ -34,12 +28,6 @@ class UniverseInfo(object):
 
     def description(self) -> str:
         return self._description
-
-    def isStock(self) -> bool:
-        return self._isStock
-
-    def snapshotTimestamp(self) -> datetime.datetime:
-        return self._snapshotTimestamp
 
 class UniverseRegistry(object):
     _UniversesTableName = 'universes'
@@ -59,8 +47,6 @@ class UniverseRegistry(object):
             id: str,
             name: str,
             description: str = '',
-            stock: bool = False,
-            snapshotTimestamp: typing.Optional[datetime.datetime] = None,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
         logging.debug(f'UniverseRegister adding universe {id} ({name})')
@@ -71,8 +57,6 @@ class UniverseRegistry(object):
                 id=id,
                 name=name,
                 description=description,
-                stock=stock,
-                snapshotTimestamp=snapshotTimestamp,
                 cursor=connection.cursor())
         else:
             with self._database.createTransaction() as transaction:
@@ -81,8 +65,6 @@ class UniverseRegistry(object):
                     id=id,
                     name=name,
                     description=description,
-                    stock=stock,
-                    snapshotTimestamp=snapshotTimestamp,
                     cursor=connection.cursor())
 
     def removeUniverse(
@@ -118,22 +100,6 @@ class UniverseRegistry(object):
             with self._database.createTransaction() as transaction:
                 connection = transaction.connection()
                 return self._listUniverses(
-                    cursor=connection.cursor())
-
-    def stockUniverse(
-            self,
-            transaction: typing.Optional[database.Transaction] = None
-            ) -> typing.Optional[UniverseInfo]:
-        logging.debug('UniverseRegister retrieving stock universe')
-
-        if transaction != None:
-            connection = transaction.connection()
-            return self._stockUniverse(
-                cursor=connection.cursor())
-        else:
-            with self._database.createTransaction() as transaction:
-                connection = transaction.connection()
-                return self._stockUniverse(
                     cursor=connection.cursor())
 
     def universeById(
@@ -220,25 +186,6 @@ class UniverseRegistry(object):
                     description=description,
                     cursor=connection.cursor())
 
-    def setSnapshotTimestamp(
-            self,
-            timestamp: datetime.datetime,
-            transaction: typing.Optional[database.Transaction] = None
-            ) -> None:
-        logging.debug(f'UniverseRegister setting stock sector snapshot timestamp to {timestamp.isoformat()}')
-
-        if transaction != None:
-            connection = transaction.connection()
-            self._setSnapshotTimestamp(
-                timestamp=timestamp,
-                cursor=connection.cursor())
-        else:
-            with self._database.createTransaction() as transaction:
-                connection = transaction.connection()
-                self._setSnapshotTimestamp(
-                    timestamp=timestamp,
-                    cursor=connection.cursor())
-
     def _initDatabase(self) -> None:
         with self._database.createTransaction() as transaction:
             connection = transaction.connection()
@@ -251,37 +198,25 @@ class UniverseRegistry(object):
                 columns=[
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False, isUnique=True),
-                    database.ColumnDef(columnName='description', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    # TODO: Is there a way I can enforce that there is only ever one entry with this set True
-                    database.ColumnDef(columnName='is_stock', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False),
-                    # TODO: Is there a way I can enforce that the timestamp must be specified for the stock universes but never specified for custom universes
-                    database.ColumnDef(columnName='snapshot_timestamp', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+                    # TODO: Description should be stored in the universe DB rather than registry as you want it included
+                    # if someone distributes a db file
+                    database.ColumnDef(columnName='description', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)])
 
     def _addUniverse(
             self,
             cursor: sqlite3.Cursor,
             id: str,
             name: str,
-            description: str,
-            stock: bool,
-            snapshotTimestamp: typing.Optional[datetime.datetime]
+            description: str
             ) -> None:
-        if stock and snapshotTimestamp is None:
-            raise ValueError('Stock sector can\'t have a null snapshot timestamp')
-        elif not stock and snapshotTimestamp is not None:
-            raise ValueError('Custom sector can\'t have a snapshot timestamp')
-
-
         sql = """
-            INSERT INTO {table} (id, name, description, is_stock, snapshot_timestamp)
-            VALUES (:id, :name, :description, :is_stock, :snapshot_timestamp);
+            INSERT INTO {table} (id, name, description)
+            VALUES (:id, :name, :description);
             """.format(table=UniverseRegistry._UniversesTableName)
         rowData = {
             'id': id,
             'name': name,
-            'description': description,
-            'is_stock': stock,
-            'snapshot_timestamp': UniverseRegistry._formatTimestampString(snapshotTimestamp)}
+            'description': description}
         cursor.execute(sql, rowData)
 
     def _removeUniverse(
@@ -301,7 +236,7 @@ class UniverseRegistry(object):
             cursor: sqlite3.Cursor
             ) -> typing.List[UniverseInfo]:
         sql = """
-            SELECT id, name, description, is_stock, snapshot_timestamp
+            SELECT id, name, description
             FROM {table};
             """.format(
             table=UniverseRegistry._UniversesTableName)
@@ -312,34 +247,8 @@ class UniverseRegistry(object):
             universeList.append(UniverseInfo(
                 id=row[0],
                 name=row[1],
-                description=row[2],
-                isStock=True if row[3] else False,
-                snapshotTimestamp=UniverseRegistry._parseTimestampString(row[4])))
+                description=row[2]))
         return universeList
-
-    def _stockUniverse(
-            self,
-            cursor: sqlite3.Cursor
-            ) -> typing.Optional[UniverseInfo]:
-        sql = """
-            SELECT id, name, description, snapshot_timestamp
-            FROM {table}
-            WHERE is_stock = 1
-            LIMIT 1;
-            """.format(
-            table=UniverseRegistry._UniversesTableName)
-        cursor.execute(sql)
-
-        row = cursor.fetchone()
-        if not row:
-            return None
-
-        return UniverseInfo(
-            id=row[0],
-            name=row[1],
-            description=row[2],
-            isStock=True,
-            snapshotTimestamp=UniverseRegistry._parseTimestampString(row[3]))
 
     def _universeById(
             self,
@@ -347,7 +256,7 @@ class UniverseRegistry(object):
             id: str
             ) -> typing.Optional[UniverseInfo]:
         sql = """
-            SELECT name, description, is_stock, snapshot_timestamp
+            SELECT name, description
             FROM {table}
             WHERE id = :id
             LIMIT 1;
@@ -362,9 +271,7 @@ class UniverseRegistry(object):
         return UniverseInfo(
             id=id,
             name=row[0],
-            description=row[1],
-            isStock=True if row[2] else False,
-            snapshotTimestamp=UniverseRegistry._parseTimestampString(row[3]))
+            description=row[1])
 
     def _universeByName(
             self,
@@ -372,7 +279,7 @@ class UniverseRegistry(object):
             name: str
             ) -> typing.Optional[UniverseInfo]:
         sql = """
-            SELECT id, description, is_stock, snapshot_timestamp
+            SELECT id, description
             FROM {table}
             WHERE name = :name
             LIMIT 1;
@@ -387,9 +294,7 @@ class UniverseRegistry(object):
         return UniverseInfo(
             id=row[0],
             name=name,
-            description=row[1],
-            isStock=True if row[2] else False,
-            snapshotTimestamp=UniverseRegistry._parseTimestampString(row[3]))
+            description=row[1])
 
     def _setUniverseName(
             self,
@@ -420,34 +325,3 @@ class UniverseRegistry(object):
             table=UniverseRegistry._UniversesTableName)
         # TODO: Does this throw if the entry doesn't exist or do I need to check a return value?
         cursor.execute(sql, {'id': id, 'description': description})
-
-    def _setSnapshotTimestamp(
-            self,
-            cursor: sqlite3.Cursor,
-            timestamp: datetime.datetime
-            ) -> None:
-        sql = """
-            UPDATE {table}
-            SET snapshot_timestamp = :snapshot_timestamp
-            WHERE is_stock = 1;
-            """.format(
-            table=UniverseRegistry._UniversesTableName)
-        # TODO: Does this throw if the entry doesn't exist or do I need to check a return value?
-        cursor.execute(sql, {'snapshot_timestamp': UniverseRegistry._formatTimestampString(timestamp)})
-
-    @staticmethod
-    def _parseTimestampString(content: typing.Optional[str]) -> typing.Optional[datetime.datetime]:
-        if content is None:
-            return None
-
-        return datetime.datetime.fromisoformat(content)
-
-    @staticmethod
-    def _formatTimestampString(timestamp: typing.Optional[datetime.datetime]) -> typing.Optional[str]:
-        if timestamp is None:
-            return None
-
-        if timestamp.tzinfo is None:
-            # Assume timestamps without a timezone are in UTC
-            timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
-        return timestamp.astimezone(datetime.timezone.utc).isoformat()

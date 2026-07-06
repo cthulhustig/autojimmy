@@ -33,7 +33,6 @@ class SectorInfo(object):
     def __init__(
             self,
             id: str,
-            milieu: str,
             name: str,
             sectorX: int,
             sectorY: int,
@@ -52,7 +51,6 @@ class SectorInfo(object):
         common.validateOptionalStr(name='stockDataHash', value=stockDataHash, allowEmpty=False)
 
         self._id = id
-        self._milieu = milieu
         self._name = name
         self._sectorX = sectorX
         self._sectorY = sectorY
@@ -63,9 +61,6 @@ class SectorInfo(object):
 
     def id(self) -> str:
         return self._id
-
-    def milieu(self) -> str:
-        return self._milieu
 
     def name(self) -> str:
         return self._name
@@ -197,22 +192,17 @@ class UniverseDb(object):
 
     def listSectors(
             self,
-            milieu: typing.Optional[str] = None,
             transaction: typing.Optional[database.Transaction] = None
             ) -> typing.List[SectorInfo]:
-        logging.debug(f'UniverseDb listing {milieu if milieu else "all"} sectors in universe \'{self._universePath}\'')
+        logging.debug(f'UniverseDb listing sectors in universe \'{self._universePath}\'')
 
         if transaction != None:
             connection = transaction.connection()
-            return self._listSectors(
-                milieu=milieu,
-                cursor=connection.cursor())
+            return self._listSectors(cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
-                return self._listSectors(
-                    milieu=milieu,
-                    cursor=connection.cursor())
+                return self._listSectors(cursor=connection.cursor())
 
     def saveSector(
             self,
@@ -320,7 +310,6 @@ class UniverseDb(object):
                 requiredSchemaVersion=UniverseDb._SectorsTableSchema,
                 columns=[
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='milieu', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
                     database.ColumnDef(columnName='sector_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='sector_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
@@ -335,8 +324,10 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['milieu', 'sector_x', 'sector_y']),
-                    database.UniqueConstraintDef(columnNames=['milieu', 'name'])])
+                    database.UniqueConstraintDef(columnNames=['sector_x', 'sector_y']),
+                    # TODO: I'm really not sure about making this unique. The only reason to really is so sector hex
+                    # format only has one valid value.
+                    database.UniqueConstraintDef(columnNames=['name'])])
 
             self._database.createTable(
                 cursor=cursor,
@@ -777,24 +768,17 @@ class UniverseDb(object):
 
     def _listSectors(
             self,
-            cursor: sqlite3.Cursor,
-            milieu: typing.Optional[str]
+            cursor: sqlite3.Cursor
             ) -> typing.List[SectorInfo]:
         sql = """
-            SELECT s.id, s.milieu, s.name, s.sector_x, s.sector_y, s.abbreviation,
+            SELECT s.id, s.name, s.sector_x, s.sector_y, s.abbreviation,
                 m.created_timestamp, m.modified_timestamp, m.stock_data_hash
             FROM {sectorsTable} AS s
-            JOIN {metadataTable} AS m ON m.sector_id = s.id
+            JOIN {metadataTable} AS m ON m.sector_id = s.id;
             """.format(
                 sectorsTable=UniverseDb._SectorsTableName,
                 metadataTable=UniverseDb._SectorMetadataTableName)
         parameters = {}
-
-        if milieu:
-            sql += 'AND s.milieu = :milieu'
-            parameters['milieu'] = milieu
-
-        sql += ';'
 
         cursor.execute(sql, parameters)
 
@@ -802,14 +786,13 @@ class UniverseDb(object):
         for row in cursor.fetchall():
             sectorList.append(SectorInfo(
                 id=row[0],
-                milieu=row[1],
-                name=row[2],
-                sectorX=row[3],
-                sectorY=row[4],
-                abbreviation=row[5],
-                createdTimestamp=UniverseDb._parseTimestampString(content=row[6]),
-                modifiedTimestamp=UniverseDb._parseTimestampString(content=row[7]),
-                stockDataHash=row[8]))
+                name=row[1],
+                sectorX=row[2],
+                sectorY=row[3],
+                abbreviation=row[4],
+                createdTimestamp=UniverseDb._parseTimestampString(content=row[5]),
+                modifiedTimestamp=UniverseDb._parseTimestampString(content=row[6]),
+                stockDataHash=row[7]))
         return sectorList
 
     def _loadSectors(
@@ -840,7 +823,7 @@ class UniverseDb(object):
             cursor=cursor)
 
         sql = """
-            SELECT id, milieu, sector_x, sector_y,
+            SELECT id, sector_x, sector_y,
                 name, language, abbreviation, sector_label, selected,
                 credits, publication, author, publisher, reference, notes
             FROM {table};
@@ -853,20 +836,19 @@ class UniverseDb(object):
             try:
                 sectors.append(multiverse.DbSector(
                     id=sectorId,
-                    milieu=row[1],
-                    sectorX=row[2],
-                    sectorY=row[3],
-                    name=row[4],
-                    language=row[5],
-                    abbreviation=row[6],
-                    sectorLabel=row[7],
-                    selected=True if row[8] else False,
-                    credits=row[9],
-                    publication=row[10],
-                    author=row[11],
-                    publisher=row[12],
-                    reference=row[13],
-                    notes=row[14],
+                    sectorX=row[1],
+                    sectorY=row[2],
+                    name=row[3],
+                    language=row[4],
+                    abbreviation=row[5],
+                    sectorLabel=row[6],
+                    selected=True if row[7] else False,
+                    credits=row[8],
+                    publication=row[9],
+                    author=row[10],
+                    publisher=row[11],
+                    reference=row[12],
+                    notes=row[13],
                     alternateNames=sectorAlternateNamesMap.get(sectorId),
                     subsectorNames=sectorSubsectorNamesMap.get(sectorId),
                     allegiances=sectorAllegiancesMap.get(sectorId),
@@ -891,16 +873,15 @@ class UniverseDb(object):
             sector: multiverse.DbSector
             ) -> None:
         sql = """
-            INSERT INTO {table} (id, milieu, sector_x, sector_y,
+            INSERT INTO {table} (id, sector_x, sector_y,
                 name, language, abbreviation, sector_label, selected,
                 credits, publication, author, publisher, reference, notes)
-            VALUES (:id, :milieu, :sector_x, :sector_y,
+            VALUES (:id, :sector_x, :sector_y,
                 :name, :language, :abbreviation, :sector_label, :selected,
                 :credits, :publication, :author, :publisher, :reference, :notes);
             """.format(table=UniverseDb._SectorsTableName)
         rows = {
             'id': sector.id(),
-            'milieu': sector.milieu(),
             'sector_x': sector.sectorX(),
             'sector_y': sector.sectorY(),
             'name': sector.name(),
@@ -990,7 +971,7 @@ class UniverseDb(object):
             sectorId=sectorId)
 
         sql = """
-            SELECT milieu, sector_x, sector_y,
+            SELECT sector_x, sector_y,
                 name, language, abbreviation, sector_label, selected,
                 credits, publication, author, publisher, reference, notes
             FROM {table}
@@ -1004,20 +985,19 @@ class UniverseDb(object):
 
         return multiverse.DbSector(
             id=sectorId,
-            milieu=row[0],
-            sectorX=row[1],
-            sectorY=row[2],
-            name=row[3],
-            language=row[4],
-            abbreviation=row[5],
-            sectorLabel=row[6],
-            selected=True if row[7] else False,
-            credits=row[8],
-            publication=row[9],
-            author=row[10],
-            publisher=row[11],
-            reference=row[12],
-            notes=row[13],
+            sectorX=row[0],
+            sectorY=row[1],
+            name=row[2],
+            language=row[3],
+            abbreviation=row[4],
+            sectorLabel=row[5],
+            selected=True if row[6] else False,
+            credits=row[7],
+            publication=row[8],
+            author=row[9],
+            publisher=row[10],
+            reference=row[11],
+            notes=row[12],
             alternateNames=sectorAlternateNamesMap.get(sectorId),
             subsectorNames=sectorSubsectorNamesMap.get(sectorId),
             allegiances=sectorAllegiancesMap.get(sectorId),
@@ -2914,21 +2894,19 @@ class UniverseDb(object):
         sql = """
             SELECT id
             FROM {table}
-            WHERE id != :id AND milieu = :milieu AND sector_x = :x AND sector_y = :y
+            WHERE id != :id AND sector_x = :x AND sector_y = :y
             LIMIT 1;
             """.format(table=UniverseDb._SectorsTableName)
         cursor.execute(sql, {
             'id': sector.id(),
-            'milieu': sector.milieu(),
             'x': sector.sectorX(),
             'y': sector.sectorY()})
         row = cursor.fetchone()
         if row:
-            raise ValueError('Sector {otherId} already exists at ({x}, {y}) in {milieu}'.format(
+            raise ValueError('Sector {otherId} already exists at ({x}, {y})'.format(
                 otherId=row[0],
                 x=sector.sectorX(),
-                y=sector.sectorY(),
-                milieu=sector.milieu()))
+                y=sector.sectorY()))
 
         # Check there isn't a sector with the same name but a different id.
         # In order for the created/modified/stock hash to work correctly, updating
@@ -2937,19 +2915,17 @@ class UniverseDb(object):
         sql = """
             SELECT id
             FROM {table}
-            WHERE id != :id AND milieu = :milieu AND name = :name
+            WHERE id != :id AND name = :name
             LIMIT 1;
             """.format(table=UniverseDb._SectorsTableName)
         cursor.execute(sql, {
             'id': sector.id(),
-            'milieu': sector.milieu(),
             'name': sector.name()})
         row = cursor.fetchone()
         if row:
-            raise ValueError('Sector {otherId} already has the name {name} in {milieu}'.format(
+            raise ValueError('Sector {otherId} already has the name {name}'.format(
                 otherId=row[0],
-                name=sector.name(),
-                milieu=sector.milieu()))
+                name=sector.name()))
 
         # Query any current metadata so it can be re-added after saving. This
         # is needed as the metadata is set to cascade delete when the sector

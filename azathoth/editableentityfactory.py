@@ -7,19 +7,15 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
     def createUniverse(
             self,
             universeId: str,
-            isCustom: bool,
-            sectors: typing.Collection[astronomer.Sector] # Sectors for all milieu
+            sectors: typing.Collection[astronomer.Sector]
             ) -> astronomer.Universe:
         return azathoth.EditableUniverse(
             universeId=universeId,
-            isCustom=isCustom,
             sectors=sectors)
 
     def createSector(
             self,
             entityId: str,
-            isCustom: bool,
-            milieu: astronomer.Milieu,
             position: astronomer.SectorPosition,
             name: str,
             alternateNames: typing.Optional[typing.Iterable[str]] = None,
@@ -42,8 +38,6 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             ) -> astronomer.Sector:
         return azathoth.EditableSector(
             entity=entityId,
-            isCustom=isCustom,
-            milieu=milieu,
             position=position,
             name=name,
             alternateNames=alternateNames,
@@ -67,7 +61,6 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
     def createWorld(
             self,
             entityId: str,
-            milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
             name: str,
             isNameGenerated: bool,
@@ -91,7 +84,6 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             ) -> astronomer.World:
         return azathoth.EditableWorld(
             entityId=entityId,
-            milieu=milieu,
             hex=hex,
             name=name,
             isNameGenerated=isNameGenerated,

@@ -3,7 +3,9 @@ import survey
 import typing
 import uuid
 
-_ValidMilieu = set(['IW', 'M0', 'M990', 'M1105', 'M1120', 'M1201', 'M1248', 'M1900'])
+# TODO: Need to check there is no issue importing if the custom sector has the same name
+# as the sector it's replacing
+
 _ValidSubsectorCodes = set(map(chr, range(ord('A'), ord('P') + 1)))
 
 class DbObject(object):
@@ -1383,7 +1385,6 @@ class DbTag(DbSectorObject):
 class DbSector(DbObject):
     def __init__(
             self,
-            milieu: str,
             sectorX: int,
             sectorY: int,
             name: str,
@@ -1412,7 +1413,6 @@ class DbSector(DbObject):
             ) -> None:
         super().__init__(id=id)
 
-        common.validateMandatoryStr(name='milieu', value=milieu, allowed=_ValidMilieu)
         common.validateMandatoryInt(name='sectorX', value=sectorX)
         common.validateMandatoryInt(name='sectorY', value=sectorY)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
@@ -1438,7 +1438,6 @@ class DbSector(DbObject):
         DbSector._validateProducts(name='products', value=products, sectorId=id)
         common.validateOptionalStr(name='notes', value=notes)
 
-        self._milieu = milieu
         self._sectorX = sectorX
         self._sectorY = sectorY
         self._name = name
@@ -1475,9 +1474,6 @@ class DbSector(DbObject):
         self._attachObjects(self._tags)
         self._products = list(products) if products else None
         self._attachObjects(self._products)
-
-    def milieu(self) -> str:
-        return self._milieu
 
     def sectorX(self) -> int:
         return self._sectorX

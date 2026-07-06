@@ -41,7 +41,6 @@ class World(astronomer.Entity):
     def __init__(
             self,
             entityId: str,
-            milieu: astronomer.Milieu,
             hex: astronomer.HexPosition,
             name: str,
             isNameGenerated: bool,
@@ -65,7 +64,6 @@ class World(astronomer.Entity):
             ) -> None:
         super().__init__(entityId=entityId)
 
-        common.validateMandatoryObject(name='milieu', value=milieu, objectType=astronomer.Milieu)
         common.validateMandatoryObject(name='hex', value=hex, objectType=astronomer.HexPosition)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
         common.validateMandatoryBool(name='isNameGenerated', value=isNameGenerated)
@@ -87,7 +85,6 @@ class World(astronomer.Entity):
         common.validateOptionalCollection(name='researchStations', value=researchStations, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryResearchStation(name=f'{n}[{i}]', value=v))
         common.validateOptionalCollection(name='customRemarks', value=customRemarks, elementType=str)
 
-        self._milieu = milieu
         self._hex = hex
         self._name = name
         self._isNameGenerated = isNameGenerated
@@ -113,9 +110,6 @@ class World(astronomer.Entity):
         self._isFuelCache = '{Fuel}' in self._customRemarks
 
         self._remarksString = None # Calculated on demand
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
 
     def hex(self) -> astronomer.HexPosition:
         return self._hex

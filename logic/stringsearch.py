@@ -10,7 +10,6 @@ _WorldSearchPattern = re.compile(r'^(.+)\s+\(\s*(.+)\s*\)$')
 
 def _findSectorWorlds(
         universe: astronomer.Universe,
-        milieu: astronomer.Milieu,
         searchString: str,
         matches: typing.Optional[typing.Set[astronomer.World]] = None,
         worldFilter: typing.Optional[typing.Callable[[astronomer.World], bool]] = None
@@ -30,7 +29,7 @@ def _findSectorWorlds(
         fnmatch.translate(searchString),
         re.IGNORECASE)
 
-    for sector in universe.yieldSectors(milieu=milieu):
+    for sector in universe.yieldSectors():
         isMatch = expression.match(sector.name())
 
         if not isMatch:
@@ -52,7 +51,6 @@ def _findSectorWorlds(
 
 def _findSubsectorWorlds(
         universe: astronomer.Universe,
-        milieu: astronomer.Milieu,
         searchString: str,
         matches: typing.Optional[typing.Set[astronomer.World]] = None,
         worldFilter: typing.Optional[typing.Callable[[astronomer.World], bool]] = None
@@ -72,7 +70,7 @@ def _findSubsectorWorlds(
         fnmatch.translate(searchString),
         re.IGNORECASE)
 
-    for sector in universe.yieldSectors(milieu=milieu):
+    for sector in universe.yieldSectors():
         for subsectorName in sector.subsectorNames():
             if expression.match(subsectorName):
                 subsectorCode = sector.subsectorCodeByName(name=subsectorName)
@@ -88,20 +86,17 @@ def _findSubsectorWorlds(
 
 def _findHintWorlds(
         universe: astronomer.Universe,
-        milieu: astronomer.Milieu,
         hintString: str,
         matches: typing.Optional[typing.Set[astronomer.World]] = None,
         worldFilter: typing.Optional[typing.Callable[[astronomer.World], bool]] = None
         ) -> None:
     matches = _findSectorWorlds(
         universe=universe,
-        milieu=milieu,
         searchString=hintString,
         matches=matches,
         worldFilter=worldFilter)
     matches = _findSubsectorWorlds(
         universe=universe,
-        milieu=milieu,
         searchString=hintString,
         matches=matches,
         worldFilter=worldFilter)
@@ -124,13 +119,12 @@ def _createWorldFilter(
 
 def _sortResults(
         universe: astronomer.Universe,
-        milieu: astronomer.Milieu,
         worlds: typing.Iterable[astronomer.World]
         ) -> typing.List[astronomer.World]:
     worldKeyMap: typing.Dict[astronomer.World, str] = {}
     for world in worlds:
         hex = world.hex()
-        sector = universe.sectorByPosition(milieu=milieu, position=hex)
+        sector = universe.sectorByPosition(position=hex)
         if not sector:
             continue
 
@@ -144,7 +138,6 @@ def _sortResults(
 
 def searchForWorlds(
         universe: astronomer.Universe,
-        milieu: astronomer.Milieu,
         searchString: str
         ) -> typing.List[astronomer.World]:
     searchString = searchString.strip()
@@ -155,8 +148,8 @@ def searchForWorlds(
     # Check if the world string specifies a hex, if it does and there is
     # a world at that location then that is our only result
     try:
-        hex = universe.stringToPosition(milieu=milieu, string=searchString)
-        foundWorld = universe.worldByPosition(milieu=milieu, hex=hex)
+        hex = universe.stringToPosition(string=searchString)
+        foundWorld = universe.worldByPosition(hex=hex)
         if foundWorld:
             return [foundWorld]
     except:
@@ -179,7 +172,6 @@ def searchForWorlds(
             seenWorlds=seenWorlds)
         searchWorlds = _findHintWorlds(
             universe=universe,
-            milieu=milieu,
             hintString=hintString,
             worldFilter=worldFilter)
 
@@ -190,10 +182,9 @@ def searchForWorlds(
             searchString=searchString,
             seenWorlds=seenWorlds)
         searchWorlds = universe.yieldWorlds(
-            milieu=milieu,
             filterCallback=worldFilter)
 
-    matches = _sortResults(universe=universe, milieu=milieu, worlds=searchWorlds)
+    matches = _sortResults(universe=universe, worlds=searchWorlds)
     seenWorlds.update(searchWorlds)
 
     # From now on we're nto filtering worlds by name, just if they've been seen before
@@ -205,20 +196,18 @@ def searchForWorlds(
     # should be listed first in results
     searchWorlds = _findSubsectorWorlds(
         universe=universe,
-        milieu=milieu,
         searchString=searchString,
         worldFilter=worldFilter)
-    matches.extend(_sortResults(universe=universe, milieu=milieu, worlds=searchWorlds))
+    matches.extend(_sortResults(universe=universe, worlds=searchWorlds))
     seenWorlds.update(searchWorlds)
 
     # If the search string matches any sectors add any worlds that
     # we've not already seen
     searchWorlds = _findSectorWorlds(
         universe=universe,
-        milieu=milieu,
         searchString=searchString,
         worldFilter=worldFilter)
-    matches.extend(_sortResults(universe=universe, milieu=milieu, worlds=searchWorlds))
+    matches.extend(_sortResults(universe=universe, worlds=searchWorlds))
     seenWorlds.update(searchWorlds)
 
     return matches

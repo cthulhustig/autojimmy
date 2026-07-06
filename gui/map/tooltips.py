@@ -20,7 +20,6 @@ def _formatAllegianceString(allegiance: astronomer.Allegiance) -> str:
 
 def createHexToolTip(
         universe: astronomer.Universe,
-        milieu: astronomer.Milieu,
         hex: astronomer.HexPosition,
         rules: traveller.Rules,
         width: int = 512, # 0 means no fixed width
@@ -32,12 +31,8 @@ def createHexToolTip(
         hexImageOptions: typing.Optional[typing.Collection[app.MapOption]] = None,
         includeCredits: bool = True
         ) -> str:
-    world = universe.worldByPosition(
-        milieu=milieu,
-        hex=hex)
-    sector = universe.sectorByPosition(
-        milieu=milieu,
-        position=hex)
+    world = universe.worldByPosition(hex=hex)
+    sector = universe.sectorByPosition(position=hex)
     uwp = world.uwp() if world else None
 
     formatTaggingStyle = lambda level: '' if not level or not taggingColours else f'background-color:{taggingColours.colour(level=level)}'
@@ -54,7 +49,6 @@ def createHexToolTip(
         try:
             tileBytes = gui.generateThumbnail(
                 universe=universe,
-                milieu=milieu,
                 hex=hex,
                 width=256,
                 height=256,
@@ -77,9 +71,7 @@ def createHexToolTip(
     # World
     #
 
-    canonicalName = universe.canonicalHexName(
-        milieu=milieu,
-        hex=hex)
+    canonicalName = universe.canonicalHexName(hex=hex)
     toolTip += f'<h1>{html.escape(canonicalName)}</h1>'
 
     subsectorName = None
@@ -88,9 +80,7 @@ def createHexToolTip(
     if not subsectorName:
         subsectorName = hex.subsectorCode()
 
-    sectorHex = universe.formatSectorHex(
-        milieu=milieu,
-        hex=hex)
+    sectorHex = universe.formatSectorHex(hex=hex)
 
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
     toolTip += f'<li>Subsector: {html.escape(subsectorName)}</li>'
@@ -153,13 +143,11 @@ def createHexToolTip(
                 ownerSector = None
                 if ownerWorldRef.sectorAbbreviation():
                     matchSectors = universe.sectorsByAbbreviation(
-                        milieu=milieu,
                         abbreviation=ownerWorldRef.sectorAbbreviation())
                     if matchSectors:
                         ownerSector = next(iter(matchSectors))
                 else:
                     ownerSector = universe.sectorByPosition(
-                        milieu=milieu,
                         position=hex.sectorPosition())
 
                 ownerWorld = None
@@ -168,14 +156,12 @@ def createHexToolTip(
                         sectorPos=ownerSector.position(),
                         offsetX=ownerWorldRef.hexX(),
                         offsetY=ownerWorldRef.hexY())
-                    ownerWorld = universe.worldByPosition(
-                        milieu=milieu,
-                        hex=ownerHex)
+                    ownerWorld = universe.worldByPosition(hex=ownerHex)
 
                 if ownerWorld:
                     ownerString = '{world} ({hex})'.format(
                         world=ownerWorld.name(),
-                        hex=universe.formatSectorHex(milieu=milieu, hex=ownerHex))
+                        hex=universe.formatSectorHex(hex=ownerHex))
                     tagLevel = worldTagging.calculateWorldTagLevel(world=ownerWorld) if worldTagging else None
                     ownerInfo.append((ownerString, tagLevel))
                 else:
@@ -413,13 +399,11 @@ def createHexToolTip(
                 colonySector = None
                 if colonyWorldRef.sectorAbbreviation():
                     matchSectors = universe.sectorsByAbbreviation(
-                        milieu=milieu,
                         abbreviation=colonyWorldRef.sectorAbbreviation())
                     if matchSectors:
                         colonySector = next(iter(matchSectors))
                 else:
                     colonySector = universe.sectorByPosition(
-                        milieu=milieu,
                         position=hex.sectorPosition())
 
                 colonyWorld = None
@@ -428,14 +412,12 @@ def createHexToolTip(
                         sectorPos=colonySector.position(),
                         offsetX=colonyWorldRef.hexX(),
                         offsetY=colonyWorldRef.hexY())
-                    colonyWorld = universe.worldByPosition(
-                        milieu=milieu,
-                        hex=colonyHex)
+                    colonyWorld = universe.worldByPosition(hex=colonyHex)
 
                 if colonyWorld:
                     colonyText = '{world} ({hex})'.format(
                         world=colonyWorld.name(),
-                        hex=universe.formatSectorHex(milieu=milieu, hex=colonyHex))
+                        hex=universe.formatSectorHex(hex=colonyHex))
                     tagLevel = worldTagging.calculateWorldTagLevel(world=colonyWorld) if worldTagging else None
                 else:
                     # We don't know about this world so just display the sector hex and tag it as danger

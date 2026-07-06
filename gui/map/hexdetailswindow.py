@@ -11,7 +11,6 @@ class _CustomLabel(QtWidgets.QLabel):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Collection[app.MapOption],
@@ -22,7 +21,6 @@ class _CustomLabel(QtWidgets.QLabel):
         super().__init__(parent)
 
         self._universe = universe
-        self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._mapStyle = mapStyle
         self._mapOptions = set(mapOptions)
@@ -42,13 +40,6 @@ class _CustomLabel(QtWidgets.QLabel):
             return
 
         self._universe = universe
-        self._updateContent()
-
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        if milieu is self._milieu:
-            return
-
-        self._milieu = milieu
         self._updateContent()
 
     def setRules(self, rules: traveller.Rules) -> None:
@@ -105,7 +96,6 @@ class _CustomLabel(QtWidgets.QLabel):
         if self._hex:
             self.setText(gui.createHexToolTip(
                 universe=self._universe,
-                milieu=self._milieu,
                 hex=self._hex,
                 rules=self._rules,
                 worldTagging=self._worldTagging,
@@ -138,7 +128,6 @@ class HexDetailsWindow(gui.WindowWidget):
 
         self._hexLabel = _CustomLabel(
             universe=astronomer.WorldManager.instance().universe(),
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
@@ -169,9 +158,7 @@ class HexDetailsWindow(gui.WindowWidget):
                 return
 
         universe = astronomer.WorldManager.instance().universe()
-        tabName = universe.canonicalHexName(
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
-            hex=hex)
+        tabName = universe.canonicalHexName(hex=hex)
         self._hexes.append(hex)
         index = self._tabBar.addTab(tabName)
         self._tabBar.setCurrentIndex(index)
@@ -185,13 +172,10 @@ class HexDetailsWindow(gui.WindowWidget):
             return
 
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         currentHexes = set(self._hexes)
         for hex in hexes:
             if hex not in currentHexes:
-                tabName = universe.canonicalHexName(
-                    milieu=milieu,
-                    hex=hex)
+                tabName = universe.canonicalHexName(hex=hex)
                 self._hexes.append(hex)
                 self._tabBar.addTab(tabName)
 
@@ -242,17 +226,10 @@ class HexDetailsWindow(gui.WindowWidget):
             ) -> None:
         if option is app.ConfigOption.Universe:
             universe = astronomer.WorldManager.instance().universe()
-            milieu = app.Config.instance().value(app.ConfigOption.Milieu)
             for index, hex in enumerate(self._hexes):
-                tabName = universe.canonicalHexName(milieu=milieu, hex=hex)
+                tabName = universe.canonicalHexName(hex=hex)
                 self._tabBar.setTabText(index, tabName)
             self._hexLabel.setUniverse(universe=universe)
-        elif option is app.ConfigOption.Milieu:
-            universe = astronomer.WorldManager.instance().universe()
-            for index, hex in enumerate(self._hexes):
-                tabName = universe.canonicalHexName(milieu=newValue, hex=hex)
-                self._tabBar.setTabText(index, tabName)
-            self._hexLabel.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._hexLabel.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:

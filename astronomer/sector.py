@@ -7,8 +7,6 @@ class Sector(astronomer.Entity):
     def __init__(
             self,
             entityId: str,
-            isCustom: bool,
-            milieu: astronomer.Milieu,
             position: astronomer.SectorPosition,
             name: str,
             alternateNames: typing.Optional[typing.Collection[str]] = None,
@@ -31,8 +29,6 @@ class Sector(astronomer.Entity):
             ) -> None:
         super().__init__(entityId=entityId)
 
-        common.validateMandatoryBool(name='isCustom', value=isCustom)
-        common.validateMandatoryObject(name='milieu', value=milieu, objectType=astronomer.Milieu)
         common.validateMandatoryObject(name='position', value=position, objectType=astronomer.SectorPosition)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
         # TODO: This should check that the names aren't empty strings
@@ -56,8 +52,6 @@ class Sector(astronomer.Entity):
         common.validateOptionalObject(name='source', value=source, objectType=astronomer.SectorSource)
         common.validateOptionalCollection(name='products', value=products, elementType=astronomer.SectorSource)
 
-        self._isCustom = isCustom
-        self._milieu = milieu
         self._position = position
         self._name = name
         self._alternateNames = list(alternateNames) if alternateNames else []
@@ -98,9 +92,6 @@ class Sector(astronomer.Entity):
         self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
         for entity in itertools.chain(self._worlds, self._borders, self._regions, self._routes, self._labels):
             self._idToEntityMap[entity.entityId()] = entity
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
 
     def position(self) -> astronomer.SectorPosition:
         return self._position
@@ -182,9 +173,6 @@ class Sector(astronomer.Entity):
 
     def products(self) -> typing.Collection[astronomer.SectorSource]:
         return common.ConstCollectionRef(self._products)
-
-    def isCustom(self) -> bool:
-        return self._isCustom
 
     def subsectorNames(self) -> typing.Collection[str]:
         return common.ConstCollectionRef(self._subsectorCodeToNameMap.values())

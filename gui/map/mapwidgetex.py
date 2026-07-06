@@ -191,12 +191,10 @@ class _SearchComboBox(gui.HexSelectComboBox):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ):
         super().__init__(
             universe=universe,
-            milieu=milieu,
             parent=parent)
 
         self.setStyleSheet(_SearchComboBox._formatComboStyle())
@@ -307,7 +305,6 @@ class _InfoWidget(QtWidgets.QWidget):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -316,7 +313,6 @@ class _InfoWidget(QtWidgets.QWidget):
         super().__init__(parent)
 
         self._universe = universe
-        self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
@@ -372,15 +368,6 @@ class _InfoWidget(QtWidgets.QWidget):
         if universe is self._universe:
             return
         self._universe = universe
-        self._updateContent(self._label.width())
-
-    def setMilieu(
-            self,
-            milieu: astronomer.Milieu,
-            ) -> None:
-        if milieu is self._milieu:
-            return
-        self._milieu = milieu
         self._updateContent(self._label.width())
 
     def setRules(
@@ -501,7 +488,6 @@ class _InfoWidget(QtWidgets.QWidget):
         if self._hex:
             text = gui.createHexToolTip(
                 universe=self._universe,
-                milieu=self._milieu,
                 hex=self._hex,
                 rules=self._rules,
                 width=width - _InfoWidget._ContentRightMargin,
@@ -1079,7 +1065,6 @@ class MapWidgetEx(QtWidgets.QWidget):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             style: cartographer.MapStyle,
             options: typing.Collection[app.MapOption],
@@ -1092,7 +1077,6 @@ class MapWidgetEx(QtWidgets.QWidget):
         super().__init__(parent)
 
         self._universe = universe
-        self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._style = style
         self._options = set(options)
@@ -1122,7 +1106,6 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self._mapWidget = gui.MapWidget(
             universe=self._universe,
-            milieu=self._milieu,
             style=self._style,
             options=self._options,
             rendering=rendering,
@@ -1136,7 +1119,6 @@ class MapWidgetEx(QtWidgets.QWidget):
         # seem to work either.
         self._searchWidget = _SearchComboBox(
             universe=self._universe,
-            milieu=self._milieu,
             parent=self)
         self._searchWidget.setFixedSize(searchWidth, controlHeights)
         self._searchWidget.installEventFilter(self)
@@ -1161,7 +1143,6 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self._infoWidget = _InfoWidget(
             universe=self._universe,
-            milieu=self._milieu,
             rules=self._rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours,
@@ -1455,18 +1436,6 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._mapWidget.setUniverse(universe=universe)
         self._searchWidget.setUniverse(universe=universe)
         self._infoWidget.setUniverse(universe=universe)
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
-
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        if milieu is self._milieu:
-            return
-
-        self._milieu = milieu
-        self._mapWidget.setMilieu(milieu=self._milieu)
-        self._searchWidget.setMilieu(milieu=self._milieu)
-        self._infoWidget.setMilieu(milieu=self._milieu)
 
     def rules(self) -> traveller.Rules:
         return traveller.Rules(self._rules)
@@ -1792,9 +1761,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 self.setInfoHex(hex=hex)
             return
 
-        world = self._universe.worldByPosition(
-            milieu=self._milieu,
-            hex=hex)
+        world = self._universe.worldByPosition(hex=hex)
         if not world and not self._enableDeadSpaceSelection:
             return
 
@@ -1829,9 +1796,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if not self._enableDeadSpaceSelection:
             filtered = []
             for hex in hexes:
-                world = self._universe.worldByPosition(
-                    milieu=self._milieu,
-                    hex=hex)
+                world = self._universe.worldByPosition(hex=hex)
                 if world:
                     filtered.append(hex)
             hexes = filtered
@@ -1894,9 +1859,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if position in self._selectedSectors:
             return
 
-        sector = self._universe.sectorByPosition(
-            milieu=self._milieu,
-            position=position)
+        sector = self._universe.sectorByPosition(position=position)
         if not sector and not self._enableDeadSpaceSelection:
             return
 
@@ -1925,9 +1888,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if not self._enableDeadSpaceSelection:
             filtered = []
             for position in positions:
-                sector = self._universe.sectorByPosition(
-                    milieu=self._milieu,
-                    position=position)
+                sector = self._universe.sectorByPosition(position=position)
                 if sector:
                     filtered.append(position)
             positions = filtered
@@ -2053,16 +2014,12 @@ class MapWidgetEx(QtWidgets.QWidget):
             # Deselect any dead space
             selectionChanged = False
             for hex in list(self._selectedHexes):
-                world = self._universe.worldByPosition(
-                    milieu=self._milieu,
-                    hex=hex)
+                world = self._universe.worldByPosition(hex=hex)
                 if not world:
                     self._selectedHexes.discard(hex)
                     selectionChanged = True
             for pos in list(self._selectedSectors):
-                sector = self._universe.sectorByPosition(
-                    milieu=self._milieu,
-                    position=pos)
+                sector = self._universe.sectorByPosition(position=pos)
                 if not sector:
                     self._selectedSectors.discard(pos)
                     selectionChanged = True
@@ -2345,9 +2302,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             if self._enableDeadSpaceSelection:
                 shouldSelect = hex != None
             elif hex:
-                shouldSelect = self._universe.worldByPosition(
-                    milieu=self._milieu,
-                    hex=hex) != None
+                shouldSelect = self._universe.worldByPosition(hex=hex) != None
 
             if shouldSelect:
                 # Show info for the world the user clicked on or hide any current world info if there
@@ -2358,9 +2313,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 # Update selection if enabled
                 if self._selectionMode is not MapWidgetEx.SelectionMode.NoSelection:
                     if self._selectionMode is MapWidgetEx.SelectionMode.MultiSelection and gui.isShiftKeyDown():
-                        worlds = self._universe.worldsInFlood(
-                            milieu=self._milieu,
-                            hex=hex)
+                        worlds = self._universe.worldsInFlood(hex=hex)
                         self.selectHexes(hexes=[world.hex() for world in worlds])
                     elif hex not in self._selectedHexes:
                         self.selectHex(
@@ -2375,9 +2328,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             if self._enableDeadSpaceSelection:
                 shouldSelect = position != None
             elif position:
-                shouldSelect = self._universe.sectorByPosition(
-                    milieu=self._milieu,
-                    position=position) != None
+                shouldSelect = self._universe.sectorByPosition(position=position) != None
 
             if shouldSelect:
                 if position not in self._selectedSectors:

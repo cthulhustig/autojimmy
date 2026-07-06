@@ -11,7 +11,6 @@ class HexSelectDialog(gui.DialogEx):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Iterable[app.MapOption],
@@ -28,7 +27,6 @@ class HexSelectDialog(gui.DialogEx):
 
         self._mapWidget = gui.MapWidgetEx(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             style=mapStyle,
             options=mapOptions,

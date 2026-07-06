@@ -14,10 +14,8 @@ class ReplaceSectorCommand(azathoth.EditCommandInterface):
         common.validateOptionalObject(name='newSector', value=newSector, objectType=azathoth.EditableSector)
 
         if oldSector and newSector:
-            if oldSector.milieu() != newSector.milieu():
-                raise ValueError(f'Sectors have different milieu ({oldSector.milieu().value} vs {newSector.milieu().value})')
             if oldSector.position() != newSector.position():
-                raise ValueError(f'Sectors have different milieu ({oldSector.position().elements()} vs {newSector.position().elements()})')
+                raise ValueError(f'Sectors have different position ({oldSector.position().elements()} vs {newSector.position().elements()})')
 
         self._oldSector = oldSector
         self._newSector = newSector

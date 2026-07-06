@@ -91,11 +91,9 @@ class SectorCache(object):
 
     def __init__(
             self,
-            milieu: astronomer.Milieu,
             universe: astronomer.Universe,
             graphics: cartographer.AbstractGraphics
             ) -> None:
-        self._milieu = milieu
         self._universe = universe
         self._graphics = graphics
         self._worldsCache: typing.Dict[
@@ -119,17 +117,6 @@ class SectorCache(object):
             cartographer.AbstractPath
         ] = {}
 
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        if milieu is self._milieu:
-            return
-        self._milieu = milieu
-        self._worldsCache.clear()
-        self._borderCache.clear()
-        self._regionCache.clear()
-        self._routeCache.clear()
-        # NOTE: No need to clear clip cache as it's not dependant on milieu
-        #self._clipCache.clear()
-
     def isotropicWorldPoints(
             self,
             sectorPos: astronomer.SectorPosition
@@ -141,9 +128,7 @@ class SectorCache(object):
         if worlds != -1:
             return worlds
 
-        sector = self._universe.sectorByPosition(
-            milieu=self._milieu,
-            position=sectorPos)
+        sector = self._universe.sectorByPosition(position=sectorPos)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -168,9 +153,7 @@ class SectorCache(object):
         if borders is not None:
             return borders
 
-        sector = self._universe.sectorByPosition(
-            milieu=self._milieu,
-            position=sectorPos)
+        sector = self._universe.sectorByPosition(position=sectorPos)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -189,9 +172,7 @@ class SectorCache(object):
         if regions is not None:
             return regions
 
-        sector = self._universe.sectorByPosition(
-            milieu=self._milieu,
-            position=sectorPos)
+        sector = self._universe.sectorByPosition(position=sectorPos)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -210,9 +191,7 @@ class SectorCache(object):
         if routes is not None:
             return routes
 
-        sector = self._universe.sectorByPosition(
-            milieu=self._milieu,
-            position=sectorPos)
+        sector = self._universe.sectorByPosition(position=sectorPos)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None

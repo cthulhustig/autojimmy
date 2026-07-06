@@ -37,10 +37,6 @@ class LabelStore(object):
     _MegaLabelsPath = 'labels/mega_labels.tab'
     _WorldLabelPath = 'labels/Worlds.xml'
 
-    # The Traveller Map world labels use sector hex locations with the
-    # sectors using the M1105 names
-    _SectorHexMilieu = astronomer.Milieu.M1105
-
     _cachedMinorLabels = None
     _cachedMegaLabels = None
 
@@ -119,9 +115,9 @@ class LabelStore(object):
                 if hex is None:
                     raise RuntimeError('Location element has no Hex attribute')
                 sectorHex = f'{sector} {hex}'
-                world = universe.worldBySectorHex(
-                    milieu=LabelStore._SectorHexMilieu,
-                    sectorHex=sectorHex)
+                # TODO: This is currently broken for milieu other than M1105 as the labels use sector hex
+                # positions using M1105 sector names
+                world = universe.worldBySectorHex(sectorHex=sectorHex)
                 if not world:
                     # The world doesn't exist in this universe so skip the label
                     logging.debug(

@@ -121,7 +121,6 @@ class SimulatorWindow(gui.WindowWidget):
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
             universe=astronomer.WorldManager.instance().universe(),
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
@@ -388,7 +387,6 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _setupConfigControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -399,7 +397,6 @@ class SimulatorWindow(gui.WindowWidget):
 
         self._startWorldWidget = gui.HexSelectToolWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -578,7 +575,6 @@ class SimulatorWindow(gui.WindowWidget):
         labelLayout.addWidget(self._simulationTravelledLabel)
 
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -589,7 +585,6 @@ class SimulatorWindow(gui.WindowWidget):
 
         self._mapWidget = gui.MapWidgetEx(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             style=mapStyle,
             options=mapOptions,
@@ -655,13 +650,6 @@ class SimulatorWindow(gui.WindowWidget):
             self._startWorldWidget.setUniverse(universe=universe)
             self._mapWidget.setUniverse(universe=universe)
             # Stop the simulator if the universe changes as it invalidates
-            # the existing simulation state
-            self._stopSimulator()
-        elif option is app.ConfigOption.Milieu:
-            self._hexTooltipProvider.setMilieu(milieu=newValue)
-            self._startWorldWidget.setMilieu(milieu=newValue)
-            self._mapWidget.setMilieu(milieu=newValue)
-            # Stop the simulator if the milieu changes as it invalidates
             # the existing simulation state
             self._stopSimulator()
         elif option is app.ConfigOption.Rules:
@@ -763,7 +751,6 @@ class SimulatorWindow(gui.WindowWidget):
             return
 
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
         pitCostCalculator = logic.PitStopCostCalculator(
@@ -796,12 +783,10 @@ class SimulatorWindow(gui.WindowWidget):
         elif routeOptimisation == logic.RouteOptimisation.StrictXBoat:
             jumpCostCalculator = logic.StrictXBoatCostCalculator(
                 universe=universe,
-                milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LooseXBoat:
             jumpCostCalculator = logic.LooseXBoatCostCalculator(
                 universe=universe,
-                milieu=milieu,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -818,7 +803,6 @@ class SimulatorWindow(gui.WindowWidget):
             self._simulatorJob = jobs.SimulatorJob(
                 parent=self,
                 universe=universe,
-                milieu=milieu,
                 rules=rules,
                 startHex=startWorld.hex(),
                 startingFunds=self._startingFundsSpinBox.value(),

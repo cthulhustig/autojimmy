@@ -1,7 +1,9 @@
-import datetime
+import common
+import hashlib
 import logging
 import multiverse
 import os
+import survey
 import threading
 import typing
 import uuid
@@ -74,125 +76,127 @@ class UniverseManager(object):
     def universeInfos(self) -> typing.List[multiverse.UniverseInfo]:
         return UniverseManager._registry.listUniverses()
 
-    def universeInfo(self, universeId: str) -> typing.Optional[multiverse.UniverseInfo]:
-        return UniverseManager._registry.universeById(id=universeId)
+    def universeInfoById(self, id: str) -> typing.Optional[multiverse.UniverseInfo]:
+        return UniverseManager._registry.universeById(id=id)
 
-    def hasStockUniverse(self) -> bool:
-        return UniverseManager._registry.stockUniverse() is not None
+    def universeInfoByName(self, name: str) -> typing.Optional[multiverse.UniverseInfo]:
+        return UniverseManager._registry.universeByName(name=name)
 
-    def stockUniverseInfo(self) -> typing.Optional[multiverse.UniverseInfo]:
-        return UniverseManager._registry.stockUniverse()
-
-    def checkStockUniverseTimestamp(
+    def createUniverse(
             self,
-            snapshotTimestamp: datetime.datetime
-            ) -> bool:
-        info = UniverseManager._registry.stockUniverse()
-        if not info:
-            # There is no stock universe yet so the snapshot is always newer
-            return True
-        currentTimestamp = info.snapshotTimestamp()
-        if not currentTimestamp:
-            # The current stock universe has no timestamp. This shouldn't
-            # happen but assume the snapshot is newer
-            return True
-        return snapshotTimestamp > currentTimestamp
+            name: str,
+            milieu: str,
+            description: str,
+            importTravellerMap: bool,
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
+            reporter: typing.Optional[common.Reporter] = None
+            ) -> str: # Universe Id
+        if self.universeInfoByName(name) is not None:
+            raise ValueError(f'A Universe named {name!r} already exists')
 
-    def updateStockUniverse(
-            self,
-            sectors: typing.Collection[multiverse.DbSector],
-            snapshotTimestamp: datetime.datetime,
-            sourceDataHashes: typing.Mapping[multiverse.DbSector, str],
-            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
-            ) -> None:
-        existingInfo = UniverseManager._registry.stockUniverse()
+        if importTravellerMap:
+            if reporter:
+                reporter.pushPrefix('Stock Allegiances: ')
+            try:
+                rawStockAllegiances = multiverse.loadSnapshotStockAllegiances(reporter=reporter)
+            finally:
+                if reporter:
+                    reporter.popPrefix()
 
-        universeId = existingInfo.id() if existingInfo else str(uuid.uuid4())
-        dbPath = UniverseManager._universeDbFilePath(id=universeId)
-        database = multiverse.UniverseDb(universePath=dbPath)
-        onCommit = onRollback = None
-        if progressCallback:
-            onCommit = lambda: progressCallback('Committing', 0, 0)
-            onRollback = lambda: progressCallback('Reverting', 0, 0)
+            if reporter:
+                reporter.pushPrefix('Stock Sophonts: ')
+            try:
+                rawStockSophonts = multiverse.loadSnapshotStockSophonts(reporter=reporter)
+            finally:
+                if reporter:
+                    reporter.popPrefix()
 
-        with database.createTransaction(onCommitCallback=onCommit, onRollbackCallback=onRollback) as transaction:
-            # Remove old sectors
-            if existingInfo:
-                database.clearSectors(transaction=transaction)
+            if reporter:
+                reporter.pushPrefix('Stock Style Sheet: ')
+            try:
+                rawStockStyleSheet = multiverse.loadSnapshotStyleSheet(reporter=reporter)
+            finally:
+                if reporter:
+                    reporter.popPrefix()
 
-            # Add new sectors
-            sectorCount = len(sectors)
-            for progressCount, sector in enumerate(sectors):
+            rawUniverseInfo = survey.parseUniverseInfo(
+                content=multiverse.SnapshotManager.instance().readUniverseInfo(milieu=milieu))
+
+            sectorNames = []
+            for sectorInfo in rawUniverseInfo.sectorInfos():
+                nameInfos = sectorInfo.nameInfos()
+                canonicalName = nameInfos[0].name() if nameInfos else None
+                if not canonicalName:
+                    logging.warning(f'Stock universe import ignoring sector with no name in milieu {milieu}')
+                    continue
+                sectorNames.append(canonicalName)
+
+            dbSectors: typing.List[multiverse.DbSector] = []
+            sourceDataHashes: typing.Dict[multiverse.DbSector, str] = {}
+            progressCount = 0
+            for sectorName in sectorNames:
                 if progressCallback:
                     try:
                         progressCallback(
-                            f'Writing: {sector.milieu()} - {sector.name()}',
+                            f'Converting: {milieu} - {sectorName}',
                             progressCount,
-                            sectorCount)
+                            len(sectorNames))
+                        progressCount += 1
                     except Exception as ex:
-                        logging.warning('UniverseManager stock universe update progress callback threw an exception', exc_info=ex)
+                        logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
 
-                database.saveSector(
-                    sector=sector,
-                    stockDataHash=sourceDataHashes.get(sector),
-                    transaction=transaction)
-
-            if progressCallback:
                 try:
-                    progressCallback(
-                        'Writing: Complete!',
-                        sectorCount,
-                        sectorCount)
-                except Exception as ex:
-                    logging.warning('UniverseManager stock universe update progress callback threw an exception', exc_info=ex)
+                    if reporter:
+                        reporter.pushPrefix(f'{milieu} {sectorName} Metadata - ')
+                    try:
+                        sectorMetadata = multiverse.SnapshotManager.instance().readSectorMetadata(
+                            milieu=milieu,
+                            sector=sectorName)
+                        rawMetadata = survey.parseMetadata(content=sectorMetadata, reporter=reporter)
+                    finally:
+                        if reporter:
+                            reporter.popPrefix()
 
-        if existingInfo:
-            # The stock universe is already in the registry so just update
-            # the snapshot timestamp
-            UniverseManager._registry.setSnapshotTimestamp(
-                timestamp=snapshotTimestamp)
-        else:
-            # The registry didn't contain an entry for the stock universe so
-            # create one
+                    if reporter:
+                        reporter.pushPrefix(f'{milieu} {sectorName} Sector - ')
+                    try:
+                        sectorContent = multiverse.SnapshotManager.instance().readSectorContent(
+                            milieu=milieu,
+                            sector=sectorName)
+                        rawSystems = survey.parseSector(content=sectorContent, reporter=reporter)
+                    finally:
+                        if reporter:
+                            reporter.popPrefix()
+
+                    dbSector = multiverse.convertRawSectorToDbSector(
+                        milieu=milieu,
+                        rawMetadata=rawMetadata,
+                        rawSystems=rawSystems,
+                        rawStockAllegiances=rawStockAllegiances,
+                        rawStockSophonts=rawStockSophonts,
+                        rawStockStyleSheet=rawStockStyleSheet)
+                    dbSectors.append(dbSector)
+
+                    hash = hashlib.sha256()
+                    hash.update(hashlib.sha256(sectorMetadata.encode()).digest())
+                    hash.update(hashlib.sha256(sectorContent.encode()).digest())
+                    sourceDataHashes[dbSector] = hash.hexdigest()
+                except Exception as ex:
+                    logging.error(f'Stock universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
+
+        if progressCallback:
             try:
-                UniverseManager._registry.addUniverse(
-                    id=universeId,
-                    name=UniverseManager._StockUniverseName,
-                    description=UniverseManager._StockUniverseDescription,
-                    stock=True,
-                    snapshotTimestamp=snapshotTimestamp)
-            except Exception:
-                # Tidy up by deleting the newly created universe database
-                try:
-                    os.remove(dbPath)
-                except Exception as ex:
-                    logging.error(f'UniverseManager failed to clean up stock universe file "{dbPath}"', exc_info=ex)
-                raise
+                progressCallback(
+                    f'Converting: Complete!',
+                    len(sectorNames),
+                    len(sectorNames))
+            except Exception as ex:
+                logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
 
-    # NOTE: When copyStock is true the stock database is copied as-is. This is
-    # done for speed (3 seconds vs > 30 seconds when loaded then saved). The
-    # downside of this is the id's of objects in the copy will be the same so
-    # the app needs to handle that.
-    def createCustomUniverse(
-            self,
-            name: str,
-            description: str,
-            copyStock: bool,
-            sectors: typing.Optional[typing.Collection[multiverse.DbSector]] = None,
-            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None,
-            universeId: typing.Optional[str] = None
-            ) -> str: # Universe Id
-        if UniverseManager._registry.universeByName(name=name):
-            raise ValueError(f'Universe named "{name}" already exists')
-
-        if universeId and UniverseManager._registry.universeById(id=universeId):
-            raise ValueError(f'Universe with id "{id}" already exists')
-
-        if not universeId:
-            universeId = str(uuid.uuid4())
+        universeId = str(uuid.uuid4())
         universePath = UniverseManager._universeDbFilePath(id=universeId)
         if os.path.exists(universePath):
-            raise RuntimeError(f'Universe database "{universePath}" already exists')
+            raise RuntimeError(f'Universe database {universePath!r} already exists')
 
         if progressCallback:
             try:
@@ -200,26 +204,18 @@ class UniverseManager(object):
             except Exception as ex:
                 logging.warning('UniverseManager custom universe creation progress callback threw an exception', exc_info=ex)
 
-        if copyStock:
-            stockInfo = self.stockUniverseInfo()
-            if not stockInfo:
-                raise RuntimeError('No stock universe defined')
-            stockPath = UniverseManager._universeDbFilePath(id=stockInfo.id())
-            stockDatabase = multiverse.UniverseDb(universePath=stockPath)
-            stockDatabase.copyTo(targetPath=universePath)
-
         # Always create database, even when there are no sectors, as we want it
         # to be created on disk
         universeDb = multiverse.UniverseDb(universePath=universePath)
 
-        if sectors:
+        if dbSectors:
             with universeDb.createTransaction() as transaction:
-                sectorCount = len(sectors)
-                for progressCount, sector in enumerate(sectors):
+                sectorCount = len(dbSectors)
+                for progressCount, sector in enumerate(dbSectors):
                     if progressCallback:
                         try:
                             progressCallback(
-                                f'Creating: {sector.milieu()} - {sector.name()}',
+                                f'Creating: {sector.name()}',
                                 progressCount,
                                 sectorCount)
                         except Exception as ex:
@@ -233,14 +229,13 @@ class UniverseManager(object):
             UniverseManager._registry.addUniverse(
                 id=universeId,
                 name=name,
-                description=description,
-                stock=False)
+                description=description)
         except Exception:
             # Attempt to tidy up by deleting the universe database
             try:
                 os.remove(universePath)
             except Exception as ex:
-                logging.error(f'UniverseManager failed to clean up universe file "{universePath}"', exc_info=ex)
+                logging.error(f'UniverseManager failed to clean up universe file {universePath!r}', exc_info=ex)
             raise
 
         if progressCallback:
@@ -251,13 +246,56 @@ class UniverseManager(object):
 
         return universeId
 
-    def deleteCustomUniverse(self, universeId: str) -> None:
+    def updateSectors(
+                self,
+                universeId: str,
+                sectors: typing.Collection[multiverse.DbSector],
+                progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None,
+                ) -> str: # Universe Id
+            universeInfo = UniverseManager._registry.universeById(id=universeId)
+            if not universeInfo:
+                raise ValueError(f'Unknown universe {universeId!r}')
+
+            universePath = UniverseManager._universeDbFilePath(id=universeId)
+            if not os.path.exists(universePath):
+                raise RuntimeError(f'Universe database {universePath!r} already exists')
+
+            if progressCallback:
+                try:
+                    progressCallback('Updating', 0, 0)
+                except Exception as ex:
+                    logging.warning('UniverseManager sector update progress callback threw an exception', exc_info=ex)
+
+            # Always create database, even when there are no sectors, as we want it
+            # to be created on disk
+            universeDb = multiverse.UniverseDb(universePath=universePath)
+
+            with universeDb.createTransaction() as transaction:
+                sectorCount = len(sectors)
+                for progressCount, sector in enumerate(sectors):
+                    if progressCallback:
+                        try:
+                            progressCallback(
+                                f'Updating: {sector.name()}',
+                                progressCount,
+                                sectorCount)
+                        except Exception as ex:
+                            logging.warning('UniverseManager sector update progress callback threw an exception', exc_info=ex)
+
+                    universeDb.saveSector(sector=sector, transaction=transaction)
+
+            if progressCallback:
+                try:
+                    progressCallback('Updating: Complete!', 1, 1)
+                except Exception as ex:
+                    logging.warning('UniverseManager sector update progress callback threw an exception', exc_info=ex)
+
+            return universeId
+
+    def deleteUniverse(self, universeId: str) -> None:
         info = UniverseManager._registry.universeById(id=universeId)
         if info is None:
-            raise ValueError(f'Universe "{universeId}" doesn\'t exist')
-
-        if info.isStock():
-            raise ValueError(f'Stock universe can\'t be deleted')
+            raise ValueError(f'Universe {universeId!r} doesn\'t exist')
 
         UniverseManager._registry.removeUniverse(id=universeId)
 
@@ -276,7 +314,7 @@ class UniverseManager(object):
                 return
 
             # There is already a universe with the same name
-            raise ValueError(f'Universe named "{name}" already exists')
+            raise ValueError(f'Universe named {name!r} already exists')
 
         UniverseManager._registry.setUniverseName(id=universeId, name=name)
 
@@ -293,18 +331,12 @@ class UniverseManager(object):
             ) -> typing.List[multiverse.SectorInfo]:
         universeInfo = UniverseManager._registry.universeById(id=universeId)
         if not universeInfo:
-            raise ValueError(f'Unknown universe {universeId}')
+            raise ValueError(f'Unknown universe {universeId!r}')
 
         dbPath = UniverseManager._universeDbFilePath(id=universeId)
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
         return universeDb.listSectors()
-
-    def stockUniverseSectorInfos(self) -> typing.List[multiverse.SectorInfo]:
-        info = UniverseManager._registry.stockUniverse()
-        if not info:
-            raise RuntimeError('No stock universe defined')
-        return self.sectorInfos(universeId=info.id())
 
     def sectors(
             self,
@@ -320,7 +352,7 @@ class UniverseManager(object):
             ) -> typing.Generator[multiverse.DbSector, None, None]:
         universeInfo = UniverseManager._registry.universeById(id=universeId)
         if not universeInfo:
-            raise ValueError(f'Unknown universe {universeId}')
+            raise ValueError(f'Unknown universe {universeId!r}')
 
         dbPath = UniverseManager._universeDbFilePath(id=universeId)
         universeDb = multiverse.UniverseDb(universePath=dbPath)
@@ -332,7 +364,7 @@ class UniverseManager(object):
                 if progressCallback:
                     try:
                         progressCallback(
-                            f'Loading: {sectorInfo.milieu()} - {sectorInfo.name()}',
+                            f'Loading: {sectorInfo.name()}',
                             progressCount,
                             sectorCount)
                     except Exception as ex:
@@ -345,7 +377,7 @@ class UniverseManager(object):
                     yield sector
                 except Exception as ex:
                     # Log error but continue loading
-                    logging.error('UniverseManager failed to read sector {sectorId}', exc_info=ex)
+                    logging.error(f'UniverseManager failed to read sector {sectorInfo.id()!r}', exc_info=ex)
 
             if progressCallback:
                 try:
@@ -355,80 +387,6 @@ class UniverseManager(object):
                         sectorCount)
                 except Exception as ex:
                     logging.warning('UniverseManager universe read progress callback threw an exception', exc_info=ex)
-
-    def stockUniverseSectors(
-            self,
-            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
-            ) -> typing.List[multiverse.DbSector]:
-        return list(self.yieldStockUniverseSectors(progressCallback=progressCallback))
-
-    def yieldStockUniverseSectors(
-            self,
-            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
-            ) -> typing.Generator[multiverse.DbSector, None, None]:
-        info = UniverseManager._registry.stockUniverse()
-        if not info:
-            raise RuntimeError('No stock universe defined')
-        return self.yieldSectors(universeId=info.id(), progressCallback=progressCallback)
-
-    # NOTE: When copyStock is true the stock database is copied as-is. This is
-    # done for speed (3 seconds vs > 30 seconds when loaded then saved). The
-    # downside of this is the id's of objects in the copy will be the same so
-    # the app needs to handle that.
-    def _createUniverse(
-            self,
-            name: str,
-            description: str,
-            isStock: bool,
-            copyStock: bool = False,
-            sectors: typing.Optional[typing.Collection[multiverse.DbSector]] = None,
-            snapshotTimestamp: typing.Optional[datetime.datetime] = None
-            ) -> str:
-        if UniverseManager._registry.universeByName(name=name):
-            raise ValueError(f'Universe named "{name}" already exists')
-
-        universeId = str(uuid.uuid4())
-        universePath = UniverseManager._universeDbFilePath(id=universeId)
-        if os.path.exists(universePath):
-            raise RuntimeError(f'Universe database "{universePath}" already exists')
-
-        if copyStock:
-            if isStock:
-                raise ValueError('Can\'t copy stock database to stock database')
-            stockInfo = self.stockUniverseInfo()
-            if not stockInfo:
-                raise RuntimeError('No stock universe defined')
-            stockPath = UniverseManager._universeDbFilePath(id=stockInfo.id())
-            stockDatabase = multiverse.UniverseDb(universePath=stockPath)
-            stockDatabase.copyTo(targetPath=universePath)
-
-        # Always create database, even when there are no sectors, as we want it
-        # to be created on disk
-        universeDb = multiverse.UniverseDb(universePath=universePath)
-
-        if sectors:
-            with universeDb.createTransaction() as transaction:
-                for sector in sectors:
-                    universeDb.saveSector(sector=sector, transaction=transaction)
-
-        # Only add the universe to the registry after the database has been
-        # created to avoid dangling entries if creating the database fails
-        try:
-            UniverseManager._registry.addUniverse(
-                id=universeId,
-                name=name,
-                description=description,
-                stock=isStock,
-                snapshotTimestamp=snapshotTimestamp)
-        except Exception:
-            try:
-                os.remove(universePath)
-            except Exception as ex:
-                logging.error(f'UniverseManager failed to clean up universe file "{universePath}"', exc_info=ex)
-
-            raise
-
-        return universeId
 
     @staticmethod
     def _registryDbFilePath() -> str:

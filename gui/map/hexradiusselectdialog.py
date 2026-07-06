@@ -15,7 +15,6 @@ class HexRadiusSelectDialog(gui.DialogEx):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Iterable[app.MapOption],
@@ -52,7 +51,6 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
         self._mapWidget = gui.MapWidgetEx(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             style=mapStyle,
             options=mapOptions,
@@ -243,7 +241,6 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 try:
                     universe = self._mapWidget.universe()
                     worlds = universe.worldsInRadius(
-                        milieu=self._mapWidget.milieu(),
                         center=centerHex,
                         searchRadius=searchRadius)
                     for world in worlds:

@@ -171,7 +171,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             outcomeColours: app.OutcomeColours,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -180,7 +179,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         super().__init__()
 
         self._universe = universe
-        self._milieu = milieu
         self._outcomeColours = app.OutcomeColours(outcomeColours)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
@@ -249,15 +247,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         if universe is self._universe:
             return
         self._universe = universe
-        self._syncContent()
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
-
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        if milieu is self._milieu:
-            return
-        self._milieu = milieu
         self._syncContent()
 
     def outcomeColours(self) -> app.OutcomeColours:
@@ -567,7 +556,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.PurchaseSector:
                     tableItem = QtWidgets.QTableWidgetItem()
                     sector = self._universe.sectorByPosition(
-                        milieu=self._milieu,
                         position=purchaseWorld.hex())
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
@@ -578,7 +566,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     tableItem = QtWidgets.QTableWidgetItem()
                     worldHex = purchaseWorld.hex()
                     sector = self._universe.sectorByPosition(
-                        milieu=self._milieu,
                         position=worldHex)
                     subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
                     tableItem.setData(
@@ -594,7 +581,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.SaleSector:
                     tableItem = QtWidgets.QTableWidgetItem()
                     sector = self._universe.sectorByPosition(
-                        milieu=self._milieu,
                         position=saleWorld.hex())
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
@@ -605,7 +591,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     tableItem = QtWidgets.QTableWidgetItem()
                     worldHex = saleWorld.hex()
                     sector = self._universe.sectorByPosition(
-                        milieu=self._milieu,
                         position=worldHex)
                     subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
                     tableItem.setData(
@@ -749,7 +734,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 return self._hexTooltipProvider.tooltip(hex=purchaseWorld.hex())
             else:
                 return self._universe.canonicalHexName(
-                    milieu=self._milieu,
                     hex=purchaseWorld.hex())
         elif columnType == self.ColumnType.SaleWorld or columnType == self.ColumnType.SaleSector or \
                 columnType == self.ColumnType.SaleSubsector:
@@ -758,7 +742,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 return self._hexTooltipProvider.tooltip(hex=saleWorld.hex())
             else:
                 return self._universe.canonicalHexName(
-                    milieu=self._milieu,
                     hex=saleWorld.hex())
         elif columnType == self.ColumnType.Notes:
             notes = tradeOption.tradeNotes()

@@ -341,9 +341,6 @@ class _BoundsSelector(cartographer.AbstractSelector):
     def setRect(self, rect: cartographer.RectangleF) -> None:
         pass
 
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        pass
-
     def sectorSlop(self) -> float:
         return 0
 
@@ -380,12 +377,10 @@ class RenderBoundsCalculator(object):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             style: cartographer.MapStyle,
             options: cartographer.RenderOptions
             ) -> None:
         self._universe = universe
-        self._milieu = milieu
         self._style = style
         self._options = options
 
@@ -400,13 +395,6 @@ class RenderBoundsCalculator(object):
             return
 
         self._universe = universe
-        self._renderer = None
-
-    def setMilieu(self, milieu) -> None:
-        if self._milieu is not milieu:
-            return
-
-        self._milieu = milieu
         self._renderer = None
 
     def calculateBounds(
@@ -444,7 +432,6 @@ class RenderBoundsCalculator(object):
     def _createRenderer(self) -> None:
         self._renderer = cartographer.RenderContext(
             universe=self._universe,
-            milieu=self._milieu,
             graphics=self._graphics,
             style=self._style,
             options=self._options,

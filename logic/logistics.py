@@ -6,7 +6,6 @@ import typing
 class RouteLogistics(object):
     def __init__(
             self,
-            milieu: astronomer.Milieu,
             jumpRoute: logic.JumpRoute,
             refuellingPlan: typing.Optional[logic.RefuellingPlan],
             perJumpOverheads: typing.Optional[typing.Union[int, common.ScalarCalculation]]
@@ -20,7 +19,6 @@ class RouteLogistics(object):
                 value=perJumpOverheads,
                 name='Per Jump Overheads')
 
-        self._milieu = milieu
         self._jumpRoute = jumpRoute
         self._refuellingPlan = refuellingPlan
         self._perJumpOverheads = perJumpOverheads
@@ -35,9 +33,6 @@ class RouteLogistics(object):
                 lhs=self._perJumpOverheads,
                 rhs=jumpCount,
                 name='Total Overheads')
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
 
     def jumpCount(self) -> int:
         return self._jumpRoute.jumpCount()
@@ -71,7 +66,6 @@ class RouteLogistics(object):
 
 def calculateRouteLogistics(
         universe: astronomer.Universe,
-        milieu: astronomer.Milieu,
         jumpRoute: logic.JumpRoute,
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -92,7 +86,6 @@ def calculateRouteLogistics(
         if jumpRoute.nodeCount() > 1:
             refuellingPlan = logic.calculateRefuellingPlan(
                 universe=universe,
-                milieu=milieu,
                 jumpRoute=jumpRoute,
                 shipTonnage=shipTonnage,
                 shipFuelCapacity=shipFuelCapacity,
@@ -111,7 +104,7 @@ def calculateRouteLogistics(
             mandatoryFinishBerthing = jumpRoute.mandatoryBerthing(index=jumpRoute.nodeCount() - 1)
             if mandatoryStartBerthing or mandatoryFinishBerthing:
                 startHex = jumpRoute.startNode()
-                startWorld = universe.worldByPosition(milieu=milieu, hex=startHex)
+                startWorld = universe.worldByPosition(hex=startHex)
                 if startWorld:
                     berthingCost = pitCostCalculator.berthingCost(
                         world=startWorld,
@@ -135,9 +128,7 @@ def calculateRouteLogistics(
                         fuelCost=None,
                         berthingCost=berthingCost)
                     # TODO: Do I need to pass the universe to the refuelling plan?
-                    refuellingPlan = logic.RefuellingPlan(
-                        milieu=milieu,
-                        pitStops=[pitStop])
+                    refuellingPlan = logic.RefuellingPlan(pitStops=[pitStop])
 
     reportedPerJumpOverheads = perJumpOverheads
     if reportedPerJumpOverheads and not includeLogisticsCosts:
@@ -146,9 +137,7 @@ def calculateRouteLogistics(
             new=common.ScalarCalculation(value=0, name='Overridden Per Jump Overheads'),
             name='Ignored Per Jump Overheads')
 
-    # TODO: Do I need to pass the universe to the route logistics?
     return logic.RouteLogistics(
-        milieu=milieu,
         jumpRoute=jumpRoute,
         refuellingPlan=refuellingPlan,
         perJumpOverheads=reportedPerJumpOverheads)

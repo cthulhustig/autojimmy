@@ -260,15 +260,15 @@ def _filterStockAllegiances(
         rawAbbreviation = rawMetadata.abbreviation()
         for rawStockAllegiance in rawStockAllegiances:
             if not rawStockAllegiance.code():
-                logging.debug(f'Converter ignoring stock allegiance with empty code when converting {rawMetadata.canonicalName()} at {milieu}')
+                logging.debug(f'Converter ignoring stock allegiance with empty code when converting {rawMetadata.canonicalName()}')
                 continue
 
             if not rawStockAllegiance.name():
-                logging.debug(f'Converter ignoring stock allegiance with empty name when converting {rawMetadata.canonicalName()} at {milieu}')
+                logging.debug(f'Converter ignoring stock allegiance with empty name when converting {rawMetadata.canonicalName()}')
                 continue
 
             if rawStockAllegiance.code() in rawSeenAllegianceCodes:
-                logging.warning(f'Converter ignoring duplicate stock allegiance {rawStockAllegiance.code()} when converting {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring duplicate stock allegiance {rawStockAllegiance.code()} when converting {rawMetadata.canonicalName()}')
                 continue
 
             rawSeenAllegianceCodes.add(rawStockAllegiance.code())
@@ -324,7 +324,6 @@ def _filterStockAllegiances(
     return rawFilteredAllegiances
 
 def _mergeRouteStyles(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
         rawSectorStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
@@ -344,13 +343,13 @@ def _mergeRouteStyles(
             width = rawStyle.width()
 
             if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for route style {tag} from sector style sheet for {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring invalid colour {colour} for route style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
                 colour = None
             if style is not None:
                 if style.lower() in _ValidLineStyles:
                     style = style.lower()
                 else:
-                    logging.warning(f'Converter ignoring invalid line style {style} for route style {tag} from sector style sheet for {rawMetadata.canonicalName()} at {milieu}')
+                    logging.warning(f'Converter ignoring invalid line style {style} for route style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
                     style = None
 
             routeStyleMap[tag] = (colour, style, width)
@@ -367,13 +366,13 @@ def _mergeRouteStyles(
                 width = rawStyle.width()
 
             if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for route style {tag} from stock style sheet for {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring invalid colour {colour} for route style {tag} from stock style sheet for {rawMetadata.canonicalName()}')
                 colour = None
             if style is not None:
                 if style.lower() in _ValidLineStyles:
                     style = style.lower()
                 else:
-                    logging.warning(f'Converter ignoring invalid line style {style} for route style {tag} from stock style sheet for {rawMetadata.canonicalName()} at {milieu}')
+                    logging.warning(f'Converter ignoring invalid line style {style} for route style {tag} from stock style sheet for {rawMetadata.canonicalName()}')
                     style = None
 
             routeStyleMap[tag] = (colour, style, width)
@@ -394,7 +393,6 @@ def _mergeRouteStyles(
     return routeStyleMap
 
 def _mergeBorderStyles(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
         rawSectorStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
@@ -412,13 +410,13 @@ def _mergeBorderStyles(
             style = rawStyle.style()
 
             if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring invalid colour {colour} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
                 colour = None
             if style is not None:
                 if style.lower() in _ValidLineStyles:
                     style = style.lower()
                 else:
-                    logging.warning(f'Converter ignoring invalid line style {style} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()} at {milieu}')
+                    logging.warning(f'Converter ignoring invalid line style {style} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
                     style = None
 
             borderStyleMap[tag] = (colour, style)
@@ -433,13 +431,13 @@ def _mergeBorderStyles(
                 style = rawStyle.style()
 
             if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring invalid colour {colour} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
                 colour = None
             if style is not None:
                 if style.lower() in _ValidLineStyles:
                     style = style.lower()
                 else:
-                    logging.warning(f'Converter ignoring invalid line style {style} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()} at {milieu}')
+                    logging.warning(f'Converter ignoring invalid line style {style} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
                     style = None
 
             borderStyleMap[tag] = (colour, style)
@@ -458,7 +456,6 @@ def _mergeBorderStyles(
     return borderStyleMap
 
 def _createDbAlternateNames(
-        milieu: str,
         rawMetadata: survey.RawMetadata
         ) -> typing.List[multiverse.DbAlternateName]:
     dbAlternateNames = []
@@ -466,7 +463,7 @@ def _createDbAlternateNames(
     if rawMetadata.alternateNames():
         for name in rawMetadata.alternateNames():
             if not name:
-                logging.warning(f'Converter ignoring alternate sector name with empty name in {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring alternate sector name with empty name in {rawMetadata.canonicalName()}')
                 continue
             language = rawMetadata.nameLanguage(name)
             dbAlternateNames.append(multiverse.DbAlternateName(
@@ -476,7 +473,6 @@ def _createDbAlternateNames(
     return dbAlternateNames
 
 def _createDbSubsectorNames(
-        milieu: str,
         rawMetadata: survey.RawMetadata
         ) -> typing.List[multiverse.DbSubsectorName]:
     dbSubsectorNames = []
@@ -484,13 +480,13 @@ def _createDbSubsectorNames(
     if rawMetadata.subsectorNames():
         for code, name in rawMetadata.subsectorNames().items():
             if not code:
-                logging.warning(f'Converter ignoring subsector name with empty code in {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring subsector name with empty code in {rawMetadata.canonicalName()}')
                 continue
 
             if not name:
                 # This doesn't get logged as it happens quite a bit in the stock
                 # data and just seems to be used when subsectors aren't named
-                #logging.debug(f'Converter ignoring subsector name with empty name in {rawMetadata.canonicalName()} at {milieu}')
+                #logging.debug(f'Converter ignoring subsector name with empty name in {rawMetadata.canonicalName()}')
                 continue
 
             # Silently fix instances where code is lower case
@@ -555,12 +551,12 @@ def _createDbAllegiances(
         for rawMetadataAllegiance in rawMetadata.allegiances():
             code = rawMetadataAllegiance.code()
             if not code:
-                logging.warning(f'Converter ignoring sector allegiance with empty code in {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring sector allegiance with empty code in {rawMetadata.canonicalName()}')
                 continue
 
             name = rawMetadataAllegiance.name()
             if not name:
-                logging.warning(f'Converter ignoring sector allegiance with empty name in {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring sector allegiance with empty name in {rawMetadata.canonicalName()}')
                 continue
 
             baseCode = rawMetadataAllegiance.base()
@@ -835,7 +831,6 @@ def _generateSophontName(
     return name
 
 def _createDbSophonts(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld],
         rawStockSophonts: typing.Optional[typing.Collection[
@@ -849,19 +844,19 @@ def _createDbSophonts(
     if rawStockSophonts:
         for rawStockSophont in rawStockSophonts:
             if not rawStockSophont.code():
-                logging.debug(f'Converter ignoring stock sophont with empty code when converting {rawMetadata.canonicalName()} at {milieu}')
+                logging.debug(f'Converter ignoring stock sophont with empty code when converting {rawMetadata.canonicalName()}')
                 continue
 
             if not rawStockSophont.name():
-                logging.debug(f'Converter ignoring stock sophont with empty name when converting {rawMetadata.canonicalName()} at {milieu}')
+                logging.debug(f'Converter ignoring stock sophont with empty name when converting {rawMetadata.canonicalName()}')
                 continue
 
             if rawStockSophont.code() in rawStockSophontCodeMap:
-                logging.warning(f'Converter ignoring duplicate stock sophont {rawStockSophont.code()} when converting {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring duplicate stock sophont {rawStockSophont.code()} when converting {rawMetadata.canonicalName()}')
                 continue
 
             if rawStockSophont.name() in rawStockSophontNameMap:
-                logging.warning(f'Converter ignoring duplicate stock sophont {rawStockSophont.name()} when converting {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring duplicate stock sophont {rawStockSophont.name()} when converting {rawMetadata.canonicalName()}')
                 continue
 
             rawStockSophontCodeMap[rawStockSophont.code()] = rawStockSophont
@@ -918,7 +913,7 @@ def _createDbSophonts(
                     name=rawSophontName,
                     existingCodes=uniqueCodes)
                 # NOTE: Only log this at debug as it happens a LOT in stock data
-                logging.debug(f'Converter generating sophont code {dbSophontCode} for sophont {rawSophontName} in {rawMetadata.canonicalName()} at {milieu}')
+                logging.debug(f'Converter generating sophont code {dbSophontCode} for sophont {rawSophontName} in {rawMetadata.canonicalName()}')
                 uniqueCodes.add(dbSophontCode)
 
                 dbSophont = multiverse.DbSophont(
@@ -984,7 +979,6 @@ def _createDbSophonts(
     return (dbSophontCodeMap, dbSophontNameMap)
 
 def _createDbStars(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld
         ) -> typing.Optional[typing.List[multiverse.DbStar]]:
@@ -1000,16 +994,14 @@ def _createDbStars(
                 spectralClass=rawStar.spectralClass(),
                 spectralScale=rawStar.spectralScale()))
         except Exception as ex:
-            logging.error('Converter failed to construct star for {world} in {sector} at {milieu}'.format(
+            logging.error('Converter failed to construct star for {world} in {sector}'.format(
                     world=rawWorld.name(),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
+                    sector=rawMetadata.canonicalName()),
                 exc_info=ex)
 
     return dbStars
 
 def _createDbBodies(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
         dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
@@ -1054,45 +1046,37 @@ def _createDbBodies(
         dbPopulationMultiplier = rawPBG.populationMultiplier()
 
     dbNobilities = _createDbNobilities(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawWorld=rawWorld)
 
     dbBases = _createDbBases(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawWorld=rawWorld)
 
     dbSophontPopulations = _createDbSophontPopulations(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawWorld=rawWorld,
         dbSophontCodeMap=dbSophontCodeMap,
         dbSophontNameMap=dbSophontNameMap)
 
     dbOwningSystems = _createDbOwningSystems(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawWorld=rawWorld)
 
     dbColonySystems = _createDbColonySystems(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawWorld=rawWorld)
 
     dbRulingAllegiances = _createDbRulingAllegiances(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawWorld=rawWorld,
         dbAllegianceCodeMap=dbAllegianceCodeMap)
 
     dbResearchStations = _createDbResearchStations(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawWorld=rawWorld)
 
     dbTradeCodes = _createDbTradeCodes(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawWorld=rawWorld,
         dbSophontPopulations=dbSophontPopulations,
@@ -1100,7 +1084,6 @@ def _createDbBodies(
         dbResearchStations=dbResearchStations)
 
     dbCustomRemarks = _createDbCustomRemarks(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawWorld=rawWorld)
 
@@ -1149,7 +1132,6 @@ def _createDbBodies(
         customRemarks=dbCustomRemarks)]
 
 def _createDbNobilities(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld
         ) -> typing.Optional[typing.List[multiverse.DbNobility]]:
@@ -1161,28 +1143,25 @@ def _createDbNobilities(
     seenNobilities = set()
     for rawNobilityCode in rawNobilities:
         if rawNobilityCode in seenNobilities:
-            logging.debug('Converter ignoring duplicate nobility {code} for {world} in {sector} at {milieu}'.format(
+            logging.debug('Converter ignoring duplicate nobility {code} for {world} in {sector}'.format(
                 code=rawNobilityCode,
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu))
+                sector=rawMetadata.canonicalName()))
             continue
         seenNobilities.add(rawNobilityCode)
 
         try:
             dbNobilities.append(multiverse.DbNobility(code=rawNobilityCode))
         except Exception as ex:
-            logging.error('Converter failed to construct nobility {code} for {world} in {sector} at {milieu}'.format(
+            logging.error('Converter failed to construct nobility {code} for {world} in {sector}'.format(
                     code=rawNobilityCode,
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
+                    sector=rawMetadata.canonicalName()),
                 exc_info=ex)
 
     return dbNobilities
 
 def _createDbBases(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld
         ) -> typing.Optional[typing.List[multiverse.DbBase]]:
@@ -1194,28 +1173,25 @@ def _createDbBases(
     seenBases = set()
     for rawBaseCode in rawBases:
         if rawBaseCode in seenBases:
-            logging.debug('Converter ignoring duplicate base {code} for {world} in {sector} at {milieu}'.format(
+            logging.debug('Converter ignoring duplicate base {code} for {world} in {sector}'.format(
                 code=rawBaseCode,
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu))
+                sector=rawMetadata.canonicalName()))
             continue
         seenBases.add(rawBaseCode)
 
         try:
             dbBases.append(multiverse.DbBase(code=rawBaseCode))
         except Exception as ex:
-            logging.error('Converter failed to construct base {code} for {world} in {sector} at {milieu}'.format(
+            logging.error('Converter failed to construct base {code} for {world} in {sector}'.format(
                     code=rawBaseCode,
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
+                    sector=rawMetadata.canonicalName()),
                 exc_info=ex)
 
     return dbBases
 
 def _createDbSophontPopulations(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
         dbSophontCodeMap: typing.Mapping[str, multiverse.DbSophont],
@@ -1242,20 +1218,18 @@ def _createDbSophontPopulations(
                 # This should never happen, the remarks should already have been
                 # processed to extract all the used sophont names & codes and
                 # DbSophont instances should have been created for all of them
-                logging.warning('Converter ignoring unknown major sophont {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.warning('Converter ignoring unknown major sophont {sophont} for {world} in {sector}'.format(
                     sophont=rawSophontPopulation.sophont(),
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu))
+                    sector=rawMetadata.canonicalName()))
                 continue
             if dbSophont in seenDbSophonts:
                 # There is already a population entry for this sophont so
                 # ignore this one
-                logging.warning('Converter ignoring duplicate major sophont population for {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.warning('Converter ignoring duplicate major sophont population for {sophont} for {world} in {sector}'.format(
                     sophont=dbSophont.name(),
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu))
+                    sector=rawMetadata.canonicalName()))
                 continue
             seenDbSophonts.add(dbSophont)
 
@@ -1266,11 +1240,10 @@ def _createDbSophontPopulations(
                     isHomeWorld=True,
                     isDieBack=False))
             except Exception as ex:
-                logging.error('Converter failed to construct major sophont population for {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.error('Converter failed to construct major sophont population for {sophont} for {world} in {sector}'.format(
                         sophont=dbSophont.name(),
                         world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                        sector=rawMetadata.canonicalName(),
-                        milieu=milieu),
+                        sector=rawMetadata.canonicalName()),
                     exc_info=ex)
 
     if rawMinorHomeWorlds:
@@ -1280,20 +1253,18 @@ def _createDbSophontPopulations(
                 # This should never happen, the remarks should already have been
                 # processed to extract all the used sophont names & codes and
                 # DbSophont instances should have been created for all of them
-                logging.warning('Converter ignoring unknown minor sophont {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.warning('Converter ignoring unknown minor sophont {sophont} for {world} in {sector}'.format(
                     sophont=rawSophontPopulation.sophont(),
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu))
+                    sector=rawMetadata.canonicalName()))
                 continue
             if dbSophont in seenDbSophonts:
                 # There is already a population entry for this sophont so
                 # ignore this one
-                logging.warning('Converter ignoring duplicate minor sophont for {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.warning('Converter ignoring duplicate minor sophont for {sophont} for {world} in {sector}'.format(
                     sophont=dbSophont.name(),
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu))
+                    sector=rawMetadata.canonicalName()))
                 continue
             seenDbSophonts.add(dbSophont)
 
@@ -1304,11 +1275,10 @@ def _createDbSophontPopulations(
                     isHomeWorld=True,
                     isDieBack=False))
             except Exception as ex:
-                logging.error('Converter failed to construct minor sophont population for {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.error('Converter failed to construct minor sophont population for {sophont} for {world} in {sector}'.format(
                         sophont=dbSophont.name(),
                         world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                        sector=rawMetadata.canonicalName(),
-                        milieu=milieu),
+                        sector=rawMetadata.canonicalName()),
                     exc_info=ex)
 
     if rawSophontPopulations:
@@ -1318,20 +1288,18 @@ def _createDbSophontPopulations(
                 # This should never happen, the remarks should already have been
                 # processed to extract all the used sophont names & codes and
                 # DbSophont instances should have been created for all of them
-                logging.warning('Converter ignoring unknown sophont {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.warning('Converter ignoring unknown sophont {sophont} for {world} in {sector}'.format(
                     sophont=rawSophontPopulation.sophont(),
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu))
+                    sector=rawMetadata.canonicalName()))
                 continue
             if dbSophont in seenDbSophonts:
                 # There is already a population entry for this sophont so
                 # ignore this one
-                logging.warning('Converter ignoring duplicate sophont {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.warning('Converter ignoring duplicate sophont {sophont} for {world} in {sector}'.format(
                     sophont=dbSophont.name(),
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu))
+                    sector=rawMetadata.canonicalName()))
                 continue
             seenDbSophonts.add(dbSophont)
 
@@ -1342,11 +1310,10 @@ def _createDbSophontPopulations(
                     isHomeWorld=False,
                     isDieBack=False))
             except Exception as ex:
-                logging.error('Converter failed to construct sophont population for {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.error('Converter failed to construct sophont population for {sophont} for {world} in {sector}'.format(
                         sophont=dbSophont.name(),
                         world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                        sector=rawMetadata.canonicalName(),
-                        milieu=milieu),
+                        sector=rawMetadata.canonicalName()),
                     exc_info=ex)
 
     if rawDieBackSophonts:
@@ -1356,20 +1323,18 @@ def _createDbSophontPopulations(
                 # This should never happen, the remarks should already have been
                 # processed to extract all the used sophont names & codes and
                 # DbSophont instances should have been created for all of them
-                logging.warning('Converter ignoring unknown die back sophont {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.warning('Converter ignoring unknown die back sophont {sophont} for {world} in {sector}'.format(
                     sophont=rawSophontName,
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu))
+                    sector=rawMetadata.canonicalName()))
                 continue
             if dbSophont in seenDbSophonts:
                 # There is already a population entry for this sophont so
                 # ignore this one
-                logging.warning('Converter ignoring duplicate die back sophont {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.warning('Converter ignoring duplicate die back sophont {sophont} for {world} in {sector}'.format(
                     sophont=dbSophont.name(),
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu))
+                    sector=rawMetadata.canonicalName()))
                 continue
             seenDbSophonts.add(dbSophont)
 
@@ -1380,17 +1345,15 @@ def _createDbSophontPopulations(
                     isHomeWorld=False,
                     isDieBack=True))
             except Exception as ex:
-                logging.error('Converter failed to construct die back sophont population for {sophont} for {world} in {sector} at {milieu}'.format(
+                logging.error('Converter failed to construct die back sophont population for {sophont} for {world} in {sector}'.format(
                         sophont=dbSophont.name(),
                         world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                        sector=rawMetadata.canonicalName(),
-                        milieu=milieu),
+                        sector=rawMetadata.canonicalName()),
                     exc_info=ex)
 
     return dbSophontPopulations
 
 def _createDbOwningSystems(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld
         ) -> typing.Optional[typing.List[multiverse.DbOwningSystem]]:
@@ -1417,10 +1380,9 @@ def _createDbOwningSystems(
 
         key = (rawHexX, rawHexY, rawSectorAbbreviation)
         if key in seenOwners:
-            logging.warning('Converter ignoring duplicate owner world for {world} in {sector} at {milieu}'.format(
+            logging.warning('Converter ignoring duplicate owner world for {world} in {sector}'.format(
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu))
+                sector=rawMetadata.canonicalName()))
             continue
         seenOwners.add(key)
 
@@ -1430,16 +1392,14 @@ def _createDbOwningSystems(
                 hexY=rawHexY,
                 sectorAbbreviation=rawSectorAbbreviation))
         except Exception as ex:
-            logging.error('Converter failed to construct owner world for {world} in {sector} at {milieu}'.format(
+            logging.error('Converter failed to construct owner world for {world} in {sector}'.format(
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
+                    sector=rawMetadata.canonicalName()),
                 exc_info=ex)
 
     return dbOwningSystems
 
 def _createDbColonySystems(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
         ) -> typing.Optional[typing.List[multiverse.DbColonySystem]]:
@@ -1466,10 +1426,9 @@ def _createDbColonySystems(
 
         key = (rawHexX, rawHexY, rawSectorAbbreviation)
         if key in seenColonies:
-            logging.warning('Converter ignoring duplicate colony world for {world} in {sector} at {milieu}'.format(
+            logging.warning('Converter ignoring duplicate colony world for {world} in {sector}'.format(
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu))
+                sector=rawMetadata.canonicalName()))
             continue
         seenColonies.add(key)
 
@@ -1479,16 +1438,14 @@ def _createDbColonySystems(
                 hexY=rawHexY,
                 sectorAbbreviation=rawSectorAbbreviation))
         except Exception as ex:
-            logging.error('Converter failed to construct colony world for {world} in {sector} at {milieu}'.format(
+            logging.error('Converter failed to construct colony world for {world} in {sector}'.format(
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
+                    sector=rawMetadata.canonicalName()),
                 exc_info=ex)
 
     return dbColonySystems
 
 def _createDbRulingAllegiances(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
         dbAllegianceCodeMap: typing.Mapping[str, multiverse.DbAllegiance]
@@ -1508,36 +1465,32 @@ def _createDbRulingAllegiances(
         if not dbAllegiance:
             # This should never happen. The remarks should already have been processed
             # to determine which allegiances were used and dbAllegiance created accordingly
-            logging.warning('Converter ignoring unknown military rule allegiance {allegiance} for {world} in {sector} at {milieu}'.format(
+            logging.warning('Converter ignoring unknown military rule allegiance {allegiance} for {world} in {sector}'.format(
                 allegiance=rawAllegianceCode,
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu))
+                sector=rawMetadata.canonicalName()))
             continue
 
         if rawAllegianceCode in seenRulingAllegiances:
-            logging.warning('Converter ignoring duplicate ruling allegiance {allegiance} for {world} in {sector} at {milieu}'.format(
+            logging.warning('Converter ignoring duplicate ruling allegiance {allegiance} for {world} in {sector}'.format(
                 allegiance=rawAllegianceCode,
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu))
+                sector=rawMetadata.canonicalName()))
             continue
         seenRulingAllegiances.add(rawAllegianceCode)
 
         try:
             dbRulingAllegiances.append(multiverse.DbRulingAllegiance(allegianceId=dbAllegiance.id()))
         except Exception as ex:
-            logging.error('Converter failed to construct ruling allegiance {allegiance} for {world} in {sector} at {milieu}'.format(
+            logging.error('Converter failed to construct ruling allegiance {allegiance} for {world} in {sector}'.format(
                     allegiance=rawAllegianceCode,
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
+                    sector=rawMetadata.canonicalName()),
                 exc_info=ex)
 
     return dbRulingAllegiances
 
 def _createDbResearchStations(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld
         ) -> typing.Optional[typing.List[multiverse.DbResearchStation]]:
@@ -1553,28 +1506,25 @@ def _createDbResearchStations(
     seenResearchStations = set()
     for rawResearchStation in rawResearchStations:
         if rawResearchStation in seenResearchStations:
-            logging.debug('Converter ignoring duplicate research station {station} for {world} in {sector} at {milieu}'.format(
+            logging.debug('Converter ignoring duplicate research station {station} for {world} in {sector}'.format(
                 station=rawResearchStation,
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu))
+                sector=rawMetadata.canonicalName()))
             continue # Skip duplicates
         seenResearchStations.add(rawResearchStation)
 
         try:
             dbResearchStations.append(multiverse.DbResearchStation(code=rawResearchStation))
         except Exception as ex:
-            logging.error('Converter failed to construct research station {station} for {world} in {sector} at {milieu}'.format(
+            logging.error('Converter failed to construct research station {station} for {world} in {sector}'.format(
                     station=rawResearchStation,
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
+                    sector=rawMetadata.canonicalName()),
                 exc_info=ex)
 
     return dbResearchStations
 
 def _createDbTradeCodes(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
         dbSophontPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]],
@@ -1593,22 +1543,20 @@ def _createDbTradeCodes(
     seenTradeCodes = set()
     for rawTradeCode in rawTradeCodes:
         if rawTradeCode in seenTradeCodes:
-            logging.debug('Converter ignoring duplicate trade code {code} for at {world} in {sector} at {milieu}'.format(
+            logging.debug('Converter ignoring duplicate trade code {code} for at {world} in {sector}'.format(
                 code=rawTradeCode,
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu))
+                sector=rawMetadata.canonicalName()))
             continue
         seenTradeCodes.add(rawTradeCode)
 
         try:
             dbTradeCodes.append(multiverse.DbTradeCode(code=rawTradeCode))
         except Exception as ex:
-            logging.error('Converter failed to construct trade code {code} for at {world} in {sector} at {milieu}'.format(
+            logging.error('Converter failed to construct trade code {code} for at {world} in {sector}'.format(
                 code=rawTradeCode,
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu),
+                sector=rawMetadata.canonicalName()),
                 exc_info=ex)
 
     if dbSophontPopulations:
@@ -1623,10 +1571,9 @@ def _createDbTradeCodes(
             try:
                 dbTradeCodes.append(multiverse.DbTradeCode(code=_DieBackTradeCode))
             except Exception as ex:
-                logging.error('Converter failed to construct die back trade code for at {world} in {sector} at {milieu}'.format(
+                logging.error('Converter failed to construct die back trade code for at {world} in {sector}'.format(
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu),
+                    sector=rawMetadata.canonicalName()),
                     exc_info=ex)
             break
 
@@ -1635,10 +1582,9 @@ def _createDbTradeCodes(
         try:
             dbTradeCodes.append(multiverse.DbTradeCode(code=_MilitaryRuleTradeCode))
         except Exception as ex:
-            logging.error('Converter failed to construct military rule trade code for at {world} in {sector} at {milieu}'.format(
+            logging.error('Converter failed to construct military rule trade code for at {world} in {sector}'.format(
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu),
+                sector=rawMetadata.canonicalName()),
                 exc_info=ex)
 
     if dbResearchStations and _ResearchStationTradeCode not in seenTradeCodes:
@@ -1646,16 +1592,14 @@ def _createDbTradeCodes(
         try:
             dbTradeCodes.append(multiverse.DbTradeCode(code=_ResearchStationTradeCode))
         except Exception as ex:
-            logging.error('Converter failed to construct research station trade code for at {world} in {sector} at {milieu}'.format(
+            logging.error('Converter failed to construct research station trade code for at {world} in {sector}'.format(
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu),
+                sector=rawMetadata.canonicalName()),
                 exc_info=ex)
 
     return dbTradeCodes
 
 def _createDbCustomRemarks(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld
         ) -> typing.Optional[typing.List[multiverse.DbCustomRemark]]:
@@ -1675,17 +1619,15 @@ def _createDbCustomRemarks(
         try:
             dbCustomRemarks.append(multiverse.DbCustomRemark(remark=remark))
         except Exception as ex:
-            logging.error('Converter failed to construct custom remark {remark} for {world} in {sector} at {milieu}'.format(
+            logging.error('Converter failed to construct custom remark {remark} for {world} in {sector}'.format(
                 remark=remark,
                 world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                sector=rawMetadata.canonicalName(),
-                milieu=milieu),
+                sector=rawMetadata.canonicalName()),
                 exc_info=ex)
 
     return dbCustomRemarks
 
 def _createDbSystems(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld],
         dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
@@ -1727,11 +1669,10 @@ def _createDbSystems(
             if rawAllegianceCode and not dbAllegiance:
                 # This should never happen. The worlds should already have been processed
                 # to determine which allegiances were used and dbAllegiance created accordingly
-                logging.warning('Converter ignoring unknown allegiance {allegiance} for {world} in {sector} at {milieu}'.format(
+                logging.warning('Converter ignoring unknown allegiance {allegiance} for {world} in {sector}'.format(
                     allegiance=rawAllegianceCode,
                     world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu))
+                    sector=rawMetadata.canonicalName()))
 
             # From the Traveller Map Second Survey documentation the system world count is
             # Main World + Gas Giant Count + Planetoid Belt Count + Other Planetoid Count.
@@ -1754,16 +1695,14 @@ def _createDbSystems(
                 if rawSystemWorlds >= numBeltsPlusGiants:
                     dbWorldCount = rawSystemWorlds - numBeltsPlusGiants
                 else:
-                    logging.warning('Other world count for world at {hex} in {sector} at {milieu} is unknown as the world count {total} is lower than the number of known worlds (Main World + {belts} Planetoid Belts + {giants} Gas Giants)'.format(
+                    logging.warning('Other world count for world at {hex} in {sector} is unknown as the world count {total} is lower than the number of known worlds (Main World + {belts} Planetoid Belts + {giants} Gas Giants)'.format(
                             total=rawSystemWorlds,
                             belts=numBelts,
                             giants=numGiants,
                             hex=hexString,
-                            sector=rawMetadata.canonicalName(),
-                            milieu=milieu))
+                            sector=rawMetadata.canonicalName()))
 
             dbBodies = _createDbBodies(
-                milieu=milieu,
                 rawMetadata=rawMetadata,
                 rawWorld=rawWorld,
                 dbSophontCodeMap=dbSophontCodeMap,
@@ -1779,7 +1718,6 @@ def _createDbSystems(
                     dbWorldCount = numCreatedWorlds
 
             dbStars = _createDbStars(
-                milieu=milieu,
                 rawMetadata=rawMetadata,
                 rawWorld=rawWorld)
 
@@ -1795,12 +1733,11 @@ def _createDbSystems(
                 stars=dbStars,
                 bodies=dbBodies))
         except Exception as ex:
-            logging.warning(f'Failed to convert system {systemIndex} in {rawMetadata.canonicalName()} at {milieu}', exc_info=ex)
+            logging.warning(f'Failed to convert system {systemIndex} in {rawMetadata.canonicalName()}', exc_info=ex)
 
     return dbSystems
 
 def _createDbRoutes(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
         styleMap: typing.Optional[typing.Mapping[
@@ -1820,10 +1757,9 @@ def _createDbRoutes(
             if rawAllegianceCode and not dbAllegiance:
                 # This should never happen. The routes should already have been processed
                 # to determine which allegiances were used and dbAllegiance created accordingly
-                logging.warning('Converter ignoring unknown route allegiance {allegiance} in {sector} at {milieu}'.format(
+                logging.warning('Converter ignoring unknown route allegiance {allegiance} in {sector}'.format(
                     allegiance=rawAllegianceCode,
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu))
+                    sector=rawMetadata.canonicalName()))
 
             rawType = rawRoute.type()
             dbType = rawType if rawType else None
@@ -1832,7 +1768,7 @@ def _createDbRoutes(
 
             dbColour = rawRoute.colour()
             if dbColour is not None and not common.isValidHtmlColour(dbColour):
-                logging.warning(f'Converter ignoring invalid route colour {dbColour} in {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring invalid route colour {dbColour} in {rawMetadata.canonicalName()}')
                 dbColour = None
 
             dbStyle = rawRoute.style()
@@ -1840,7 +1776,7 @@ def _createDbRoutes(
                 if dbStyle.lower() in _ValidLineStyles:
                     dbStyle = dbStyle.lower()
                 else:
-                    logging.warning(f'Converter ignoring invalid route style {dbStyle} in {rawMetadata.canonicalName()} at {milieu}')
+                    logging.warning(f'Converter ignoring invalid route style {dbStyle} in {rawMetadata.canonicalName()}')
                     dbStyle = None
 
             # This is replicating code from Traveller Map DrawMicroBorders. The
@@ -1895,7 +1831,6 @@ def _createDbRoutes(
     return dbRoutes
 
 def _createDbBorders(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
         styleMap: typing.Optional[typing.Mapping[
@@ -1911,7 +1846,7 @@ def _createDbBorders(
         for rawBorder in rawMetadata.borders():
             dbHexes = rawBorder.hexes()
             if not dbHexes:
-                logging.warning(f'Converter ignoring border with empty hex list in {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring border with empty hex list in {rawMetadata.canonicalName()}')
                 continue
 
             rawAllegianceCode = rawBorder.allegianceCode()
@@ -1919,14 +1854,13 @@ def _createDbBorders(
             if rawAllegianceCode and not dbAllegiance:
                 # This should never happen. The borders should already have been processed
                 # to determine which allegiances were used and dbAllegiance created accordingly
-                logging.warning('Converter ignoring unknown border allegiance {allegiance} in {sector} at {milieu}'.format(
+                logging.warning('Converter ignoring unknown border allegiance {allegiance} in {sector}'.format(
                     allegiance=rawAllegianceCode,
-                    sector=rawMetadata.canonicalName(),
-                    milieu=milieu))
+                    sector=rawMetadata.canonicalName()))
 
             dbColour = rawBorder.colour()
             if dbColour is not None and not common.isValidHtmlColour(dbColour):
-                logging.warning(f'Converter ignoring invalid border colour {dbColour} in {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring invalid border colour {dbColour} in {rawMetadata.canonicalName()}')
                 dbColour = None
 
             dbStyle = rawBorder.style()
@@ -1934,7 +1868,7 @@ def _createDbBorders(
                 if dbStyle.lower() in _ValidLineStyles:
                     dbStyle = dbStyle.lower()
                 else:
-                    logging.warning(f'Converter ignoring invalid border style {dbStyle} in {rawMetadata.canonicalName()} at {milieu}')
+                    logging.warning(f'Converter ignoring invalid border style {dbStyle} in {rawMetadata.canonicalName()}')
                     dbStyle = None
 
             # This is replicating code from Traveller Map DrawMicroBorders. The
@@ -1989,7 +1923,6 @@ def _createDbBorders(
     return dbBorders
 
 def _createDbRegions(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         ) -> typing.List[multiverse.DbBorder]:
     dbRegions = []
@@ -1998,7 +1931,7 @@ def _createDbRegions(
         for rawRegion in rawMetadata.regions():
             dbHexes = rawRegion.hexes()
             if not dbHexes:
-                logging.warning(f'Converter ignoring region with empty hex list in {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring region with empty hex list in {rawMetadata.canonicalName()}')
                 continue
 
             rawLabel = rawRegion.label()
@@ -2023,7 +1956,7 @@ def _createDbRegions(
 
             dbColour = rawRegion.colour()
             if dbColour is not None and not common.isValidHtmlColour(dbColour):
-                logging.warning(f'Converter ignoring invalid region colour {dbColour} in {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring invalid region colour {dbColour} in {rawMetadata.canonicalName()}')
                 dbColour = None
 
             # Show label use the same defaults as the Traveller Map Border class
@@ -2045,7 +1978,6 @@ def _createDbRegions(
     return dbRegions
 
 def _createDbLabels(
-        milieu: str,
         rawMetadata: survey.RawMetadata,
         ) -> typing.List[multiverse.DbLabel]:
     dbLabels = []
@@ -2054,7 +1986,7 @@ def _createDbLabels(
         for rawLabel in rawMetadata.labels():
             dbLabel = rawLabel.text()
             if not dbLabel:
-                logging.warning(f'Converter ignoring empty label in {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring empty label in {rawMetadata.canonicalName()}')
                 continue
 
             rawHexX = rawLabel.hexX()
@@ -2073,7 +2005,7 @@ def _createDbLabels(
 
             dbColour = rawLabel.colour()
             if dbColour is not None and not common.isValidHtmlColour(dbColour):
-                logging.warning(f'Converter ignoring invalid label colour {dbColour} in {rawMetadata.canonicalName()} at {milieu}')
+                logging.warning(f'Converter ignoring invalid label colour {dbColour} in {rawMetadata.canonicalName()}')
                 dbColour = None
 
             dbSize = rawLabel.size()
@@ -2081,7 +2013,7 @@ def _createDbLabels(
                 if dbSize.lower() in _ValidLabelSizes:
                     dbSize = dbSize.lower()
                 else:
-                    logging.warning(f'Converter ignoring invalid label size {dbSize} in {rawMetadata.canonicalName()} at {milieu}')
+                    logging.warning(f'Converter ignoring invalid label size {dbSize} in {rawMetadata.canonicalName()}')
                     dbSize = None
 
             rawWrap = rawLabel.wrap()
@@ -2131,6 +2063,8 @@ def _createDbProducts(
     return dbProducts
 
 def convertRawSectorToDbSector(
+        # TODO: I don't like the fact I need to pass this in, it's only needed so I know
+        # which milieu specific allegiances to add
         milieu: str,
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld],
@@ -2162,22 +2096,18 @@ def convertRawSectorToDbSector(
     rawSectorStyleSheet = rawMetadata.styleSheet()
 
     routeStyleMap = _mergeRouteStyles(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawStockStyleSheet=rawStockStyleSheet,
         rawSectorStyleSheet=rawSectorStyleSheet)
     borderStyleMap = _mergeBorderStyles(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawStockStyleSheet=rawStockStyleSheet,
         rawSectorStyleSheet=rawSectorStyleSheet)
 
     dbAlternateNames = _createDbAlternateNames(
-        milieu=milieu,
         rawMetadata=rawMetadata)
 
     dbSubsectorNames = _createDbSubsectorNames(
-        milieu=milieu,
         rawMetadata=rawMetadata)
 
     dbAllegianceCodeMap = _createDbAllegiances(
@@ -2190,14 +2120,12 @@ def convertRawSectorToDbSector(
     dbAllegiances = set(dbAllegianceCodeMap.values()) # Use unique allegiances
 
     dbSophontCodeMap, dbSophontNameMap = _createDbSophonts(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawSystems=rawSystems,
         rawStockSophonts=rawStockSophonts)
     dbSophonts = set(itertools.chain(dbSophontCodeMap.values(), dbSophontNameMap.values())) # Use unique sophonts
 
     dbSystems = _createDbSystems(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         rawSystems=rawSystems,
         dbAllegianceCodeMap=dbAllegianceCodeMap,
@@ -2205,23 +2133,19 @@ def convertRawSectorToDbSector(
         dbSophontNameMap=dbSophontNameMap)
 
     dbRoutes = _createDbRoutes(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         dbAllegianceCodeMap=dbAllegianceCodeMap,
         styleMap=routeStyleMap)
 
     dbBorders = _createDbBorders(
-        milieu=milieu,
         rawMetadata=rawMetadata,
         dbAllegianceCodeMap=dbAllegianceCodeMap,
         styleMap=borderStyleMap)
 
     dbRegions = _createDbRegions(
-        milieu=milieu,
         rawMetadata=rawMetadata)
 
     dbLabels = _createDbLabels(
-        milieu=milieu,
         rawMetadata=rawMetadata)
 
     dbTags = _createDbTags(rawMetadata=rawMetadata)
@@ -2248,7 +2172,6 @@ def convertRawSectorToDbSector(
 
     return multiverse.DbSector(
         id=sectorId,
-        milieu=milieu,
         sectorX=dbSectorX,
         sectorY=dbSectorY,
         name=dbSectorName,
@@ -2343,11 +2266,10 @@ def _createRawRoutes(
                 if not dbAllegiance:
                     # This should never happen, the sector should always have an entry for every
                     # allegiance used
-                    logging.warning('Converter ignoring unknown allegiance {allegiance} for route {route} in {sector} at {milieu}'.format(
+                    logging.warning('Converter ignoring unknown allegiance {allegiance} for route {route} in {sector}'.format(
                         allegiance=dbRoute.allegianceId(),
                         route=dbRoute.id(),
-                        sector=dbSector.name(),
-                        milieu=dbSector.milieu()))
+                        sector=dbSector.name()))
 
             rawRoutes.append(survey.RawRoute(
                 startHexX=dbRoute.startHexX(),
@@ -2380,11 +2302,10 @@ def _createRawBorders(
                 if not dbAllegiance:
                     # This should never happen, the sector should always have an entry for every
                     # allegiance used
-                    logging.warning('Converter ignoring unknown allegiance {allegiance} for border {border} in {sector} at {milieu}'.format(
+                    logging.warning('Converter ignoring unknown allegiance {allegiance} for border {border} in {sector}'.format(
                         allegiance=dbBorder.allegianceId(),
                         border=dbBorder.id(),
-                        sector=dbSector.name(),
-                        milieu=dbSector.milieu()))
+                        sector=dbSector.name()))
 
             labelHexX = labelHexY = labelOffsetX = labelOffsetY = None
             if dbBorder.labelWorldX() is not None and dbBorder.labelWorldY() is not None:
@@ -2564,10 +2485,9 @@ def _createRawWorlds(
                 if not dbSystemAllegiance:
                     # This should never happen, the sector should always have an entry for every
                     # allegiance used
-                    logging.warning('Converter ignoring unknown system allegiance {allegiance} in {sector} at {milieu}'.format(
+                    logging.warning('Converter ignoring unknown system allegiance {allegiance} in {sector}'.format(
                         allegiance=dbSystem.allegianceId(),
-                        sector=dbSector.name(),
-                        milieu=dbSector.milieu()))
+                        sector=dbSector.name()))
 
             rawUWP = survey.RawUWP(
                 starport=dbMainWorld.starport() if dbMainWorld else None,
@@ -2637,11 +2557,10 @@ def _createRawWorlds(
                         if not dbSophont:
                             # This should never happen, the sector should always have an entry for every
                             # sophont used
-                            logging.warning('Converter ignoring sophont population {population} using unknown sophont {sophont} in {sector} at {milieu}'.format(
+                            logging.warning('Converter ignoring sophont population {population} using unknown sophont {sophont} in {sector}'.format(
                                 population=dbSophontPopulation.id(),
                                 sophont=dbSophontPopulation.sophontId(),
-                                sector=dbSector.name(),
-                                milieu=dbSector.milieu()))
+                                sector=dbSector.name()))
                             continue
 
                         if dbSophontPopulation.isHomeWorld():
@@ -2695,11 +2614,10 @@ def _createRawWorlds(
                         if dbRulingAllegiance is None:
                             # This should never happen, the sector should always have an entry for every
                             # allegiance used
-                            logging.warning('Converter ignoring ruler {ruler} with unknown allegiance {allegiance} in {sector} at {milieu}'.format(
+                            logging.warning('Converter ignoring ruler {ruler} with unknown allegiance {allegiance} in {sector}'.format(
                                 ruler=dbRuler.id(),
                                 allegiance=dbRuler.allegianceId(),
-                                sector=dbSector.name(),
-                                milieu=dbSector.milieu()))
+                                sector=dbSector.name()))
                             continue
                         rawRulingAllegiances.append(dbRulingAllegiance.code())
 

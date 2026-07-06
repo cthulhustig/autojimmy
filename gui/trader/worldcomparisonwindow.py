@@ -175,7 +175,6 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _setupWorldControls(self) -> None:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -186,7 +185,6 @@ class WorldComparisonWindow(gui.WindowWidget):
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -195,13 +193,11 @@ class WorldComparisonWindow(gui.WindowWidget):
 
         self._worldTable = gui.WorldTradeScoreTable(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
         self._worldManagementWidget = gui.HexTableManagerWidget(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -238,7 +234,6 @@ class WorldComparisonWindow(gui.WindowWidget):
 
         self._mapWidget = gui.MapWidgetEx(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             style=mapStyle,
             options=mapOptions,
@@ -340,10 +335,6 @@ class WorldComparisonWindow(gui.WindowWidget):
             self._hexTooltipProvider.setUniverse(universe=universe)
             self._worldManagementWidget.setUniverse(universe=universe)
             self._mapWidget.setUniverse(universe=universe)
-        elif option is app.ConfigOption.Milieu:
-            self._hexTooltipProvider.setMilieu(milieu=newValue)
-            self._worldManagementWidget.setMilieu(milieu=newValue)
-            self._mapWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._tradeGoodTable.setRules(rules=newValue)
             self._hexTooltipProvider.setRules(rules=newValue)

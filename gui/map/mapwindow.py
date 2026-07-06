@@ -17,7 +17,6 @@ class MapWindow(gui.WindowWidget):
             parent=parent)
 
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -29,7 +28,6 @@ class MapWindow(gui.WindowWidget):
 
         self._mapWidget = gui.MapWidgetEx(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             style=mapStyle,
             options=mapOptions,
@@ -122,8 +120,6 @@ class MapWindow(gui.WindowWidget):
         if option is app.ConfigOption.Universe:
             self._mapWidget.setUniverse(
                 universe=astronomer.WorldManager.instance().universe())
-        elif option is app.ConfigOption.Milieu:
-            self._mapWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:

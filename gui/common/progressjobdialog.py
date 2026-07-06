@@ -1,15 +1,16 @@
 import app
 import gui
+import jobs
 import logging
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-class StartupJobThread(QtCore.QThread):
+class ProgressJobThread(QtCore.QThread):
     progress = QtCore.pyqtSignal([str, int, int])
 
     def __init__(
             self,
-            job: app.StartupJob,
+            job: jobs.ProgressJob,
             parent: QtCore.QObject
             ) -> None:
         super().__init__(parent=parent)
@@ -28,14 +29,14 @@ class StartupJobThread(QtCore.QThread):
 
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
 # can cause incorrect sizing if the font scaling is increased then decreased
-class StartupProgressDialog(QtWidgets.QDialog):
+class ProgressJobDialog(QtWidgets.QDialog):
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent=parent)
 
-        self._jobQueue: typing.List[app.StartupJob] = [] # NOTE: This is a queue of job types
+        self._jobQueue: typing.List[jobs.ProgressJob] = [] # NOTE: This is a queue of job types
         self._currentJob = None
         self._currentThread = None
         self._exception = None
@@ -66,7 +67,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
     def setCustomSectorImportDir(self, directory: typing.Optional[str]) -> None:
         self._customSectorImportDir = directory
 
-    def addJob(self, job: app.StartupJob) -> None:
+    def addJob(self, job: jobs.ProgressJob) -> None:
         self._jobQueue.append(job)
 
     def exception(self) -> typing.Optional[Exception]:
@@ -88,7 +89,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
     def _startNextJob(self) -> None:
         try:
             self._currentJob = self._jobQueue.pop(0)
-            self._currentThread = StartupJobThread(
+            self._currentThread = ProgressJobThread(
                 job=self._currentJob,
                 parent=self)
             self._currentThread.finished.connect(self._jobFinished)

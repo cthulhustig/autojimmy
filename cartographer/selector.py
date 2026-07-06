@@ -6,12 +6,10 @@ import typing
 class RectSelector(cartographer.AbstractSelector):
     def __init__(
             self,
-            milieu: astronomer.Milieu,
             universe: astronomer.Universe,
             sectorSlop: int = 1, # Numbers of sectors
             worldSlop: int = 1, # Number of parsecs
             ) -> None:
-        self._milieu = milieu
         self._universe = universe
         self._sectorSlop = sectorSlop
         self._worldSlop = worldSlop
@@ -27,12 +25,6 @@ class RectSelector(cartographer.AbstractSelector):
         if rect == self._rect:
             return
         self._rect = cartographer.RectangleF(rect)
-        self.clearCaches()
-
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        if milieu is self._milieu:
-            return
-        self._milieu = milieu
         self.clearCaches()
 
     def sectorSlop(self) -> float:
@@ -94,7 +86,6 @@ class RectSelector(cartographer.AbstractSelector):
                 offsetY=0)
 
             self._sloppySectors = self._universe.sectorsInArea(
-                milieu=self._milieu,
                 upperLeft=upperLeft,
                 lowerRight=lowerRight)
 
@@ -128,7 +119,6 @@ class RectSelector(cartographer.AbstractSelector):
                 absoluteY=int(math.ceil(rect.bottom())))
 
             self._sloppyWorlds = self._universe.worldsInArea(
-                milieu=self._milieu,
                 upperLeft=upperLeft,
                 lowerRight=lowerRight)
 

@@ -6,11 +6,6 @@ import survey
 import traveller
 import typing
 
-def _mapDbMilieuToAstronomerMilieu(milieu: str) -> typing.Optional[astronomer.Milieu]:
-    if milieu not in astronomer.Milieu:
-        return None
-    return astronomer.Milieu[milieu]
-
 _DbToAstronomerLineStyleMap = {
     'solid': astronomer.LineStyle.Solid,
     'dashed': astronomer.LineStyle.Dashed,
@@ -176,7 +171,6 @@ def _createAstronomerSophonts(
 
 def _createAstronomerWorlds(
         dbSector: multiverse.DbSector,
-        milieu: astronomer.Milieu,
         entityFactory: astronomer.EntityFactoryInterface,
         sectorLogName: str,
         dbIdToAstroAllegianceMap: typing.Optional[typing.Mapping[str, astronomer.Allegiance]],
@@ -535,7 +529,6 @@ def _createAstronomerWorlds(
 
             astroWorlds.append(entityFactory.createWorld(
                 entityId=dbSystem.id(),
-                milieu=milieu,
                 hex=worldHex,
                 name=systemName,
                 isNameGenerated=isNameGenerated,
@@ -875,7 +868,6 @@ def _createAstronomerProducts(
 
 def convertDbSectorToAstronomerSector(
         dbSector: multiverse.DbSector,
-        isCustom: bool,
         entityFactory: typing.Optional[astronomer.EntityFactoryInterface] = None
         ) -> astronomer.Sector:
     if entityFactory is None:
@@ -885,15 +877,10 @@ def convertDbSectorToAstronomerSector(
     sectorX = dbSector.sectorX()
     sectorY = dbSector.sectorY()
 
-    milieu = _mapDbMilieuToAstronomerMilieu(dbSector.milieu())
-    if not milieu:
-        raise ValueError(f'Unknown milieu "{dbSector.milieu()}"')
-
-    sectorLogName = '{sectorName} ({sectorX}, {sectorY}) from {milieu}'.format(
+    sectorLogName = '{sectorName} ({sectorX}, {sectorY})'.format(
         sectorName=sectorName if sectorName else '<Unnamed Sector>',
         sectorX=sectorX,
-        sectorY=sectorY,
-        milieu=milieu.value)
+        sectorY=sectorY)
 
     astroAlternateNames = _createAstronomerAlternateNames(dbSector=dbSector)
 
@@ -911,7 +898,6 @@ def convertDbSectorToAstronomerSector(
 
     astroWorlds = _createAstronomerWorlds(
         dbSector=dbSector,
-        milieu=milieu,
         entityFactory=entityFactory,
         sectorLogName=sectorLogName,
         dbIdToAstroAllegianceMap=dbIdToAstroAllegianceMap,
@@ -953,9 +939,7 @@ def convertDbSectorToAstronomerSector(
 
     return entityFactory.createSector(
         entityId=dbSector.id(),
-        isCustom=isCustom,
         name=sectorName,
-        milieu=milieu,
         position=astronomer.SectorPosition(sectorX=sectorX, sectorY=sectorY),
         alternateNames=astroAlternateNames,
         nameLanguages=astroNameLanguages,
@@ -976,10 +960,8 @@ def convertDbSectorToAstronomerSector(
         products=astroProducts)
 
 def convertRawSectorToAstronomerSector(
-        milieu: astronomer.Milieu,
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld],
-        isCustom: bool,
         rawStockAllegiances: typing.Optional[typing.Collection[survey.RawStockAllegiance]] = None,
         rawStockSophonts: typing.Optional[typing.Collection[survey.RawStockSophont]] = None,
         rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
@@ -987,7 +969,6 @@ def convertRawSectorToAstronomerSector(
         sectorId: typing.Optional[str] = None
         ) -> astronomer.Sector:
     dbSector = multiverse.convertRawSectorToDbSector(
-        milieu=milieu.name,
         rawMetadata=rawMetadata,
         rawSystems=rawSystems,
         rawStockAllegiances=rawStockAllegiances,
@@ -996,7 +977,6 @@ def convertRawSectorToAstronomerSector(
         sectorId=sectorId)
     return convertDbSectorToAstronomerSector(
         dbSector=dbSector,
-        isCustom=isCustom,
         entityFactory=entityFactory)
 
 def _createDbAlternateNames(
@@ -1601,13 +1581,11 @@ def convertAstronomerSectorToDbSector(astroSector: astronomer.Sector) -> multive
     sectorName = astroSector.name()
     sectorLanguage = astroSector.nameLanguage(sectorName)
     sectorPos = astroSector.position()
-    milieu = astroSector.milieu()
 
-    sectorLogName = '{sectorName} ({sectorX}, {sectorY}) from {milieu}'.format(
+    sectorLogName = '{sectorName} ({sectorX}, {sectorY})'.format(
         sectorName=sectorName if sectorName else '<Unnamed Sector>',
         sectorX=sectorPos.sectorX(),
-        sectorY=sectorPos.sectorY(),
-        milieu=milieu.value)
+        sectorY=sectorPos.sectorY())
 
     dbAlternateNames = _createDbAlternateNames(
         astroSector=astroSector,
@@ -1661,7 +1639,6 @@ def convertAstronomerSectorToDbSector(astroSector: astronomer.Sector) -> multive
 
     return multiverse.DbSector(
         id=astroSector.entityId(),
-        milieu=milieu.value,
         sectorX=sectorPos.sectorX(),
         sectorY=sectorPos.sectorY(),
         name=sectorName,

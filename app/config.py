@@ -28,7 +28,6 @@ class ConfigOption(enum.Enum):
 
     # Map
     Universe = 200
-    Milieu = 201
     MapStyle = 202
     MapOptions = 203
     MapRendering = 204
@@ -1070,13 +1069,6 @@ class Config(QtCore.QObject):
             default=''))
 
         self._addConfigItem(EnumConfigItem(
-            option=ConfigOption.Milieu,
-            key='TravellerMap/Milieu',
-            restart=False,
-            enumType=astronomer.Milieu,
-            default=astronomer.Milieu.M1105))
-
-        self._addConfigItem(EnumConfigItem(
             option=ConfigOption.MapStyle,
             key='TravellerMap/MapStyle',
             restart=False,
@@ -1371,8 +1363,6 @@ class Config(QtCore.QObject):
     def value(self, option: typing.Literal[ConfigOption.LogLevel], futureValue: bool = False) -> int: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.Universe], futureValue: bool = False) -> str: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.Milieu], futureValue: bool = False) -> astronomer.Milieu: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.MapStyle], futureValue: bool = False) -> cartographer.MapStyle: ...
     @typing.overload

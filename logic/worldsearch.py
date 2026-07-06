@@ -156,7 +156,6 @@ class NameFiler(WorldFilter):
                 return self._regex.search(world.name()) != None
             elif self._type == NameFiler.Type.SectorName:
                 sector = universe.sectorByPosition(
-                    milieu=world.milieu(),
                     position=world.hex())
                 if not sector:
                     return False
@@ -164,7 +163,6 @@ class NameFiler(WorldFilter):
             elif self._type == NameFiler.Type.SubsectorName:
                 worldHex = world.hex()
                 sector = universe.sectorByPosition(
-                    milieu=world.milieu(),
                     position=worldHex)
                 if not sector:
                     return False
@@ -178,7 +176,6 @@ class NameFiler(WorldFilter):
                 return self._regex.match(world.name()) != None
             elif self._type == NameFiler.Type.SectorName:
                 sector = universe.sectorByPosition(
-                    milieu=world.milieu(),
                     position=world.hex())
                 if not sector:
                     return False
@@ -186,7 +183,6 @@ class NameFiler(WorldFilter):
             elif self._type == NameFiler.Type.SubsectorName:
                 worldHex = world.hex()
                 sector = universe.sectorByPosition(
-                    milieu=world.milieu(),
                     position=worldHex)
                 if not sector:
                     return False
@@ -1037,13 +1033,12 @@ class WorldSearch(object):
     def search(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
             maxResults: int = 1000
             ) -> typing.Iterable[astronomer.World]:
         results = []
-        for sector in universe.yieldSectors(milieu=milieu):
+        for sector in universe.yieldSectors():
             self._searchWorlds(
                 universe=universe,
                 worlds=sector.worlds(),
@@ -1058,14 +1053,13 @@ class WorldSearch(object):
     def searchRegion(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
             sectorName: str,
             subsectorName: typing.Optional[str] = None,
             maxResults: int = 1000
             ) -> typing.Iterable[astronomer.World]:
-        sector = universe.sectorByName(milieu=milieu, name=sectorName)
+        sector = universe.sectorByName(name=sectorName)
         if not sector:
             raise RuntimeError(f'Sector "{sectorName}" for found')
 
@@ -1090,7 +1084,6 @@ class WorldSearch(object):
     def searchRadius(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
             centerHex: astronomer.HexPosition,
@@ -1098,7 +1091,6 @@ class WorldSearch(object):
             ) -> typing.Iterable[astronomer.World]:
         filterCallback = lambda world: self.checkWorld(universe=universe, world=world, rules=rules, tagging=tagging)
         return universe.worldsInRadius(
-            milieu=milieu,
             center=centerHex,
             searchRadius=searchRadius,
             filterCallback=filterCallback)

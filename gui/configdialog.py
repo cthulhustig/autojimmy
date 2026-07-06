@@ -413,24 +413,10 @@ class ConfigDialog(gui.DialogEx):
             '<p>The universe to load at startup.</p>',
             escape=False))
 
-        self._milieuComboBox = gui.EnumComboBox(
-            type=astronomer.Milieu,
-            value=app.Config.instance().value(
-                option=app.ConfigOption.Milieu,
-                futureValue=True),
-            textMap={milieu: astronomer.milieuDescription(milieu) for milieu in  astronomer.Milieu})
-        self._milieuComboBox.setToolTip(gui.createStringToolTip(
-            '<p>The universe time period used for sector information.</p>',
-            escape=False))
-        self._milieuComboBox.currentIndexChanged.connect(self._milieuChanged)
-
         travellerLayout = gui.FormLayoutEx()
         travellerLayout.addRow(
             'Universe:',
             self._universeComboBox)
-        travellerLayout.addRow(
-            'Milieu:',
-            self._milieuComboBox)
 
         travellerGroupBox = QtWidgets.QGroupBox('Traveller')
         travellerGroupBox.setLayout(travellerLayout)
@@ -784,9 +770,6 @@ class ConfigDialog(gui.DialogEx):
                 option=app.ConfigOption.Universe,
                 value=self._universeComboBox.currentUniverse())
             app.Config.instance().setValue(
-                option=app.ConfigOption.Milieu,
-                value=self._milieuComboBox.currentEnum())
-            app.Config.instance().setValue(
                 option=app.ConfigOption.Rules,
                 value=traveller.Rules(
                     system=self._rulesComboBox.currentEnum(),
@@ -854,17 +837,6 @@ class ConfigDialog(gui.DialogEx):
             noShowAgainId='ConfigWelcome')
         message.exec()
 
-    def _milieuChanged(self) -> None:
-        # Update allegiance tagging table as allegiances are milieu dependant.
-        # This will clear any tagging set for the previously selected milieu.
-        # This seems like the sensible thing to do as there is no guarantee that
-        # the code that was tagged for the previous milieu has any relation to
-        # the allegiance that is using that code in the new milieu.
-        table = self._taggingTables.get(logic.TaggingProperty.Allegiance)
-        if table:
-            table.setContent(
-                keyDescriptions=self._generateAllegianceDescriptions())
-
     def _taggingColourChanged(self) -> None:
         colours = app.TaggingColours(
             desirableColour=self._desirableTagColourButton.colour(),
@@ -876,14 +848,13 @@ class ConfigDialog(gui.DialogEx):
 
     def _generateAllegianceDescriptions(self) -> typing.Mapping[str, str]:
         universe = astronomer.WorldManager.instance().universe()
-        milieu = self._milieuComboBox.currentEnum()
 
         codeToAllegianceMap: typing.Dict[
             str, # Allegiance Code
             typing.List[typing.Tuple[
                 astronomer.Sector,
                 astronomer.Allegiance]]] = {}
-        for sector in universe.yieldSectors(milieu=milieu):
+        for sector in universe.yieldSectors():
             for allegiance in sector.allegiances():
                 allegianceList = codeToAllegianceMap.get(allegiance.code())
                 if allegianceList is None:

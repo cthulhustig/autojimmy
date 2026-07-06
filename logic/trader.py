@@ -9,7 +9,6 @@ class Trader(object):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             tradeOptionCallback: typing.Callable[[logic.TradeOption], typing.Any],
             traderInfoCallback: typing.Optional[typing.Callable[[str], typing.Any]] = None,
@@ -17,7 +16,6 @@ class Trader(object):
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
         self._universe = universe
-        self._milieu = milieu
         self._rules = rules
         self._tradeOptionCallback = tradeOptionCallback
         self._traderInfoCallback = traderInfoCallback
@@ -148,7 +146,6 @@ class Trader(object):
 
         self._calculateTradeOptions(
             universe=self._universe,
-            milieu=self._milieu,
             purchaseWorld=purchaseWorld,
             saleWorlds=saleWorlds,
             currentCargo=currentCargo,
@@ -339,7 +336,6 @@ class Trader(object):
 
             self._calculateTradeOptions(
                 universe=self._universe,
-                milieu=self._milieu,
                 purchaseWorld=purchaseWorld,
                 saleWorlds=saleWorlds,
                 possibleCargo=possibleCargo,
@@ -367,7 +363,6 @@ class Trader(object):
     def _calculateTradeOptions(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             purchaseWorld: astronomer.World,
             saleWorlds: typing.Iterable[astronomer.World],
             currentCargo: typing.Iterable[logic.CargoRecord],
@@ -398,7 +393,6 @@ class Trader(object):
             jumpRoute = routePlanner.calculateDirectRoute(
                 routingType=routingType,
                 universe=universe,
-                milieu=milieu,
                 startHex=purchaseWorld.hex(),
                 finishHex=saleWorld.hex(),
                 shipTonnage=shipTonnage,
@@ -424,7 +418,7 @@ class Trader(object):
                 if self._traderInfoCallback:
                     worldString = '{world} ({hex})'.format(
                         world=saleWorld.name(),
-                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
+                        hex=self._universe.formatSectorHex(hex=saleWorld.hex()))
                     self._traderInfoCallback(
                         f'Ignoring sale of all trade goods on {worldString}. ' +
                         f'There is no jump route to get there with jump-{shipJumpRating}')
@@ -432,7 +426,6 @@ class Trader(object):
 
             routeLogistics = logic.calculateRouteLogistics(
                 universe=universe,
-                milieu=milieu,
                 jumpRoute=jumpRoute,
                 shipTonnage=shipTonnage,
                 shipFuelCapacity=shipFuelCapacity,
@@ -449,7 +442,7 @@ class Trader(object):
                 if self._traderInfoCallback:
                     worldString = '{world} ({hex})'.format(
                         world=saleWorld.name(),
-                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
+                        hex=self._universe.formatSectorHex(hex=saleWorld.hex()))
                     self._traderInfoCallback(
                         f'Ignoring sale of all goods on {worldString}. ' +
                         f'There is no way to reach it with the current fuel settings.')
@@ -475,7 +468,7 @@ class Trader(object):
                 if self._traderInfoCallback:
                     worldString = '{world} ({hex})'.format(
                         world=saleWorld.name(),
-                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
+                        hex=self._universe.formatSectorHex(hex=saleWorld.hex()))
                     self._traderInfoCallback(
                         f'Ignoring sale of all goods on {worldString}. ' +
                         f'The average logistics cost is Cr{common.formatNumber(logisticsCosts.averageCaseValue())} so ' +
@@ -572,7 +565,7 @@ class Trader(object):
                 if self._traderInfoCallback:
                     worldString = '{world} ({hex})'.format(
                         world=purchaseWorld.name(),
-                        hex=self._universe.formatSectorHex(milieu=self._milieu, hex=purchaseWorld.hex()))
+                        hex=self._universe.formatSectorHex(hex=purchaseWorld.hex()))
                     self._traderInfoCallback(
                         f'Ignoring purchase of {tradeGood.name()} on {worldString}. ' +
                         f'The average purchase price is Cr{common.formatNumber(purchasePricePerTon.averageCaseValue())} ' +
@@ -631,7 +624,7 @@ class Trader(object):
             if self._traderInfoCallback:
                 worldString = '{world} ({hex})'.format(
                     world=saleWorld.name(),
-                    hex=self._universe.formatSectorHex(milieu=self._milieu, hex=saleWorld.hex()))
+                    hex=self._universe.formatSectorHex(hex=saleWorld.hex()))
                 self._traderInfoCallback(
                     f'Ignoring sale of {tradeGood.name()} on {worldString}. ' +
                     f'The average net profit is Cr{common.formatNumber(netProfit.averageCaseValue())} so ' +

@@ -11,22 +11,12 @@ def loadUniverseFromDatabase(
     if entityFactory is None:
         entityFactory = astronomer.DefaultEntityFactory()
 
-    universeInfo = multiverse.UniverseManager.instance().universeInfo(
-        universeId=universeId)
+    universeInfo = multiverse.UniverseManager.instance().universeInfoById(
+        id=universeId)
     if not universeInfo:
         raise ValueError(f'Unknown universe "{universeId}"')
 
     logging.info(f'Loaded universe {universeId} ({universeInfo.name()})')
-
-    customSectors = set()
-    if not universeInfo.isStock():
-        sectorInfos = multiverse.UniverseManager.instance().sectorInfos(
-            universeId=universeId)
-        for sectorInfo in sectorInfos:
-            fromStockData = sectorInfo.stockDataHash() is not None
-            isModified = sectorInfo.modifiedTimestamp() is not None
-            if fromStockData and isModified:
-                customSectors.add(sectorInfo.id())
 
     # NOTE: Using a generator is important as it means converting
     # each db sector to an astronomer sector is included in the
@@ -41,28 +31,24 @@ def loadUniverseFromDatabase(
         try:
             sector = astronomer.convertDbSectorToAstronomerSector(
                 dbSector=dbSector,
-                isCustom=dbSector.id() in customSectors,
                 entityFactory=entityFactory)
             sectors.append(sector)
 
             logging.debug(
-                'Loaded {worlds} worlds for sector {name} at ({x}, {y}) from {milieu}'.format(
+                'Loaded {worlds} worlds for sector {name} at ({x}, {y})'.format(
                     worlds=sector.worldCount(),
                     name=sector.name(),
                     x=sector.position().sectorX(),
-                    y=sector.position().sectorY(),
-                    milieu=sector.milieu().value))
+                    y=sector.position().sectorY()))
         except Exception as ex:
             logging.error(
-                'Failed to load sector {name} at ({x}, {y}) from {milieu}'.format(
+                'Failed to load sector {name} at ({x}, {y})'.format(
                     name=dbSector.name(),
                     x=dbSector.sectorX(),
-                    y=dbSector.sectorY(),
-                    milieu=dbSector.milieu()),
+                    y=dbSector.sectorY()),
                 exc_info=ex)
             continue
 
     return entityFactory.createUniverse(
         universeId=universeId,
-        isCustom=not universeInfo.isStock(),
         sectors=sectors)

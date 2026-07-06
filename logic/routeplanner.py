@@ -126,7 +126,6 @@ class RoutePlanner(object):
             self,
             routingType: RoutingType,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             startHex: astronomer.HexPosition,
             finishHex: astronomer.HexPosition,
             shipTonnage: typing.Union[int, common.ScalarCalculation],
@@ -160,7 +159,6 @@ class RoutePlanner(object):
         return self._calculateRoute(
             routingType=routingType,
             universe=universe,
-            milieu=milieu,
             hexSequence=hexSequence,
             shipTonnage=shipTonnage,
             shipJumpRating=shipJumpRating,
@@ -178,7 +176,6 @@ class RoutePlanner(object):
             self,
             routingType: RoutingType,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             hexSequence: typing.Sequence[astronomer.HexPosition],
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
@@ -215,7 +212,6 @@ class RoutePlanner(object):
         return self._calculateRoute(
             routingType=routingType,
             universe=universe,
-            milieu=milieu,
             hexSequence=processedHexSequence,
             shipTonnage=shipTonnage,
             shipJumpRating=shipJumpRating,
@@ -242,7 +238,6 @@ class RoutePlanner(object):
             self,
             routingType: RoutingType,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             hexSequence: typing.Sequence[astronomer.HexPosition], # This code assumes sequences of the same hex have already been removed
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
@@ -285,10 +280,10 @@ class RoutePlanner(object):
         finishWorldIndex = sequenceLength - 1
 
         startHex = hexSequence[0]
-        startWorld = universe.worldByPosition(milieu=milieu, hex=startHex)
+        startWorld = universe.worldByPosition(hex=startHex)
 
         finishHex = hexSequence[finishWorldIndex]
-        finishWorld = universe.worldByPosition(milieu=milieu, hex=finishHex)
+        finishWorld = universe.worldByPosition(hex=finishHex)
 
         startWorldFuelType = None
         if routingType is RoutingType.Basic:
@@ -472,7 +467,6 @@ class RoutePlanner(object):
             potentialsIterator = self._yieldPotentialHexes(
                 routingType=routingType,
                 universe=universe,
-                milieu=milieu,
                 currentNode=currentNode,
                 targetHex=targetHex,
                 shipJumpRating=shipJumpRating,
@@ -553,7 +547,6 @@ class RoutePlanner(object):
             self,
             routingType: RoutingType,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             currentNode: _RouteNode,
             targetHex: astronomer.HexPosition,
             shipJumpRating: int,
@@ -620,7 +613,6 @@ class RoutePlanner(object):
             alreadyProcessed = set()
 
         worldList = universe.yieldWorldsInRadius(
-            milieu=milieu,
             center=currentHex,
             radius=searchRadius)
         for nearbyWorld in worldList:

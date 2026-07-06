@@ -54,17 +54,12 @@ class _EmpressWaveOverlay(MapOverlay):
 
     def __init__(
             self,
-            milieu: astronomer.Milieu,
             depth: int
             ) -> None:
         super().__init__(depth=depth)
-        self._milieu = milieu
         self._pen = QtGui.QPen(
             _EmpressWaveOverlay._WaveColour,
             0) # Width will be set at render time
-
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        self._milieu = milieu
 
     # This code is based on the Traveller Map drawWave code (map.js)
     def draw(
@@ -75,7 +70,11 @@ class _EmpressWaveOverlay(MapOverlay):
         if not self.isEnabled():
             return False
 
-        year = astronomer.milieuToYear(milieu=self._milieu)
+        # TODO: This is broken for everything apart from M1105. Will need a way
+        # to select the year for it when universes aren't really going to have
+        # a millie. We can't rely on the universe having one set as it may
+        # have been created as an empty universe.
+        year = astronomer.milieuToYear(milieu=astronomer.Milieu.M1105)
 
         w = 1 #pc
 
@@ -150,16 +149,11 @@ class _AntaresSupernovaOverlay(MapOverlay):
 
     def __init__(
             self,
-            milieu: astronomer.Milieu,
             depth: int
             ) -> None:
         super().__init__(depth=depth)
-        self._milieu = milieu
         self._brush = QtGui.QBrush(
             _AntaresSupernovaOverlay._SupernovaColour)
-
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        self._milieu = milieu
 
     # This code is based on the Traveller Map drawAS code (map.js)
     def draw(
@@ -170,7 +164,11 @@ class _AntaresSupernovaOverlay(MapOverlay):
         if not self.isEnabled():
             return False
 
-        year = astronomer.milieuToYear(milieu=self._milieu)
+        # TODO: This is broken for everything apart from M1105. Will need a way
+        # to select the year for it when universes aren't really going to have
+        # a millie. We can't rely on the universe having one set as it may
+        # have been created as an empty universe.
+        year = astronomer.milieuToYear(milieu=astronomer.Milieu.M1105)
         yearRadius = (year - 1270) * _AntaresSupernovaOverlay._SupernovaVelocity
         if yearRadius < 0:
             return False
@@ -440,7 +438,6 @@ class MapWidget(QtWidgets.QWidget):
             int, # Tile Y
             int, # Tile Scale
             str, # Universe id
-            astronomer.Milieu,
             cartographer.MapStyle,
             int], # MapOptions as an int
         _MapTile](capacity=_TileCacheSize)
@@ -466,7 +463,6 @@ class MapWidget(QtWidgets.QWidget):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             style: cartographer.MapStyle,
             options: typing.Collection[app.MapOption],
             rendering: app.MapRendering,
@@ -481,7 +477,6 @@ class MapWidget(QtWidgets.QWidget):
                 MapWidget._sharedEasingCurves.append(_MoveAnimationEasingCurve())
 
         self._universe = universe
-        self._milieu = milieu
         self._style = style
         self._options = set(options)
         self._rendering = rendering
@@ -560,7 +555,7 @@ class MapWidget(QtWidgets.QWidget):
 
         self._overlays: typing.Set[MapOverlay] = set()
 
-        self._empressWaveOverlay = _EmpressWaveOverlay(milieu=self._milieu, depth=0)
+        self._empressWaveOverlay = _EmpressWaveOverlay(depth=0)
         self._empressWaveOverlay.setEnabled(
             enabled=app.MapOption.EmpressWaveOverlay in self._options)
         self._overlays.add(self._empressWaveOverlay)
@@ -570,7 +565,7 @@ class MapWidget(QtWidgets.QWidget):
             enabled=app.MapOption.QrekrshaZoneOverlay in self._options)
         self._overlays.add(self._qrekrshaZoneOverlay)
 
-        self._antaresSupernovaOverlay = _AntaresSupernovaOverlay(milieu=self._milieu, depth=2)
+        self._antaresSupernovaOverlay = _AntaresSupernovaOverlay(depth=2)
         self._antaresSupernovaOverlay.setEnabled(
             enabled=app.MapOption.AntaresSupernovaOverlay in self._options)
         self._overlays.add(self._antaresSupernovaOverlay)
@@ -633,25 +628,6 @@ class MapWidget(QtWidgets.QWidget):
         self._createNewRenderer()
 
         # Clear the main when the universe changes as the main may have
-        # changed
-        self._mainsOverlay.setMain(main=None)
-
-        self.update() # Force redraw
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
-
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        if milieu is self._milieu:
-            return
-
-        self._milieu = milieu
-        self._createNewRenderer()
-
-        self._empressWaveOverlay.setMilieu(milieu=self._milieu)
-        self._antaresSupernovaOverlay.setMilieu(milieu=self._milieu)
-
-        # Clear the main when the milieu changes as the main may have
         # changed
         self._mainsOverlay.setMain(main=None)
 
@@ -1413,9 +1389,7 @@ class MapWidget(QtWidgets.QWidget):
             ) -> None:
         if hex and self.isEnabled():
             if app.MapOption.MainsOverlay in self._options:
-                main = self._universe.mainByPosition(
-                    milieu=self._milieu,
-                    hex=hex)
+                main = self._universe.mainByPosition(hex=hex)
                 self._mainsOverlay.setMain(main)
                 self.update() # Trigger redraw
 
@@ -1484,20 +1458,18 @@ class MapWidget(QtWidgets.QWidget):
 
         self._renderer = cartographer.RenderContext(
             universe=self._universe,
-            milieu=self._milieu,
             graphics=self._mapGraphics,
             style=self._style,
             options=options,
             imageStore=self._imageStore,
             vectorStore=self._vectorStore,
             labelStore=self._labelStore)
-        
+
         self._sizer = gui.RenderBoundsCalculator(
             universe=self._universe,
-            milieu=self._milieu,
             style=self._style,
             options=options)
-        
+
     def _updateView(
             self,
             center: typing.Optional[QtCore.QPointF] = None,
@@ -1788,7 +1760,6 @@ class MapWidget(QtWidgets.QWidget):
             tileY,
             tileScale,
             self._universe.universeId(),
-            self._milieu,
             self._renderer.style(),
             int(self._renderer.options()))
         tile = MapWidget._sharedTileCache.get(tileCacheKey)
@@ -1893,7 +1864,6 @@ class MapWidget(QtWidgets.QWidget):
                     y,
                     placeholderScale,
                     self._universe.universeId(),
-                    self._milieu,
                     self._renderer.style(),
                     int(self._renderer.options()))
 
@@ -1986,7 +1956,6 @@ class MapWidget(QtWidgets.QWidget):
             tileY,
             tileScale,
             self._universe.universeId(),
-            self._milieu,
             # Use the settings for the renderer that is going to render the
             # tile to make sure the key is accurate
             self._renderer.style(),

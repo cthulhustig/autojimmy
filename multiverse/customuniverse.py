@@ -12,11 +12,6 @@ import typing
 # delete it once I'm sure nobody will be upgrading from a version so old
 # it will still be using custom sectors stored in the filesystem
 
-# For now we're not supporting multiple custom universes so a single universe
-# with a known id and name are used
-_CustomUniverseId = '35229f9b-c2e8-49c3-9334-0176a60015fd'
-_CustomUniverseName = 'Custom Universe'
-
 _ImportFlagFileName = 'database_import_flag_file'
 
 _SectorFormatExtensions = {
@@ -27,9 +22,6 @@ _MetadataFormatExtensions = {
     survey.MetadataFormat.JSON: 'json',
     survey.MetadataFormat.XML: 'xml'}
 
-def customUniverseId() -> str:
-    return _CustomUniverseId
-
 def haveLegacyCustomSectorsBeenImported(directoryPath: str) -> bool:
     if not os.path.isdir(directoryPath):
         return False # No directory means nothing to import
@@ -39,17 +31,13 @@ def haveLegacyCustomSectorsBeenImported(directoryPath: str) -> bool:
 
 def importLegacyCustomSectors(
         directoryPath: str,
+        universeId: str,
         appVersion: str,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
         reporter: typing.Optional[common.Reporter] = None
         ) -> None:
     if haveLegacyCustomSectorsBeenImported(directoryPath):
         raise RuntimeError('Legacy custom sectors have already been imported')
-
-    universePath = os.path.join(directoryPath, 'milieu')
-    if not os.path.isdir(universePath):
-        # No custom universe data so nothing to do
-        return
 
     if reporter:
         reporter.pushPrefix('Stock Allegiances: ')
@@ -75,81 +63,67 @@ def importLegacyCustomSectors(
         if reporter:
             reporter.popPrefix()
 
-    stockSectorInfos = multiverse.UniverseManager.instance().stockUniverseSectorInfos()
-    stockSectorInfoMap: typing.Dict[
-        typing.Tuple[str, int, int],
-        multiverse.SectorInfo] = {(i.milieu(), i.sectorX(), i.sectorY()): i for i in stockSectorInfos}
+    # NOTE: This is done early to verify the universe exists before loading all the
+    # custom sectors
+    existingSectorInfos = {(s.sectorX(), s.sectorY()): s for s in multiverse.UniverseManager.instance().sectorInfos(universeId)}
 
-    milieuSectors: typing.List[typing.Tuple[
-        str, # Milieu
-        typing.List[typing.Tuple[
+    universeInfoPath = os.path.join(directoryPath, 'universe.json')
+
+    try:
+        logging.info(f'Loading legacy custom universe file {universeInfoPath}')
+
+        with open(universeInfoPath, 'r', encoding='utf-8-sig') as file:
+            universeInfoContent = file.read()
+        universeElement = json.loads(universeInfoContent)
+
+        sectorsElement = universeElement.get('Sectors')
+        if not sectorsElement:
+            raise RuntimeError(f'No Sectors element found in "{universeInfoPath}"')
+
+        sectorData: typing.List[typing.Tuple[
             str, # Sector name
             survey.MetadataFormat,
             survey.SectorFormat
-        ]]]] = []
-    totalSectorCount = 0
-    for milieu in [d for d in os.listdir(universePath) if os.path.isdir(os.path.join(universePath, d))]:
-        milieuPath = os.path.join(universePath, milieu)
-        universeInfoPath = os.path.join(milieuPath, 'universe.json')
+            ]] = []
+        for index, sectorElement in enumerate(sectorsElement):
+            namesElements = sectorElement.get('Names')
+            if not namesElements:
+                raise RuntimeError(f'No Names element found for sector {index + 1} in "{universeInfoPath}"')
 
-        try:
-            logging.info(f'Loading legacy custom universe file {universeInfoPath}')
+            nameElement = namesElements[0]
+            sectorName = nameElement.get('Text')
+            if not sectorName:
+                raise RuntimeError(f'No Text element for Sector {index + 1} Name element')
+            sectorName = str(sectorName)
 
-            with open(universeInfoPath, 'r', encoding='utf-8-sig') as file:
-                universeInfoContent = file.read()
-            universeElement = json.loads(universeInfoContent)
+            # If the universe doesn't specify the metadata format it must be a standard traveller map
+            # universe file which means the corresponding metadata files all use XML format
+            metadataFormatTag = sectorElement.get('MetadataFormat')
+            metadataFormat = survey.MetadataFormat.XML
+            if metadataFormatTag != None:
+                metadataFormat = survey.MetadataFormat.__members__.get(
+                    str(metadataFormatTag),
+                    metadataFormat)
 
-            sectorsElement = universeElement.get('Sectors')
-            if not sectorsElement:
-                raise RuntimeError(f'No Sectors element found in "{universeInfoPath}"')
+            # If the universe doesn't specify the sector format it must be a standard traveller map
+            # universe file which means the corresponding sectors files all use T5 column format
+            sectorFormatTag = sectorElement.get('SectorFormat')
+            sectorFormat = survey.SectorFormat.T5Column
+            if sectorFormatTag != None:
+                sectorFormat = survey.SectorFormat.__members__.get(
+                    str(sectorFormatTag),
+                    sectorFormat)
 
-            sectorNames: typing.List[typing.Tuple[
-                str, # Sector name
-                survey.MetadataFormat,
-                survey.SectorFormat
-                ]] = []
-            for index, sectorElement in enumerate(sectorsElement):
-                namesElements = sectorElement.get('Names')
-                if not namesElements:
-                    raise RuntimeError(f'No Names element found for sector {index + 1} in "{universeInfoPath}"')
+            sectorData.append((sectorName, metadataFormat, sectorFormat))
+    except Exception as ex:
+        # Log and continue to import any custom sectors that can be processed
+        # TODO: I should probably do something to inform the user that some
+        # of the data couldn't be imported
+        logging.warn(
+            f'Legacy custom sector import failed to process "{universeInfoPath}"',
+            exc_info=ex)
 
-                nameElement = namesElements[0]
-                sectorName = nameElement.get('Text')
-                if not sectorName:
-                    raise RuntimeError(f'No Text element for Sector {index + 1} Name element')
-                sectorName = str(sectorName)
-
-                # If the universe doesn't specify the metadata format it must be a standard traveller map
-                # universe file which means the corresponding metadata files all use XML format
-                metadataFormatTag = sectorElement.get('MetadataFormat')
-                metadataFormat = survey.MetadataFormat.XML
-                if metadataFormatTag != None:
-                    metadataFormat = survey.MetadataFormat.__members__.get(
-                        str(metadataFormatTag),
-                        metadataFormat)
-
-                # If the universe doesn't specify the sector format it must be a standard traveller map
-                # universe file which means the corresponding sectors files all use T5 column format
-                sectorFormatTag = sectorElement.get('SectorFormat')
-                sectorFormat = survey.SectorFormat.T5Column
-                if sectorFormatTag != None:
-                    sectorFormat = survey.SectorFormat.__members__.get(
-                        str(sectorFormatTag),
-                        sectorFormat)
-
-                sectorNames.append((sectorName, metadataFormat, sectorFormat))
-                totalSectorCount += 1
-
-            milieuSectors.append((milieu, sectorNames))
-        except Exception as ex:
-            # Log and continue to import any custom sectors that can be processed
-            # TODO: I should probably do something to inform the user that some
-            # of the data couldn't be imported
-            logging.warn(
-                f'Legacy custom sector import failed to process "{universeInfoPath}"',
-                exc_info=ex)
-
-    if not totalSectorCount:
+    if not sectorData:
         # No legacy custom sectors to load but still create the flag file to indicate
         # custom sectors have been imported to avoid going through this process again
         _createLegacySectorsImportedFlagFile(
@@ -159,75 +133,73 @@ def importLegacyCustomSectors(
 
     dbSectors: typing.List[multiverse.DbSector] = []
     progressCount = 0
-    for milieu, sectorNames in milieuSectors:
-        milieuPath = os.path.join(universePath, milieu)
-        for sectorName, metadataFormat, sectorFormat in sectorNames:
+    for sectorName, metadataFormat, sectorFormat in sectorData:
+        try:
+            if progressCallback:
+                progressCallback(
+                    f'Converting: {sectorName}',
+                    progressCount,
+                    len(sectorData))
+                progressCount += 1
+
+            escapedName = common.encodeFileName(rawFileName=sectorName)
+
+            metadataExtension = _MetadataFormatExtensions[metadataFormat]
+            metadataPath = os.path.join(directoryPath, f'{escapedName}.{metadataExtension}')
+            logging.info(f'Loading legacy custom metadata file {metadataPath}')
+            with open(metadataPath, 'r', encoding='utf-8-sig') as file:
+                metadataContent = file.read()
+
+            sectorExtension = _SectorFormatExtensions[sectorFormat]
+            sectorPath = os.path.join(directoryPath, f'{escapedName}.{sectorExtension}')
+            logging.info(f'Loading legacy custom sector file {sectorPath}')
+            with open(sectorPath, 'r', encoding='utf-8-sig') as file:
+                sectorContent = file.read()
+
+            reporter.pushPrefix(f'{metadataPath} - ')
             try:
-                if progressCallback:
-                    progressCallback(
-                        f'Converting: {milieu} - {sectorName}',
-                        progressCount,
-                        totalSectorCount)
-                    progressCount += 1
+                rawMetadata = survey.parseMetadata(
+                    content=metadataContent,
+                    format=metadataFormat,
+                    reporter=reporter)
+            finally:
+                if reporter:
+                    reporter.popPrefix()
 
-                escapedName = common.encodeFileName(rawFileName=sectorName)
+            reporter.pushPrefix(f'{sectorPath} - ')
+            try:
+                rawSystems = survey.parseSector(
+                    content=sectorContent,
+                    format=sectorFormat,
+                    reporter=reporter)
+            finally:
+                if reporter:
+                    reporter.popPrefix()
 
-                metadataExtension = _MetadataFormatExtensions[metadataFormat]
-                metadataPath = os.path.join(milieuPath, f'{escapedName}.{metadataExtension}')
-                logging.info(f'Loading legacy custom metadata file {metadataPath}')
-                with open(metadataPath, 'r', encoding='utf-8-sig') as file:
-                    metadataContent = file.read()
-
-                sectorExtension = _SectorFormatExtensions[sectorFormat]
-                sectorPath = os.path.join(milieuPath, f'{escapedName}.{sectorExtension}')
-                logging.info(f'Loading legacy custom sector file {sectorPath}')
-                with open(sectorPath, 'r', encoding='utf-8-sig') as file:
-                    sectorContent = file.read()
-
-                reporter.pushPrefix(f'{metadataPath} - ')
-                try:
-                    rawMetadata = survey.parseMetadata(
-                        content=metadataContent,
-                        format=metadataFormat,
-                        reporter=reporter)
-                finally:
-                    if reporter:
-                        reporter.popPrefix()
-
-                reporter.pushPrefix(f'{sectorPath} - ')
-                try:
-                    rawSystems = survey.parseSector(
-                        content=sectorContent,
-                        format=sectorFormat,
-                        reporter=reporter)
-                finally:
-                    if reporter:
-                        reporter.popPrefix()
-
-                # NOTE: If there is a stock sector where this custom sector is going to
-                # be placed, use the same sector id as the stock one. This is important
-                # to have the creation/modified time/stock hash set correctly in the
-                # sector metadata
-                stockSectorInfo = stockSectorInfoMap.get((milieu, rawMetadata.x(), rawMetadata.y()))
-                dbSector = multiverse.convertRawSectorToDbSector(
-                    sectorId=stockSectorInfo.id() if stockSectorInfo else None,
-                    milieu=milieu,
-                    rawMetadata=rawMetadata,
-                    rawSystems=rawSystems,
-                    rawStockAllegiances=rawStockAllegiances,
-                    rawStockSophonts=rawStockSophonts,
-                    rawStockStyleSheet=rawStockStyleSheet)
-                dbSectors.append(dbSector)
-            except Exception as ex:
-                # TODO: Log something but continue
-                print(ex)
-                continue
+            # NOTE: If there is a stock sector where this custom sector is going to
+            # be placed, use the same sector id as the stock one. This is important
+            # to have the creation/modified time/stock hash set correctly in the
+            # sector metadata
+            existingSectorInfo = existingSectorInfos.get((rawMetadata.x(), rawMetadata.y()))
+            dbSector = multiverse.convertRawSectorToDbSector(
+                sectorId=existingSectorInfo.id() if existingSectorInfo else None,
+                milieu='M1105', # TODO: Need to do this properly, problem is I don't know the Milieu
+                rawMetadata=rawMetadata,
+                rawSystems=rawSystems,
+                rawStockAllegiances=rawStockAllegiances,
+                rawStockSophonts=rawStockSophonts,
+                rawStockStyleSheet=rawStockStyleSheet)
+            dbSectors.append(dbSector)
+        except Exception as ex:
+            # TODO: Log something but continue
+            print(ex)
+            continue
 
     if progressCallback:
         progressCallback(
             f'Converting: Complete!',
-            totalSectorCount,
-            totalSectorCount)
+            len(sectorData),
+            len(sectorData))
 
     if not dbSectors:
         # There were legacy custom sectors but none of the could be loaded.
@@ -238,13 +210,8 @@ def importLegacyCustomSectors(
             appVersion=appVersion)
         return
 
-    # TODO: Need to handle the case where the custom universe with this name
-    # already exists.
-    multiverse.UniverseManager.instance().createCustomUniverse(
-        universeId=_CustomUniverseId,
-        name=_CustomUniverseName,
-        description='',
-        copyStock=True,
+    multiverse.UniverseManager.instance().updateSectors(
+        universeId=universeId,
         sectors=dbSectors,
         progressCallback=progressCallback)
 

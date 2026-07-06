@@ -9,7 +9,6 @@ class SectorTable(gui.ListTable):
     class ColumnType(enum.Enum):
         Name = 'Name'
         Position = 'Position'
-        Custom = 'Custom'
 
     AllColumns = list(ColumnType)
 
@@ -18,13 +17,11 @@ class SectorTable(gui.ListTable):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             columns: typing.Iterable[ColumnType] = AllColumns
             ) -> None:
         super().__init__()
 
         self._universe = universe
-        self._milieu = milieu
 
         self.setColumnHeaders(columns)
         self.resizeColumnsToContents() # Size columns to header text
@@ -47,19 +44,6 @@ class SectorTable(gui.ListTable):
             return
 
         self._universe = universe
-        self._updateContent()
-
-    def milieu(self) -> astronomer.Milieu:
-        return self._milieu
-
-    def setMilieu(
-            self,
-            milieu: astronomer.Milieu
-            ) -> None:
-        if milieu is self._milieu:
-            return
-
-        self._milieu = milieu
         self._updateContent()
 
     def sector(self, row: int) -> typing.Optional[astronomer.Sector]:
@@ -158,7 +142,7 @@ class SectorTable(gui.ListTable):
         return True
 
     def _updateContent(self) -> None:
-        newSectors = set(self._universe.sectors(milieu=self._milieu))
+        newSectors = set(self._universe.sectors())
         currentSectors = set()
 
         # Remove any rows for goods not in the new list
@@ -203,8 +187,6 @@ class SectorTable(gui.ListTable):
                 elif columnType == self.ColumnType.Position:
                     position = sector.position()
                     tableItem = QtWidgets.QTableWidgetItem(f'({position.sectorX()}, {position.sectorY()})')
-                elif columnType == self.ColumnType.Custom:
-                    tableItem = QtWidgets.QTableWidgetItem('*' if sector.isCustom() else '')
 
                 if tableItem:
                     self.setItem(row, column, tableItem)

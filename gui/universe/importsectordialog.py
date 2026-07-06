@@ -344,10 +344,8 @@ class ImportSectorDialog(gui.DialogEx):
 
         try:
             sector: azathoth.EditableSector = astronomer.convertRawSectorToAstronomerSector(
-                milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
                 rawMetadata=rawMetadata,
                 rawSystems=rawWorlds,
-                isCustom=True,
                 rawStockAllegiances=rawStockAllegiances,
                 rawStockSophonts=rawStockSophonts,
                 rawStockStyleSheet=rawStyleSheet,
@@ -367,10 +365,10 @@ class ImportSectorDialog(gui.DialogEx):
                 text = 'No issues when converting sector'
 
             reportWindow = gui.TextWindow(
-                title=f'Conversion Report - {rawMetadata.canonicalName()}',
+                title=f'Sector Conversion Report - {rawMetadata.canonicalName()}',
                 text=text,
                 readOnly=True,
-                configSection='ConversionReport')
+                configSection='SectorConversionReport')
             gui.WindowManager.instance().manageWindow(window=reportWindow)
 
             # NOTE: This is a hack to bring the report window to the front

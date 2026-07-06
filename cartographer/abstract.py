@@ -389,9 +389,6 @@ class AbstractSelector(object):
     def setRect(self, rect: cartographer.RectangleF) -> None:
         raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement setRect')
 
-    def setMilieu(self, milieu: astronomer.Milieu) -> None:
-        raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement setMilieu')
-
     def sectorSlop(self) -> float:
         raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement sectorSlop')
 

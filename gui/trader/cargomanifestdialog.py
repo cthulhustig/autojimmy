@@ -64,7 +64,6 @@ class CargoManifestDialog(gui.DialogEx):
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
             universe=astronomer.WorldManager.instance().universe(),
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
@@ -227,7 +226,6 @@ class CargoManifestDialog(gui.DialogEx):
 
     def _setupManifestControls(self):
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         outcomeColours = app.Config.instance().value(option=app.ConfigOption.OutcomeColours)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
@@ -238,7 +236,6 @@ class CargoManifestDialog(gui.DialogEx):
 
         self._cargoManifestTable = gui.CargoManifestTable(
             universe=universe,
-            milieu=milieu,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -255,7 +252,6 @@ class CargoManifestDialog(gui.DialogEx):
 
         self._cargoBreakdownTable = gui.TradeOptionsTable(
             universe=universe,
-            milieu=milieu,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -309,10 +305,6 @@ class CargoManifestDialog(gui.DialogEx):
             self._hexTooltipProvider.setUniverse(universe=universe)
             self._cargoManifestTable.setUniverse(universe=universe)
             self._cargoBreakdownTable.setUniverse(universe=universe)
-        elif option is app.ConfigOption.Milieu:
-            self._hexTooltipProvider.setMilieu(milieu=newValue)
-            self._cargoManifestTable.setMilieu(milieu=newValue)
-            self._cargoBreakdownTable.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:

@@ -43,7 +43,6 @@ class CustomUniverseWindow(gui.WindowWidget):
             configSection='CustomUniverseWindow')
 
         universe = astronomer.WorldManager.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -53,15 +52,12 @@ class CustomUniverseWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
         app.Config.instance().configChanged.connect(self._appConfigChanged)
 
-        self._sectorTable = gui.SectorTable(
-            universe=universe,
-            milieu=milieu)
+        self._sectorTable = gui.SectorTable(universe=universe)
         self._sectorTable.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self._sectorTable.itemSelectionChanged.connect(self._sectorSelectionChanged)
 
         self._mapWidget = gui.MapWidgetEx(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             style=mapStyle,
             options=mapOptions,
@@ -191,9 +187,6 @@ class CustomUniverseWindow(gui.WindowWidget):
             universe = astronomer.WorldManager.instance().universe()
             self._sectorTable.setUniverse(universe=universe)
             self._mapWidget.setUniverse(universe=universe)
-        elif option is app.ConfigOption.Milieu:
-            self._sectorTable.setMilieu(milieu=newValue)
-            self._mapWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
@@ -273,11 +266,8 @@ class CustomUniverseWindow(gui.WindowWidget):
             ) -> None:
         sectorPos = self._mapWidget.sectorAt(pos=pos)
         universe = azathoth.UniverseEditor.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
-        sector = universe.sectorByPosition(
-            milieu=milieu,
-            position=sectorPos)
+        sector = universe.sectorByPosition(position=sectorPos)
         if not sector:
             return
 
@@ -300,11 +290,8 @@ class CustomUniverseWindow(gui.WindowWidget):
             return
 
         universe = azathoth.UniverseEditor.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
-        oldSector = universe.sectorByPosition(
-            milieu=milieu,
-            position=sectorPos)
+        oldSector = universe.sectorByPosition(position=sectorPos)
         if oldSector is not None and not isinstance(oldSector, azathoth.EditableSector):
             message = 'Old sector is not editable.'
             logging.critical(message, exc_info=ex)
@@ -338,11 +325,8 @@ class CustomUniverseWindow(gui.WindowWidget):
             return
 
         universe = azathoth.UniverseEditor.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
-        oldSector = universe.sectorByPosition(
-            milieu=milieu,
-            position=sectorPos)
+        oldSector = universe.sectorByPosition(position=sectorPos)
         if oldSector is not None and not isinstance(oldSector, azathoth.EditableSector):
             message = 'Old sector is not editable.'
             logging.critical(message, exc_info=ex)
@@ -386,12 +370,9 @@ class CustomUniverseWindow(gui.WindowWidget):
             sectorPos: astronomer.SectorPosition
             ) -> None:
         universe = azathoth.UniverseEditor.instance().universe()
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
         try:
-            sector = universe.sectorByPosition(
-                milieu=milieu,
-                position=sectorPos)
+            sector = universe.sectorByPosition(position=sectorPos)
         except Exception as ex:
             message = 'An error occurred when finding sector data'
             logging.critical(message, exc_info=ex)

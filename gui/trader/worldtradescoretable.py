@@ -40,7 +40,6 @@ class WorldTradeScoreTable(gui.HexTable):
     def __init__(
             self,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -48,7 +47,6 @@ class WorldTradeScoreTable(gui.HexTable):
             ) -> None:
         super().__init__(
             universe=universe,
-            milieu=milieu,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours,
@@ -175,9 +173,7 @@ class WorldTradeScoreTable(gui.HexTable):
             row: int,
             hex: astronomer.HexPosition
             ) -> int:
-        world = self._universe.worldByPosition(
-            milieu=self._milieu,
-            hex=hex)
+        world = self._universe.worldByPosition(hex=hex)
 
         # Always generate the trade score for a world if they aren't in the maps, even if those
         # columns aren't being displayed. We want them to be available if the get function is called

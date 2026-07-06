@@ -19,7 +19,6 @@ class RoutePlannerJob(QtCore.QThread):
             parent: QtCore.QObject,
             routingType: logic.RoutingType,
             universe: astronomer.Universe,
-            milieu: astronomer.Milieu,
             hexSequence: typing.Sequence[astronomer.World],
             shipTonnage: int,
             shipJumpRating: int,
@@ -41,7 +40,6 @@ class RoutePlannerJob(QtCore.QThread):
         # holding them do need to be copied)
         self._routingType = routingType
         self._universe = universe
-        self._milieu = milieu
         self._hexSequence = list(hexSequence)
         self._shipTonnage = shipTonnage
         self._shipJumpRating = shipJumpRating
@@ -86,7 +84,6 @@ class RoutePlannerJob(QtCore.QThread):
             jumpRoute = self._planner.calculateSequenceRoute(
                 routingType=self._routingType,
                 universe=self._universe,
-                milieu=self._milieu,
                 hexSequence=self._hexSequence,
                 shipTonnage=self._shipTonnage,
                 shipJumpRating=self._shipJumpRating,
