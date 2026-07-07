@@ -217,13 +217,13 @@ def _loadData() -> bool: # True if the app should continue, False if it should e
             logging.error(message)
             gui.MessageBoxEx.critical(message)
 
-        universeManager = gui.UniverseManagerDialog()
-
-        universeManager.exec()
-        universeId = app.Config.instance().value(option=app.ConfigOption.Universe)
-        universeInfo = multiverse.UniverseManager.instance().universeInfoById(universeId) if universeId else None
-        if not universeInfo:
-            return False # User didn't create a universe so can't continue
+        selectDialog = gui.UniverseSelectDialog()
+        if selectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            return False # User cancelled so can't continue
+        universeId = selectDialog.universeId()
+        if not universeId:
+            return False # Shouldn't happen but can't continue
+        app.Config.instance().setValue(option=app.ConfigOption.Universe, value=universeId)
 
     progressDlg = gui.ProgressJobDialog()
     progressDlg.addJob(job=jobs.LoadUniverseJob())

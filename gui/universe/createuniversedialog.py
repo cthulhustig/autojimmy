@@ -25,9 +25,12 @@ class CreateUniverseDialog(gui.DialogEx):
         self._setupDialogButtons()
 
         dialogLayout = QtWidgets.QVBoxLayout()
+        dialogLayout.addWidget(self._configGroupBox)
         dialogLayout.addLayout(self._buttonLayout)
 
         self.setLayout(dialogLayout)
+
+        self._syncButtonState()
 
     def universeId(self) -> typing.Optional[str]:
         return self._universeId
@@ -37,6 +40,7 @@ class CreateUniverseDialog(gui.DialogEx):
         self._nameEditBox.textChanged.connect(self._nameChanged)
 
         self._emptyRadioButton = gui.RadioButtonEx('Empty')
+        self._emptyRadioButton.setChecked(True)
         self._travellerMapRadioButton = gui.RadioButtonEx('Traveller Map')
 
         typeButtonsLayout = gui.VBoxLayoutEx()
@@ -53,6 +57,7 @@ class CreateUniverseDialog(gui.DialogEx):
         self._showReportCheckBox.setChecked(True)
 
         layout = gui.FormLayoutEx()
+        layout.addRow('Name:', self._nameEditBox)
         layout.addRow('Content:', typeButtonsLayout)
         layout.addRow('Milieu:', self._milieuComboBox)
         layout.addRow('Description:', self._descriptionEditBox)
@@ -74,8 +79,11 @@ class CreateUniverseDialog(gui.DialogEx):
         self._buttonLayout.addWidget(self._createButton)
         self._buttonLayout.addWidget(self._cancelButton)
 
+    def _syncButtonState(self) -> None:
+        self._createButton.setEnabled(not self._nameEditBox.isEmpty())
+
     def _nameChanged(self, text: str) -> None:
-        self._createButton.setEnabled(len(text) > 0)
+        self._syncButtonState()
 
     def _createClicked(self) -> None:
         universeName = self._nameEditBox.text()

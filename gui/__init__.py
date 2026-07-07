@@ -69,6 +69,7 @@ from .map.hexdetailswindow import *
 from .universe.importsectordialog import *
 from .universe.createuniversedialog import *
 from .universe.universemanagerdialog import *
+from .universe.universeselectdialog import *
 from .universe.customuniversewindow import *
 from .trader.tooltips import *
 from .trader.skillspinbox import *

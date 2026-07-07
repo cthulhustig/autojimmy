@@ -94,6 +94,7 @@ class UniverseManager(object):
         if self.universeInfoByName(name) is not None:
             raise ValueError(f'A Universe named {name!r} already exists')
 
+        dbSectors: typing.List[multiverse.DbSector] = []
         if importTravellerMap:
             if reporter:
                 reporter.pushPrefix('Stock Allegiances: ')
@@ -131,7 +132,6 @@ class UniverseManager(object):
                     continue
                 sectorNames.append(canonicalName)
 
-            dbSectors: typing.List[multiverse.DbSector] = []
             sourceDataHashes: typing.Dict[multiverse.DbSector, str] = {}
             progressCount = 0
             for sectorName in sectorNames:
@@ -177,6 +177,8 @@ class UniverseManager(object):
                         rawStockStyleSheet=rawStockStyleSheet)
                     dbSectors.append(dbSector)
 
+                    # TODO: I'm not doing anything with these hashes at the moment, need to push them
+                    # to the DB
                     hash = hashlib.sha256()
                     hash.update(hashlib.sha256(sectorMetadata.encode()).digest())
                     hash.update(hashlib.sha256(sectorContent.encode()).digest())
@@ -184,14 +186,14 @@ class UniverseManager(object):
                 except Exception as ex:
                     logging.error(f'Stock universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
 
-        if progressCallback:
-            try:
-                progressCallback(
-                    f'Converting: Complete!',
-                    len(sectorNames),
-                    len(sectorNames))
-            except Exception as ex:
-                logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
+            if progressCallback:
+                try:
+                    progressCallback(
+                        f'Converting: Complete!',
+                        len(sectorNames),
+                        len(sectorNames))
+                except Exception as ex:
+                    logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
 
         universeId = str(uuid.uuid4())
         universePath = UniverseManager._universeDbFilePath(id=universeId)

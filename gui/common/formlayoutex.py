@@ -488,10 +488,13 @@ class FormLayoutEx(QtWidgets.QFormLayout):
 
         if isinstance(field, QtWidgets.QWidget):
             return field.isEnabled()
-
-        for child in field.children():
-            if self._shouldEnableLabel(child):
-                return True
+        elif isinstance(field, QtWidgets.QLayout):
+            for index in range(field.count()):
+                item = field.itemAt(index)
+                if item.widget() and self._shouldEnableLabel(item.widget()):
+                    return True
+                elif item.layout() and self._shouldEnableLabel(item.layout()):
+                    return True
 
         return False
 
