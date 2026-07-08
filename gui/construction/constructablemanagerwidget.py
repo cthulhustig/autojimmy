@@ -104,19 +104,19 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Minimum)
 
         self._newAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.NewFile), 'New', self)
+            gui.loadIcon(gui.Icon.FileNew), 'New', self)
         self._newAction.triggered.connect(self._newClicked)
         self._sectionList.addAction(self._newAction)
         self._toolbar.addAction(self._newAction)
 
         self._saveAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.SaveFile), 'Save...', self)
+            gui.loadIcon(gui.Icon.FileSave), 'Save...', self)
         self._saveAction.triggered.connect(self._saveClicked)
         self._sectionList.addAction(self._saveAction)
         self._toolbar.addAction(self._saveAction)
 
         self._renameAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.RenameFile), 'Rename...', self)
+            gui.loadIcon(gui.Icon.FileRename), 'Rename...', self)
         self._renameAction.triggered.connect(self._renameClicked)
         self._sectionList.addAction(self._renameAction)
         self._toolbar.addAction(self._renameAction)
@@ -128,25 +128,25 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
         self._toolbar.addAction(self._revertAction)
 
         self._copyAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.CopyFile), 'Copy', self)
+            gui.loadIcon(gui.Icon.FileCopy), 'Copy', self)
         self._copyAction.triggered.connect(self._copyClicked)
         self._sectionList.addAction(self._copyAction)
         self._toolbar.addAction(self._copyAction)
 
         self._deleteAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.DeleteFile), 'Delete...', self)
+            gui.loadIcon(gui.Icon.FileDelete), 'Delete...', self)
         self._deleteAction.triggered.connect(self._deleteClicked)
         self._sectionList.addAction(self._deleteAction)
         self._toolbar.addAction(self._deleteAction)
 
         self._importAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.ImportFile), 'Import...', self)
+            gui.loadIcon(gui.Icon.FileImport), 'Import...', self)
         self._importAction.triggered.connect(self._importClicked)
         self._sectionList.addAction(self._importAction)
         self._toolbar.addAction(self._importAction)
 
         self._exportAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.ExportFile), 'Export...', self)
+            gui.loadIcon(gui.Icon.FileExport), 'Export...', self)
         self._exportAction.triggered.connect(self._exportClicked)
         self._sectionList.addAction(self._exportAction)
         self._toolbar.addAction(self._exportAction)

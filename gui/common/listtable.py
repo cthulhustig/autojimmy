@@ -1013,8 +1013,8 @@ class FrozenColumnListTable(ListTable):
         self._frozenColumnWidget.setHorizontalHeaderLabels(labels)
         super().setHorizontalHeaderLabels(labels)
 
-        unfrozenIcon = gui.loadIcon(gui.Icon.UnfrozenColumn)
-        frozenIcon = gui.loadIcon(gui.Icon.FrozenColumn)
+        unfrozenIcon = gui.loadIcon(gui.Icon.ColumnUnlocked)
+        frozenIcon = gui.loadIcon(gui.Icon.ColumnLocked)
         for column in range(self.horizontalHeader().count()):
             item = self.horizontalHeaderItem(column)
             item.setData(QtCore.Qt.ItemDataRole.DecorationRole, unfrozenIcon)
@@ -1026,8 +1026,8 @@ class FrozenColumnListTable(ListTable):
         frozenItem = None
         if item:
             frozenItem = item.clone()
-            item.setData(QtCore.Qt.ItemDataRole.DecorationRole, gui.loadIcon(gui.Icon.UnfrozenColumn))
-            frozenItem.setData(QtCore.Qt.ItemDataRole.DecorationRole, gui.loadIcon(gui.Icon.FrozenColumn))
+            item.setData(QtCore.Qt.ItemDataRole.DecorationRole, gui.loadIcon(gui.Icon.ColumnUnlocked))
+            frozenItem.setData(QtCore.Qt.ItemDataRole.DecorationRole, gui.loadIcon(gui.Icon.ColumnLocked))
 
         self._frozenColumnWidget.setHorizontalHeaderItem(column, frozenItem)
         super().setHorizontalHeaderItem(column, item)
