@@ -325,8 +325,13 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
                     database.UniqueConstraintDef(columnNames=['sector_x', 'sector_y']),
-                    # TODO: I'm really not sure about making this unique. The only reason to really is so sector hex
-                    # format only has one valid value.
+                    # TODO: I'm really not sure about making this unique as it just adds corner cases. The only
+                    # reason I can see to have it is so sector hex strings have a unique mapping, but I don't
+                    # really use them that much. They're used in the LabelStore for world labels when rendering
+                    # and for completion in HexSelectComboBox (look for things that use splitSectorHex and keep
+                    # tracing). The labels can probably be bodged by somehow limiting the sectors considered to
+                    # the official chartered space sectors, the completion could be handled by having it return
+                    # multiple hexes if there are multiple sectors that match.
                     database.UniqueConstraintDef(columnNames=['name'])])
 
             self._database.createTable(

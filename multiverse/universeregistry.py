@@ -197,6 +197,8 @@ class UniverseRegistry(object):
                 requiredSchemaVersion=UniverseRegistry._UniversesTableSchema,
                 columns=[
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    # TODO: I'm really not sure about this having to be unique. It doesn't need to be and just causes
+                    # corner cases when managing universes
                     database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False, isUnique=True),
                     # TODO: Description should be stored in the universe DB rather than registry as you want it included
                     # if someone distributes a db file
@@ -222,14 +224,14 @@ class UniverseRegistry(object):
     def _removeUniverse(
             self,
             cursor: sqlite3.Cursor,
-            universeId: str
+            id: str
             ) -> None:
         sql = """
             DELETE FROM {table}
             WHERE id = :id
             """.format(
             table=UniverseRegistry._UniversesTableName)
-        cursor.execute(sql, {'id': universeId})
+        cursor.execute(sql, {'id': id})
 
     def _listUniverses(
             self,

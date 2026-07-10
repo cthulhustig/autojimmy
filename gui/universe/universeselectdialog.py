@@ -44,7 +44,7 @@ class UniverseSelectDialog(gui.DialogEx):
         self._universeListGroupBox.setLayout(layout)
 
     def _setupDialogButtons(self) -> None:
-        self._newButton = QtWidgets.QPushButton('New')
+        self._newButton = QtWidgets.QPushButton('New...')
         self._newButton.clicked.connect(self._newUniverseClicked)
 
         self._okButton = QtWidgets.QPushButton('OK')
@@ -72,9 +72,10 @@ class UniverseSelectDialog(gui.DialogEx):
             for universe in universes:
                 item = QtWidgets.QListWidgetItem(universe.name())
                 item.setData(QtCore.Qt.ItemDataRole.UserRole, universe)
+                self._universeList.addItem(item)
+
                 if oldCurrentUniverseInfo and oldCurrentUniverseInfo.id() == universe.id():
                     newCurrentItem = item
-                self._universeList.addItem(item)
 
         if newCurrentItem:
             self._universeList.setCurrentItem(newCurrentItem)

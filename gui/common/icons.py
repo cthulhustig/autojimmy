@@ -35,6 +35,8 @@ class Icon(enum.Enum):
     DatabaseDelete = 'database_delete.svg'
     DatabaseRename = 'database_rename.svg'
     DatabaseStar = 'database_star.svg'
+    DatabaseImport = 'database_import.svg'
+    DatabaseExport = 'database_export.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override

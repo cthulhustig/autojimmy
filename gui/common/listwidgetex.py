@@ -35,6 +35,10 @@ class ListWidgetEx(QtWidgets.QListWidget):
                 return item
         return None
 
+    def rowData(self, row: int, role: QtCore.Qt.ItemDataRole) -> typing.Any:
+        item = self.item(row)
+        return item.data(role) if item else None
+
     def currentData(self, role: QtCore.Qt.ItemDataRole) -> typing.Any:
         currentItem = self.currentItem()
         return currentItem.data(role) if currentItem else None

@@ -1,4 +1,5 @@
 import common
+import database
 import hashlib
 import logging
 import multiverse
@@ -87,8 +88,8 @@ class UniverseManager(object):
             self,
             name: str,
             milieu: str,
-            description: str,
-            importTravellerMap: bool,
+            description: str = '',
+            importTravellerMap: bool = False,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
             reporter: typing.Optional[common.Reporter] = None
             ) -> str: # Universe Id
@@ -305,6 +306,53 @@ class UniverseManager(object):
         dbPath = UniverseManager._universeDbFilePath(id=universeId)
         if os.path.isfile(dbPath):
             os.remove(dbPath)
+
+    def importUniverse(
+            self,
+            name: str,
+            importPath: str,
+            description: str = ''
+            ) -> str: # Universe ID
+        # TODO: Need something to check that the specified file is a universe
+        # file _AND_ it's a version supported by this version of the app. It's
+        # VERY IMPORTANT that I don't construct a UniverseDb using the importPath
+        # as doing that will create the tables which would be bad if the user
+        # accidentally selected the wrong DB file
+        # TODO: Need something to check there isn't already a universe with the
+        # same name (or I remove that restriction elsewhere in the code)
+
+        universeId = str(uuid.uuid4())
+
+        universePath = UniverseManager._universeDbFilePath(id=universeId)
+        if os.path.exists(universePath):
+            raise RuntimeError(f'Universe database {universePath!r} already exists')
+
+        try:
+            database.copyDatabase(
+                src=importPath,
+                dst=universePath)
+
+            self._registry.addUniverse(
+                id=universeId,
+                name=name,
+                description=description)
+        except:
+            if os.path.exists(universePath):
+                os.remove(universePath)
+            raise
+
+        return universeId
+
+    def exportUniverse(self, universeId: str, exportPath: str) -> None:
+        info = UniverseManager._registry.universeById(id=universeId)
+        if info is None:
+            raise ValueError(f'Universe {universeId!r} doesn\'t exist')
+
+        dbPath = UniverseManager._universeDbFilePath(id=universeId)
+
+        database.copyDatabase(
+            src=dbPath,
+            dst=exportPath)
 
     def setUniverseName(
             self,
