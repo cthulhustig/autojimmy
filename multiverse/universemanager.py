@@ -93,6 +93,9 @@ class UniverseManager(object):
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
             reporter: typing.Optional[common.Reporter] = None
             ) -> str: # Universe Id
+        if not name.strip():
+            raise ValueError(f'Universe name can\'t be empty')
+
         if self.universeInfoByName(name) is not None:
             raise ValueError(f'A Universe named {name!r} already exists')
 
@@ -321,6 +324,9 @@ class UniverseManager(object):
         # TODO: Need something to check there isn't already a universe with the
         # same name (or I remove that restriction elsewhere in the code)
 
+        if not name.strip():
+            raise ValueError(f'Universe name can\'t be empty')
+
         universeId = str(uuid.uuid4())
 
         universePath = UniverseManager._universeDbFilePath(id=universeId)
@@ -358,12 +364,19 @@ class UniverseManager(object):
             self,
             universeId: str,
             name: str) -> None:
-        info = UniverseManager._registry.universeByName(name=name)
-        if info:
-            if info.id() == universeId:
-                # There is no change in name so nothing to do
-                return
+        if not name.strip():
+            raise ValueError(f'Universe name can\'t be empty')
 
+        info = UniverseManager._registry.universeById(id=universeId)
+        if info is None:
+            raise ValueError(f'Universe {universeId!r} doesn\'t exist')
+
+        if info.name() == name:
+            return # The universe already has the specified name
+
+        # TODO: This would be one of the checks to remove if I drop the unique
+        # universe name constraint
+        if UniverseManager._registry.universeByName(name=name):
             # There is already a universe with the same name
             raise ValueError(f'Universe named {name!r} already exists')
 

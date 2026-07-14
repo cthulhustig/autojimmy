@@ -49,7 +49,7 @@ class UniverseRegistry(object):
             description: str = '',
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseRegister adding universe {id} ({name})')
+        logging.debug(f'UniverseRegister adding universe {id!r} ({name!r})')
 
         if transaction != None:
             connection = transaction.connection()
@@ -72,7 +72,7 @@ class UniverseRegistry(object):
             id: str,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseRegister removing universe {id}')
+        logging.debug(f'UniverseRegister removing universe {id!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -108,7 +108,7 @@ class UniverseRegistry(object):
             transaction: typing.Optional[database.Transaction] = None
             ) -> typing.Optional[UniverseInfo]:
         logging.debug(
-            f'UniverseRegister retrieving info for universe with id {id}')
+            f'UniverseRegister retrieving info for universe with id {id!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -128,7 +128,7 @@ class UniverseRegistry(object):
             transaction: typing.Optional[database.Transaction] = None
             ) -> typing.Optional[UniverseInfo]:
         logging.debug(
-            f'UniverseRegister retrieving info for universe with name "{name}"')
+            f'UniverseRegister retrieving info for universe with name {name!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -148,7 +148,7 @@ class UniverseRegistry(object):
             name: str,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseRegister setting name of universe {id} to "{name}"')
+        logging.debug(f'UniverseRegister setting name of universe {id!r} to {name!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -170,7 +170,7 @@ class UniverseRegistry(object):
             description: str,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseRegister setting description for universe {id} to "{description}"')
+        logging.debug(f'UniverseRegister setting description for universe {id!r} to {description!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -229,8 +229,7 @@ class UniverseRegistry(object):
         sql = """
             DELETE FROM {table}
             WHERE id = :id
-            """.format(
-            table=UniverseRegistry._UniversesTableName)
+            """.format(table=UniverseRegistry._UniversesTableName)
         cursor.execute(sql, {'id': id})
 
     def _listUniverses(
@@ -240,8 +239,7 @@ class UniverseRegistry(object):
         sql = """
             SELECT id, name, description
             FROM {table};
-            """.format(
-            table=UniverseRegistry._UniversesTableName)
+            """.format(table=UniverseRegistry._UniversesTableName)
         cursor.execute(sql)
 
         universeList = []
@@ -262,8 +260,7 @@ class UniverseRegistry(object):
             FROM {table}
             WHERE id = :id
             LIMIT 1;
-            """.format(
-            table=UniverseRegistry._UniversesTableName)
+            """.format(table=UniverseRegistry._UniversesTableName)
         cursor.execute(sql, {'id': id})
 
         row = cursor.fetchone()
@@ -285,8 +282,7 @@ class UniverseRegistry(object):
             FROM {table}
             WHERE name = :name
             LIMIT 1;
-            """.format(
-            table=UniverseRegistry._UniversesTableName)
+            """.format(table=UniverseRegistry._UniversesTableName)
         cursor.execute(sql, {'name': name})
 
         row = cursor.fetchone()
@@ -308,8 +304,7 @@ class UniverseRegistry(object):
             UPDATE {table}
             SET name = :name
             WHERE id = :id;
-            """.format(
-            table=UniverseRegistry._UniversesTableName)
+            """.format(table=UniverseRegistry._UniversesTableName)
         # TODO: Does this throw if the entry doesn't exist or do I need to check a return value?
         cursor.execute(sql, {'id': id, 'name': name})
 
@@ -323,7 +318,6 @@ class UniverseRegistry(object):
             UPDATE {table}
             SET description = :description
             WHERE id = :id;
-            """.format(
-            table=UniverseRegistry._UniversesTableName)
+            """.format(table=UniverseRegistry._UniversesTableName)
         # TODO: Does this throw if the entry doesn't exist or do I need to check a return value?
         cursor.execute(sql, {'id': id, 'description': description})

@@ -37,6 +37,7 @@ class Icon(enum.Enum):
     DatabaseStar = 'database_star.svg'
     DatabaseImport = 'database_import.svg'
     DatabaseExport = 'database_export.svg'
+    Star = 'star.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override

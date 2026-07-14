@@ -83,6 +83,7 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
 
 class ListTable(gui.TableWidgetEx):
     iconClicked = QtCore.pyqtSignal(int)
+    currentRowChanged = QtCore.pyqtSignal(int, int)
 
     class MenuAction(enum.Enum):
         CopyAsCsv = enum.auto()
@@ -139,6 +140,8 @@ class ListTable(gui.TableWidgetEx):
         itemDelegate = gui.StyledItemDelegateEx()
         itemDelegate.setHighlightCurrentItem(enabled=False)
         self.setItemDelegate(itemDelegate)
+
+        self.currentCellChanged.connect(self._currentCellChanged)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -810,6 +813,16 @@ class ListTable(gui.TableWidgetEx):
         item = self.item(row, column)
         return item.text() if item else ''
 
+    def _currentCellChanged(
+            self,
+            currentRow: int,
+            currentColumn: int,
+            previousRow: int,
+            previousColumn: int
+            ) -> None:
+        if currentRow != previousRow:
+            self.currentRowChanged.emit(currentRow, previousRow)
+
 # Based on code from here
 # https://github.com/baoboa/pyqt5/blob/master/examples/itemviews/frozencolumn/frozencolumn.py
 class FrozenColumnListTable(ListTable):
@@ -886,6 +899,10 @@ class FrozenColumnListTable(ListTable):
         self._frozenColumnWidget.verticalScrollBar().valueChanged.connect(self.verticalScrollBar().setValue)
 
         self._frozenColumnWidget.customContextMenuRequested.connect(self._frozenContextMenuRequested)
+
+        # Connect currentCellChanged on frozen widget to this widgets currentCellChanged
+        # handler (defined in ListView) so the currentRowChanged event works
+        self._frozenColumnWidget.currentCellChanged.connect(self._currentCellChanged)
 
         self.horizontalHeader().sectionMoved.connect(self._columnMoved)
 
