@@ -300,6 +300,11 @@ class UniverseManagerDialog(gui.DialogEx):
         if universeInfo is None:
             return
 
+        activeId = app.Config.instance().value(option=app.ConfigOption.Universe)
+        if universeInfo.id() == activeId:
+            gui.MessageBoxEx.critical(parent=self, text='The active universe can\'t be deleted.')
+            return
+
         answer = gui.MessageBoxEx.question(
             parent=self,
             text=f'Are you sure you want to delete universe {universeInfo.name()!r}?\nThis cannot be undone!')
@@ -454,7 +459,7 @@ class UniverseManagerDialog(gui.DialogEx):
             activeId is not None and \
             selectedUniverseId == activeId
 
-        self._deleteUniverseAction.setEnabled(hasSelection)
+        self._deleteUniverseAction.setEnabled(hasSelection and not selectedIsActive)
         self._renameUniverseAction.setEnabled(hasSelection)
         self._makeActiveUniverseAction.setEnabled(hasSelection and not selectedIsActive)
         self._exportUniverseAction.setEnabled(hasSelection)
