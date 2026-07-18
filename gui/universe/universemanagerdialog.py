@@ -12,6 +12,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # info about the selected universe
 # - Minimum it needs to show the multiline description along with the option to edit it
 # - Could also show sector count, world count etc
+# TODO: This needs a welcome dialog explaining what it is
 
 class _PreventSetToEmptyDelegate(gui.StyledItemDelegateEx):
     def __init__(self, parent: typing.Optional[QtCore.QObject] = None) -> None:
@@ -113,7 +114,7 @@ class _UniverseTable(gui.ListTable):
         self._activeColumnDelegate = _CenteredIconItemDelegate()
         self.setItemDelegateForColumn(1, self._activeColumnDelegate)
 
-        self.itemChanged.connect(self._inPlaceRename)
+        self.itemChanged.connect(self._itemDataChanged)
         self.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.DoubleClicked)
 
     def universe(self, row: int) -> typing.Optional[multiverse.UniverseInfo]:
@@ -133,6 +134,18 @@ class _UniverseTable(gui.ListTable):
         if row < 0:
             return None
         return self.universe(row)
+
+    def setActiveUniverse(self, id: str) -> None:
+        for row in range(self.rowCount()):
+            item = self.item(row, 1)
+            if item is None:
+                continue
+
+            universeInfo = self.universe(row)
+            if id == universeInfo.id():
+                item.setIcon(self._starIcon)
+            else:
+                item.setIcon(QtGui.QIcon())
 
     def syncUniverseList(self, activeId: typing.Optional[str]) -> None:
         oldCurrentRow = self.currentRow()
@@ -181,12 +194,17 @@ class _UniverseTable(gui.ListTable):
             # TODO: Need to check this actually works
             self.setCurrentRow(self.currentRow())
 
-    def _inPlaceRename(self, item: QtWidgets.QListWidgetItem) -> None:
+    def _itemDataChanged(self, item: QtWidgets.QListWidgetItem) -> None:
+        if self.columnFromItem(item) != 0:
+            return
+
         universeInfo: typing.Optional[multiverse.UniverseInfo] = item.data(
             QtCore.Qt.ItemDataRole.UserRole)
         if universeInfo is None:
             return
-        self.inPlaceRename.emit(universeInfo.id(), item.text())
+
+        if universeInfo.name() != item.text():
+            self.inPlaceRename.emit(universeInfo.id(), item.text())
 
 class UniverseManagerDialog(gui.DialogEx):
     _IconSize = 24
@@ -207,8 +225,8 @@ class UniverseManagerDialog(gui.DialogEx):
         self._setupDialogButtons()
 
         dialogLayout = QtWidgets.QVBoxLayout()
-        dialogLayout.addWidget(self._universeListGroupBox)
-        dialogLayout.addLayout(self._buttonLayout)
+        dialogLayout.addLayout(self._universeListLayout)
+        dialogLayout.addLayout(self._dialogButtonLayout)
 
         self.setLayout(dialogLayout)
 
@@ -265,20 +283,17 @@ class UniverseManagerDialog(gui.DialogEx):
         self._universeTable.addAction(self._exportUniverseAction)
         self._toolbar.addAction(self._exportUniverseAction)
 
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self._toolbar)
-        layout.addWidget(self._universeTable)
-
-        self._universeListGroupBox = QtWidgets.QGroupBox('Universe')
-        self._universeListGroupBox.setLayout(layout)
+        self._universeListLayout = QtWidgets.QVBoxLayout()
+        self._universeListLayout.addWidget(self._toolbar)
+        self._universeListLayout.addWidget(self._universeTable)
 
     def _setupDialogButtons(self) -> None:
         self._closeButton = QtWidgets.QPushButton('Close')
         self._closeButton.clicked.connect(self.accept)
 
-        self._buttonLayout = QtWidgets.QHBoxLayout()
-        self._buttonLayout.addStretch()
-        self._buttonLayout.addWidget(self._closeButton)
+        self._dialogButtonLayout = QtWidgets.QHBoxLayout()
+        self._dialogButtonLayout.addStretch()
+        self._dialogButtonLayout.addWidget(self._closeButton)
 
     def _selectedUniverseChanged(
             self,
@@ -293,6 +308,7 @@ class UniverseManagerDialog(gui.DialogEx):
             return
 
         self._syncUniverseList()
+        self._setActiveUniverse(dlg.universeId())
         self._selectUniverse(dlg.universeId())
 
     def _deleteUniverse(self) -> None:
@@ -300,8 +316,7 @@ class UniverseManagerDialog(gui.DialogEx):
         if universeInfo is None:
             return
 
-        activeId = app.Config.instance().value(option=app.ConfigOption.Universe)
-        if universeInfo.id() == activeId:
+        if universeInfo.id() == self._activeUniverse():
             gui.MessageBoxEx.critical(parent=self, text='The active universe can\'t be deleted.')
             return
 
@@ -378,12 +393,7 @@ class UniverseManagerDialog(gui.DialogEx):
         universeInfo = self._universeTable.currentUniverse()
         if universeInfo is None:
             return
-
-        app.Config.instance().setValue(
-            option=app.ConfigOption.Universe,
-            value=universeInfo.id())
-
-        self._syncUniverseList()
+        self._setActiveUniverse(universeInfo.id())
 
     def _importUniverse(self) -> None:
         path, filter = gui.FileDialogEx.getOpenFileName(
@@ -405,12 +415,8 @@ class UniverseManagerDialog(gui.DialogEx):
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(parent=self, text=message, exception=ex)
 
-        # Make the imported universe the active universe
-        app.Config.instance().setValue(
-            option=app.ConfigOption.Universe,
-            value=universeId)
-
         self._syncUniverseList()
+        self._setActiveUniverse(universeId)
         self._selectUniverse(universeId)
 
     def _exportUniverse(self) -> None:
@@ -443,14 +449,14 @@ class UniverseManagerDialog(gui.DialogEx):
             self,
             firstSync: bool = False
             ) -> None:
-        activeId = app.Config.instance().value(option=app.ConfigOption.Universe)
+        activeId = self._activeUniverse()
         self._universeTable.syncUniverseList(activeId=activeId)
         if firstSync and activeId:
             self._universeTable.setCurrentUniverse(id=activeId)
         self._syncActionStates()
 
     def _syncActionStates(self) -> None:
-        activeId = app.Config.instance().value(option=app.ConfigOption.Universe)
+        activeId = self._activeUniverse()
         universeInfo = self._universeTable.currentUniverse()
         hasSelection = universeInfo is not None
         selectedUniverseId = universeInfo.id() if hasSelection else None
@@ -463,3 +469,17 @@ class UniverseManagerDialog(gui.DialogEx):
         self._renameUniverseAction.setEnabled(hasSelection)
         self._makeActiveUniverseAction.setEnabled(hasSelection and not selectedIsActive)
         self._exportUniverseAction.setEnabled(hasSelection)
+
+    def _activeUniverse(self) -> typing.Optional[str]:
+        id = app.Config.instance().value(option=app.ConfigOption.Universe)
+        # Currently the active universe will be an empty string if
+        # it's not set rather than null. To prevent bugs in consuming
+        # code, force it to null if it's not set
+        return None if not id else id
+
+    def _setActiveUniverse(self, id: str) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.Universe,
+            value=id)
+        self._universeTable.setActiveUniverse(id)
+

@@ -6,7 +6,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 class WindowManager(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
-    _customUniverseWindow: typing.Optional[gui.CustomUniverseWindow] = None
+    _universeEditorWindow: typing.Optional[gui.CustomUniverseWindow] = None
     _worldComparisonWindow: typing.Optional[gui.WorldComparisonWindow] = None
     _worldSearchWindow: typing.Optional[gui.WorldSearchWindow] = None
     _jumpRouteWindow: typing.Optional[gui.JumpRouteWindow] = None
@@ -36,8 +36,8 @@ class WindowManager(object):
         return cls._instance
 
     def closeWindows(self) -> None:
-        if self._customUniverseWindow:
-            self._customUniverseWindow.close()
+        if self._universeEditorWindow:
+            self._universeEditorWindow.close()
         if self._worldComparisonWindow:
             self._worldComparisonWindow.close()
         if self._worldSearchWindow:
@@ -69,11 +69,11 @@ class WindowManager(object):
             window.close()
         self._dynamicWindows.clear()
 
-    def showCustomUniverseWindow(self) -> 'gui.CustomUniverseWindow':
-        if not self._customUniverseWindow:
-            self._customUniverseWindow = gui.CustomUniverseWindow()
-        self._customUniverseWindow.bringToFront()
-        return self._customUniverseWindow
+    def showUniverseEditorWindow(self) -> 'gui.CustomUniverseWindow':
+        if not self._universeEditorWindow:
+            self._universeEditorWindow = gui.CustomUniverseWindow()
+        self._universeEditorWindow.bringToFront()
+        return self._universeEditorWindow
 
     def showWorldComparisonWindow(self) -> 'gui.WorldComparisonWindow':
         if not self._worldComparisonWindow:

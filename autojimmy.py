@@ -323,8 +323,11 @@ class MainWindow(QtWidgets.QMainWindow):
         refereeGroupBox = QtWidgets.QGroupBox('Referee Tools')
         refereeGroupBox.setLayout(refereeLayout)
 
-        self._customUniverseButton = QtWidgets.QPushButton('Custom Universe...', self)
-        self._customUniverseButton.clicked.connect(self._showCustomUniverse)
+        self._universeManagerButton = QtWidgets.QPushButton('Custom Manager...', self)
+        self._universeManagerButton.clicked.connect(self._showUniverseManager)
+
+        self._universeEditorButton = QtWidgets.QPushButton('Custom Editor...', self)
+        self._universeEditorButton.clicked.connect(self._showUniverseEditor)
 
         self._downloadButton = QtWidgets.QPushButton('Download Universe Data...', self)
         self._downloadButton.clicked.connect(self._downloadUniverse)
@@ -339,7 +342,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._aboutButton.customContextMenuRequested.connect(self._showDebugMenu)
 
         systemLayout = QtWidgets.QVBoxLayout()
-        systemLayout.addWidget(self._customUniverseButton)
+        systemLayout.addWidget(self._universeManagerButton)
+        systemLayout.addWidget(self._universeEditorButton)
         systemLayout.addWidget(self._downloadButton)
         systemLayout.addWidget(self._configurationButton)
         systemLayout.addWidget(self._aboutButton)
@@ -416,8 +420,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 parent=self,
                 text=f'Some changes will only be applied when {app.AppName} is restarted.')
 
-    def _showCustomUniverse(self) -> None:
-        gui.WindowManager.instance().showCustomUniverseWindow()
+    def _showUniverseManager(self) -> None:
+        dlg = gui.UniverseManagerDialog(parent=self)
+        dlg.exec()
+
+    def _showUniverseEditor(self) -> None:
+        gui.WindowManager.instance().showUniverseEditorWindow()
 
     # TODO: If the the current universe is a custom universe this should probably give
     # a warning telling the user that their universe won't update.

@@ -401,6 +401,14 @@ class ListTable(gui.TableWidgetEx):
         self._checkRowFiltering(row=row)
         return item
 
+    def rowFromItem(self, item) -> int:
+        index = self.indexFromItem(item)
+        return index.row() if index is not None else -1
+
+    def columnFromItem(self, item) -> int:
+        index = self.indexFromItem(item)
+        return index.column() if index is not None else -1
+
     def setRowFilter(
             self,
             filterType: common.StringFilterType,
