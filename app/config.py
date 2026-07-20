@@ -23,6 +23,9 @@ class ColourTheme(enum.Enum):
     UseOSSetting = 'Use OS Setting'
 
 class ConfigOption(enum.Enum):
+    # System
+    FirstRunSetupComplete = 1
+
     # Debug
     LogLevel = 100
 
@@ -1038,6 +1041,12 @@ class Config(QtCore.QObject):
 
         self._configItems.clear()
 
+        self._addConfigItem(BoolConfigItem(
+            option=ConfigOption.FirstRunSetupComplete,
+            key='System/FirstRunSetupComplete',
+            restart=False,
+            default=False))
+
         self._addConfigItem(MappedConfigItem(
             option=ConfigOption.LogLevel,
             key='Debug/LogLevel',
@@ -1359,6 +1368,8 @@ class Config(QtCore.QObject):
                         traveller.TradeCode.ForbiddenWorld: logic.TagLevel.Danger}
                 })))
 
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.FirstRunSetupComplete], futureValue: bool = False) -> bool: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.LogLevel], futureValue: bool = False) -> int: ...
     @typing.overload

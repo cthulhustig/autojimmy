@@ -87,13 +87,9 @@ class ImportLegacyCustomSectorsJob(jobs.ProgressJob):
                 continue
 
             universePath = os.path.join(basePath, milieu)
-            if multiverse.haveLegacyCustomSectorsBeenImported(universePath):
-                continue
-
             multiverse.importLegacyCustomSectors(
                 directoryPath=universePath,
                 universeId=universeInfo.id(),
-                appVersion=app.AppVersion,
                 progressCallback=progressCallback,
                 reporter=reporter)
 

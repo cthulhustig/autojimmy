@@ -12,8 +12,6 @@ import typing
 # delete it once I'm sure nobody will be upgrading from a version so old
 # it will still be using custom sectors stored in the filesystem
 
-_ImportFlagFileName = 'database_import_flag_file'
-
 _SectorFormatExtensions = {
     # NOTE: The sec format is short for second survey, not the legacy sec format
     survey.SectorFormat.T5Column: 'sec',
@@ -22,23 +20,12 @@ _MetadataFormatExtensions = {
     survey.MetadataFormat.JSON: 'json',
     survey.MetadataFormat.XML: 'xml'}
 
-def haveLegacyCustomSectorsBeenImported(directoryPath: str) -> bool:
-    if not os.path.isdir(directoryPath):
-        return False # No directory means nothing to import
-
-    path = os.path.join(directoryPath, _ImportFlagFileName)
-    return os.path.exists(path)
-
 def importLegacyCustomSectors(
         directoryPath: str,
         universeId: str,
-        appVersion: str,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
         reporter: typing.Optional[common.Reporter] = None
         ) -> None:
-    if haveLegacyCustomSectorsBeenImported(directoryPath):
-        raise RuntimeError('Legacy custom sectors have already been imported')
-
     if reporter:
         reporter.pushPrefix('Stock Allegiances: ')
     try:
@@ -124,11 +111,7 @@ def importLegacyCustomSectors(
             exc_info=ex)
 
     if not sectorData:
-        # No legacy custom sectors to load but still create the flag file to indicate
-        # custom sectors have been imported to avoid going through this process again
-        _createLegacySectorsImportedFlagFile(
-            directoryPath=directoryPath,
-            appVersion=appVersion)
+        # No legacy custom sectors to import
         return
 
     dbSectors: typing.List[multiverse.DbSector] = []
@@ -203,27 +186,9 @@ def importLegacyCustomSectors(
 
     if not dbSectors:
         # There were legacy custom sectors but none of the could be loaded.
-        # Still create the flag file to indicate custom sectors have been
-        # imported to avoid going through this process again
-        _createLegacySectorsImportedFlagFile(
-            directoryPath=directoryPath,
-            appVersion=appVersion)
         return
 
     multiverse.UniverseManager.instance().updateSectors(
         id=universeId,
         sectors=dbSectors,
         progressCallback=progressCallback)
-
-    # Create flag file to indicate custom sectors have already been imported.
-    _createLegacySectorsImportedFlagFile(
-        directoryPath=directoryPath,
-        appVersion=appVersion)
-
-def _createLegacySectorsImportedFlagFile(
-        directoryPath: str,
-        appVersion: str
-        ) -> None:
-    flagFilePath = os.path.join(directoryPath, _ImportFlagFileName)
-    with open(flagFilePath, 'w') as file:
-        file.write(appVersion)

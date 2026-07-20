@@ -185,10 +185,8 @@ def _updateSnapshot(
         _SnapshotCheckResult.Cancelled
 
 def _firstRunSetup(appDir: str) -> bool: # True if the app should continue, False if it should exit
-    # TODO: Check if this is the first time tha app has been run
-    isFirstRun = True
-
-    if not isFirstRun:
+    setupComplete = app.Config.instance().value(option=app.ConfigOption.FirstRunSetupComplete)
+    if setupComplete:
         return True # Nothing to do
 
     progressDlg = gui.ProgressJobDialog()
@@ -205,15 +203,21 @@ def _firstRunSetup(appDir: str) -> bool: # True if the app should continue, Fals
     # when exec is called on the application
     # https://doc.qt.io/qt-6/qobject.html#deleteLater
     progressDlg.deleteLater()
+    if result != QtWidgets.QDialog.DialogCode.Accepted:
+        return False
 
-    return result == QtWidgets.QDialog.DialogCode.Accepted
+    app.Config.instance().setValue(
+        option=app.ConfigOption.FirstRunSetupComplete,
+        value=True)
+
+    return True
 
 def _loadData() -> bool: # True if the app should continue, False if it should exit
     universeId = app.Config.instance().value(option=app.ConfigOption.Universe)
     universeInfo = multiverse.UniverseManager.instance().universeInfoById(universeId) if universeId else None
     if universeInfo is None:
         if universeId:
-            message = f'Selected Universe {universeId!r} is unknown'
+            message = f'Selected Universe {universeId!r} doesn\'t exist'
             logging.error(message)
             gui.MessageBoxEx.critical(message)
 
