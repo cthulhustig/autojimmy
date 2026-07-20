@@ -337,8 +337,7 @@ class UniverseManager(object):
     def importUniverse(
             self,
             name: str,
-            importPath: str,
-            description: str = ''
+            importPath: str
             ) -> str: # Universe ID
         # TODO: Need something to check there isn't already a universe with the
         # same name (or I remove that restriction elsewhere in the code)
