@@ -31,6 +31,30 @@ import uuid
 # option when I add it to the custom universe creation dialog
 # TODO: Top level functions should log that they were called
 
+class UniverseInfo(object):
+    def __init__(
+            self,
+            id: str,
+            name: str,
+            description: str
+            ) -> None:
+        common.validateMandatoryStr(name='id', value=id, allowEmpty=False)
+        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
+        common.validateMandatoryStr(name='description', value=description, allowEmpty=True)
+
+        self._id = id
+        self._name = name
+        self._description = description
+
+    def id(self) -> str:
+        return self._id
+
+    def name(self) -> str:
+        return self._name
+
+    def description(self) -> str:
+        return self._description
+
 class UniverseManager(object):
     _RegistryFileName = 'registry.db'
     _UniversesDir = 'universes'
@@ -215,8 +239,11 @@ class UniverseManager(object):
         # to be created on disk
         universeDb = multiverse.UniverseDb(universePath=universePath)
 
-        if dbSectors:
-            with universeDb.createTransaction() as transaction:
+        with universeDb.createTransaction() as transaction:
+            universeDb.setMilieu(milieu=milieu, transaction=transaction)
+            universeDb.setDescription(description=description, transaction=transaction)
+
+            if dbSectors:
                 sectorCount = len(dbSectors)
                 for progressCount, sector in enumerate(dbSectors):
                     if progressCallback:
@@ -233,10 +260,7 @@ class UniverseManager(object):
         # Only add the universe to the registry after the database has been
         # created to avoid dangling entries if creating the database fails
         try:
-            UniverseManager._registry.addUniverse(
-                id=universeId,
-                name=name,
-                description=description)
+            UniverseManager._registry.addUniverse(id=universeId, name=name)
         except Exception:
             # Attempt to tidy up by deleting the universe database
             try:
@@ -255,15 +279,15 @@ class UniverseManager(object):
 
     def updateSectors(
                 self,
-                universeId: str,
+                id: str,
                 sectors: typing.Collection[multiverse.DbSector],
                 progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None,
                 ) -> str: # Universe Id
-            universeInfo = UniverseManager._registry.universeById(id=universeId)
+            universeInfo = UniverseManager._registry.universeById(id=id)
             if not universeInfo:
-                raise ValueError(f'Unknown universe {universeId!r}')
+                raise ValueError(f'Unknown universe {id!r}')
 
-            universePath = UniverseManager._universeDbFilePath(id=universeId)
+            universePath = UniverseManager._universeDbFilePath(id=id)
             if not os.path.exists(universePath):
                 raise RuntimeError(f'Universe database {universePath!r} already exists')
 
@@ -297,16 +321,16 @@ class UniverseManager(object):
                 except Exception as ex:
                     logging.warning('UniverseManager sector update progress callback threw an exception', exc_info=ex)
 
-            return universeId
+            return id
 
-    def deleteUniverse(self, universeId: str) -> None:
-        info = UniverseManager._registry.universeById(id=universeId)
+    def deleteUniverse(self, id: str) -> None:
+        info = UniverseManager._registry.universeById(id=id)
         if info is None:
-            raise ValueError(f'Universe {universeId!r} doesn\'t exist')
+            raise ValueError(f'Universe {id!r} doesn\'t exist')
 
-        UniverseManager._registry.removeUniverse(id=universeId)
+        UniverseManager._registry.removeUniverse(id=id)
 
-        dbPath = UniverseManager._universeDbFilePath(id=universeId)
+        dbPath = UniverseManager._universeDbFilePath(id=id)
         if os.path.isfile(dbPath):
             os.remove(dbPath)
 
@@ -316,16 +340,14 @@ class UniverseManager(object):
             importPath: str,
             description: str = ''
             ) -> str: # Universe ID
-        # TODO: Need something to check that the specified file is a universe
-        # file _AND_ it's a version supported by this version of the app. It's
-        # VERY IMPORTANT that I don't construct a UniverseDb using the importPath
-        # as doing that will create the tables which would be bad if the user
-        # accidentally selected the wrong DB file
         # TODO: Need something to check there isn't already a universe with the
         # same name (or I remove that restriction elsewhere in the code)
 
         if not name.strip():
             raise ValueError(f'Universe name can\'t be empty')
+
+        if not multiverse.UniverseDb.isUniverseDb(universePath=importPath):
+            raise ValueError(f'File {importPath!r} is not a universe database')
 
         universeId = str(uuid.uuid4())
 
@@ -338,10 +360,7 @@ class UniverseManager(object):
                 src=importPath,
                 dst=universePath)
 
-            self._registry.addUniverse(
-                id=universeId,
-                name=name,
-                description=description)
+            self._registry.addUniverse(id=universeId, name=name)
         except:
             if os.path.exists(universePath):
                 os.remove(universePath)
@@ -349,12 +368,12 @@ class UniverseManager(object):
 
         return universeId
 
-    def exportUniverse(self, universeId: str, exportPath: str) -> None:
-        info = UniverseManager._registry.universeById(id=universeId)
+    def exportUniverse(self, id: str, exportPath: str) -> None:
+        info = UniverseManager._registry.universeById(id=id)
         if info is None:
-            raise ValueError(f'Universe {universeId!r} doesn\'t exist')
+            raise ValueError(f'Universe {id!r} doesn\'t exist')
 
-        dbPath = UniverseManager._universeDbFilePath(id=universeId)
+        dbPath = UniverseManager._universeDbFilePath(id=id)
 
         database.copyDatabase(
             src=dbPath,
@@ -362,14 +381,14 @@ class UniverseManager(object):
 
     def setUniverseName(
             self,
-            universeId: str,
+            id: str,
             name: str) -> None:
         if not name.strip():
             raise ValueError(f'Universe name can\'t be empty')
 
-        info = UniverseManager._registry.universeById(id=universeId)
+        info = UniverseManager._registry.universeById(id=id)
         if info is None:
-            raise ValueError(f'Universe {universeId!r} doesn\'t exist')
+            raise ValueError(f'Universe {id!r} doesn\'t exist')
 
         if info.name() == name:
             return # The universe already has the specified name
@@ -380,45 +399,60 @@ class UniverseManager(object):
             # There is already a universe with the same name
             raise ValueError(f'Universe named {name!r} already exists')
 
-        UniverseManager._registry.setUniverseName(id=universeId, name=name)
+        UniverseManager._registry.setUniverseName(id=id, name=name)
+
+    def universeDescription(self, id: str) -> str:
+        universeInfo = UniverseManager._registry.universeById(id=id)
+        if not universeInfo:
+            raise ValueError(f'Unknown universe {id!r}')
+
+        dbPath = UniverseManager._universeDbFilePath(id=id)
+        universeDb = multiverse.UniverseDb(universePath=dbPath)
+        return universeDb.description()
 
     def setUniverseDescription(
             self,
             id: str,
             description: str
             ) -> None:
-        UniverseManager._registry.setUniverseDescription(id=id, description=description)
+        universeInfo = UniverseManager._registry.universeById(id=id)
+        if not universeInfo:
+            raise ValueError(f'Unknown universe {id!r}')
+
+        dbPath = UniverseManager._universeDbFilePath(id=id)
+        universeDb = multiverse.UniverseDb(universePath=dbPath)
+        universeDb.setDescription(description=description)
 
     def sectorInfos(
             self,
-            universeId: str
+            id: str
             ) -> typing.List[multiverse.SectorInfo]:
-        universeInfo = UniverseManager._registry.universeById(id=universeId)
+        universeInfo = UniverseManager._registry.universeById(id=id)
         if not universeInfo:
-            raise ValueError(f'Unknown universe {universeId!r}')
+            raise ValueError(f'Unknown universe {id!r}')
 
-        dbPath = UniverseManager._universeDbFilePath(id=universeId)
+        dbPath = UniverseManager._universeDbFilePath(id=id)
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
         return universeDb.listSectors()
 
     def sectors(
             self,
-            universeId: str,
+            id: str,
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
             ) -> typing.List[multiverse.DbSector]:
-        return list(self.yieldSectors(universeId=universeId, progressCallback=progressCallback))
+        return list(self.yieldSectors(id=id, progressCallback=progressCallback))
 
     def yieldSectors(
             self,
-            universeId: str,
+            id: str,
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
             ) -> typing.Generator[multiverse.DbSector, None, None]:
-        universeInfo = UniverseManager._registry.universeById(id=universeId)
+        universeInfo = UniverseManager._registry.universeById(id=id)
         if not universeInfo:
-            raise ValueError(f'Unknown universe {universeId!r}')
+            raise ValueError(f'Unknown universe {id!r}')
 
-        dbPath = UniverseManager._universeDbFilePath(id=universeId)
+        dbPath = UniverseManager._universeDbFilePath(id=id)
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
         with universeDb.createTransaction() as transaction:

@@ -211,7 +211,7 @@ def importLegacyCustomSectors(
         return
 
     multiverse.UniverseManager.instance().updateSectors(
-        universeId=universeId,
+        id=universeId,
         sectors=dbSectors,
         progressCallback=progressCallback)
 

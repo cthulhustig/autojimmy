@@ -24,7 +24,7 @@ def loadUniverseFromDatabase(
     # covering loading the sectors then a long pause at the end
     # while it converts them all to astronomer sectors.
     dbSectorGenerator = multiverse.UniverseManager.instance().yieldSectors(
-        universeId=universeId,
+        id=universeId,
         progressCallback=progressCallback)
     sectors = []
     for dbSector in dbSectorGenerator:

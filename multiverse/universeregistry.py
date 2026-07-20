@@ -10,24 +10,18 @@ class UniverseInfo(object):
             self,
             id: str,
             name: str,
-            description: str = ''
             ) -> None:
         common.validateMandatoryStr(name='id', value=id, allowEmpty=False)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-        common.validateMandatoryStr(name='description', value=description, allowEmpty=True)
 
         self._id = id
         self._name = name
-        self._description = description
 
     def id(self) -> str:
         return self._id
 
     def name(self) -> str:
         return self._name
-
-    def description(self) -> str:
-        return self._description
 
 class UniverseRegistry(object):
     _UniversesTableName = 'universes'
@@ -46,7 +40,6 @@ class UniverseRegistry(object):
             self,
             id: str,
             name: str,
-            description: str = '',
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
         logging.debug(f'UniverseRegister adding universe {id!r} ({name!r})')
@@ -56,7 +49,6 @@ class UniverseRegistry(object):
             self._addUniverse(
                 id=id,
                 name=name,
-                description=description,
                 cursor=connection.cursor())
         else:
             with self._database.createTransaction() as transaction:
@@ -64,7 +56,6 @@ class UniverseRegistry(object):
                 self._addUniverse(
                     id=id,
                     name=name,
-                    description=description,
                     cursor=connection.cursor())
 
     def removeUniverse(
@@ -164,28 +155,6 @@ class UniverseRegistry(object):
                     name=name,
                     cursor=connection.cursor())
 
-    def setUniverseDescription(
-            self,
-            id: str,
-            description: str,
-            transaction: typing.Optional[database.Transaction] = None
-            ) -> None:
-        logging.debug(f'UniverseRegister setting description for universe {id!r} to {description!r}')
-
-        if transaction != None:
-            connection = transaction.connection()
-            return self._setUniverseDescription(
-                id=id,
-                description=description,
-                cursor=connection.cursor())
-        else:
-            with self._database.createTransaction() as transaction:
-                connection = transaction.connection()
-                return self._setUniverseDescription(
-                    id=id,
-                    description=description,
-                    cursor=connection.cursor())
-
     def _initDatabase(self) -> None:
         with self._database.createTransaction() as transaction:
             connection = transaction.connection()
@@ -199,26 +168,21 @@ class UniverseRegistry(object):
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     # TODO: I'm really not sure about this having to be unique. It doesn't need to be and just causes
                     # corner cases when managing universes
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False, isUnique=True),
-                    # TODO: Description should be stored in the universe DB rather than registry as you want it included
-                    # if someone distributes a db file
-                    database.ColumnDef(columnName='description', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)])
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False, isUnique=True)])
 
     def _addUniverse(
             self,
             cursor: sqlite3.Cursor,
             id: str,
-            name: str,
-            description: str
+            name: str
             ) -> None:
         sql = """
-            INSERT INTO {table} (id, name, description)
-            VALUES (:id, :name, :description);
+            INSERT INTO {table} (id, name)
+            VALUES (:id, :name);
             """.format(table=UniverseRegistry._UniversesTableName)
         rowData = {
             'id': id,
-            'name': name,
-            'description': description}
+            'name': name}
         cursor.execute(sql, rowData)
 
     def _removeUniverse(
@@ -237,7 +201,7 @@ class UniverseRegistry(object):
             cursor: sqlite3.Cursor
             ) -> typing.List[UniverseInfo]:
         sql = """
-            SELECT id, name, description
+            SELECT id, name
             FROM {table};
             """.format(table=UniverseRegistry._UniversesTableName)
         cursor.execute(sql)
@@ -246,8 +210,7 @@ class UniverseRegistry(object):
         for row in cursor.fetchall():
             universeList.append(UniverseInfo(
                 id=row[0],
-                name=row[1],
-                description=row[2]))
+                name=row[1]))
         return universeList
 
     def _universeById(
@@ -256,7 +219,7 @@ class UniverseRegistry(object):
             id: str
             ) -> typing.Optional[UniverseInfo]:
         sql = """
-            SELECT name, description
+            SELECT name
             FROM {table}
             WHERE id = :id
             LIMIT 1;
@@ -269,8 +232,7 @@ class UniverseRegistry(object):
 
         return UniverseInfo(
             id=id,
-            name=row[0],
-            description=row[1])
+            name=row[0])
 
     def _universeByName(
             self,
@@ -278,7 +240,7 @@ class UniverseRegistry(object):
             name: str
             ) -> typing.Optional[UniverseInfo]:
         sql = """
-            SELECT id, description
+            SELECT id
             FROM {table}
             WHERE name = :name
             LIMIT 1;
@@ -291,8 +253,7 @@ class UniverseRegistry(object):
 
         return UniverseInfo(
             id=row[0],
-            name=name,
-            description=row[1])
+            name=name)
 
     def _setUniverseName(
             self,
@@ -307,17 +268,3 @@ class UniverseRegistry(object):
             """.format(table=UniverseRegistry._UniversesTableName)
         # TODO: Does this throw if the entry doesn't exist or do I need to check a return value?
         cursor.execute(sql, {'id': id, 'name': name})
-
-    def _setUniverseDescription(
-            self,
-            cursor: sqlite3.Cursor,
-            id: str,
-            description: str
-            ) -> None:
-        sql = """
-            UPDATE {table}
-            SET description = :description
-            WHERE id = :id;
-            """.format(table=UniverseRegistry._UniversesTableName)
-        # TODO: Does this throw if the entry doesn't exist or do I need to check a return value?
-        cursor.execute(sql, {'id': id, 'description': description})

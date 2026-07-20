@@ -272,13 +272,10 @@ class SchemaDb(object):
 
     _TableSchemaTableName = 'table_schemas'
 
-    _MetadataTableName = 'metadata'
-    _MetadataTableSchema = 1
-
     def __init__(self, dbPath: str) -> None:
         self._dbPath = dbPath
 
-        self._initDatabase()
+        self._initTables()
 
     def createConnection(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self._dbPath)
@@ -467,13 +464,10 @@ class SchemaDb(object):
         finally:
             srcConnection.close()
 
-    def _initDatabase(self) -> None:
-        connection = None
-        cursor = None
-        try:
-            connection = self.createConnection()
+    def _initTables(self) -> None:
+        with self.createTransaction() as transaction:
+            connection = transaction.connection()
             cursor = connection.cursor()
-            cursor.execute('BEGIN;')
 
             # Create table schema table
             if not database.checkIfTableExists(
@@ -487,17 +481,6 @@ class SchemaDb(object):
                     """.format(table=SchemaDb._TableSchemaTableName)
                 logging.info(f'SchemaDb creating \'{SchemaDb._TableSchemaTableName}\' table in \'{self._dbPath}\'')
                 cursor.execute(sql)
-
-            cursor.execute('END;')
-        except:
-            if cursor:
-                try:
-                    cursor.execute('ROLLBACK;')
-                except:
-                    pass
-            if connection:
-                connection.close()
-            raise
 
     def _writeSchemaVersion(
             self,

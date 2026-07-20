@@ -3,6 +3,7 @@ import database
 import datetime
 import logging
 import multiverse
+import os
 import sqlite3
 import typing
 
@@ -84,6 +85,12 @@ class SectorInfo(object):
         return self._stockDataHash
 
 class UniverseDb(object):
+    _MetadataTableName = 'metadata'
+    _MetadataTableSchema = 1
+    _MetadataFormatKey = 'format'
+    _MetadataMilieuKey = 'milieu'
+    _MetadataDescriptionKey = 'description'
+
     _SectorsTableName = 'sectors'
     _SectorsTableSchema = 1
 
@@ -171,12 +178,42 @@ class UniverseDb(object):
     _ProductsTableName = 'products'
     _ProductsTableSchema = 1
 
+    _FormatString = 'Auto-Jimmy Universe v1.0'
+
     _database = None
 
     def __init__(self, universePath: str) -> None:
         self._universePath = universePath
+        if os.path.exists(self._universePath):
+            # The path exists so check if it's a valid database
+            if not UniverseDb.isUniverseDb(self._universePath):
+                raise ValueError(f'File {universePath!r} is not a universe database')
+
         self._database = database.SchemaDb(dbPath=universePath)
         self._initTables()
+
+    @staticmethod
+    def isUniverseDb(universePath: str) -> bool:
+        connection = None
+        try:
+            connection = sqlite3.connect(universePath)
+            cursor = connection.cursor()
+            sql = """
+                SELECT value
+                FROM {metadataTable}
+                WHERE key = :key
+                LIMIT 1;
+                """.format(metadataTable=UniverseDb._MetadataTableName)
+            cursor.execute(sql, {'key': UniverseDb._MetadataFormatKey})
+            row = cursor.fetchone()
+            if not row:
+                return False
+            return row[0] == UniverseDb._FormatString
+        except:
+            return False
+        finally:
+            if connection:
+                connection.close()
 
     def createConnection(self) -> None:
         return self._database.createConnection()
@@ -190,11 +227,95 @@ class UniverseDb(object):
             onCommitCallback=onCommitCallback,
             onRollbackCallback=onRollbackCallback)
 
+    def milieu(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> str:
+        logging.debug(f'UniverseDb reading milieu for universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            milieu = self._readMetadata(
+                cursor=connection.cursor(),
+                key=UniverseDb._MetadataMilieuKey)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                milieu = self._readMetadata(
+                    cursor=connection.cursor(),
+                    key=UniverseDb._MetadataMilieuKey)
+
+        if milieu is None:
+            raise ValueError('UniverseDb {self._universePath!r} has no milieu metadata')
+        return milieu
+
+    def setMilieu(
+            self,
+            milieu: str,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        logging.debug(f'UniverseDb setting milieu for universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._writeMetadata(
+                cursor=connection.cursor(),
+                key=UniverseDb._MetadataMilieuKey,
+                value=milieu)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._writeMetadata(
+                    cursor=connection.cursor(),
+                    key=UniverseDb._MetadataMilieuKey,
+                    value=milieu)
+
+    def description(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> str:
+        logging.debug(f'UniverseDb reading description for universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            description = self._readMetadata(
+                cursor=connection.cursor(),
+                key=UniverseDb._MetadataDescriptionKey)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                description = self._readMetadata(
+                    cursor=connection.cursor(),
+                    key=UniverseDb._MetadataDescriptionKey)
+
+        return description if description is not None else ''
+
+    def setDescription(
+            self,
+            description: str,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        logging.debug(f'UniverseDb setting description for universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._writeMetadata(
+                cursor=connection.cursor(),
+                key=UniverseDb._MetadataDescriptionKey,
+                value=description)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._writeMetadata(
+                    cursor=connection.cursor(),
+                    key=UniverseDb._MetadataDescriptionKey,
+                    value=description)
+
     def listSectors(
             self,
             transaction: typing.Optional[database.Transaction] = None
             ) -> typing.List[SectorInfo]:
-        logging.debug(f'UniverseDb listing sectors in universe \'{self._universePath}\'')
+        logging.debug(f'UniverseDb listing sectors in universe {self._universePath!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -210,7 +331,7 @@ class UniverseDb(object):
             stockDataHash: typing.Optional[str] = None,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseDb saving sector {sector.id()} to universe \'{self._universePath}\'')
+        logging.debug(f'UniverseDb saving sector {sector.id()!r} to universe {self._universePath!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -227,7 +348,7 @@ class UniverseDb(object):
             sectorId: str,
             transaction: typing.Optional[database.Transaction] = None
             ) -> multiverse.DbSector:
-        logging.debug(f'UniverseDb loading sector {sectorId} from universe \'{self._universePath}\'')
+        logging.debug(f'UniverseDb loading sector {sectorId!r} from universe {self._universePath!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -245,7 +366,7 @@ class UniverseDb(object):
             self,
             transaction: typing.Optional[database.Transaction] = None
             ) -> typing.List[multiverse.DbSector]:
-        logging.debug(f'UniverseDb loading sector from universe \'{self._universePath}\'')
+        logging.debug(f'UniverseDb loading sector from universe {self._universePath!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -262,7 +383,7 @@ class UniverseDb(object):
             sectorId: str,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseDb deleting sector {sectorId} from universe \'{self._universePath}\'')
+        logging.debug(f'UniverseDb deleting sector {sectorId!r} from universe {self._universePath!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -280,7 +401,7 @@ class UniverseDb(object):
             self,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseDb clearing sectors in universe \'{self._universePath}\'')
+        logging.debug(f'UniverseDb clearing sectors in universe {self._universePath!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -303,6 +424,18 @@ class UniverseDb(object):
         with self.createTransaction() as transaction:
             connection = transaction.connection()
             cursor = connection.cursor()
+
+            self._database.createTable(
+                cursor=cursor,
+                tableName=UniverseDb._MetadataTableName,
+                requiredSchemaVersion=UniverseDb._MetadataTableSchema,
+                columns=[
+                    database.ColumnDef(columnName='key', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='value', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)])
+            self._writeMetadata(
+                cursor=cursor,
+                key=UniverseDb._MetadataFormatKey,
+                value=UniverseDb._FormatString)
 
             self._database.createTable(
                 cursor=cursor,
@@ -342,6 +475,12 @@ class UniverseDb(object):
                     # NOTE: It's very important that if I ever add anything to this table I also
                     # update _saveSector so, it's maintained when the old sector data is deleted
                     # and the new sector data is added.
+                    # TODO: I think I want this to be different
+                    # - Rename table to something like sector_source
+                    # - Store mapping between sector position and sector/metadata hash
+                    # - Written whenever stock data is imported and contains entries for each sector updated
+                    # - Read when importing updated stock data in order to work out what to import
+                    # - Replaced with new data for stock sectors after update
                     database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
@@ -771,6 +910,37 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
+    def _readMetadata(
+            self,
+            cursor: sqlite3.Cursor,
+            key: str
+            ) -> typing.Optional[str]:
+        sql = """
+            SELECT value
+            FROM {metadataTable}
+            WHERE key = :key
+            LIMIT 1;
+            """.format(metadataTable=UniverseDb._MetadataTableName)
+        cursor.execute(sql, {'key': key})
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return row[0]
+
+    def _writeMetadata(
+            self,
+            cursor: sqlite3.Cursor,
+            key: str,
+            value: str
+            ) -> None:
+        sql = """
+            INSERT INTO {metadataTable} (key, value)
+            VALUES (:key, :value)
+            ON CONFLICT(key) DO UPDATE SET
+                value = excluded.value;
+            """.format(metadataTable=UniverseDb._MetadataTableName)
+        cursor.execute(sql, {'key': key, 'value': value})
+
     def _listSectors(
             self,
             cursor: sqlite3.Cursor
@@ -867,7 +1037,7 @@ class UniverseDb(object):
                     products=sectorProductsMap.get(sectorId)))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct sector {sectorId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct sector {sectorId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectors
@@ -986,7 +1156,7 @@ class UniverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         row = cursor.fetchone()
         if not row:
-            raise ValueError(f'Unknown sector {sectorId} in universe \'{self._universePath}\'')
+            raise ValueError(f'Unknown sector {sectorId!r} in universe {self._universePath!r}')
 
         return multiverse.DbSector(
             id=sectorId,
@@ -1073,7 +1243,7 @@ class UniverseDb(object):
                     language=row[3]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct alternate name {nameId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct alternate name {nameId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorNamesMap
@@ -1136,7 +1306,7 @@ class UniverseDb(object):
                     name=row[3]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct subsector name {nameId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct subsector name {nameId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorNamesMap
@@ -1219,7 +1389,7 @@ class UniverseDb(object):
                     borderStyle=row[10]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct allegiance {allegianceId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct allegiance {allegianceId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorAllegiancesMap
@@ -1284,7 +1454,7 @@ class UniverseDb(object):
                     isMajor=True if row[4] else False))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct sophont {sophontId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct sophont {sophontId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorSophontsMap
@@ -1383,7 +1553,7 @@ class UniverseDb(object):
                     bodies=systemBodiesMap.get(systemId)))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct system {systemId} from \'{self._universePath}\'',
+                    f'UniverseDb failed to construct system {systemId!r} from {self._universePath!r}',
                     exc_info=ex)
 
         return sectorSystemsMap
@@ -1474,7 +1644,7 @@ class UniverseDb(object):
                     allegianceId=row[14]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct route {routeId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct route {routeId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorRoutesMap
@@ -1574,7 +1744,7 @@ class UniverseDb(object):
                     hexes=hexes))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct border {borderId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct border {borderId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorBordersMap
@@ -1669,7 +1839,7 @@ class UniverseDb(object):
                     hexes=hexes))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct region {regionId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct region {regionId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorRegionsMap
@@ -1742,7 +1912,7 @@ class UniverseDb(object):
                     wrap=True if row[7] else False))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct label {labelId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct label {labelId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorLabelsMap
@@ -1803,7 +1973,7 @@ class UniverseDb(object):
                     tag=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct tag {tagId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct tag {tagId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorTagsMap
@@ -1872,7 +2042,7 @@ class UniverseDb(object):
                     reference=row[5]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct product {productId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct product {productId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorProductsMap
@@ -1945,7 +2115,7 @@ class UniverseDb(object):
                     spectralScale=row[4]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct star {starId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct star {starId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemStarsMap
@@ -2147,7 +2317,7 @@ class UniverseDb(object):
                     customRemarks=worldRemarksMap.get(bodyId)))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct body {bodyId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct body {bodyId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemBodiesMap
@@ -2227,7 +2397,7 @@ class UniverseDb(object):
                     code=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct nobility {nobilityId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct nobility {nobilityId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemNobilitiesMap
@@ -2307,7 +2477,7 @@ class UniverseDb(object):
                     code=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct base {baseId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct base {baseId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemBasesMap
@@ -2387,7 +2557,7 @@ class UniverseDb(object):
                     code=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct trade code {tradeCodeId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct trade code {tradeCodeId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemTradeCodesMap
@@ -2473,7 +2643,7 @@ class UniverseDb(object):
                     isDieBack=True if row[5] else False))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct sophont population {populationId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct sophont population {populationId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemPopulationsMap
@@ -2553,7 +2723,7 @@ class UniverseDb(object):
                     allegianceId=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct ruling allegiance {rulerId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct ruling allegiance {rulerId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemRulingAllegianceMap
@@ -2637,7 +2807,7 @@ class UniverseDb(object):
                     sectorAbbreviation=row[4]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct owning system {ownerId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct owning system {ownerId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemOwnersMap
@@ -2721,7 +2891,7 @@ class UniverseDb(object):
                     sectorAbbreviation=row[4]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct colony system {colonyId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct colony system {colonyId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemColoniesMap
@@ -2801,7 +2971,7 @@ class UniverseDb(object):
                     code=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct research station {stationId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct research station {stationId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemResearchStationsMap
@@ -2881,7 +3051,7 @@ class UniverseDb(object):
                     remark=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct custom remark {remarkId} from universe \'{self._universePath}\'',
+                    f'UniverseDb failed to construct custom remark {remarkId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemRemarksMap

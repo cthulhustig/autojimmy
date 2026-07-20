@@ -325,6 +325,8 @@ class ListTable(gui.TableWidgetEx):
                 self.removeRow(row)
 
     def setCurrentRow(self, row: int) -> None:
+        if row == self.currentRow():
+            return
         self.setCurrentCell(row, 0)
 
     def removeAllRows(self) -> None:

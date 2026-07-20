@@ -690,8 +690,117 @@ class OptionalDoubleSpinBox(_BaseOptionalSpinBox):
         return super().minimum()
 
 class TextEditEx(QtWidgets.QTextEdit):
+    delayedTextEdited = QtCore.pyqtSignal()
+
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, f: typing.Union[QtWidgets.QTextEdit.AutoFormatting, QtWidgets.QTextEdit.AutoFormattingFlag]) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._delayedTextEditedTimer = None
+
+    def enableDelayedTextEdited(
+            self,
+            msecs: int
+            ) -> None:
+        if not self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer = QtCore.QTimer()
+            self._delayedTextEditedTimer.setSingleShot(True)
+            self._delayedTextEditedTimer.timeout.connect(self._delayedTextEditedFired)
+            self.textChanged.connect(self._primeDelayedTextEdited)
+        self._delayedTextEditedTimer.setInterval(msecs)
+
+    def disableDelayedTextEdited(self) -> None:
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+            del self._delayedTextEditedTimer
+            self._delayedTextEditedTimer = None
+        self.textChanged.disconnect(self._primeDelayedTextEdited)
+
+    def setHtml(self, text: typing.Optional[str]) -> None:
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+
+        # We don't want setting the text programmatically to trigger
+        # a delayed edit event as they should only be generated in
+        # response to user edits so move the timer sideways while the
+        # edit is made
+        delayedTextEditedTimer = self._delayedTextEditedTimer
+        self._delayedTextEditedTimer = None
+        try:
+            super().setHtml(text)
+        finally:
+            self._delayedTextEditedTimer = delayedTextEditedTimer
+
+    def setPlainText(self, text: typing.Optional[str]) -> None:
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+
+        # We don't want setting the text programmatically to trigger
+        # a delayed edit event as they should only be generated in
+        # response to user edits so move the timer sideways while the
+        # edit is made
+        delayedTextEditedTimer = self._delayedTextEditedTimer
+        self._delayedTextEditedTimer = None
+        try:
+            super().setPlainText(text)
+        finally:
+            self._delayedTextEditedTimer = delayedTextEditedTimer
+
+    def setText(self, text: typing.Optional[str]) -> None:
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+
+        # We don't want setting the text programmatically to trigger
+        # a delayed edit event as they should only be generated in
+        # response to user edits so move the timer sideways while the
+        # edit is made
+        delayedTextEditedTimer = self._delayedTextEditedTimer
+        self._delayedTextEditedTimer = None
+        try:
+            super().setText(text)
+        finally:
+            self._delayedTextEditedTimer = delayedTextEditedTimer
+
+    def clear(self):
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+
+        # We don't want setting the text programmatically to trigger
+        # a delayed edit event as they should only be generated in
+        # response to user edits so move the timer sideways while the
+        # edit is made
+        delayedTextEditedTimer = self._delayedTextEditedTimer
+        self._delayedTextEditedTimer = None
+        try:
+            super().clear()
+        finally:
+            self._delayedTextEditedTimer = delayedTextEditedTimer
+
     def isEmpty(self) -> bool:
         return self.document().isEmpty()
+
+    def _primeDelayedTextEdited(self) -> None:
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.start()
+
+    def _delayedTextEditedFired(self) -> None:
+        self.delayedTextEdited.emit()
 
 class LineEditEx(QtWidgets.QLineEdit):
     regexValidityChanged = QtCore.pyqtSignal(bool)
@@ -747,6 +856,14 @@ class LineEditEx(QtWidgets.QLineEdit):
         if self._delayedTextEditedTimer:
             self._delayedTextEditedTimer.stop()
         return super().setText(text)
+
+    def clear(self):
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+        return super().clear()
 
     def enableDelayedTextEdited(
             self,
