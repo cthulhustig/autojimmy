@@ -4,7 +4,6 @@ import common
 import logging
 import threading
 import typing
-import weakref
 
 # TODO: Need to have controls other than map subscribe to be notified when changes
 # occur and update their state when they do

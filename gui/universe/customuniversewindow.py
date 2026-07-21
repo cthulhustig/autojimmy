@@ -6,27 +6,14 @@ import common
 import enum
 import gui
 import logging
-import multiverse
-import os
 import survey
 import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 # TODO: Welcome message
-# TODO: Check if current universe is custom when window first opens and, if it's not, prompt to create a new one
-# - Should close window if user chooses not to create one. Not sure how best to do this it should really be destroyed rather than just hidden like other windows
-# - Needs to have the option to create one from the traveller map data or an empty universe
-# - Need the option to regenerate trade codes for a rule system
-#   - It might be worth having this option when creating a universe from traveller map data _and_ when importing a sector file into a universe
-# TODO: Ability to select the sector to import the new sector to
-# - Not sure if I still need a way to have it use the position specified in the metadata file
-# TODO: When creating first universe need to make sure it explains that it won't auto update from traveller map
+# - Cover fact universe no longer auto updates to latest traveller map data and how the user can update it
 # TODO: Something that causes other windows to update when new sectors are imported
-# TODO: A list of which sectors have been modified so the user can jump between them
-# TODO: If you delete a custom sector it could give the user the option to restore the equivalent sector from the stock database
 # TODO: Option to update unmodified sectors to the versions from the stock database
-# TODO: When creating a custom universe, give the option to not include sectors with the Faraway tag
-# - This will mean not using a DB file copy to create the new sector
 
 class CustomUniverseWindow(gui.WindowWidget):
     class Actions(enum.StrEnum):

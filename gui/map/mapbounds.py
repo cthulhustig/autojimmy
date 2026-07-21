@@ -2,7 +2,6 @@
 import astronomer
 import common
 import gui
-import math
 import cartographer
 import typing
 from PyQt5 import QtCore, QtGui
@@ -107,7 +106,7 @@ class BoundsGraphics(cartographer.AbstractGraphics):
 
     def setWorldToImageTransform(self, matrix: gui.MapMatrix) -> None:
         self._transformStack.clear()
-        self._transformStack.append(QtGui.QTransform())  
+        self._transformStack.append(QtGui.QTransform())
 
     def scaleTransform(self, scaleX: float, scaleY: float) -> None:
         if scaleX == 1.0 and scaleY == 1.0:
