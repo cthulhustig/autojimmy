@@ -90,6 +90,7 @@ class ImportLegacyCustomSectorsJob(jobs.ProgressJob):
             multiverse.importLegacyCustomSectors(
                 directoryPath=universePath,
                 universeId=universeInfo.id(),
+                milieu=milieu,
                 progressCallback=progressCallback,
                 reporter=reporter)
 

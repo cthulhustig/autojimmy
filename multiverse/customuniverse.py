@@ -23,6 +23,7 @@ _MetadataFormatExtensions = {
 def importLegacyCustomSectors(
         directoryPath: str,
         universeId: str,
+        milieu: str,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
         reporter: typing.Optional[common.Reporter] = None
         ) -> None:
@@ -160,13 +161,12 @@ def importLegacyCustomSectors(
                     reporter.popPrefix()
 
             # NOTE: If there is a stock sector where this custom sector is going to
-            # be placed, use the same sector id as the stock one. This is important
-            # to have the creation/modified time/stock hash set correctly in the
-            # sector metadata
+            # be placed, the database code requires that the new sector object has
+            # the same id as the one to be replaced.
             existingSectorInfo = existingSectorInfos.get((rawMetadata.x(), rawMetadata.y()))
             dbSector = multiverse.convertRawSectorToDbSector(
                 sectorId=existingSectorInfo.id() if existingSectorInfo else None,
-                milieu='M1105', # TODO: Need to do this properly, problem is I don't know the Milieu
+                milieu=milieu,
                 rawMetadata=rawMetadata,
                 rawSystems=rawSystems,
                 rawStockAllegiances=rawStockAllegiances,
