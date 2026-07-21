@@ -298,10 +298,10 @@ class MainWindow(QtWidgets.QMainWindow):
         refereeGroupBox = QtWidgets.QGroupBox('Referee Tools')
         refereeGroupBox.setLayout(refereeLayout)
 
-        self._universeManagerButton = QtWidgets.QPushButton('Custom Manager...', self)
+        self._universeManagerButton = QtWidgets.QPushButton('Custom Universe Manager...', self)
         self._universeManagerButton.clicked.connect(self._showUniverseManager)
 
-        self._universeEditorButton = QtWidgets.QPushButton('Custom Editor...', self)
+        self._universeEditorButton = QtWidgets.QPushButton('Custom Universe Editor...', self)
         self._universeEditorButton.clicked.connect(self._showUniverseEditor)
 
         self._downloadButton = QtWidgets.QPushButton('Download Universe Data...', self)
