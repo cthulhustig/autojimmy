@@ -24,36 +24,7 @@ import uuid
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-# TODO: Initial universe creation/management
-# - All universes are custom universes that can be edited and they only contain data for a single Milieu
-#       - Avoids confusion as to why you can't edit the "stock" universe
-#       - When a new universe is created, if the user wants stock data, its imported from files at that point
-#           - I don't think I want to give an option to let the user choose if FarAway sectors are imported as
-#           there are so few of them it doesn't warrant it. I think I either want to always include them or always
-#           exclude them.
-#       - Rather than the current sector metadata, I think I want to have a sector_source table that tracks what the source was for sectors
-#           - Rather than index by sector id, it will be indexed by sector position
-#           - Should store the source data hash in the same way as the current sector metadata
-#           - Will need to have wrapper objects so the data can be read and written from the application layer
-#       - Rather than store timestamps per source sector, the timestamp of the map snapshot it was imported from should be stored
-#           - IMPORTANT: This is currently stored in the registry database but should be stored in the universe
-#       - The Milieu the source data was taken from will also need to be stored in the universe database
-#           - This is needed so, if we pull in updates from map snapshot, we know which Milieu to pull them from
-#       - Downside of this is doing auto updates when the stock traveller map changes so I'll need a method to import
-#           - Need to display a list of any custom sectors that have updates and let the user choose what to do
-#           - I'll probably also need to store if the user chose to not import far away as you wouldn't want to import them as part of the update
-# - First Startup
-#   1. Create a universe for each Milieu in the map snapshot
-#   2. Load custom sectors for each Milieu into corresponding universe
-#   3. Add flag indicating custom sectors have been imported
-#   3. Prompt the user asking which universe to load
-#   4. Set the selected universe as the active universe in the config file
-# - Normal Startup
-#   1. Load the active universe
-#       - If it succeeds, nothing more to do
-#   2. Display Universe Management dialog so user can create a universe
-#       - Shouldn't let the user proceed until they create a universe (disable OK button)
-#       - If they cancel the app should exit
+# TODO: Need to allow user to update a universe to a new traveller map snapshot
 # - Update Process
 #   1. Read timestamp from universe DB and compare it with snapshot timestamp
 #      - If the universe DB timestamp is greater or equal, nothing to do

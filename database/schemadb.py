@@ -28,7 +28,7 @@ class ColumnDef(object):
             foreignDeleteOp: typing.Optional[ForeignKeyDeleteOp] = None,
             minValue: typing.Optional[typing.Union[str, int, float]] = None,
             maxValue: typing.Optional[typing.Union[str, int, float]] = None
-            ):
+            ) -> None:
         if not columnName:
             raise ValueError('Column name can\'t be empty')
 
@@ -122,7 +122,7 @@ class UniqueConstraintDef(object):
     def __init__(
             self,
             columnNames: typing.Collection[str]
-            ):
+            ) -> None:
         if not columnNames:
             raise ValueError('Unique constraint column names can\'t be empty')
         for index, name in enumerate(columnNames):
@@ -139,7 +139,7 @@ class ColumnIndexDef(object):
             self,
             columnNames: typing.Collection[str],
             isUnique: bool = False # Match Sqlite default
-            ):
+            ) -> None:
         if not columnNames:
             raise ValueError('Column index column names can\'t be empty')
         for index, name in enumerate(columnNames):
@@ -154,6 +154,16 @@ class ColumnIndexDef(object):
 
     def isUnique(self) -> bool:
         return self._isUnique
+
+class PrimaryKeyDef(object):
+    def __init__(
+            self,
+            columnNames: typing.Collection[str]
+            ) -> None:
+        self._columnNames = list(columnNames)
+
+    def columnNames(self) -> typing.Collection[str]:
+        return self._columnNames
 
 class TableVersionException(Exception):
     def __init__(
@@ -302,6 +312,9 @@ class SchemaDb(object):
             tableName: str,
             columns: typing.Collection[ColumnDef],
             requiredSchemaVersion: int,
+            # The primary keys list is a list of columns to use for a multicolumn
+            # primary key
+            primaryKeyDef: typing.Optional[PrimaryKeyDef] = None,
             # The unique list is a list containing the lists of column names
             # to create unique constraints for
             uniqueConstraints: typing.Optional[typing.Collection[UniqueConstraintDef]] = None,
@@ -356,6 +369,10 @@ class SchemaDb(object):
                     sql += ' UNIQUE'
 
             sql += ',\n'
+
+        if primaryKeyDef:
+            sql += 'PRIMARY KEY ({columns})\n,'.format(
+                columns=', '.join(primaryKeyDef.columnNames()))
 
         for column in columns:
             if column.hasForeignKey():

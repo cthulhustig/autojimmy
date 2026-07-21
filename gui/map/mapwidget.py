@@ -2162,7 +2162,7 @@ class MapWidget(QtWidgets.QWidget):
         # the rect to be invalidated for each scale
         invalidRects: typing.Dict[int, cartographer.RectangleF] = {}
         for key in list(MapWidget._sharedTileCache.keys()):
-            _, _, tileScale, universeId, _, _, _ = key
+            _, _, tileScale, universeId, _, _ = key
             if universeId != self._universe.universeId():
                 continue # Ignore tiles from another universe
 

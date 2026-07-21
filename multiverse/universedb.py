@@ -37,28 +37,19 @@ class SectorInfo(object):
             name: str,
             sectorX: int,
             sectorY: int,
-            abbreviation: typing.Optional[str],
-            createdTimestamp: datetime.datetime,
-            modifiedTimestamp: typing.Optional[datetime.datetime],
-            stockDataHash: typing.Optional[str]
+            abbreviation: typing.Optional[str]
             ) -> None:
         common.validateMandatoryStr(name='id', value=id, allowEmpty=False)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
         common.validateMandatoryInt(name='sectorX', value=sectorX)
         common.validateMandatoryInt(name='sectorY', value=sectorY)
         common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
-        common.validateMandatoryObject(name='createdTimestamp', value=createdTimestamp, objectType=datetime.datetime)
-        common.validateOptionalObject(name='modifiedTimestamp', value=modifiedTimestamp, objectType=datetime.datetime)
-        common.validateOptionalStr(name='stockDataHash', value=stockDataHash, allowEmpty=False)
 
         self._id = id
         self._name = name
         self._sectorX = sectorX
         self._sectorY = sectorY
         self._abbreviation = abbreviation
-        self._createdTimestamp = createdTimestamp
-        self._modifiedTimestamp = modifiedTimestamp
-        self._stockDataHash = stockDataHash
 
     def id(self) -> str:
         return self._id
@@ -75,14 +66,29 @@ class SectorInfo(object):
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
 
-    def createdTimestamp(self) -> datetime.datetime:
-        return self._createdTimestamp
+class StockSourceInfo(object):
+    def __init__(
+            self,
+            sectorX: int,
+            sectorY: int,
+            dataHash: typing.Optional[str]
+            ) -> None:
+        common.validateMandatoryInt(name='sectorX', value=sectorX)
+        common.validateMandatoryInt(name='sectorY', value=sectorY)
+        common.validateOptionalStr(name='dataHash', value=dataHash, allowEmpty=False)
 
-    def modifiedTimestamp(self) -> typing.Optional[datetime.datetime]:
-        return self._modifiedTimestamp
+        self._sectorX = sectorX
+        self._sectorY = sectorY
+        self._dataHash = dataHash
 
-    def stockDataHash(self) -> typing.Optional[str]:
-        return self._stockDataHash
+    def sectorX(self) -> int:
+        return self._sectorX
+
+    def sectorY(self) -> int:
+        return self._sectorY
+
+    def dataHash(self) -> typing.Optional[str]:
+        return self._dataHash
 
 class UniverseDb(object):
     _MetadataTableName = 'metadata'
@@ -94,8 +100,8 @@ class UniverseDb(object):
     _SectorsTableName = 'sectors'
     _SectorsTableSchema = 1
 
-    _SectorMetadataTableName = 'sector_metadata'
-    _SectorMetadataTableSchema = 1
+    _StockSourcesTableName = 'stock_sources'
+    _StockSourcesTableSchema = 1
 
     _AlternateNamesTableName = 'alternate_names'
     _AlternateNamesTableSchema = 1
@@ -469,24 +475,16 @@ class UniverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=UniverseDb._SectorMetadataTableName,
-                requiredSchemaVersion=UniverseDb._SectorMetadataTableSchema,
+                tableName=UniverseDb._StockSourcesTableName,
+                requiredSchemaVersion=UniverseDb._StockSourcesTableSchema,
                 columns=[
                     # NOTE: It's very important that if I ever add anything to this table I also
                     # update _saveSector so, it's maintained when the old sector data is deleted
                     # and the new sector data is added.
-                    # TODO: I think I want this to be different
-                    # - Rename table to something like sector_source
-                    # - Store mapping between sector position and sector/metadata hash
-                    # - Written whenever stock data is imported and contains entries for each sector updated
-                    # - Read when importing updated stock data in order to work out what to import
-                    # - Replaced with new data for stock sectors after update
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='created_timestamp', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='modified_timestamp', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='stock_data_hash', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+                    database.ColumnDef(columnName='sector_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='sector_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='data_hash', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
+                primaryKeyDef=database.PrimaryKeyDef(columnNames=['sector_x', 'sector_y']))
 
             self._database.createTable(
                 cursor=cursor,
@@ -946,13 +944,9 @@ class UniverseDb(object):
             cursor: sqlite3.Cursor
             ) -> typing.List[SectorInfo]:
         sql = """
-            SELECT s.id, s.name, s.sector_x, s.sector_y, s.abbreviation,
-                m.created_timestamp, m.modified_timestamp, m.stock_data_hash
-            FROM {sectorsTable} AS s
-            JOIN {metadataTable} AS m ON m.sector_id = s.id;
-            """.format(
-                sectorsTable=UniverseDb._SectorsTableName,
-                metadataTable=UniverseDb._SectorMetadataTableName)
+            SELECT id, name, sector_x, sector_y, abbreviation
+            FROM {sectorsTable};
+            """.format(sectorsTable=UniverseDb._SectorsTableName)
         parameters = {}
 
         cursor.execute(sql, parameters)
@@ -964,10 +958,7 @@ class UniverseDb(object):
                 name=row[1],
                 sectorX=row[2],
                 sectorY=row[3],
-                abbreviation=row[4],
-                createdTimestamp=UniverseDb._parseTimestampString(content=row[5]),
-                modifiedTimestamp=UniverseDb._parseTimestampString(content=row[6]),
-                stockDataHash=row[7]))
+                abbreviation=row[4]))
         return sectorList
 
     def _loadSectors(
@@ -3063,9 +3054,10 @@ class UniverseDb(object):
             stockDataHash: typing.Optional[str] = None
             ) -> None:
         # Check there isn't a sector at the same position with a different id.
-        # In order for the created/modified/stock hash to work correctly, updating
-        # the sector at an occupied hex should be done by writing an updated sector
-        # with the same id.
+        # To update a sector at a position, the new sector must have the same id.
+        # The only reason this is done is to make deleting the old sector data
+        # easier as it means we can just delete the current sector with the same
+        # id and that handles it even if the sector has changed position.
         sql = """
             SELECT id
             FROM {table}
@@ -3087,6 +3079,8 @@ class UniverseDb(object):
         # In order for the created/modified/stock hash to work correctly, updating
         # the sector at an occupied hex should be done by writing an updated sector
         # with the same id.
+        # TODO: This would be one of the checks to remove if I drop the requirement
+        # that sector names must be unique
         sql = """
             SELECT id
             FROM {table}
@@ -3102,71 +3096,81 @@ class UniverseDb(object):
                 otherId=row[0],
                 name=sector.name()))
 
-        # Query any current metadata so it can be re-added after saving. This
-        # is needed as the metadata is set to cascade delete when the sector
-        # is deleted and the sector will be removed before it's reinserted when
-        # saving
-        sql = """
-            SELECT created_timestamp, stock_data_hash
-            FROM {table}
-            WHERE sector_id = :id
-            LIMIT 1;
-            """.format(table=UniverseDb._SectorMetadataTableName)
-        cursor.execute(sql, {'id': sector.id()})
-        row = cursor.fetchone()
-        createdTimestamp = None
-        if row:
-            createdTimestamp = UniverseDb._parseTimestampString(content=row[0])
-
-            # If the stock data has was supplied as an argument then ignore
-            # the current one read from the metadata
-            if not stockDataHash:
-                stockDataHash = row[1]
-
-        # Delete any old version of the sector and any sector that has at the
-        # same time and place as the new sector
         self._deleteSector(
             sectorId=sector.id(),
-            cursor=cursor)
+            cursor=cursor,
+            # If a stock source data has exists for the sector, don't
+            # delete it as it will be updated below
+            updateSources=False)
         self._insertSector(
             sector=sector,
             cursor=cursor)
 
-        # Reinsert old metadata and set modified time if sector is being updated
-        # rather than created
-        modifiedTimestamp = None
-        if createdTimestamp is None:
-            # A new sector is being created (no modified time is set)
-            createdTimestamp = common.utcnow()
+        if stockDataHash is not None:
+            # A stock data hash was provided so this save is happening
+            # because the sector is been filled with stock data. Create a
+            # mapping between the position the sector was written to and
+            # the data hash for the stock data that is being imported.
+            sql = """
+                INSERT INTO {table} (sector_x, sector_y, data_hash)
+                VALUES (:sector_x, :sector_y, :data_hash)
+                ON CONFLICT(sector_x, sector_y) DO UPDATE SET
+                    data_hash = excluded.data_hash;
+                """.format(table=UniverseDb._StockSourcesTableName)
+            cursor.execute(sql, {
+                'sector_x': sector.sectorX(),
+                'sector_y': sector.sectorY(),
+                'data_hash': stockDataHash})
         else:
-            # An existing sector is being updated so set the modified timestamp
-            # TODO: Need to test modified time is being written to the database once I
-            # add some kind of editing
-            modifiedTimestamp = common.utcnow()
-
-        sql = """
-            INSERT INTO {table} (sector_id, created_timestamp, modified_timestamp, stock_data_hash)
-            VALUES (:sector_id, :created_timestamp, :modified_timestamp, :stock_data_hash);
-            """.format(table=UniverseDb._SectorMetadataTableName)
-        rowData = {
-            'sector_id': sector.id(),
-            'created_timestamp': UniverseDb._formatTimestampString(timestamp=createdTimestamp),
-            'modified_timestamp': UniverseDb._formatTimestampString(timestamp=modifiedTimestamp),
-            'stock_data_hash': stockDataHash}
-        cursor.execute(sql, rowData)
+            # No stock data has was provided so the sector is being
+            # updated with user data. If there was a stock data has
+            # for the position the sector was written to, keep the
+            # entry but set the hash to null. When importing updated
+            # stock data, this lets us detect cases where stock data
+            # was imported but has since been modified by the user so
+            # we need to prompt them to ask if they really want their
+            # chances replaced with stock data
+            sql = """
+                UPDATE {table}
+                SET data_hash = NULL
+                WHERE sector_x = :sector_x AND sector_y = :sector_y;
+                """.format(table=UniverseDb._StockSourcesTableName)
+            cursor.execute(sql, {
+                'sector_x': sector.sectorX(),
+                'sector_y': sector.sectorY()})
 
     def _deleteSector(
             self,
             cursor: sqlite3.Cursor,
-            sectorId: str
+            sectorId: str,
+            updateSources: bool = True
             ) -> None:
+        if updateSources:
+            # If there is a stock data hash for the position the sector
+            # to be deleted is located, set it to null but don't delete
+            # it. When importing updated stock data, this allows us to
+            # detect that case where the data was imported but the user
+            # has since deleted the sector so we should prompt the user
+            # before re-importing the stock data
+            sql = """
+                UPDATE {sourcesTable}
+                SET data_hash = NULL
+                WHERE (sector_x, sector_y) = (
+                    SELECT sector_x, sector_y
+                    FROM {sectorsTable}
+                    WHERE id = :id
+                );
+                """.format(
+                    sourcesTable=UniverseDb._StockSourcesTableName,
+                    sectorsTable=UniverseDb._SectorsTableName)
+            cursor.execute(sql, {'id': sectorId})
+
         sql = """
             DELETE FROM {table}
             WHERE id = :id;
             """.format(
             table=UniverseDb._SectorsTableName)
-        queryData = {'id': sectorId}
-        cursor.execute(sql, queryData)
+        cursor.execute(sql, {'id': sectorId})
 
     def _clearSectors(self, cursor: sqlite3.Cursor) -> None:
         sql = """

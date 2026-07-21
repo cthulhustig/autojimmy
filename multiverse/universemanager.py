@@ -123,7 +123,7 @@ class UniverseManager(object):
         if self.universeInfoByName(name) is not None:
             raise ValueError(f'A Universe named {name!r} already exists')
 
-        dbSectors: typing.List[multiverse.DbSector] = []
+        dbSectorData: typing.List[typing.Tuple[multiverse.DbSector, str]] = []
         if importTravellerMap:
             if reporter:
                 reporter.pushPrefix('Stock Allegiances: ')
@@ -161,7 +161,6 @@ class UniverseManager(object):
                     continue
                 sectorNames.append(canonicalName)
 
-            sourceDataHashes: typing.Dict[multiverse.DbSector, str] = {}
             progressCount = 0
             for sectorName in sectorNames:
                 if progressCallback:
@@ -204,14 +203,12 @@ class UniverseManager(object):
                         rawStockAllegiances=rawStockAllegiances,
                         rawStockSophonts=rawStockSophonts,
                         rawStockStyleSheet=rawStockStyleSheet)
-                    dbSectors.append(dbSector)
 
-                    # TODO: I'm not doing anything with these hashes at the moment, need to push them
-                    # to the DB
-                    hash = hashlib.sha256()
-                    hash.update(hashlib.sha256(sectorMetadata.encode()).digest())
-                    hash.update(hashlib.sha256(sectorContent.encode()).digest())
-                    sourceDataHashes[dbSector] = hash.hexdigest()
+                    dataHash = hashlib.sha256()
+                    dataHash.update(hashlib.sha256(sectorMetadata.encode()).digest())
+                    dataHash.update(hashlib.sha256(sectorContent.encode()).digest())
+
+                    dbSectorData.append((dbSector, dataHash.hexdigest()))
                 except Exception as ex:
                     logging.error(f'Stock universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
 
@@ -243,19 +240,22 @@ class UniverseManager(object):
             universeDb.setMilieu(milieu=milieu, transaction=transaction)
             universeDb.setDescription(description=description, transaction=transaction)
 
-            if dbSectors:
-                sectorCount = len(dbSectors)
-                for progressCount, sector in enumerate(dbSectors):
+            if dbSectorData:
+                sectorCount = len(dbSectorData)
+                for progressCount, (dbSector, dataHash) in enumerate(dbSectorData):
                     if progressCallback:
                         try:
                             progressCallback(
-                                f'Creating: {sector.name()}',
+                                f'Creating: {dbSector.name()}',
                                 progressCount,
                                 sectorCount)
                         except Exception as ex:
                             logging.warning('UniverseManager custom universe creation progress callback threw an exception', exc_info=ex)
 
-                    universeDb.saveSector(sector=sector, transaction=transaction)
+                    universeDb.saveSector(
+                        sector=dbSector,
+                        stockDataHash=dataHash,
+                        transaction=transaction)
 
         # Only add the universe to the registry after the database has been
         # created to avoid dangling entries if creating the database fails
