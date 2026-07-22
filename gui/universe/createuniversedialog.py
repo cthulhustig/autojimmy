@@ -91,10 +91,6 @@ class CreateUniverseDialog(gui.DialogEx):
             gui.MessageBoxEx.critical('The universe must have a name.')
             return
 
-        if multiverse.UniverseManager.instance().universeInfoByName(universeName) is not None:
-            gui.MessageBoxEx.critical(f'A universe named {universeName!r} already exists.')
-            return
-
         milieu = self._milieuComboBox.currentEnum()
         description = self._descriptionEditBox.toPlainText()
         importTravellerMap = self._travellerMapRadioButton.isChecked()

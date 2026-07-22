@@ -113,26 +113,6 @@ class UniverseRegistry(object):
                     id=id,
                     cursor=connection.cursor())
 
-    def universeByName(
-            self,
-            name: str,
-            transaction: typing.Optional[database.Transaction] = None
-            ) -> typing.Optional[UniverseInfo]:
-        logging.debug(
-            f'UniverseRegister retrieving info for universe with name {name!r}')
-
-        if transaction != None:
-            connection = transaction.connection()
-            return self._universeByName(
-                name=name,
-                cursor=connection.cursor())
-        else:
-            with self._database.createTransaction() as transaction:
-                connection = transaction.connection()
-                return self._universeByName(
-                    name=name,
-                    cursor=connection.cursor())
-
     def setUniverseName(
             self,
             id: str,
@@ -166,9 +146,7 @@ class UniverseRegistry(object):
                 requiredSchemaVersion=UniverseRegistry._UniversesTableSchema,
                 columns=[
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    # TODO: I'm really not sure about this having to be unique. It doesn't need to be and just causes
-                    # corner cases when managing universes
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False, isUnique=True)])
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)])
 
     def _addUniverse(
             self,
@@ -233,27 +211,6 @@ class UniverseRegistry(object):
         return UniverseInfo(
             id=id,
             name=row[0])
-
-    def _universeByName(
-            self,
-            cursor: sqlite3.Cursor,
-            name: str
-            ) -> typing.Optional[UniverseInfo]:
-        sql = """
-            SELECT id
-            FROM {table}
-            WHERE name = :name
-            LIMIT 1;
-            """.format(table=UniverseRegistry._UniversesTableName)
-        cursor.execute(sql, {'name': name})
-
-        row = cursor.fetchone()
-        if not row:
-            return None
-
-        return UniverseInfo(
-            id=row[0],
-            name=name)
 
     def _setUniverseName(
             self,

@@ -160,13 +160,19 @@ def _firstRunSetup(appDir: str) -> bool: # True if the app should continue, Fals
     if setupComplete:
         return True # Nothing to do
 
-    progressDlg = gui.ProgressJobDialog()
-    progressDlg.addJob(job=jobs.CreateDefaultUniversesJob())
+    if multiverse.UniverseManager.instance().universeInfos():
+        # The universe list is not empty so don't perform first run setup. This should
+        # only happen if the user removed the setup complete flag from the config but
+        # not removed old universes. In this situation we don't want to create default
+        # sectors as we don't know what is already there and we don't want to import
+        # legacy custom sectors as we don't want to risk stomping on user data
+        return True
 
-    legacyCustomSectorsDir = os.path.join(appDir, 'custom_map')
-    if os.path.exists(legacyCustomSectorsDir):
-        progressDlg.addJob(job=jobs.ImportLegacyCustomSectorsJob(
-            directoryPath=legacyCustomSectorsDir))
+    legacyCustomSectorsDir = os.path.join(appDir, 'custom_map', 'milieu')
+
+    progressDlg = gui.ProgressJobDialog()
+    progressDlg.addJob(job=jobs.CreateDefaultUniversesJob(
+        legacyCustomSectorPath=legacyCustomSectorsDir if os.path.exists(legacyCustomSectorsDir) else None))
 
     result = progressDlg.exec()
 
