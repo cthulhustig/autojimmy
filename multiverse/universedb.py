@@ -463,15 +463,7 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['sector_x', 'sector_y']),
-                    # TODO: I'm really not sure about making this unique as it just adds corner cases. The only
-                    # reason I can see to have it is so sector hex strings have a unique mapping, but I don't
-                    # really use them that much. They're used in the LabelStore for world labels when rendering
-                    # and for completion in HexSelectComboBox (look for things that use splitSectorHex and keep
-                    # tracing). The labels can probably be bodged by somehow limiting the sectors considered to
-                    # the official chartered space sectors, the completion could be handled by having it return
-                    # multiple hexes if there are multiple sectors that match.
-                    database.UniqueConstraintDef(columnNames=['name'])])
+                    database.UniqueConstraintDef(columnNames=['sector_x', 'sector_y'])])
 
             self._database.createTable(
                 cursor=cursor,
@@ -512,8 +504,6 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
                     database.UniqueConstraintDef(columnNames=['sector_id', 'code'])])
-                    # TODO: I think I want this enabled but it's failing, not sure where there are duplicates
-                    # database.UniqueConstraintDef(columnNames=['sector_id', 'name'])])
 
             self._database.createTable(
                 cursor=cursor,
@@ -3074,27 +3064,6 @@ class UniverseDb(object):
                 otherId=row[0],
                 x=sector.sectorX(),
                 y=sector.sectorY()))
-
-        # Check there isn't a sector with the same name but a different id.
-        # In order for the created/modified/stock hash to work correctly, updating
-        # the sector at an occupied hex should be done by writing an updated sector
-        # with the same id.
-        # TODO: This would be one of the checks to remove if I drop the requirement
-        # that sector names must be unique
-        sql = """
-            SELECT id
-            FROM {table}
-            WHERE id != :id AND name = :name
-            LIMIT 1;
-            """.format(table=UniverseDb._SectorsTableName)
-        cursor.execute(sql, {
-            'id': sector.id(),
-            'name': sector.name()})
-        row = cursor.fetchone()
-        if row:
-            raise ValueError('Sector {otherId} already has the name {name}'.format(
-                otherId=row[0],
-                name=sector.name()))
 
         self._deleteSector(
             sectorId=sector.id(),

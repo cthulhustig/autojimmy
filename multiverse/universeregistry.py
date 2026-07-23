@@ -34,8 +34,6 @@ class UniverseRegistry(object):
     def createTransaction(self) -> database.Transaction:
         return self._database.createTransaction()
 
-    # TODO: Need to check that this prevents multiple universes with the same
-    # id or name, and that the UI does something sensible if it happens
     def addUniverse(
             self,
             id: str,

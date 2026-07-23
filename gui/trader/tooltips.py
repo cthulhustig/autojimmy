@@ -431,30 +431,3 @@ def _createTradeScoreToolTip(
     toolTip += '</ul>'
 
     return toolTip
-
-
-def createBasesToolTip(
-        world: astronomer.World,
-        includeBaseTypes: typing.Optional[typing.Iterable[astronomer.BaseType]] = None,
-        worldTagging: typing.Optional[logic.WorldTagging] = None,
-        taggingColours: typing.Optional[app.TaggingColours] = None
-        ) -> str:
-    baseStrings = []
-    baseColours = {}
-    for baseType in includeBaseTypes if includeBaseTypes else world.bases():
-        if includeBaseTypes and not world.hasBase(baseType=baseType):
-            # An include list is being used and the world doesn't have the base type
-            continue
-        baseString = astronomer.Bases.description(baseType=baseType)
-        baseStrings.append(baseString)
-
-        tagLevel = worldTagging.calculateBaseTypeTagLevel(baseType=baseType) if worldTagging else None
-        if tagLevel and taggingColours:
-            baseColours[baseString] = taggingColours.colour(level=tagLevel)
-    if not baseStrings:
-        return ''
-
-    return gui.createListToolTip(
-        title='Bases',
-        strings=baseStrings,
-        stringColours=baseColours)

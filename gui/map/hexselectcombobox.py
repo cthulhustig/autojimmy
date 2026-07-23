@@ -557,8 +557,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
                     exc_info=ex)
 
             if self._enableDeadSpaceSelection:
-                try:
-                    hex = self._universe.stringToPosition(string=searchString)
+                for hex in self._universe.stringToPositions(string=searchString):
                     isDuplicate = False
                     for other in matches:
                         if hex == other:
@@ -566,13 +565,6 @@ class HexSelectComboBox(gui.ComboBoxEx):
                             break
                     if not isDuplicate:
                         matches.append(hex)
-                except KeyError:
-                    pass # The search string isn't a a sector hex so ignore it
-                except Exception as ex:
-                    # Log this at debug as it could get very spammy as the user types
-                    logging.debug(
-                        f'Search for sector hex "{searchString}" failed',
-                        exc_info=ex)
 
             # If the currently selected hex is in the list of matched hexes, make sure
             # it's the first option in the list

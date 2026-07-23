@@ -117,13 +117,18 @@ class LabelStore(object):
                 sectorHex = f'{sector} {hex}'
                 # TODO: This is currently broken for milieu other than M1105 as the labels use sector hex
                 # positions using M1105 sector names
-                world = universe.worldBySectorHex(sectorHex=sectorHex)
-                if not world:
+                # TODO: Using the closestTo field is a hack introduced when I removed the requirement
+                # that sector names are unique. It means we'll use the worlds closest to core if there
+                # happen to be sectors with duplicate names.
+                worlds = universe.worldsBySectorHex(
+                    sectorHex=sectorHex,
+                    closestTo=astronomer.HexPosition(0, 0))
+                if not worlds:
                     # The world doesn't exist in this universe so skip the label
                     logging.debug(
                         f'Skipping world label {index} as no world at location {sectorHex}')
                     continue
-                location = world.hex()
+                location = worlds[0].hex()
                 centerX, centerY = location.worldCenter()
                 location = cartographer.PointF(x=centerX, y=centerY)
 

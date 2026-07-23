@@ -3,9 +3,6 @@ import survey
 import typing
 import uuid
 
-# TODO: Need to check there is no issue importing if the custom sector has the same name
-# as the sector it's replacing
-
 _ValidSubsectorCodes = set(map(chr, range(ord('A'), ord('P') + 1)))
 
 class DbObject(object):

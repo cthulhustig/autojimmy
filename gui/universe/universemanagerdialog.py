@@ -8,10 +8,6 @@ import os
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: Need a section to the side of the manager dialog that shows
-# info about the selected universe
-# - Minimum it needs to show the multiline description along with the option to edit it
-# - Could also show sector count, world count etc
 # TODO: This needs a welcome dialog explaining what it is
 
 class _PreventSetToEmptyDelegate(gui.StyledItemDelegateEx):
@@ -347,8 +343,7 @@ class UniverseManagerDialog(gui.DialogEx):
                 text=newName)
             if not result:
                 return
-            # TODO: This should check that a universe with the same name
-            # doesn't already exist or I should drop that requirement
+
             if newName:
                 break
             gui.MessageBoxEx.critical(
@@ -369,10 +364,6 @@ class UniverseManagerDialog(gui.DialogEx):
 
         self._syncUniverseList()
 
-    # TODO: This should check that a universe with the same name doesn't
-    # already exist or I should drop that requirement. This is problematic
-    # because the list content has already been changed. Not sure if you
-    # can set up a validator for editing
     def _renameUniverseInPlace(
             self,
             id: str,

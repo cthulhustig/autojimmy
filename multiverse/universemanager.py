@@ -333,9 +333,6 @@ class UniverseManager(object):
             name: str,
             importPath: str
             ) -> str: # Universe ID
-        # TODO: Need something to check there isn't already a universe with the
-        # same name (or I remove that restriction elsewhere in the code)
-
         if not name.strip():
             raise ValueError(f'Universe name can\'t be empty')
 

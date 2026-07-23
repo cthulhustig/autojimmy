@@ -1185,6 +1185,12 @@ class ComboBoxEx(QtWidgets.QComboBox):
                 self.setCurrentIndex(index)
                 return
 
+    def findUserData(self, userData: typing.Any) -> int:
+        for i in range(self.count()):
+            if userData == self.userDataByIndex(i):
+                return i
+        return -1
+
     def setSelection(
             self,
             start: int,

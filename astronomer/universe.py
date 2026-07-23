@@ -29,8 +29,7 @@ class Universe(object):
         common.validateMandatoryCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
 
         self._universeId = universeId
-        self._canonicalNameToSectorMap: typing.Dict[str, astronomer.Sector] = {}
-        self._alternateNameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
+        self._nameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._abbreviationToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._subsectorNameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._positionToSectorMap: typing.Dict[typing.Tuple[int, int], astronomer.Sector] = {}
@@ -44,18 +43,6 @@ class Universe(object):
 
     def universeId(self) -> str:
         return self._universeId
-
-    def sectorNames(self) -> typing.Iterable[str]:
-        sectorNames = []
-        for sector in self._positionToSectorMap.values():
-            sectorNames.append(sector.name())
-        return sectorNames
-
-    def sectorByName(
-            self,
-            name: str
-            ) -> typing.Optional[astronomer.Sector]:
-        return self._canonicalNameToSectorMap.get(name.lower())
 
     def sectorsByAbbreviation(
             self,
@@ -78,12 +65,56 @@ class Universe(object):
             ) -> typing.List[astronomer.World]:
         return list(self.yieldWorlds(filterCallback=filterCallback))
 
-    def worldBySectorHex(
+    def worldsBySectorHex(
             self,
             sectorHex: str,
-            ) -> typing.Optional[astronomer.World]:
-        hex = self.sectorHexToPosition(sectorHex=sectorHex)
-        return self.worldByPosition(hex=hex) if hex else None
+            closestTo: typing.Optional[astronomer.HexPosition] = None
+            ) -> typing.List[astronomer.World]:
+        hexes = self.sectorHexToPositions(sectorHex=sectorHex)
+        worlds: typing.List[astronomer.World] = []
+        for hex in hexes:
+            world = self.worldByPosition(hex=hex)
+            if world:
+                worlds.append(world)
+
+        if closestTo and worlds:
+            closestDistance = None
+            closestWorld = None
+            for world in worlds:
+                distance = closestTo.parsecsTo(world.hex())
+                if closestDistance is None or distance < closestDistance:
+                    closestWorld = world
+                    closestDistance = distance
+
+            worlds = [closestWorld] if closestWorld is not None else []
+
+        return worlds
+
+    def worldsByWorldRef(
+            self,
+            worldRef: astronomer.WorldReference,
+            sourceSectorPos: astronomer.SectorPosition
+            ) -> typing.List[astronomer.World]:
+        sectors: typing.List[astronomer.Sector] = []
+        if worldRef.sectorAbbreviation():
+            sectors.extend(self.sectorsByAbbreviation(
+                abbreviation=worldRef.sectorAbbreviation()))
+        else:
+            sector = self.sectorByPosition(position=sourceSectorPos)
+            if sector:
+                sectors.append(sector)
+
+        worlds: typing.List[astronomer.World] = []
+        for sector in sectors:
+            hex = astronomer.HexPosition(
+                sectorPos=sector.position(),
+                offsetX=worldRef.hexX(),
+                offsetY=worldRef.hexY())
+            world = self.worldByPosition(hex=hex)
+            if world:
+                worlds.append(world)
+
+        return worlds
 
     def worldByPosition(
             self,
@@ -161,10 +192,13 @@ class Universe(object):
             offsetX=offsetX,
             offsetY=offsetY)
 
-    def sectorHexToPosition(
+    # NOTE: This returns a list of positions as sector names are not guaranteed
+    # to be unique in the universe
+    def sectorHexToPositions(
             self,
-            sectorHex: str
-            ) -> typing.Optional[astronomer.HexPosition]:
+            sectorHex: str,
+            closetTo: typing.Optional[astronomer.HexPosition] = None
+            ) -> typing.List[astronomer.HexPosition]:
         originalSectorName, offsetX, offsetY = astronomer.splitSectorHex(
             sectorHex=sectorHex)
 
@@ -173,34 +207,30 @@ class Universe(object):
         # before searching
         lowerCaseSectorName = originalSectorName.lower()
 
-        # Check to see if the sector name is a canonical sector name
-        sector = self._canonicalNameToSectorMap.get(lowerCaseSectorName)
-        if not sector:
-            # Make a best effort attempt to find the sector by looking at
-            # abbreviations, alternate names and subsector names. These
-            # matches are not always unique so just use the first if more
-            # than one is found
-            sectors = self._alternateNameToSectorMap.get(lowerCaseSectorName)
-            if sectors:
-                # Alternate sector name match
-                sector = next(iter(sectors))
-            else:
-                # NOTE: Use original case for abbreviation lookup as in theory two
-                # sectors abbreviations could vary by case
-                sectors = self._abbreviationToSectorMap.get(originalSectorName)
-                if sectors:
-                    sector = next(iter(sectors))
-                else:
-                    sectors = self._subsectorNameToSectorMap.get(lowerCaseSectorName)
-                    if sectors:
-                        # Subsector name match
-                        sector = next(iter(sectors))
+        # Check to see if we sector name is recognised
+        sectors = self._nameToSectorMap.get(lowerCaseSectorName)
+        if not sectors:
+            # No name match so check abbreviations and subsector names
+            # NOTE: Use original case for abbreviation lookup as in theory two
+            # sectors abbreviations could vary by case
+            sectors = self._abbreviationToSectorMap.get(originalSectorName)
+            if not sectors:
+                sectors = self._subsectorNameToSectorMap.get(lowerCaseSectorName)
 
-        if sector:
-            return astronomer.HexPosition(
-                sectorPos=sector.position(),
-                offsetX=offsetX,
-                offsetY=offsetY)
+        if sectors:
+            if closetTo is None:
+                return [astronomer.HexPosition(sector.position(), offsetX, offsetY) for sector in sectors]
+
+            closestDistance = None
+            closestHex = None
+            for sector in sectors:
+                hex = astronomer.HexPosition(sector.position(), offsetX, offsetY)
+                distance = hex.parsecsTo(closetTo)
+                if closestDistance is None or distance < closestDistance:
+                    closestHex = hex
+                    closestDistance = distance
+
+            return [closestHex] if closestHex is not None else []
 
         # Check to see if the sector name is a sector x/y separated by a colon.
         # This is the format used by positionToSectorHex if there is no sector
@@ -218,21 +248,24 @@ class Universe(object):
             except:
                 pass
 
-        return None
+        return []
 
-    def stringToPosition(
+    # NOTE: This returns a list of positions as sector names are not guaranteed
+    # to be unique in the universe
+    def stringToPositions(
             self,
             string: str,
-            ) -> astronomer.HexPosition:
+            closetTo: typing.Optional[astronomer.HexPosition] = None
+            ) -> typing.List[astronomer.HexPosition]:
         testString = string.strip()
         if not testString:
-            raise ValueError(f'Invalid position string "{string}"')
+            return []
 
         result = self._SectorHexSearchPattern.match(testString)
         if result:
-            hex = self.sectorHexToPosition(sectorHex=testString)
-            if hex:
-                return hex
+            hexes = self.sectorHexToPositions(sectorHex=testString, closetTo=closetTo)
+            if hexes:
+                return hexes
 
             # Search string is not a valid sector hex. The search pattern
             # regex was matched so it should have the correct format, most
@@ -241,9 +274,9 @@ class Universe(object):
 
         result = self._AbsoluteHexSearchPattern.match(testString)
         if result:
-            return astronomer.HexPosition(
+            return [astronomer.HexPosition(
                 absoluteX=int(result.group(1)),
-                absoluteY=int(result.group(2)))
+                absoluteY=int(result.group(2)))]
 
         result = self._RelativeHexSearchPattern.match(testString)
         if result:
@@ -253,13 +286,13 @@ class Universe(object):
             offsetY = int(result.group(4))
             if (offsetX >= 0  and offsetX < astronomer.SectorWidth) and \
                     (offsetY >= 0 and offsetY < astronomer.SectorHeight):
-                return astronomer.HexPosition(
+                return [astronomer.HexPosition(
                     sectorX=sectorX,
                     sectorY=sectorY,
                     offsetX=offsetX,
-                    offsetY=offsetY)
+                    offsetY=offsetY)]
 
-        raise ValueError(f'Invalid position string "{string}"')
+        return []
 
     def canonicalHexName(
             self,
@@ -478,14 +511,19 @@ class Universe(object):
 
         # Add canonical name to the main name map. The name is added lower case as lookups are
         # case insensitive
-        self._canonicalNameToSectorMap[sector.name().lower()] = sector
+        canonicalName = sector.name().lower()
+        sectors = self._nameToSectorMap.get(canonicalName)
+        if not sectors:
+            sectors = set()
+            self._nameToSectorMap[canonicalName] = sectors
+        sectors.add(sector)
 
         for alternateName in sector.alternateNames():
             alternateName = alternateName.lower()
-            sectors = self._alternateNameToSectorMap.get(alternateName)
+            sectors = self._nameToSectorMap.get(alternateName)
             if not sectors:
                 sectors = set()
-                self._alternateNameToSectorMap[alternateName] = sectors
+                self._nameToSectorMap[alternateName] = sectors
             sectors.add(sector)
 
         abbreviation = sector.abbreviation()
@@ -529,11 +567,14 @@ class Universe(object):
         sectorPos = sector.position()
         self._positionToSectorMap.pop(sectorPos.elements(), None)
 
-        self._canonicalNameToSectorMap.pop(sector.name().lower(), None)
+        canonicalName = sector.name().lower()
+        sectors = self._nameToSectorMap.get(canonicalName)
+        if sectors:
+            sectors.discard(sector)
 
         for alternateName in sector.alternateNames():
             alternateName = alternateName.lower()
-            sectors = self._alternateNameToSectorMap.get(alternateName)
+            sectors = self._nameToSectorMap.get(alternateName)
             if sectors:
                 sectors.discard(sector)
 

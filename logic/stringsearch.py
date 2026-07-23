@@ -71,16 +71,18 @@ def _findSubsectorWorlds(
         re.IGNORECASE)
 
     for sector in universe.yieldSectors():
-        for subsectorName in sector.subsectorNames():
+        for subsectorCode in astronomer.SubsectorCodes:
+            subsectorName = sector.subsectorName(subsectorCode)
+            if not subsectorName:
+                continue
+
             if expression.match(subsectorName):
-                subsectorCode = sector.subsectorCodeByName(name=subsectorName)
-                if subsectorCode:
-                    if worldFilter:
-                        for world in sector.worlds(subsectorCode=subsectorCode):
-                            if worldFilter(world):
-                                matches.add(world)
-                    else:
-                        matches.update(sector.worlds(subsectorCode=subsectorCode))
+                if worldFilter:
+                    for world in sector.worlds(subsectorCode=subsectorCode):
+                        if worldFilter(world):
+                            matches.add(world)
+                else:
+                    matches.update(sector.worlds(subsectorCode=subsectorCode))
 
     return matches
 
@@ -147,13 +149,14 @@ def searchForWorlds(
 
     # Check if the world string specifies a hex, if it does and there is
     # a world at that location then that is our only result
-    try:
-        hex = universe.stringToPosition(string=searchString)
-        foundWorld = universe.worldByPosition(hex=hex)
-        if foundWorld:
-            return [foundWorld]
-    except:
-        pass
+    matches = []
+    for hex in universe.stringToPositions(string=searchString):
+        world = universe.worldByPosition(hex=hex)
+        if world:
+            matches.append(world)
+
+    if matches:
+        return _sortResults(universe=universe, worlds=matches)
 
     seenWorlds: typing.Set[astronomer.World] = set()
 
@@ -184,7 +187,7 @@ def searchForWorlds(
         searchWorlds = universe.yieldWorlds(
             filterCallback=worldFilter)
 
-    matches = _sortResults(universe=universe, worlds=searchWorlds)
+    matches.extend(_sortResults(universe=universe, worlds=searchWorlds))
     seenWorlds.update(searchWorlds)
 
     # From now on we're nto filtering worlds by name, just if they've been seen before

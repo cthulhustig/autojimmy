@@ -943,27 +943,12 @@ class HexTable(gui.FrozenColumnListTable):
                     if world:
                         highestTagLevel = None
                         if self._worldTagging:
-                            for ownerWorldRef in world.ownerWorldReferences():
-                                ownerSector = None
-                                if ownerWorldRef.sectorAbbreviation():
-                                    matchSectors = self._universe.sectorsByAbbreviation(
-                                        abbreviation=ownerWorldRef.sectorAbbreviation())
-                                    if matchSectors:
-                                        ownerSector = next(iter(matchSectors))
-                                else:
-                                    ownerSector = self._universe.sectorByPosition(
-                                        position=hex.sectorPosition())
-
-                                ownerWorld = None
-                                if ownerSector:
-                                    ownerHex = astronomer.HexPosition(
-                                        sectorPos=ownerSector.position(),
-                                        offsetX=ownerWorldRef.hexX(),
-                                        offsetY=ownerWorldRef.hexY())
-                                    ownerWorld = self._universe.worldByPosition(hex=ownerHex)
-
-                                if ownerWorld:
-                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld)
+                            for worldRef in world.ownerWorldReferences():
+                                refWorlds =  self._universe.worldsByWorldRef(
+                                    worldRef=worldRef,
+                                    sourceSectorPos=hex.sectorPosition())
+                                if len(refWorlds) == 1:
+                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=refWorlds[0])
                                     if tagLevel and (not highestTagLevel or tagLevel > highestTagLevel):
                                         highestTagLevel = tagLevel
                                 else:
@@ -977,27 +962,12 @@ class HexTable(gui.FrozenColumnListTable):
                     if world:
                         highestTagLevel = None
                         if self._worldTagging:
-                            for colonyWorldRef in world.colonyWorldReferences():
-                                colonySector = None
-                                if colonyWorldRef.sectorAbbreviation():
-                                    matchSectors = self._universe.sectorsByAbbreviation(
-                                        abbreviation=colonyWorldRef.sectorAbbreviation())
-                                    if matchSectors:
-                                        colonySector = next(iter(matchSectors))
-                                else:
-                                    colonySector = self._universe.sectorByPosition(
-                                        position=hex.sectorPosition())
-
-                                colonyWorld = None
-                                if colonySector:
-                                    colonyHex = astronomer.HexPosition(
-                                        sectorPos=colonySector.position(),
-                                        offsetX=colonyWorldRef.hexX(),
-                                        offsetY=colonyWorldRef.hexY())
-                                    colonyWorld = self._universe.worldByPosition(hex=colonyHex)
-
-                                if colonyWorld:
-                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=colonyWorld)
+                            for worldRef in world.colonyWorldReferences():
+                                refWorlds =  self._universe.worldsByWorldRef(
+                                    worldRef=worldRef,
+                                    sourceSectorPos=hex.sectorPosition())
+                                if len(refWorlds) == 1:
+                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=refWorlds[0])
                                     if tagLevel and (not highestTagLevel or tagLevel > highestTagLevel):
                                         highestTagLevel = tagLevel
                                 else:
@@ -1211,92 +1181,22 @@ class HexTable(gui.FrozenColumnListTable):
                     taggingColours=self._taggingColours)
         elif columnType == self.ColumnType.OwnerWorlds:
             if world.ownerCount() > 0:
-                listStrings = []
-                listColours = {}
-                for ownerWorldRef in world.ownerWorldReferences():
-                    ownerSector = None
-                    if ownerWorldRef.sectorAbbreviation():
-                        matchSectors = self._universe.sectorsByAbbreviation(
-                            abbreviation=ownerWorldRef.sectorAbbreviation())
-                        if matchSectors:
-                            ownerSector = next(iter(matchSectors))
-                    else:
-                        ownerSector = self._universe.sectorByPosition(
-                            position=hex.sectorPosition())
-
-                    ownerWorld = None
-                    if ownerSector:
-                        ownerHex = astronomer.HexPosition(
-                            sectorPos=ownerSector.position(),
-                            offsetX=ownerWorldRef.hexX(),
-                            offsetY=ownerWorldRef.hexY())
-                        ownerWorld = self._universe.worldByPosition(hex=ownerHex)
-
-                    if ownerWorld:
-                        ownerString = '{world} ({hex})'.format(
-                            world=ownerWorld.name(),
-                            hex=self._universe.formatSectorHex(hex=ownerHex))
-                        listStrings.append(ownerString)
-                        if self._worldTagging:
-                            tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld)
-                            if tagLevel:
-                                listColours[ownerString] = self._taggingColour(level=tagLevel)
-                    else:
-                        ownerString = 'Unknown world at {sector} {x:02d}{y:02d}'.format(
-                            sector=ownerSector.name() if ownerSector else 'Unknown Sector',
-                            x=ownerWorldRef.hexX(),
-                            y=ownerWorldRef.hexY())
-                        listStrings.append(ownerString)
-                        listColours[ownerString] = self._taggingColour(
-                            level=logic.TagLevel.Danger)
-                return gui.createListToolTip(
+                return gui.createWorldRefListTooltip(
                     title='Owner Worlds',
-                    strings=listStrings,
-                    stringColours=listColours)
+                    universe=self._universe,
+                    worldRefs=world.ownerWorldReferences(),
+                    sourceSectorPos=world.hex().sectorPosition(),
+                    worldTagging=self._worldTagging,
+                    taggingColours=self._taggingColours)
         elif columnType == self.ColumnType.ColonyWorlds:
             if world.colonyCount() > 0:
-                listStrings = []
-                listColours = {}
-                for colonyWorldRef in world.colonyWorldReferences():
-                    colonySector = None
-                    if colonyWorldRef.sectorAbbreviation():
-                        matchSectors = self._universe.sectorsByAbbreviation(
-                            abbreviation=colonyWorldRef.sectorAbbreviation())
-                        if matchSectors:
-                            colonySector = next(iter(matchSectors))
-                    else:
-                        colonySector = self._universe.sectorByPosition(
-                            position=hex.sectorPosition())
-
-                    colonyWorld = None
-                    if colonySector:
-                        colonyHex = astronomer.HexPosition(
-                            sectorPos=colonySector.position(),
-                            offsetX=colonyWorldRef.hexX(),
-                            offsetY=colonyWorldRef.hexY())
-                        colonyWorld = self._universe.worldByPosition(hex=colonyHex)
-
-                    if colonyWorld:
-                        colonyString = '{world} ({hex})'.format(
-                            world=colonyWorld.name(),
-                            hex=self._universe.formatSectorHex(hex=colonyHex))
-                        listStrings.append(colonyString)
-                        if self._worldTagging:
-                            tagLevel = self._worldTagging.calculateWorldTagLevel(world=colonyWorld)
-                            if tagLevel:
-                                listColours[colonyString] = self._taggingColour(level=tagLevel)
-                    else:
-                        colonyString = 'Unknown world at {sector} {x:02d}{y:02d}'.format(
-                            sector=colonySector.name() if colonySector else 'Unknown Sector',
-                            x=colonyWorldRef.hexX(),
-                            y=colonyWorldRef.hexY())
-                        listStrings.append(colonyString)
-                        listColours[colonyString] = self._taggingColour(
-                            level=logic.TagLevel.Danger)
-                return gui.createListToolTip(
+                return gui.createWorldRefListTooltip(
                     title='Colony Worlds',
-                    strings=listStrings,
-                    stringColours=listColours)
+                    universe=self._universe,
+                    worldRefs=world.colonyWorldReferences(),
+                    sourceSectorPos=world.hex().sectorPosition(),
+                    worldTagging=self._worldTagging,
+                    taggingColours=self._taggingColours)
         elif columnType == self.ColumnType.Remarks:
             return gui.createStringToolTip(world.remarksString())
 

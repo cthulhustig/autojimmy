@@ -72,7 +72,6 @@ class Sector(astronomer.Entity):
         self._products = list(products) if products else []
 
         self._subsectorCodeToNameMap = dict(subsectorNames) if subsectorNames else {}
-        self._subsectorNameToCodeMap = {v: k for k, v in self._subsectorCodeToNameMap.items()}
 
         self._subsectorCodeToWorldsMap = {}
         for world in self._worlds:
@@ -177,5 +176,3 @@ class Sector(astronomer.Entity):
     def subsectorNames(self) -> typing.Collection[str]:
         return common.ConstCollectionRef(self._subsectorCodeToNameMap.values())
 
-    def subsectorCodeByName(self, name: str) -> typing.Optional[str]:
-        return self._subsectorNameToCodeMap.get(name)

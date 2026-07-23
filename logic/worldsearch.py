@@ -1055,31 +1055,20 @@ class WorldSearch(object):
             universe: astronomer.Universe,
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
-            sectorName: str,
-            subsectorName: typing.Optional[str] = None,
+            sectorPos: astronomer.SectorPosition,
+            subsectorCode: typing.Optional[str] = None,
             maxResults: int = 1000
             ) -> typing.Iterable[astronomer.World]:
-        sector = universe.sectorByName(name=sectorName)
+        sector = universe.sectorByPosition(sectorPos)
         if not sector:
-            raise RuntimeError(f'Sector "{sectorName}" for found')
+            raise ValueError(f'No sector at ({sectorPos.sectorX()}, {sectorPos.sectorY()})')
 
-        if not subsectorName:
-            return self._searchWorlds(
-                universe=universe,
-                worlds=sector.worlds(),
-                rules=rules,
-                tagging=tagging,
-                maxResults=maxResults)
-        else:
-            subsectorCode = sector.subsectorCodeByName(name=subsectorName)
-            if not subsectorCode:
-                raise RuntimeError(f'Subsector "{subsectorName}" not found in sector "{sectorName}"')
-            return self._searchWorlds(
-                universe=universe,
-                worlds=sector.worlds(subsectorCode=subsectorCode),
-                rules=rules,
-                tagging=tagging,
-                maxResults=maxResults)
+        return self._searchWorlds(
+            universe=universe,
+            worlds=sector.worlds(subsectorCode),
+            rules=rules,
+            tagging=tagging,
+            maxResults=maxResults)
 
     def searchRadius(
             self,

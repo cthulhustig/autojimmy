@@ -7,6 +7,7 @@ import gui
 import html
 import logging
 import logic
+import survey
 import traveller
 import typing
 
@@ -140,36 +141,29 @@ def createHexToolTip(
         if world.ownerCount() > 0:
             ownerInfo: typing.List[typing.Tuple[str, logic.TagLevel]] = []
             for ownerWorldRef in world.ownerWorldReferences():
-                ownerSector = None
-                if ownerWorldRef.sectorAbbreviation():
-                    matchSectors = universe.sectorsByAbbreviation(
-                        abbreviation=ownerWorldRef.sectorAbbreviation())
-                    if matchSectors:
-                        ownerSector = next(iter(matchSectors))
-                else:
-                    ownerSector = universe.sectorByPosition(
-                        position=hex.sectorPosition())
-
-                ownerWorld = None
-                if ownerSector:
-                    ownerHex = astronomer.HexPosition(
-                        sectorPos=ownerSector.position(),
-                        offsetX=ownerWorldRef.hexX(),
-                        offsetY=ownerWorldRef.hexY())
-                    ownerWorld = universe.worldByPosition(hex=ownerHex)
-
-                if ownerWorld:
+                ownerWorlds = universe.worldsByWorldRef(
+                    worldRef=ownerWorldRef,
+                    sourceSectorPos=hex.sectorPosition())
+                if len(ownerWorlds) == 1:
+                    ownerWorld = ownerWorlds[0]
                     ownerString = '{world} ({hex})'.format(
                         world=ownerWorld.name(),
-                        hex=universe.formatSectorHex(hex=ownerHex))
+                        hex=universe.formatSectorHex(hex=ownerWorld.hex()))
                     tagLevel = worldTagging.calculateWorldTagLevel(world=ownerWorld) if worldTagging else None
                     ownerInfo.append((ownerString, tagLevel))
+                elif len(ownerWorlds) > 1:
+                    # There are multiple sectors with the code specified in the world ref
+                    # so which world it is referring to is ambiguous
+                    for ownerWorld in ownerWorlds:
+                        ownerString = 'Ambiguous: {world} ({hex})'.format(
+                            world=ownerWorld.name(),
+                            hex=universe.formatSectorHex(hex=ownerWorld.hex()))
+                        tagLevel = worldTagging.calculateWorldTagLevel(world=ownerWorld) if worldTagging else None
+                        ownerInfo.append((ownerString, logic.TagLevel.Danger))
                 else:
                     # We don't know about this world so just display the sector hex and tag it as danger
-                    ownerString = 'Unknown world at {sector} {x:02d}{y:02d}'.format(
-                        sector=ownerSector.name() if ownerSector else 'Unknown Sector',
-                        x=ownerWorldRef.hexX(),
-                        y=ownerWorldRef.hexY())
+                    ownerString = 'Unknown world at {refString!r}'.format(
+                        refString=ownerWorldRef.string())
                     ownerInfo.append((ownerString, logic.TagLevel.Danger))
 
             if len(ownerInfo) == 1:
@@ -393,42 +387,40 @@ def createHexToolTip(
         # Colonies
         #
         if world.colonyCount() > 0:
-            toolTip += '<li>Colonies</li>'
-            toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
+            colonyInfo: typing.List[typing.Tuple[str, logic.TagLevel]] = []
             for colonyWorldRef in world.colonyWorldReferences():
-                colonySector = None
-                if colonyWorldRef.sectorAbbreviation():
-                    matchSectors = universe.sectorsByAbbreviation(
-                        abbreviation=colonyWorldRef.sectorAbbreviation())
-                    if matchSectors:
-                        colonySector = next(iter(matchSectors))
-                else:
-                    colonySector = universe.sectorByPosition(
-                        position=hex.sectorPosition())
+                colonyWorlds = universe.worldsByWorldRef(
+                    worldRef=colonyWorldRef,
+                    sourceSectorPos=hex.sectorPosition())
 
-                colonyWorld = None
-                if colonySector:
-                    colonyHex = astronomer.HexPosition(
-                        sectorPos=colonySector.position(),
-                        offsetX=colonyWorldRef.hexX(),
-                        offsetY=colonyWorldRef.hexY())
-                    colonyWorld = universe.worldByPosition(hex=colonyHex)
-
-                if colonyWorld:
-                    colonyText = '{world} ({hex})'.format(
+                if len(colonyWorlds) == 1:
+                    colonyWorld = colonyWorlds[0]
+                    colonyString = '{world} ({hex})'.format(
                         world=colonyWorld.name(),
-                        hex=universe.formatSectorHex(hex=colonyHex))
+                        hex=universe.formatSectorHex(hex=colonyWorld.hex()))
                     tagLevel = worldTagging.calculateWorldTagLevel(world=colonyWorld) if worldTagging else None
+                    colonyInfo.append((colonyString, tagLevel))
+                elif len(colonyWorlds) > 1:
+                    # There are multiple sectors with the code specified in the world ref
+                    # so which world it is referring to is ambiguous
+                    for colonyWorld in colonyWorlds:
+                        colonyString = 'Ambiguous: {world} ({hex})'.format(
+                            world=colonyWorld.name(),
+                            hex=universe.formatSectorHex(hex=colonyWorld.hex()))
+                        tagLevel = worldTagging.calculateWorldTagLevel(world=colonyWorld) if worldTagging else None
+                        colonyInfo.append((colonyString, logic.TagLevel.Danger))
                 else:
                     # We don't know about this world so just display the sector hex and tag it as danger
-                    colonyText = 'Unknown world at {sector} {x:02d}{y:02d}'.format(
-                        sector=colonySector.name() if colonySector else 'Unknown Sector',
-                        x=colonyWorldRef.hexX(),
-                        y=colonyWorldRef.hexY())
-                    tagLevel = logic.TagLevel.Danger
+                    colonyString = 'Unknown world at {refString!r}'.format(
+                        refString=colonyWorldRef.string())
+                    colonyInfo.append((colonyString, logic.TagLevel.Danger))
 
+            toolTip += '<li>Colonies</li>'
+            toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
+
+            for worldText, tagLevel in colonyInfo:
                 style = formatTaggingStyle(level=tagLevel)
-                toolTip += f'<li><span style="{style}">{html.escape(colonyText)}</span></li>'
+                toolTip += f'<li><span style="{style}">{html.escape(worldText)}</span></li>'
             toolTip += '</ul>'
     toolTip += '</ul>'
 
@@ -509,3 +501,82 @@ def createHexToolTip(
     toolTip += '</html>'
 
     return toolTip
+
+def createBasesToolTip(
+        world: astronomer.World,
+        includeBaseTypes: typing.Optional[typing.Iterable[astronomer.BaseType]] = None,
+        worldTagging: typing.Optional[logic.WorldTagging] = None,
+        taggingColours: typing.Optional[app.TaggingColours] = None
+        ) -> str:
+    baseStrings = []
+    baseColours = {}
+    for baseType in includeBaseTypes if includeBaseTypes else world.bases():
+        if includeBaseTypes and not world.hasBase(baseType=baseType):
+            # An include list is being used and the world doesn't have the base type
+            continue
+        baseString = astronomer.Bases.description(baseType=baseType)
+        baseStrings.append(baseString)
+
+        tagLevel = worldTagging.calculateBaseTypeTagLevel(baseType=baseType) if worldTagging else None
+        if tagLevel and taggingColours:
+            baseColours[baseString] = taggingColours.colour(level=tagLevel)
+    if not baseStrings:
+        return ''
+
+    return gui.createListToolTip(
+        title='Bases',
+        strings=baseStrings,
+        stringColours=baseColours)
+
+def createWorldRefListTooltip(
+        title: str,
+        universe: astronomer.Universe,
+        worldRefs: typing.Iterable[astronomer.WorldReference],
+        sourceSectorPos: astronomer.SectorPosition,
+        worldTagging: typing.Optional[logic.WorldTagging] = None,
+        taggingColours: typing.Optional[app.TaggingColours] = None
+        ) -> str:
+    listStrings = []
+    listColours = {}
+
+    for worldRef in worldRefs:
+        refWorlds = universe.worldsByWorldRef(
+            worldRef=worldRef,
+            sourceSectorPos=sourceSectorPos)
+
+        if len(refWorlds) == 1:
+            refWorld = refWorlds[0]
+            lineString = '{world} ({hex})'.format(
+                world=refWorld.name(),
+                hex=universe.formatSectorHex(hex=refWorld.hex()))
+            listStrings.append(lineString)
+            if worldTagging and taggingColours:
+                tagLevel = worldTagging.calculateWorldTagLevel(world=refWorld)
+                if tagLevel:
+                    listColours[lineString] = taggingColours.colour(level=tagLevel)
+        elif len(refWorlds) > 1:
+            # There are multiple sectors with the code specified in the world ref
+            # so which world it is referring to is ambiguous
+            for refWorld in refWorlds:
+                lineString = 'Ambiguous: {world} ({hex})'.format(
+                    world=refWorld.name(),
+                    hex=universe.formatSectorHex(hex=refWorld.hex()))
+                listStrings.append(lineString)
+                if taggingColours:
+                    listColours[lineString] = taggingColours.colour(level=logic.TagLevel.Danger)
+        else:
+            if worldRef.sectorAbbreviation():
+                refWorld = 'Unknown world at {refString!r}'.format(
+                    refString=worldRef.string())
+            else:
+                refWorld = 'Unknown world at {refString!r} in current sector'.format(
+                    refString=worldRef.string())
+
+            listStrings.append(lineString)
+            if taggingColours:
+                listColours[lineString] = taggingColours.colour(level=logic.TagLevel.Danger)
+
+    return gui.createListToolTip(
+        title=title,
+        strings=listStrings,
+        stringColours=listColours)

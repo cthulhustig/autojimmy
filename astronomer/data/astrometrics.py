@@ -16,6 +16,7 @@ ReferenceHexY = 40
 ParsecScaleX = math.cos(math.pi / 6) # = cosine 30° = 0.8660254037844387
 ParsecScaleY = 1
 HexWidthOffset = math.tan(math.pi / 6) / 4 / ParsecScaleX # = 0.16666666666666666
+SubsectorCodes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P']
 
 # I've pinched this diagram from Traveller Map (RenderUtils.cs)
 # It shows how the size of hexes are calculated

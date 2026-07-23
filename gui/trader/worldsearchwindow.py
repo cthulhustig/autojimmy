@@ -64,7 +64,11 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
         return tradeGood is not exotics
 
 class _RegionSelectWidget(QtWidgets.QWidget):
-    _StateVersion = '_RegionSelectWidget_v1'
+    # v1: Initial version
+    # v2: Switched from storing sector & subsector name to sector position and
+    # subsector code to account for sector & subsector names no longer being
+    # treated as unique
+    _StateVersion = '_RegionSelectWidget_v2'
     _AllSubsectorsText = '<All Subsectors>'
 
     def __init__(
@@ -76,9 +80,9 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
         self._universe = universe
 
-        self._sectorComboBox = QtWidgets.QComboBox()
+        self._sectorComboBox = gui.ComboBoxEx()
         self._sectorComboBox.currentIndexChanged.connect(self._loadSubsectorNames)
-        self._subsectorComboBox = QtWidgets.QComboBox()
+        self._subsectorComboBox = gui.ComboBoxEx()
 
         layout = gui.FormLayoutEx()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -99,22 +103,26 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         self._universe = universe
         self._syncContent()
 
-    def sectorName(self) -> str:
-        return self._sectorComboBox.currentText()
+    def sectorPos(self) -> astronomer.SectorPosition:
+        return self._sectorComboBox.currentUserData()
 
-    def subsectorName(self) -> typing.Optional[str]:
-        subsectorName = self._subsectorComboBox.currentText()
-        return subsectorName if subsectorName != self._AllSubsectorsText else None
+    def subsectorCode(self) -> typing.Optional[str]:
+        return self._subsectorComboBox.currentUserData()
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(_RegionSelectWidget._StateVersion)
-        stream.writeQString(self.sectorName())
-        subsectorName = self.subsectorName()
-        stream.writeBool(subsectorName != None)
-        if subsectorName:
-            stream.writeQString(subsectorName)
+
+        sectorPos = self.sectorPos()
+        sectorCode = self.subsectorCode()
+
+        stream.writeInt(sectorPos.sectorX())
+        stream.writeInt(sectorPos.sectorY())
+        stream.writeBool(sectorCode != None)
+        if sectorCode:
+            stream.writeQString(sectorCode)
+
         return state
 
     def restoreState(
@@ -128,45 +136,74 @@ class _RegionSelectWidget(QtWidgets.QWidget):
             logging.debug(f'Failed to restore _RegionSelectWidget state (Incorrect version)')
             return False
 
-        self._sectorComboBox.setCurrentText(stream.readQString())
+        sectorPos = astronomer.SectorPosition(
+            stream.readInt(),
+            stream.readInt())
+        subsectorCode = None
         if stream.readBool():
-            self._subsectorComboBox.setCurrentText(stream.readQString())
+            subsectorCode = stream.readQString()
+
+        index = self._sectorComboBox.findUserData(sectorPos)
+        if index >= 0:
+            self._sectorComboBox.setCurrentIndex(index)
+
+        index = self._subsectorComboBox.findUserData(subsectorCode)
+        if index >= 0:
+            self._subsectorComboBox.setCurrentIndex(index)
 
         return True
 
     def _loadSectorNames(self) -> None:
         self._sectorComboBox.clear()
 
-        sectorNames = sorted(
-            self._universe.sectorNames(),
-            key=str.casefold)
-        self._sectorComboBox.addItems(sectorNames)
+        sectorData: typing.List[typing.Tuple[str, astronomer.HexPosition]] = []
+        for sector in self._universe.sectors():
+            sectorData.append((sector.name(), sector.position()))
+
+        sectorData = sorted(
+            sectorData,
+            key=lambda data: data[0].lower())
+
+        for name, pos in sectorData:
+            self._sectorComboBox.addItem(name, pos)
 
     def _loadSubsectorNames(self) -> None:
         self._subsectorComboBox.clear()
-        self._subsectorComboBox.addItem(self._AllSubsectorsText)
+        self._subsectorComboBox.addItem(self._AllSubsectorsText, None)
 
-        sector = self._universe.sectorByName(
-            name=self._sectorComboBox.currentText())
+        currentSectorPos: typing.Optional[astronomer.SectorPosition] = \
+            self._sectorComboBox.currentUserData()
+        if not currentSectorPos:
+            return
+
+        sector = self._universe.sectorByPosition(currentSectorPos)
         if not sector:
             return
-        subsectorNames = sorted(
-            sector.subsectorNames(),
-            key=str.casefold)
-        self._subsectorComboBox.addItems(subsectorNames)
+
+        subsectorData: typing.List[typing.Tuple[str, str]] = []
+        for code in astronomer.SubsectorCodes:
+            subsectorName = sector.subsectorName(code)
+            subsectorData.append((subsectorName, code))
+
+        subsectorData = sorted(
+            subsectorData,
+            key=lambda data: data[0].lower())
+
+        for name, code in subsectorData:
+            self._subsectorComboBox.addItem(name, code)
 
     def _syncContent(self) -> None:
-        currentSector = self._sectorComboBox.currentText()
-        currentSubsector = self._subsectorComboBox.currentText()
+        sectorPos = self._sectorComboBox.currentUserData()
+        subsectorCode = self._subsectorComboBox.currentUserData()
 
         with gui.SignalBlocker(self):
             self._loadSectorNames()
-            index = self._sectorComboBox.findText(currentSector)
+            index = self._sectorComboBox.findUserData(sectorPos)
             if index >= 0:
                 self._sectorComboBox.setCurrentIndex(index)
 
             self._loadSubsectorNames()
-            index = self._subsectorComboBox.findText(currentSubsector)
+            index = self._subsectorComboBox.findUserData(subsectorCode)
             if index >= 0:
                 self._subsectorComboBox.setCurrentIndex(index)
 
@@ -885,8 +922,8 @@ class WorldSearchWindow(gui.WindowWidget):
                     universe=universe,
                     rules=rules,
                     tagging=tagging,
-                    sectorName=self._regionSearchSelectWidget.sectorName(),
-                    subsectorName=self._regionSearchSelectWidget.subsectorName(),
+                    sectorPos=self._regionSearchSelectWidget.sectorPos(),
+                    subsectorCode=self._regionSearchSelectWidget.subsectorCode(),
                     maxResults=self._MaxSearchResults)
             elif self._worldRadiusSearchRadioButton.isChecked():
                 hex = self._worldRadiusSearchWidget.centerHex()
