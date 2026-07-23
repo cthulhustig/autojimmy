@@ -23,12 +23,15 @@ class Universe(object):
     def __init__(
             self,
             universeId: str,
+            milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector]
             ) -> None:
         common.validateMandatoryStr(name='universeId', value=universeId, allowEmpty=False)
+        common.validateMandatoryObject(name='milieu', value=milieu, objectType=astronomer.Milieu)
         common.validateMandatoryCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
 
         self._universeId = universeId
+        self._milieu = milieu
         self._nameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._abbreviationToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._subsectorNameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
@@ -43,6 +46,9 @@ class Universe(object):
 
     def universeId(self) -> str:
         return self._universeId
+
+    def milieu(self) -> astronomer.Milieu:
+        return self._milieu
 
     def sectorsByAbbreviation(
             self,

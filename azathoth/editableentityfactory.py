@@ -7,10 +7,12 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
     def createUniverse(
             self,
             universeId: str,
+            milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector]
             ) -> astronomer.Universe:
         return azathoth.EditableUniverse(
             universeId=universeId,
+            milieu=milieu,
             sectors=sectors)
 
     def createSector(

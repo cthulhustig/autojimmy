@@ -6,6 +6,7 @@ class EntityFactoryInterface(object):
     def createUniverse(
             self,
             universeId: str,
+            milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector]
             ) -> astronomer.Universe:
         raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createUniverse')
@@ -118,10 +119,12 @@ class DefaultEntityFactory(EntityFactoryInterface):
     def createUniverse(
             self,
             universeId: str,
+            milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector]
             ) -> astronomer.Universe:
         return astronomer.Universe(
             universeId=universeId,
+            milieu=milieu,
             sectors=sectors)
 
     def createSector(

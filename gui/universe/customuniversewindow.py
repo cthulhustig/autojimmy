@@ -323,7 +323,10 @@ class CustomUniverseWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        importDlg = gui.ImportSectorDialog(sectorPos=sectorPos, parent=self)
+        importDlg = gui.ImportSectorDialog(
+            milieu=universe.milieu(),
+            sectorPos=sectorPos,
+            parent=self)
         if importDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 

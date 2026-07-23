@@ -960,6 +960,7 @@ def convertDbSectorToAstronomerSector(
         products=astroProducts)
 
 def convertRawSectorToAstronomerSector(
+        milieu: astronomer.Milieu,
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld],
         rawStockAllegiances: typing.Optional[typing.Collection[survey.RawStockAllegiance]] = None,
@@ -969,6 +970,7 @@ def convertRawSectorToAstronomerSector(
         sectorId: typing.Optional[str] = None
         ) -> astronomer.Sector:
     dbSector = multiverse.convertRawSectorToDbSector(
+        milieu=milieu.value,
         rawMetadata=rawMetadata,
         rawSystems=rawSystems,
         rawStockAllegiances=rawStockAllegiances,

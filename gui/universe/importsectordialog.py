@@ -18,6 +18,7 @@ class ImportSectorDialog(gui.DialogEx):
 
     def __init__(
             self,
+            milieu: astronomer.Milieu,
             sectorPos: astronomer.SectorPosition,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
@@ -26,6 +27,7 @@ class ImportSectorDialog(gui.DialogEx):
             configSection='ImportSectorDialog',
             parent=parent)
 
+        self._milieu = milieu
         self._sectorPos = sectorPos
 
         self._recentDirectoryPath = None
@@ -344,6 +346,7 @@ class ImportSectorDialog(gui.DialogEx):
 
         try:
             sector: azathoth.EditableSector = astronomer.convertRawSectorToAstronomerSector(
+                milieu=self._milieu,
                 rawMetadata=rawMetadata,
                 rawSystems=rawWorlds,
                 rawStockAllegiances=rawStockAllegiances,
