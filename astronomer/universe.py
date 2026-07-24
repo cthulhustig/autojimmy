@@ -246,11 +246,11 @@ class Universe(object):
             try:
                 sectorX = int(tokens[0])
                 sectorY = int(tokens[1])
-                return astronomer.HexPosition(
+                return [astronomer.HexPosition(
                     sectorX=sectorX,
                     sectorY=sectorY,
                     offsetX=offsetX,
-                    offsetY=offsetY)
+                    offsetY=offsetY)]
             except:
                 pass
 
