@@ -54,12 +54,17 @@ class _EmpressWaveOverlay(MapOverlay):
 
     def __init__(
             self,
+            universe: astronomer.Universe,
             depth: int
             ) -> None:
         super().__init__(depth=depth)
+        self._universe = universe
         self._pen = QtGui.QPen(
             _EmpressWaveOverlay._WaveColour,
             0) # Width will be set at render time
+
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        self._universe = universe
 
     # This code is based on the Traveller Map drawWave code (map.js)
     def draw(
@@ -70,11 +75,7 @@ class _EmpressWaveOverlay(MapOverlay):
         if not self.isEnabled():
             return False
 
-        # TODO: This is broken for everything apart from M1105. Will need a way
-        # to select the year for it when universes aren't really going to have
-        # a millie. We can't rely on the universe having one set as it may
-        # have been created as an empty universe.
-        year = astronomer.milieuToYear(milieu=astronomer.Milieu.M1105)
+        year = astronomer.milieuToYear(milieu=self._universe.milieu())
 
         w = 1 #pc
 
@@ -149,11 +150,16 @@ class _AntaresSupernovaOverlay(MapOverlay):
 
     def __init__(
             self,
+            universe: astronomer.Universe,
             depth: int
             ) -> None:
         super().__init__(depth=depth)
+        self._universe = universe
         self._brush = QtGui.QBrush(
             _AntaresSupernovaOverlay._SupernovaColour)
+
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        self._universe = universe
 
     # This code is based on the Traveller Map drawAS code (map.js)
     def draw(
@@ -164,11 +170,7 @@ class _AntaresSupernovaOverlay(MapOverlay):
         if not self.isEnabled():
             return False
 
-        # TODO: This is broken for everything apart from M1105. Will need a way
-        # to select the year for it when universes aren't really going to have
-        # a millie. We can't rely on the universe having one set as it may
-        # have been created as an empty universe.
-        year = astronomer.milieuToYear(milieu=astronomer.Milieu.M1105)
+        year = astronomer.milieuToYear(milieu=self._universe.milieu())
         yearRadius = (year - 1270) * _AntaresSupernovaOverlay._SupernovaVelocity
         if yearRadius < 0:
             return False
@@ -371,7 +373,7 @@ class _MapTile(object):
 
     def worldRect(self) -> cartographer.RectangleF:
         return self._worldRect
-    
+
     def image(self) -> QtGui.QImage:
         return self._image
 
@@ -555,7 +557,9 @@ class MapWidget(QtWidgets.QWidget):
 
         self._overlays: typing.Set[MapOverlay] = set()
 
-        self._empressWaveOverlay = _EmpressWaveOverlay(depth=0)
+        self._empressWaveOverlay = _EmpressWaveOverlay(
+            universe=self._universe,
+            depth=0)
         self._empressWaveOverlay.setEnabled(
             enabled=app.MapOption.EmpressWaveOverlay in self._options)
         self._overlays.add(self._empressWaveOverlay)
@@ -565,7 +569,9 @@ class MapWidget(QtWidgets.QWidget):
             enabled=app.MapOption.QrekrshaZoneOverlay in self._options)
         self._overlays.add(self._qrekrshaZoneOverlay)
 
-        self._antaresSupernovaOverlay = _AntaresSupernovaOverlay(depth=2)
+        self._antaresSupernovaOverlay = _AntaresSupernovaOverlay(
+            universe=self._universe,
+            depth=2)
         self._antaresSupernovaOverlay.setEnabled(
             enabled=app.MapOption.AntaresSupernovaOverlay in self._options)
         self._overlays.add(self._antaresSupernovaOverlay)
@@ -624,6 +630,9 @@ class MapWidget(QtWidgets.QWidget):
 
         self._universe = universe
         self._labelStore = cartographer.LabelStore(universe=self._universe)
+
+        self._empressWaveOverlay.setUniverse(universe=self._universe)
+        self._antaresSupernovaOverlay.setUniverse(universe=self._universe)
 
         self._createNewRenderer()
 
