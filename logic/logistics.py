@@ -127,7 +127,6 @@ def calculateRouteLogistics(
                         tonsOfFuel=None,
                         fuelCost=None,
                         berthingCost=berthingCost)
-                    # TODO: Do I need to pass the universe to the refuelling plan?
                     refuellingPlan = logic.RefuellingPlan(pitStops=[pitStop])
 
     reportedPerJumpOverheads = perJumpOverheads

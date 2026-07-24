@@ -14,6 +14,14 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 # - Cover fact universe no longer auto updates to latest traveller map data and how the user can update it
 # TODO: Something that causes other windows to update when new sectors are imported
 # TODO: Option to update unmodified sectors to the versions from the stock database
+# TODO: Ideally I would have more editor stuff in place for the first release
+#   - System editor
+#   - Route editor
+#   - Border/Region editor
+#   - Sophont editor
+#   - Allegiance editor
+#   - Label editor
+#   - Sector editor (sector/subsector name etc)
 
 class CustomUniverseWindow(gui.WindowWidget):
     class Actions(enum.StrEnum):

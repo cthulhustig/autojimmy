@@ -7,7 +7,6 @@ import typing
 from PyQt5 import QtWidgets, QtCore
 
 # TODO: Load/save previous settings (not name or description)
-# TODO: Test description works
 
 class CreateUniverseDialog(gui.DialogEx):
     def __init__(

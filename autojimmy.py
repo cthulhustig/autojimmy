@@ -408,8 +408,12 @@ class MainWindow(QtWidgets.QMainWindow):
     def _showUniverseEditor(self) -> None:
         gui.WindowManager.instance().showUniverseEditorWindow()
 
-    # TODO: If the the current universe is a custom universe this should probably give
-    # a warning telling the user that their universe won't update.
+    # TODO: It probably makes sense to delete this option as universes
+    # won't automatically update to new snapshots. It probably makes
+    # sense for downloading the universe to be part of the dialog that
+    # I'll need to let the user manage updating stock sectors.
+    # If I do end up keeping this option, I'll need a one time popup to
+    # tell the user their universe won't auto update.
     def _downloadUniverse(self) -> None:
         try:
             result = _updateSnapshot(isStartup=False, parent=self)
@@ -554,8 +558,11 @@ def main() -> None:
             interfaceTheme=app.Config.instance().value(option=app.ConfigOption.ColourTheme),
             interfaceScale=app.Config.instance().value(option=app.ConfigOption.InterfaceScale))
 
-        # Check if there is new universe data available BEFORE the app loads the
-        # local snapshot so it can be updated without restarting
+        # TODO: I'm not sure it makes sense to auto download the universe
+        # at startup now that everything is a custom universe and the user
+        # will need to specify when they want to update to a new snapshot.
+        # It probably makes more sense for the option to download a new
+        # snapshot to be part of that dialog.
         try:
             result = _updateSnapshot(isStartup=True)
             if result == _SnapshotCheckResult.ExitRequested:
