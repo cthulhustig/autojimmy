@@ -865,8 +865,8 @@ class UniverseDb(object):
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                    database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
                     database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='wrap', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False)])
