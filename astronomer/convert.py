@@ -27,12 +27,32 @@ def _mapAstronomerLineStyleToDbLineStyle(
         ) -> typing.Optional[str]:
     return _AstronomerToDbLineStyleMap.get(style)
 
+_DbToAstronomerLabelBandMap = {
+    'mega': astronomer.LabelBand.Mega,
+    'minor': astronomer.LabelBand.Minor}
+def _mapDbLabelBandToAstronomerLabelBand(
+        band: typing.Optional[str]
+        ) -> typing.Optional[astronomer.LabelBand]:
+    if not band:
+        return None
+    lower = band.lower()
+    mapped = _DbToAstronomerLabelBandMap.get(lower)
+    if not mapped:
+        return None
+    return mapped
+
+_AstronomerToDbLabelBandMap = {v: k for k, v in _DbToAstronomerLabelBandMap.items()}
+def _mapAstronomerLabelBandToDbLabelBand(
+        band: astronomer.LabelBand
+        ) -> typing.Optional[str]:
+    return _AstronomerToDbLabelBandMap.get(band)
+
 _DbToAstronomerLabelSizeMap = {
-    'small': astronomer.Label.Size.Small,
-    'large': astronomer.Label.Size.Large}
+    'small': astronomer.LabelSize.Small,
+    'large': astronomer.LabelSize.Large}
 def _mapDbLabelSizeToAstronomerLabelSize(
         size: typing.Optional[str]
-        ) -> typing.Optional[astronomer.Label.Size]:
+        ) -> typing.Optional[astronomer.LabelSize]:
     if not size:
         return None
     lowerSize = size.lower()
@@ -43,7 +63,7 @@ def _mapDbLabelSizeToAstronomerLabelSize(
 
 _AstronomerToDbLabelSizeMap = {v: k for k, v in _DbToAstronomerLabelSizeMap.items()}
 def _mapAstronomerLabelSizeToDbLabelSize(
-        size: astronomer.Label.Size
+        size: astronomer.LabelSize
         ) -> typing.Optional[str]:
     return _AstronomerToDbLabelSizeMap.get(size)
 
@@ -753,7 +773,7 @@ def _createAstronomerLabels(
         dbSector: multiverse.DbSector,
         entityFactory: astronomer.EntityFactoryInterface,
         sectorLogName: str
-        ) -> typing.Optional[typing.List[astronomer.Label]]:
+        ) -> typing.Optional[typing.List[astronomer.SectorLabel]]:
     dbLabels = dbSector.labels()
     if not dbLabels:
         return None
@@ -780,7 +800,7 @@ def _createAstronomerLabels(
                         sectorId=dbSector.id(),
                         name=sectorLogName))
 
-            astroLabels.append(entityFactory.createLabel(
+            astroLabels.append(entityFactory.createSectorLabel(
                 entityId=dbLabel.id(),
                 text=dbLabel.text(),
                 worldX=dbLabel.worldX(),
@@ -1502,7 +1522,7 @@ def _createDbRegions(
 def _createDbLabels(
         astroSector: astronomer.Sector,
         sectorLogName: str
-        ) -> typing.Optional[typing.List[multiverse.DbLabel]]:
+        ) -> typing.Optional[typing.List[multiverse.DbSectorLabel]]:
     astroLabels = astroSector.labels()
     if not astroLabels:
         return None
@@ -1520,7 +1540,7 @@ def _createDbLabels(
                     sector=sectorLogName))
 
         try:
-            dbLabels.append(multiverse.DbLabel(
+            dbLabels.append(multiverse.DbSectorLabel(
                 id=astroLabel.entityId(),
                 text=astroLabel.text(),
                 worldX=astroLabel.worldX(),
@@ -1674,3 +1694,28 @@ def convertAstronomerSectorToRawSector(
             typing.List[survey.RawWorld]]:
     dbSector = convertAstronomerSectorToDbSector(astroSector=astroSector)
     return multiverse.convertDbSectorToRawSector(dbSector=dbSector)
+
+def convertDbMapLabelToAstronomerMapLabel(
+        dbLabel: multiverse.DbMapLabel,
+        entityFactory: astronomer.EntityFactoryInterface
+        ) -> astronomer.MapLabel:
+    return entityFactory.createMapLabel(
+        entityId=dbLabel.id(),
+        text=dbLabel.text(),
+        worldX=dbLabel.worldX(),
+        worldY=dbLabel.worldY(),
+        band=_mapDbLabelBandToAstronomerLabelBand(dbLabel.band()),
+        colour=dbLabel.colour(),
+        size=_mapDbLabelSizeToAstronomerLabelSize(dbLabel.size()))
+
+def convertAstronomerMapLabelToDbMapLabel(
+        astroLabel: astronomer.MapLabel
+        ) -> multiverse.DbMapLabel:
+    return multiverse.DbMapLabel(
+        id=astroLabel.entityId(),
+        text=astroLabel.text(),
+        worldX=astroLabel.worldX(),
+        worldY=astroLabel.worldY(),
+        band=_mapAstronomerLabelBandToDbLabelBand(astroLabel.band()),
+        colour=astroLabel.colour(),
+        size=_mapAstronomerLabelSizeToDbLabelSize(astroLabel.size()))

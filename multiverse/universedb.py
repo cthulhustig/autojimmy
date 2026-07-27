@@ -100,6 +100,9 @@ class UniverseDb(object):
     _SectorsTableName = 'sectors'
     _SectorsTableSchema = 1
 
+    _MapLabelsTableName = 'map_labels'
+    _MapLabelsTableSchema = 1
+
     _StockSourcesTableName = 'stock_sources'
     _StockSourcesTableSchema = 1
 
@@ -175,8 +178,8 @@ class UniverseDb(object):
     _RegionHexesTableName = 'region_hexes'
     _RegionHexesTableSchema = 1
 
-    _LabelsTableName = 'labels'
-    _LabelsTableSchema = 1
+    _SectorLabelsTableName = 'sector_labels'
+    _SectorLabelsTableSchema = 1
 
     _SectorTagsTableName = 'sector_tags'
     _SectorTagsTableSchema = 1
@@ -403,24 +406,39 @@ class UniverseDb(object):
                     sectorId=sectorId,
                     cursor=connection.cursor())
 
-    def clearSectors(
+    def saveLabel(
             self,
+            label: multiverse.DbMapLabel,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseDb clearing sectors in universe {self._universePath!r}')
+        logging.debug(f'UniverseDb saving universe labels to universe {self._universePath!r}')
 
         if transaction != None:
             connection = transaction.connection()
-            # Delete any old version of the sector and any sector that has at the
-            # same time and place as the new sector
-            self._clearSectors(
+            return self._saveMapLabel(
+                label=label,
                 cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
-                # Delete any old version of the sector and any sector that has at the
-                # same time and place as the new sector
-                self._clearSectors(
+                return self._saveMapLabel(
+                    label=label,
+                    cursor=connection.cursor())
+
+    def loadLabels(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> typing.List[multiverse.DbMapLabel]:
+        logging.debug(f'UniverseDb loading universe labels from universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._loadMapLabels(
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._loadMapLabels(
                     cursor=connection.cursor())
 
     def copyTo(self, targetPath: str) -> None:
@@ -464,6 +482,19 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
                     database.UniqueConstraintDef(columnNames=['sector_x', 'sector_y'])])
+
+            self._database.createTable(
+                cursor=cursor,
+                tableName=UniverseDb._MapLabelsTableName,
+                requiredSchemaVersion=UniverseDb._MapLabelsTableSchema,
+                columns=[
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                    database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                    database.ColumnDef(columnName='band', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
             self._database.createTable(
                 cursor=cursor,
@@ -857,8 +888,8 @@ class UniverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=UniverseDb._LabelsTableName,
-                requiredSchemaVersion=UniverseDb._LabelsTableSchema,
+                tableName=UniverseDb._SectorLabelsTableName,
+                requiredSchemaVersion=UniverseDb._SectorLabelsTableSchema,
                 columns=[
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
                     database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
@@ -971,9 +1002,9 @@ class UniverseDb(object):
             cursor=cursor)
         sectorRegionsMap = self._readRegions(
             cursor=cursor)
-        sectorLabelsMap = self._readLabels(
+        sectorLabelsMap = self._readSectorLabels(
             cursor=cursor)
-        sectorTagsMap = self._readTags(
+        sectorTagsMap = self._readSectorTags(
             cursor=cursor)
         sectorProductsMap = self._readProducts(
             cursor=cursor)
@@ -1116,10 +1147,10 @@ class UniverseDb(object):
         sectorRegionsMap = self._readRegions(
             cursor=cursor,
             sectorId=sectorId)
-        sectorLabelsMap = self._readLabels(
+        sectorLabelsMap = self._readSectorLabels(
             cursor=cursor,
             sectorId=sectorId)
-        sectorTagsMap = self._readTags(
+        sectorTagsMap = self._readSectorTags(
             cursor=cursor,
             sectorId=sectorId)
         sectorProductsMap = self._readProducts(
@@ -1838,7 +1869,7 @@ class UniverseDb(object):
                 colour, size, wrap)
             VALUES (:id, :sector_id, :text, :x, :y,
                 :colour, :size, :wrap);
-            """.format(table=UniverseDb._LabelsTableName)
+            """.format(table=UniverseDb._SectorLabelsTableName)
         rows = []
         for label in sector.labels():
             rows.append({
@@ -1852,19 +1883,19 @@ class UniverseDb(object):
                 'wrap': 1 if label.wrap() else 0})
         cursor.executemany(sql, rows)
 
-    def _readLabels(
+    def _readSectorLabels(
             self,
             cursor: sqlite3.Cursor,
             sectorId: typing.Optional[str] = None
             ) -> typing.Dict[
                 str, # Sector Id
-                typing.List[multiverse.DbLabel]]:
+                typing.List[multiverse.DbSectorLabel]]:
         sql = """
             SELECT id, sector_id, text, x, y, colour, size, wrap
             FROM {table}
             {where};
             """.format(
-                table=UniverseDb._LabelsTableName,
+                table=UniverseDb._SectorLabelsTableName,
                 where='WHERE sector_id = :id' if sectorId else '')
 
         parameters = {}
@@ -1882,7 +1913,7 @@ class UniverseDb(object):
                 sectorLabelsMap[sectorId] = labels
 
             try:
-                labels.append(multiverse.DbLabel(
+                labels.append(multiverse.DbSectorLabel(
                     id=labelId,
                     sectorId=sectorId,
                     text=row[2],
@@ -1918,7 +1949,7 @@ class UniverseDb(object):
                 'tag': tag.tag()})
         cursor.executemany(sql, rows)
 
-    def _readTags(
+    def _readSectorTags(
             self,
             cursor: sqlite3.Cursor,
             sectorId: typing.Optional[str] = None
@@ -3141,21 +3172,63 @@ class UniverseDb(object):
             table=UniverseDb._SectorsTableName)
         cursor.execute(sql, {'id': sectorId})
 
-    def _clearSectors(self, cursor: sqlite3.Cursor) -> None:
-        sql = """
-            DELETE FROM {table};
-            """.format(
-            table=UniverseDb._SectorsTableName)
-        cursor.execute(sql)
-
-    def _replaceSectors(
+    def _saveMapLabel(
             self,
             cursor: sqlite3.Cursor,
-            sectors: typing.Collection[multiverse.DbSector]
+            label: multiverse.DbMapLabel
             ) -> None:
-        self._clearSectors(cursor=cursor)
-        for sector in sectors:
-            self._insertSector(cursor=cursor, sector=sector)
+        sql = """
+            INSERT INTO {table} (id, text, x, y, band,
+                colour, size)
+            VALUES (:id, :text, :x, :y, :band,
+                :colour, :size)
+            ON CONFLICT(id) DO UPDATE SET
+                text = excluded.text,
+                x = excluded.x,
+                y = excluded.y,
+                band = excluded.band,
+                colour = excluded.colour,
+                size = excluded.size;
+            """.format(table=UniverseDb._MapLabelsTableName)
+        cursor.execute(sql, {
+            'id': label.id(),
+            'text': label.text(),
+            'x': label.worldX(),
+            'y': label.worldY(),
+            'band': label.band(),
+            'colour': label.colour(),
+            'size': label.size()})
+
+    def _loadMapLabels(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.List[multiverse.DbMapLabel]:
+        sql = """
+            SELECT id, text, x, y, band, colour, size
+            FROM {table};
+            """.format(
+                table=UniverseDb._MapLabelsTableName)
+        cursor.execute(sql)
+
+        labels: typing.List[multiverse.DbMapLabel] = []
+        for row in cursor.fetchall():
+            labelId = row[0]
+
+            try:
+                labels.append(multiverse.DbMapLabel(
+                    id=row[0],
+                    text=row[1],
+                    worldX=row[2],
+                    worldY=row[3],
+                    band=row[4],
+                    colour=row[5],
+                    size=row[6]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to construct universe label {labelId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return labels
 
     @staticmethod
     def _parseTimestampString(content: typing.Optional[str]) -> typing.Optional[datetime.datetime]:

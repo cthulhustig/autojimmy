@@ -20,3 +20,4 @@ from .universe import *
 from .stockdata import *
 from .metadata import *
 from .sector import *
+from .labels import *

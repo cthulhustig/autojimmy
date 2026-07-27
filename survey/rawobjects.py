@@ -640,7 +640,7 @@ class RawRegion(object):
     def colour(self) -> typing.Optional[str]:
         return self._colour
 
-class RawLabel(object):
+class RawSectorLabel(object):
     def __init__(
             self,
             text: str,
@@ -848,7 +848,7 @@ class RawMetadata(object):
             allegiances: typing.Optional[typing.Sequence[RawAllegiance]],
             routes: typing.Optional[typing.Sequence[RawRoute]],
             borders: typing.Optional[typing.Sequence[RawBorder]],
-            labels: typing.Optional[typing.Sequence[RawLabel]],
+            labels: typing.Optional[typing.Sequence[RawSectorLabel]],
             regions: typing.Optional[typing.Sequence[RawRegion]],
             sources: typing.Optional[RawSources],
             styleSheet: typing.Optional[RawStyleSheet]
@@ -868,7 +868,7 @@ class RawMetadata(object):
         common.validateOptionalCollection(name='allegiances', value=allegiances, elementType=RawAllegiance)
         common.validateOptionalCollection(name='routes', value=routes, elementType=RawRoute)
         common.validateOptionalCollection(name='borders', value=borders, elementType=RawBorder)
-        common.validateOptionalCollection(name='labels', value=labels, elementType=RawLabel)
+        common.validateOptionalCollection(name='labels', value=labels, elementType=RawSectorLabel)
         common.validateOptionalCollection(name='regions', value=regions, elementType=RawRegion)
         common.validateOptionalObject(name='sources', value=sources, objectType=RawSources)
         common.validateOptionalObject(name='styleSheet', value=styleSheet, objectType=RawStyleSheet)
@@ -941,7 +941,7 @@ class RawMetadata(object):
     def borders(self) -> typing.Optional[typing.Sequence[RawBorder]]:
         return common.ConstSequenceRef(self._borders) if self._borders is not None else None
 
-    def labels(self) -> typing.Optional[typing.Sequence[RawLabel]]:
+    def labels(self) -> typing.Optional[typing.Sequence[RawSectorLabel]]:
         return common.ConstSequenceRef(self._labels) if self._labels is not None else None
 
     def regions(self) -> typing.Optional[typing.Sequence[RawRegion]]:
@@ -1123,3 +1123,65 @@ class RawStockSophont(object):
 
     def location(self) -> str:
         return self._location
+
+class RawUniverseLabel(object):
+    def __init__(
+            self,
+            text: str,
+            worldX: float,
+            worldY: float,
+            minor: bool
+            ) -> None:
+        super().__init__()
+
+        common.validateMandatoryStr(name='text', value=text)
+        common.validateMandatoryFloat(name='worldX', value=worldX)
+        common.validateMandatoryFloat(name='worldY', value=worldY)
+        common.validateMandatoryBool(name='minor', value=minor)
+
+        self._text = text
+        self._worldX = worldX
+        self._worldY = worldY
+        self._minor = minor
+
+    def text(self) -> str:
+        return self._text
+
+    def worldX(self) -> float:
+        return self._worldX
+
+    def worldY(self) -> float:
+        return self._worldY
+
+    def minor(self) -> bool:
+        return self._minor
+
+class RawWorldLabel(object):
+    def __init__(
+            self,
+            name: str,
+            sector: str,
+            hexX: int,
+            hexY: int,
+            options: typing.Sequence[str],
+            biasX: typing.Optional[int] = None,
+            biasY: typing.Optional[int] = None,
+            ) -> None:
+        super().__init__()
+
+        common.validateMandatoryStr(name='name', value=name)
+        common.validateMandatoryStr(name='sector', value=sector, allowEmpty=False)
+        common.validateMandatoryInt(name='hexX', value=hexX)
+        common.validateMandatoryInt(name='hexY', value=hexY)
+        # TODO: This should validate that the strings are valid map options
+        common.validateMandatoryCollection(name='options', value=options, elementType=str, allowEmpty=False)
+        common.validateOptionalInt(name='biasX', value=biasX)
+        common.validateOptionalInt(name='biasY', value=biasY)
+
+        self.name = name
+        self.sector = sector
+        self.hexX = hexX
+        self.hexY = hexY
+        self.options = list(options)
+        self.biasX = biasX
+        self.biasY = biasY

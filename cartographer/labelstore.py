@@ -6,17 +6,6 @@ import multiverse
 import typing
 import xml.etree.ElementTree
 
-class MapLabel(object):
-    def __init__(
-            self,
-            text: str,
-            position: cartographer.PointF,
-            minor: bool = False
-            ) -> None:
-        self.text = text
-        self.position = cartographer.PointF(position)
-        self.minor = minor
-
 class WorldLabel(object):
     def __init__(
             self,
@@ -33,12 +22,7 @@ class WorldLabel(object):
         self.biasY = biasY
 
 class LabelStore(object):
-    _MinorLabelsPath = 'labels/minor_labels.tab'
-    _MegaLabelsPath = 'labels/mega_labels.tab'
     _WorldLabelPath = 'labels/Worlds.xml'
-
-    _cachedMinorLabels = None
-    _cachedMegaLabels = None
 
     _cachedWorldLabelsXml = None
 
@@ -47,38 +31,10 @@ class LabelStore(object):
             universe: astronomer.Universe
             ) -> None:
         self._universe = universe
-
-        if LabelStore._cachedMinorLabels is None:
-            LabelStore._cachedMinorLabels = self._parseMapLabels(
-                multiverse.SnapshotManager.instance().readTextResource(
-                    filePath=LabelStore._MinorLabelsPath))
-
-        if LabelStore._cachedMegaLabels is None:
-            LabelStore._cachedMegaLabels = self._parseMapLabels(
-                multiverse.SnapshotManager.instance().readTextResource(
-                    filePath=LabelStore._MegaLabelsPath))
-
         self._worldLabels = self._loadWorldLabels(self._universe)
-
-    def minorLabels(self) -> typing.Collection[MapLabel]:
-        return LabelStore._cachedMinorLabels
-
-    def megaLabels(self) -> typing.Collection[MapLabel]:
-        return LabelStore._cachedMegaLabels
 
     def worldLabels(self) -> typing.Collection[WorldLabel]:
         return self._worldLabels
-
-    @staticmethod
-    def _parseMapLabels(content: str) -> typing.List[MapLabel]:
-        _, rows = common.parseTabTableContent(content=content)
-        labels = []
-        for data in rows:
-            labels.append(MapLabel(
-                text=data['Text'].replace('\\n', '\n'),
-                position=cartographer.PointF(x=float(data['X']), y=float(data['Y'])),
-                minor=common.stringToBool(data['Minor'], strict=False)))
-        return labels
 
     @staticmethod
     def _loadWorldLabels(universe: astronomer.Universe) -> typing.List[WorldLabel]:

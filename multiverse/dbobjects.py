@@ -30,6 +30,9 @@ class DbObject(object):
     def id(self) -> str:
         return self._id
 
+class DbUniverseObject(DbObject):
+    pass
+
 class DbSectorObject(DbObject):
     def __init__(
             self,
@@ -1283,7 +1286,7 @@ class DbRegion(DbSectorObject):
     def wrapLabel(self) -> bool:
         return self._wrapLabel
 
-class DbLabel(DbSectorObject):
+class DbSectorLabel(DbSectorObject):
     def __init__(
             self,
             text: str,
@@ -1379,7 +1382,7 @@ class DbTag(DbSectorObject):
     def tag(self) -> str:
         return self._string
 
-class DbSector(DbObject):
+class DbSector(DbUniverseObject):
     def __init__(
             self,
             sectorX: int,
@@ -1397,7 +1400,7 @@ class DbSector(DbObject):
             routes: typing.Optional[typing.Collection[DbRoute]] = None,
             borders: typing.Optional[typing.Collection[DbBorder]] = None,
             regions: typing.Optional[typing.Collection[DbRegion]] = None,
-            labels: typing.Optional[typing.Collection[DbLabel]] = None,
+            labels: typing.Optional[typing.Collection[DbSectorLabel]] = None,
             tags: typing.Optional[typing.Collection[DbTag]] = None,
             credits: typing.Optional[str] = None,
             publication: typing.Optional[str] = None,
@@ -1517,7 +1520,7 @@ class DbSector(DbObject):
     def regions(self) -> typing.Optional[typing.Collection[DbRegion]]:
         return self._regions
 
-    def labels(self) -> typing.Optional[typing.Collection[DbLabel]]:
+    def labels(self) -> typing.Optional[typing.Collection[DbSectorLabel]]:
         return self._labels
 
     def tags(self) -> typing.Optional[typing.Collection[DbTag]]:
@@ -1745,13 +1748,13 @@ class DbSector(DbObject):
     @staticmethod
     def _validateLabels(
             name: str,
-            value: typing.Optional[typing.Collection[DbLabel]],
+            value: typing.Optional[typing.Collection[DbSectorLabel]],
             sectorId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbLabel)
+        common.validateOptionalCollection(name=name, value=value, elementType=DbSectorLabel)
 
         for label in value:
             currentSectorId = label.sectorId()
@@ -1789,3 +1792,48 @@ class DbSector(DbObject):
             currentSectorId = tag.sectorId()
             if currentSectorId is not None and currentSectorId != sectorId:
                 raise ValueError(f'{name} contains products that are already attached to a sector')
+
+class DbMapLabel(DbUniverseObject):
+    def __init__(
+            self,
+            text: str,
+            worldX: float,
+            worldY: float,
+            band: str,
+            colour: typing.Optional[str] = None,
+            size: typing.Optional[str] = None,
+            id: typing.Optional[str] = None # None means allocate an id
+            ) -> None:
+        super().__init__(id=id)
+
+        common.validateMandatoryStr(name='text', value=text, allowEmpty=False)
+        common.validateMandatoryFloat(name='worldX', value=worldX)
+        common.validateMandatoryFloat(name='worldY', value=worldY)
+        survey.validateMandatoryLabelBand(name='band', value=band)
+        survey.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateOptionalLabelSize(name='size', value=size)
+
+        self._text = text
+        self._worldX = worldX
+        self._worldY = worldY
+        self._band = band
+        self._colour = colour
+        self._size = size
+
+    def text(self) -> str:
+        return self._text
+
+    def worldX(self) -> float:
+        return self._worldX
+
+    def worldY(self) -> float:
+        return self._worldY
+
+    def band(self) -> str:
+        return self._band
+
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
+
+    def size(self) -> typing.Optional[str]:
+        return self._size

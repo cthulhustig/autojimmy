@@ -55,7 +55,25 @@ def loadUniverseFromDatabase(
                 exc_info=ex)
             continue
 
+    dbLabels = multiverse.UniverseManager.instance().mapLabels(id=universeId)
+    labels: typing.List[astronomer.MapLabel] = []
+    for dbLabel in dbLabels:
+        try:
+            label = astronomer.convertDbMapLabelToAstronomerMapLabel(
+                dbLabel=dbLabel,
+                entityFactory=entityFactory)
+            labels.append(label)
+        except Exception as ex:
+            logging.error(
+                'Failed to load label {name!r} at ({x}, {y})'.format(
+                    name=dbLabel.text(),
+                    x=dbLabel.worldX(),
+                    y=dbLabel.worldY()),
+                exc_info=ex)
+            continue
+
     return entityFactory.createUniverse(
         universeId=universeId,
         milieu=milieu,
-        sectors=sectors)
+        sectors=sectors,
+        labels=labels)

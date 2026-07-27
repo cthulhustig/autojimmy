@@ -24,14 +24,19 @@ class Universe(object):
             self,
             universeId: str,
             milieu: astronomer.Milieu,
-            sectors: typing.Collection[astronomer.Sector]
+            sectors: typing.Collection[astronomer.Sector],
+            labels: typing.Collection[astronomer.MapLabel]
             ) -> None:
         common.validateMandatoryStr(name='universeId', value=universeId, allowEmpty=False)
         common.validateMandatoryObject(name='milieu', value=milieu, objectType=astronomer.Milieu)
         common.validateMandatoryCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
+        common.validateMandatoryCollection(name='labels', value=labels, elementType=astronomer.MapLabel)
 
         self._universeId = universeId
         self._milieu = milieu
+
+        self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
+
         self._nameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._abbreviationToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._subsectorNameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
@@ -39,10 +44,12 @@ class Universe(object):
         self._positionToWorldMap: typing.Dict[typing.Tuple[int, int], astronomer.World] = {}
         self._positionToMainMap: typing.Dict[typing.Tuple[int, int], astronomer.Main] = {}
         self._positionToRoutesMap: typing.Dict[typing.Tuple[int, int], typing.Set[astronomer.Route]] = {}
-        self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
-
         for sector in sectors:
             self._addSector(sector=sector)
+
+        self._labels: typing.List[astronomer.MapLabel] = []
+        for label in labels:
+            self._addLabel(label=label)
 
     def universeId(self) -> str:
         return self._universeId
@@ -507,6 +514,9 @@ class Universe(object):
                 if connectedWorld:
                     yield connectedWorld
 
+    def labels(self) -> typing.Collection[astronomer.MapLabel]:
+        return common.ConstCollectionRef(self._labels)
+
     def _addSector(self, sector: astronomer.Sector) -> None:
         self._idToEntityMap[sector.entityId()] = sector
         for entity in sector.entities():
@@ -610,3 +620,7 @@ class Universe(object):
 
         # Clear mains so they will be regenerated from the updated data
         self._positionToMainMap.clear()
+
+    def _addLabel(self, label: astronomer.MapLabel) -> None:
+        self._idToEntityMap[label.entityId()] = label
+        self._labels.append(label)

@@ -2,7 +2,7 @@ import astronomer
 import common
 import typing
 
-class EditableLabel(astronomer.Label):
+class EditableSectorLabel(astronomer.SectorLabel):
     def __init__(
             self,
             entityId: str,
@@ -10,7 +10,7 @@ class EditableLabel(astronomer.Label):
             worldX: float,
             worldY: float,
             colour: typing.Optional[str] = None,
-            size: typing.Optional[astronomer.Label.Size] = None,
+            size: typing.Optional[astronomer.LabelSize] = None,
             wrap: bool = False
             ) -> None:
         super().__init__(
@@ -29,3 +29,23 @@ class EditableLabel(astronomer.Label):
     def setSectorId(self, sectorId: str) -> None:
         common.validateMandatoryStr(name='sectorId', value=sectorId, allowEmpty=False)
         self._sectorId = sectorId
+
+class EditableMapLabel(astronomer.MapLabel):
+    def __init__(
+            self,
+            entityId: str,
+            text: str,
+            worldX: float,
+            worldY: float,
+            band: astronomer.LabelBand,
+            colour: typing.Optional[str] = None,
+            size: typing.Optional[astronomer.LabelSize] = None
+            ) -> None:
+        super().__init__(
+            entityId=entityId,
+            text=text,
+            worldX=worldX,
+            worldY=worldY,
+            band=band,
+            colour=colour,
+            size=size)

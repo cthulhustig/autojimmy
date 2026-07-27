@@ -475,7 +475,7 @@ def parseXMLMetadata(
                         reporter.addMessage(f'Ignoring Label with no valid Hex attribute')
                     continue
 
-                labels.append(survey.RawLabel(
+                labels.append(survey.RawSectorLabel(
                     text=element.text,
                     hexX=hexX,
                     hexY=hexY,
@@ -838,7 +838,7 @@ def parseJSONMetadata(
                         reporter.addMessage(f'Ignoring Label with no valid Hex attribute')
                     continue
 
-                labels.append(survey.RawLabel(
+                labels.append(survey.RawSectorLabel(
                     text=text,
                     hexX=hexX,
                     hexY=hexY,

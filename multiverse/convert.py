@@ -1979,7 +1979,7 @@ def _createDbRegions(
 
 def _createDbLabels(
         rawMetadata: survey.RawMetadata,
-        ) -> typing.List[multiverse.DbLabel]:
+        ) -> typing.List[multiverse.DbSectorLabel]:
     dbLabels = []
 
     if rawMetadata.labels():
@@ -2019,7 +2019,7 @@ def _createDbLabels(
             rawWrap = rawLabel.wrap()
             dbWrap = rawWrap if rawWrap is not None else False
 
-            dbLabels.append(multiverse.DbLabel(
+            dbLabels.append(multiverse.DbSectorLabel(
                 text=dbLabel,
                 worldX=dbX,
                 worldY=dbY,
@@ -2370,7 +2370,7 @@ def _createRawRegions(
 
 def _createRawLabels(
         dbSector: multiverse.DbSector
-        ) -> typing.Optional[typing.List[survey.RawLabel]]:
+        ) -> typing.Optional[typing.List[survey.RawSectorLabel]]:
     rawLabels = None
     if dbSector.labels():
         rawLabels = []
@@ -2388,7 +2388,7 @@ def _createRawLabels(
                 if labelOffsetY is not None:
                     labelOffsetY = -labelOffsetY / 0.7
 
-            rawLabels.append(survey.RawLabel(
+            rawLabels.append(survey.RawSectorLabel(
                 text=dbLabel.text(),
                 hexX=labelHexX,
                 hexY=labelHexY,
@@ -2686,3 +2686,29 @@ def convertDbSectorToRawSector(
         dbSector=dbSector)
 
     return (rawMetadata, rawWorlds)
+
+def convertRawLabelsToDbMapLabels(
+        rawMegaLabels: typing.Collection[survey.RawUniverseLabel],
+        rawMinorLabels: typing.Collection[survey.RawUniverseLabel]
+        ) -> typing.List[multiverse.DbMapLabel]:
+    dbLabels: typing.List[multiverse.DbMapLabel] = []
+
+    for rawLabel in rawMegaLabels:
+        dbLabels.append(multiverse.DbMapLabel(
+            text=rawLabel.text(),
+            worldX=rawLabel.worldX(),
+            worldY=rawLabel.worldY(),
+            band='mega',
+            colour=None,
+            size='small' if rawLabel.minor() else 'large'))
+
+    for rawLabel in rawMinorLabels:
+        dbLabels.append(multiverse.DbMapLabel(
+            text=rawLabel.text(),
+            worldX=rawLabel.worldX(),
+            worldY=rawLabel.worldY(),
+            band='minor',
+            colour=None,
+            size='small' if rawLabel.minor() else 'large'))
+
+    return dbLabels

@@ -7,7 +7,8 @@ class EntityFactoryInterface(object):
             self,
             universeId: str,
             milieu: astronomer.Milieu,
-            sectors: typing.Collection[astronomer.Sector]
+            sectors: typing.Collection[astronomer.Sector],
+            labels: typing.Collection[astronomer.MapLabel]
             ) -> astronomer.Universe:
         raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createUniverse')
 
@@ -27,7 +28,7 @@ class EntityFactoryInterface(object):
             routes: typing.Optional[typing.Iterable[astronomer.Route]] = None,
             borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
             regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
-            labels: typing.Optional[typing.Iterable[astronomer.Label]] = None,
+            labels: typing.Optional[typing.Iterable[astronomer.SectorLabel]] = None,
             selected: bool = False,
             tagging: typing.Optional[astronomer.SectorTagging] = None,
             credits: typing.Optional[str] = None,
@@ -103,29 +104,43 @@ class EntityFactoryInterface(object):
             ) -> astronomer.Region:
         raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createRegion')
 
-    def createLabel(
+    def createSectorLabel(
             self,
             entityId: str,
             text: str,
             worldX: float,
             worldY: float,
             colour: typing.Optional[str] = None,
-            size: typing.Optional[astronomer.Label.Size] = None,
+            size: typing.Optional[astronomer.LabelSize] = None,
             wrap: bool = False
-            ) -> astronomer.Label:
-        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createLabel')
+            ) -> astronomer.SectorLabel:
+        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createSectorLabel')
+
+    def createMapLabel(
+            self,
+            entityId: str,
+            text: str,
+            worldX: float,
+            worldY: float,
+            band: astronomer.LabelBand,
+            colour: typing.Optional[str] = None,
+            size: typing.Optional[astronomer.LabelSize] = None
+            ) -> astronomer.SectorLabel:
+        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createMapLabel')
 
 class DefaultEntityFactory(EntityFactoryInterface):
     def createUniverse(
             self,
             universeId: str,
             milieu: astronomer.Milieu,
-            sectors: typing.Collection[astronomer.Sector]
+            sectors: typing.Collection[astronomer.Sector],
+            labels: typing.Collection[astronomer.MapLabel]
             ) -> astronomer.Universe:
         return astronomer.Universe(
             universeId=universeId,
             milieu=milieu,
-            sectors=sectors)
+            sectors=sectors,
+            labels=labels)
 
     def createSector(
             self,
@@ -143,7 +158,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             routes: typing.Optional[typing.Iterable[astronomer.Route]] = None,
             borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
             regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
-            labels: typing.Optional[typing.Iterable[astronomer.Label]] = None,
+            labels: typing.Optional[typing.Iterable[astronomer.SectorLabel]] = None,
             selected: bool = False,
             tagging: typing.Optional[astronomer.SectorTagging] = None,
             credits: typing.Optional[str] = None,
@@ -286,21 +301,40 @@ class DefaultEntityFactory(EntityFactoryInterface):
             showLabel=showLabel,
             wrapLabel=wrapLabel)
 
-    def createLabel(
+    def createSectorLabel(
             self,
             entityId: str,
             text: str,
             worldX: float,
             worldY: float,
             colour: typing.Optional[str] = None,
-            size: typing.Optional[astronomer.Label.Size] = None,
+            size: typing.Optional[astronomer.LabelSize] = None,
             wrap: bool = False
-            ) -> astronomer.Label:
-        return astronomer.Label(
+            ) -> astronomer.SectorLabel:
+        return astronomer.SectorLabel(
             entityId=entityId,
             text=text,
             worldX=worldX,
             worldY=worldY,
+            colour=colour,
+            size=size,
+            wrap=wrap)
+
+    def createMapLabel(
+            self,
+            entityId: str,
+            text: str,
+            worldX: float,
+            worldY: float,
+            band: astronomer.LabelBand,
+            colour: typing.Optional[str] = None,
+            size: typing.Optional[astronomer.LabelSize] = None):
+        return astronomer.MapLabel(
+            entityId=entityId,
+            text=text,
+            worldX=worldX,
+            worldY=worldY,
+            band=band,
             colour=colour,
             size=size,
             wrap=wrap)

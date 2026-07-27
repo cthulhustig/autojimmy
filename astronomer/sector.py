@@ -20,7 +20,7 @@ class Sector(astronomer.Entity):
             routes: typing.Optional[typing.Collection[astronomer.Route]] = None,
             borders: typing.Optional[typing.Collection[astronomer.Border]] = None,
             regions: typing.Optional[typing.Collection[astronomer.Region]] = None,
-            labels: typing.Optional[typing.Collection[astronomer.Label]] = None,
+            labels: typing.Optional[typing.Collection[astronomer.SectorLabel]] = None,
             selected: bool = False,
             tagging: typing.Optional[astronomer.SectorTagging] = None,
             credits: typing.Optional[str] = None,
@@ -45,7 +45,7 @@ class Sector(astronomer.Entity):
         common.validateOptionalCollection(name='routes', value=routes, elementType=astronomer.Route)
         common.validateOptionalCollection(name='borders', value=borders, elementType=astronomer.Border)
         common.validateOptionalCollection(name='regions', value=regions, elementType=astronomer.Region)
-        common.validateOptionalCollection(name='labels', value=labels, elementType=astronomer.Label)
+        common.validateOptionalCollection(name='labels', value=labels, elementType=astronomer.SectorLabel)
         common.validateMandatoryBool(name='selected', value=selected)
         common.validateOptionalObject(name='tagging', value=tagging, objectType=astronomer.SectorTagging)
         common.validateOptionalStr(name='credits', value=credits, allowEmpty=False)
@@ -143,7 +143,7 @@ class Sector(astronomer.Entity):
     def regions(self) -> typing.Collection[astronomer.Region]:
         return common.ConstCollectionRef(self._regions)
 
-    def labels(self) -> typing.Collection[astronomer.Label]:
+    def labels(self) -> typing.Collection[astronomer.SectorLabel]:
         return common.ConstCollectionRef(self._labels)
 
     def entities(self) -> typing.Collection[astronomer.Entity]:

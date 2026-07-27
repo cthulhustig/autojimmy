@@ -817,9 +817,9 @@ class RenderContext(object):
                         sectorWorldOriginX + label.worldX(),
                         sectorWorldOriginY + label.worldY())
 
-                    if label.size() is astronomer.Label.Size.Small:
+                    if label.size() is astronomer.LabelSize.Small:
                         font = self._styleSheet.microBorders.smallFont
-                    elif label.size() is astronomer.Label.Size.Large:
+                    elif label.size() is astronomer.LabelSize.Large:
                         font = self._styleSheet.microBorders.largeFont
                     else:
                         font = self._styleSheet.microBorders.font
@@ -931,22 +931,33 @@ class RenderContext(object):
                     labelStyle=labelStyle)
 
         if (self._options & cartographer.RenderOptions.NamesMinor) != 0:
-            for label in self._labelStore.minorLabels():
-                font = self._styleSheet.macroNames.smallFont if label.minor else self._styleSheet.macroNames.mediumFont
+            for label in self._universe.labels():
+                if label.band() is not astronomer.LabelBand.Minor:
+                    continue
+
+                font = \
+                    self._styleSheet.macroNames.smallFont \
+                    if label.size() is astronomer.LabelSize.Small else \
+                    self._styleSheet.macroNames.mediumFont
                 brush = \
                     self._styleSheet.macroRoutes.textBrush \
-                    if label.minor else \
+                    if label.size() is astronomer.LabelSize.Small else \
                     self._styleSheet.macroRoutes.textHighlightBrush
+
+                if label.colour() is not None:
+                    brush = self._graphics.copyBrush(brush)
+                    brush.setColour(label.colour())
+
                 with self._graphics.save():
                     self._graphics.scaleTransform(
                         scaleX=1.0 / astronomer.ParsecScaleX,
                         scaleY=1.0 / astronomer.ParsecScaleY)
                     self._drawMultiLineString(
-                        text=label.text,
+                        text=label.text(),
                         font=font,
                         brush=brush,
-                        x=label.position.x() * astronomer.ParsecScaleX,
-                        y=label.position.y() * astronomer.ParsecScaleY)
+                        x=label.worldX() * astronomer.ParsecScaleX,
+                        y=label.worldY() * astronomer.ParsecScaleY)
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
         if not self._styleSheet.capitals.visible or \
@@ -1020,18 +1031,30 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
-        for label in self._labelStore.megaLabels():
+        for label in self._universe.labels():
+            if label.band() is not astronomer.LabelBand.Mega:
+                continue
+
+            font = \
+                self._styleSheet.megaNames.smallFont \
+                if label.size() is astronomer.LabelSize.Small else \
+                self._styleSheet.megaNames.font
+            brush = self._styleSheet.megaNames.textBrush
+
+            if label.colour() is not None:
+                brush = self._graphics.copyBrush(brush)
+                brush.setColour(label.colour())
+
             with self._graphics.save():
-                font = self._styleSheet.megaNames.smallFont if label.minor else self._styleSheet.megaNames.font
                 self._graphics.scaleTransform(
                     scaleX=1.0 / astronomer.ParsecScaleX,
                     scaleY=1.0 / astronomer.ParsecScaleY)
                 self._drawMultiLineString(
-                    text=label.text,
+                    text=label.text(),
                     font=font,
-                    brush=self._styleSheet.megaNames.textBrush,
-                    x=label.position.x() * astronomer.ParsecScaleX,
-                    y=label.position.y() * astronomer.ParsecScaleY)
+                    brush=brush,
+                    x=label.worldX() * astronomer.ParsecScaleX,
+                    y=label.worldY() * astronomer.ParsecScaleY)
 
     def _drawWorldsBackground(self) -> None:
         if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay \

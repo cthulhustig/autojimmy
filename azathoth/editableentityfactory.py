@@ -8,12 +8,14 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             self,
             universeId: str,
             milieu: astronomer.Milieu,
-            sectors: typing.Collection[astronomer.Sector]
+            sectors: typing.Collection[astronomer.Sector],
+            labels: typing.Collection[astronomer.MapLabel]
             ) -> astronomer.Universe:
         return azathoth.EditableUniverse(
             universeId=universeId,
             milieu=milieu,
-            sectors=sectors)
+            sectors=sectors,
+            labels=labels)
 
     def createSector(
             self,
@@ -31,7 +33,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             routes: typing.Optional[typing.Iterable[astronomer.Route]] = None,
             borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
             regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
-            labels: typing.Optional[typing.Iterable[astronomer.Label]] = None,
+            labels: typing.Optional[typing.Iterable[astronomer.SectorLabel]] = None,
             selected: bool = False,
             tagging: typing.Optional[astronomer.SectorTagging] = None,
             credits: typing.Optional[str] = None,
@@ -174,17 +176,17 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             showLabel=showLabel,
             wrapLabel=wrapLabel)
 
-    def createLabel(
+    def createSectorLabel(
             self,
             entityId: str,
             text: str,
             worldX: float,
             worldY: float,
             colour: typing.Optional[str] = None,
-            size: typing.Optional[astronomer.Label.Size] = None,
+            size: typing.Optional[astronomer.LabelSize] = None,
             wrap: bool = False
-            ) -> astronomer.Label:
-        return azathoth.EditableLabel(
+            ) -> astronomer.SectorLabel:
+        return azathoth.EditableSectorLabel(
             entityId=entityId,
             text=text,
             worldX=worldX,
@@ -192,3 +194,22 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             colour=colour,
             size=size,
             wrap=wrap)
+
+    def createMapLabel(
+            self,
+            entityId: str,
+            text: str,
+            worldX: float,
+            worldY: float,
+            band: astronomer.LabelBand,
+            colour: str = None,
+            size: astronomer.LabelSize = None
+            ) -> astronomer.MapLabel:
+        return azathoth.EditableMapLabel(
+            entityId=entityId,
+            text=text,
+            worldX=worldX,
+            worldY=worldY,
+            band=band,
+            colour=colour,
+            size=size)

@@ -127,6 +127,7 @@ class UniverseManager(object):
             raise ValueError(f'Universe name can\'t be empty')
 
         dbSectorData: typing.List[typing.Tuple[multiverse.DbSector, str]] = []
+        dbMapLabels: typing.List[multiverse.DbMapLabel] = []
         if importTravellerMap:
             if reporter:
                 reporter.pushPrefix('Stock Allegiances: ')
@@ -151,6 +152,35 @@ class UniverseManager(object):
             finally:
                 if reporter:
                     reporter.popPrefix()
+
+            if reporter:
+                reporter.pushPrefix('Mega Labels: ')
+            try:
+                rawMegaLabels = multiverse.loadMegaLabels(reporter=reporter)
+            finally:
+                if reporter:
+                    reporter.popPrefix()
+
+            if reporter:
+                reporter.pushPrefix('Minor Labels: ')
+            try:
+                rawMinorLabels = multiverse.loadMinorLabels(reporter=reporter)
+            finally:
+                if reporter:
+                    reporter.popPrefix()
+
+            if reporter:
+                reporter.pushPrefix('World Labels: ')
+            try:
+                rawWorldLabels = multiverse.loadWorldLabels(reporter=reporter)
+            finally:
+                if reporter:
+                    reporter.popPrefix()
+
+            # TODO: Support world labels
+            dbMapLabels.extend(multiverse.convertRawLabelsToDbMapLabels(
+                rawMegaLabels=rawMegaLabels,
+                rawMinorLabels=rawMinorLabels))
 
             rawUniverseInfo = survey.parseUniverseInfo(
                 content=multiverse.SnapshotManager.instance().readUniverseInfo(milieu=milieu))
@@ -258,6 +288,12 @@ class UniverseManager(object):
                     universeDb.saveSector(
                         sector=dbSector,
                         stockDataHash=dataHash,
+                        transaction=transaction)
+
+            if dbMapLabels:
+                for dbLabel in dbMapLabels:
+                    universeDb.saveLabel(
+                        label=dbLabel,
                         transaction=transaction)
 
         # Only add the universe to the registry after the database has been
@@ -480,6 +516,17 @@ class UniverseManager(object):
                         sectorCount)
                 except Exception as ex:
                     logging.warning('UniverseManager universe read progress callback threw an exception', exc_info=ex)
+
+    def mapLabels(self, id: str) -> typing.List[multiverse.DbMapLabel]:
+        universeInfo = UniverseManager._registry.universeById(id=id)
+        if not universeInfo:
+            raise ValueError(f'Unknown universe {id!r}')
+
+        dbPath = UniverseManager._universeDbFilePath(id=id)
+        universeDb = multiverse.UniverseDb(universePath=dbPath)
+
+        with universeDb.createTransaction() as transaction:
+            return universeDb.loadLabels(transaction=transaction)
 
     @staticmethod
     def _registryDbFilePath() -> str:
