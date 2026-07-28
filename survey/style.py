@@ -168,72 +168,45 @@ def parseStyleSheet(
         routeStyles=routeStyles,
         borderStyles=borderStyles)
 
-def validateMandatoryLineStyle(
+def validateLineStyle(
         name: str,
-        value: str
-        ) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value.lower(),
-        allowed=_ValidLineStyles)
-
-def validateOptionalLineStyle(
-        name: str,
-        value: typing.Optional[str]
+        value: typing.Optional[str],
+        allowNone: bool = False
         ) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+    return common.validateStr(
         name=name,
         value=value.lower() if value is not None else None,
-        allowed=_ValidLineStyles)
+        allowNone=allowNone,
+        allowedValues=_ValidLineStyles)
 
-def validateMandatoryLineWidth(
+def validateLineWidth(
         name: str,
-        value: float
-        ) -> float:
-    return common.validateMandatoryFloat(
-        name=name,
-        value=value,
-        min=0)
-
-def validateOptionalLineWidth(
-        name: str,
-        value: typing.Optional[float]
+        value: typing.Optional[float],
+        allowNone: bool = False
         ) -> typing.Optional[float]:
-    return common.validateOptionalFloat(
+    return common.validateFloat(
         name=name,
         value=value,
+        allowNone=allowNone,
         min=0)
 
-def validateMandatoryLabelSize(
+def validateLabelSize(
         name: str,
-        value: str
-        ) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value.lower(),
-        allowed=_ValidLabelSizes)
-
-def validateOptionalLabelSize(
-        name: str,
-        value: typing.Optional[str]
+        value: typing.Optional[str],
+        allowNone: bool = False
         ) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+    return common.validateStr(
         name=name,
         value=value.lower() if value is not None else None,
-        allowed=_ValidLabelSizes)
+        allowNone=allowNone,
+        allowedValues=_ValidLabelSizes)
 
-def validateMandatoryHtmlColour(
+def validateHtmlColour(
         name: str,
-        value: str
-        ) -> str:
-    return common.validateMandatoryHtmlColour(
-        name=name,
-        value=value)
-
-def validateOptionalHtmlColour(
-        name: str,
-        value: typing.Optional[str]
+        value: typing.Optional[str],
+        allowNone: bool = False
         ) -> typing.Optional[str]:
-    return common.validateOptionalHtmlColour(
+    return common.validateHtmlColour(
         name=name,
-        value=value)
+        value=value,
+        allowNone=allowNone)

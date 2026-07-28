@@ -91,79 +91,55 @@ def formatSystemPBGString(
         belts=_processFormatCode(code=planetoidBelts, allowed=_ValidPlanetoidBeltsCodes, name='Planetoid Belts', reporter=reporter),
         giants=_processFormatCode(code=gasGiants, allowed=_ValidGasGiantsCodes, name='Gas Giants', reporter=reporter))
 
-def _mandatoryPBGElementValidator(
-        name: str,
-        value: str,
-        element: str,
-        allowed: typing.Collection[str],
-        ) -> None:
-    if value not in allowed:
-        raise ValueError(f'{name} must be a valid PBG {element} code')
-
-def _optionalPBGElementValidator(
+def _validatePBGElement(
         name: str,
         value: str,
         element: str,
         allowed: typing.Collection[str],
         ) -> None:
     if value is not None and value not in allowed:
-        raise ValueError(f'{name} must be a valid PBG {element} code or None')
+        raise ValueError(f'{name} must be a valid PBG {element} code')
 
-def validateMandatoryPopulationMultiplier(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
+def validatePopulationMultiplier(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _mandatoryPBGElementValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validatePBGElement(
             name=name,
             value=value,
             element='PopulationMultiplier',
             allowed=_ValidPopulationMultiplierCodes))
 
-def validateOptionalPopulationMultiplier(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+def validatePlanetoidBelts(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _optionalPBGElementValidator(
-            name=name,
-            value=value,
-            element='PopulationMultiplier',
-            allowed=_ValidPopulationMultiplierCodes))
-
-def validateMandatoryPlanetoidBelts(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _mandatoryPBGElementValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validatePBGElement(
             name=name,
             value=value,
             element='Planetoid Belts',
             allowed=_ValidPlanetoidBeltsCodes))
 
-def validateOptionalPlanetoidBelts(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+def validateGasGiants(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _optionalPBGElementValidator(
-            name=name,
-            value=value,
-            element='Planetoid Belts',
-            allowed=_ValidPlanetoidBeltsCodes))
-
-def validateMandatoryGasGiants(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _mandatoryPBGElementValidator(
-            name=name,
-            value=value,
-            element='Gas Giants',
-            allowed=_ValidGasGiantsCodes))
-
-def validateOptionalGasGiants(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _optionalPBGElementValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validatePBGElement(
             name=name,
             value=value,
             element='Gas Giants',

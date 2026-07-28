@@ -67,9 +67,9 @@ class Star(object):
             spectralClass: typing.Optional[str] = None,
             spectralScale: typing.Optional[str] = None
             ) -> None:
-        survey.validateMandatoryLuminosityClass(name='luminosityClass', value=luminosityClass)
-        survey.validateOptionalSpectralClass(name='spectralClass', value=spectralClass)
-        survey.validateOptionalSpectralScale(name='spectralScale', value=spectralScale)
+        survey.validateLuminosityClass(name='luminosityClass', value=luminosityClass)
+        survey.validateSpectralClass(name='spectralClass', value=spectralClass, allowNone=True)
+        survey.validateSpectralScale(name='spectralScale', value=spectralScale, allowNone=True)
 
         self._valueMap: typing.Dict[Star.Element, str] = {}
         self._string = None
@@ -110,7 +110,7 @@ class Stellar(object):
             self,
             stars: typing.Optional[typing.Collection[Star]] = None
             ) -> None:
-        common.validateOptionalCollection(name='stars', value=stars, elementType=Star)
+        common.validateCollection(name='stars', value=stars, elementType=Star, allowNone=True)
 
         self._stars = list(stars) if stars else []
         self._string = None

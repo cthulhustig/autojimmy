@@ -6,7 +6,7 @@ class SectorTagging(object):
             self,
             tags: typing.Optional[typing.Collection[str]] = None
             ) -> None:
-        common.validateOptionalCollection(name='tags', value=tags, elementType=str)
+        common.validateCollection(name='tags', value=tags, elementType=str, allowNone=True)
 
         self._tags = list(tags) if tags else []
         self._lowerCaseTags = None

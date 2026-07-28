@@ -29,8 +29,9 @@ def formatSystemWorldCountString(
         ) -> typing.Optional[str]:
     return str(count)
 
-def validateMandatoryWorldCount(name: str, value: int) -> int:
-    return common.validateMandatoryInt(name=name, value=value, min=0)
-
-def validateOptionalWorldCount(name: str, value: typing.Optional[int]) -> typing.Optional[int]:
-    return common.validateOptionalInt(name=name, value=value, min=0)
+def validateWorldCount(
+        name: str,
+        value: typing.Optional[int],
+        allowNone: bool = False
+        ) -> typing.Optional[int]:
+    return common.validateInt(name=name, value=value, allowNone=allowNone, min=0)

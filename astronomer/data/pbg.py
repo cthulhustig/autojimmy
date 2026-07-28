@@ -42,9 +42,9 @@ class PBG(object):
             planetoidBelts: typing.Optional[str] = None,
             gasGiants: typing.Optional[str] = None
             ) -> None:
-        survey.validateOptionalPopulationMultiplier(name='populationMultiplier', value=populationMultiplier)
-        survey.validateOptionalPlanetoidBelts(name='planetoidBelts', value=planetoidBelts)
-        survey.validateOptionalGasGiants(name='gasGiants', value=gasGiants)
+        survey.validatePopulationMultiplier(name='populationMultiplier', value=populationMultiplier, allowNone=True)
+        survey.validatePlanetoidBelts(name='planetoidBelts', value=planetoidBelts, allowNone=True)
+        survey.validateGasGiants(name='gasGiants', value=gasGiants, allowNone=True)
 
         self._valueMap: typing.Dict[PBG.Element, str] = {}
         self._string = None

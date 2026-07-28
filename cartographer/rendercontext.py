@@ -5,7 +5,6 @@ import enum
 import re
 import sys
 import math
-import traveller
 import typing
 
 # This calculates the bounds of a subsector without the sector offset

@@ -89,79 +89,55 @@ def formatSystemStellarString(
                 luminosityClass=luminosityClass)
     return string
 
-def _mandatoryStellarElementValidator(
-        name: str,
-        value: str,
-        element: str,
-        allowed: typing.Collection[str],
-        ) -> None:
-    if value not in allowed:
-        raise ValueError(f'{name} must be a valid stellar {element} code')
-
-def _optionalStellarElementValidator(
+def _validateStellarElement(
         name: str,
         value: str,
         element: str,
         allowed: typing.Collection[str],
         ) -> None:
     if value is not None and value not in allowed:
-        raise ValueError(f'{name} must be a valid stellar {element} code or None')
+        raise ValueError(f'{name} must be a valid stellar {element} code')
 
-def validateMandatoryLuminosityClass(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
+def validateLuminosityClass(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _mandatoryStellarElementValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validateStellarElement(
             name=name,
             value=value,
             element='Luminosity Class',
             allowed=_ValidLuminosityClasses))
 
-def validateOptionalLuminosityClass(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+def validateSpectralClass(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _optionalStellarElementValidator(
-            name=name,
-            value=value,
-            element='Luminosity Class',
-            allowed=_ValidLuminosityClasses))
-
-def validateMandatorySpectralClass(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _mandatoryStellarElementValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validateStellarElement(
             name=name,
             value=value,
             element='Spectral Class',
             allowed=_ValidSpectralClasses))
 
-def validateOptionalSpectralClass(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+def validateSpectralScale(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _optionalStellarElementValidator(
-            name=name,
-            value=value,
-            element='Spectral Class',
-            allowed=_ValidSpectralClasses))
-
-def validateMandatorySpectralScale(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _mandatoryStellarElementValidator(
-            name=name,
-            value=value,
-            element='Spectral Scale',
-            allowed=_ValidSpectralScales))
-
-def validateOptionalSpectralScale(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _optionalStellarElementValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validateStellarElement(
             name=name,
             value=value,
             element='Spectral Scale',

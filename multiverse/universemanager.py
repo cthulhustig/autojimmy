@@ -38,9 +38,9 @@ class UniverseInfo(object):
             name: str,
             description: str
             ) -> None:
-        common.validateMandatoryStr(name='id', value=id, allowEmpty=False)
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-        common.validateMandatoryStr(name='description', value=description, allowEmpty=True)
+        common.validateStr(name='id', value=id, allowEmpty=False)
+        common.validateStr(name='name', value=name, allowEmpty=False)
+        common.validateStr(name='description', value=description, allowEmpty=True)
 
         self._id = id
         self._name = name

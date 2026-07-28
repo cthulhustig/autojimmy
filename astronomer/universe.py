@@ -27,10 +27,10 @@ class Universe(object):
             sectors: typing.Collection[astronomer.Sector],
             labels: typing.Collection[astronomer.MapLabel]
             ) -> None:
-        common.validateMandatoryStr(name='universeId', value=universeId, allowEmpty=False)
-        common.validateMandatoryObject(name='milieu', value=milieu, objectType=astronomer.Milieu)
-        common.validateMandatoryCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
-        common.validateMandatoryCollection(name='labels', value=labels, elementType=astronomer.MapLabel)
+        common.validateStr(name='universeId', value=universeId, allowEmpty=False)
+        common.validateObject(name='milieu', value=milieu, objectType=astronomer.Milieu)
+        common.validateCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
+        common.validateCollection(name='labels', value=labels, elementType=astronomer.MapLabel)
 
         self._universeId = universeId
         self._milieu = milieu

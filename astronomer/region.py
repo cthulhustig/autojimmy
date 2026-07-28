@@ -42,13 +42,13 @@ class Region(astronomer.Entity):
             ) -> None:
         super().__init__(entityId=entityId)
 
-        common.validateMandatoryCollection(name='hexes', value=hexes, elementType=astronomer.HexPosition)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        common.validateOptionalStr(name='label', value=label, allowEmpty=False)
-        common.validateOptionalFloat(name='labelWorldX', value=labelWorldX)
-        common.validateOptionalFloat(name='labelWorldY', value=labelWorldY)
-        common.validateMandatoryBool(name='showLabel', value=showLabel)
-        common.validateMandatoryBool(name='wrapLabel', value=wrapLabel)
+        common.validateCollection(name='hexes', value=hexes, elementType=astronomer.HexPosition)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        common.validateStr(name='label', value=label, allowEmpty=False, allowNone=True)
+        common.validateFloat(name='labelWorldX', value=labelWorldX, allowNone=True)
+        common.validateFloat(name='labelWorldY', value=labelWorldY, allowNone=True)
+        common.validateBool(name='showLabel', value=showLabel)
+        common.validateBool(name='wrapLabel', value=wrapLabel)
 
         self._hexes = list(hexes)
         self._colour = colour

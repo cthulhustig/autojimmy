@@ -135,7 +135,7 @@ class Bases(object):
             self,
             bases: typing.Optional[typing.Collection[BaseType]] = None
             ) -> None:
-        common.validateOptionalCollection(name='bases', value=bases, elementType=BaseType)
+        common.validateCollection(name='bases', value=bases, elementType=BaseType, allowNone=True)
 
         self._bases = list(bases) if bases else []
         self._string = None

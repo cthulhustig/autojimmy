@@ -307,14 +307,14 @@ class UWP(object):
             lawLevel: typing.Optional[str] = None,
             techLevel: typing.Optional[str] = None
             ) -> None:
-        survey.validateOptionalStarport(name='starport', value=starport)
-        survey.validateOptionalWorldSize(name='worldSize', value=worldSize)
-        survey.validateOptionalAtmosphere(name='atmosphere', value=atmosphere)
-        survey.validateOptionalHydrographics(name='hydrographics', value=hydrographics)
-        survey.validateOptionalPopulation(name='population', value=population)
-        survey.validateOptionalGovernment(name='government', value=government)
-        survey.validateOptionalLawLevel(name='lawLevel', value=lawLevel)
-        survey.validateOptionalTechLevel(name='techLevel', value=techLevel)
+        survey.validateStarport(name='starport', value=starport, allowNone=True)
+        survey.validateWorldSize(name='worldSize', value=worldSize, allowNone=True)
+        survey.validateAtmosphere(name='atmosphere', value=atmosphere, allowNone=True)
+        survey.validateHydrographics(name='hydrographics', value=hydrographics, allowNone=True)
+        survey.validatePopulation(name='population', value=population, allowNone=True)
+        survey.validateGovernment(name='government', value=government, allowNone=True)
+        survey.validateLawLevel(name='lawLevel', value=lawLevel, allowNone=True)
+        survey.validateTechLevel(name='techLevel', value=techLevel, allowNone=True)
 
         self._valueMap: typing.Dict[UWP.Element, str] = {}
         self._string = None

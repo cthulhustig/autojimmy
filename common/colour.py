@@ -261,28 +261,19 @@ def noticeableColourDifference(a: str, b: str) -> bool:
 
 # The intention is this works in the same was as the more generic
 # parameter validation functions in validation.py
-def validateMandatoryHtmlColour(
-        name: str,
-        value: str,
-        validationFn: typing.Optional[typing.Callable[[str, typing.Any], typing.Any]] = None
-        ) -> str:
-    common.validateMandatoryStr(name=name, value=value, allowEmpty=False)
-    if not isValidHtmlColour(value):
-        raise ValueError(f'{name} must be a valid HTML colour')
-
-    if validationFn is not None:
-        validationFn(name, value)
-
-    return value
-
-def validateOptionalHtmlColour(
+def validateHtmlColour(
         name: str,
         value: typing.Optional[str],
-        validationFn: typing.Optional[typing.Callable[[str, typing.Any], typing.Any]] = None
+        allowNone: bool = False,
+        validationFn: typing.Optional[typing.Callable[[str, typing.Optional[str]], typing.Any]] = None
         ) -> typing.Optional[str]:
-    common.validateOptionalStr(name=name, value=value, allowEmpty=False)
-    if value is not None and not isValidHtmlColour(value):
-        raise ValueError(f'{name} must be a valid HTML colour or None')
+    if not allowNone and value is None:
+        raise ValueError(f'{name} can\'t be None')
+
+    if value is not None:
+        common.validateStr(name=name, value=value, allowEmpty=False)
+        if not isValidHtmlColour(value):
+            raise ValueError(f'{name} must be a valid HTML colour')
 
     if validationFn is not None:
         validationFn(name, value)

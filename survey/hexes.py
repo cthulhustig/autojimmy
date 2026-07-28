@@ -127,76 +127,48 @@ def formatHexListString(
         strings.append(hex)
     return ' '.join(strings)
 
-def validateMandatoryHexX(
+def validateHexX(
         name: str,
-        value: int,
+        value: typing.Optional[int],
+        allowNone: bool = False,
         allowInvalid: bool = False, # Used for Border/Region Label & Path Hexes
-        ) -> int:
-    return common.validateMandatoryInt(
+        ) -> typing.Optional[int]:
+    return common.validateInt(
         name=name,
         value=value,
+        allowNone=allowNone,
         min=_MinHexX if not allowInvalid else _MinHexX - 1,
         max=_MaxHexX if not allowInvalid else _MaxHexX + 1)
 
-def validateOptionalHexX(
+def validateHexY(
         name: str,
         value: typing.Optional[int],
+        allowNone: bool = False,
         allowInvalid: bool = False, # Used for Border/Region Label & Path Hexes
         ) -> typing.Optional[int]:
-    return common.validateOptionalInt(
+    return common.validateInt(
         name=name,
         value=value,
-        min=_MinHexX if not allowInvalid else _MinHexX - 1,
-        max=_MaxHexX if not allowInvalid else _MaxHexX + 1)
-
-def validateMandatoryHexY(
-        name: str,
-        value: int,
-        allowInvalid: bool = False, # Used for Border/Region Label & Path Hexes
-        ) -> int:
-    return common.validateMandatoryInt(
-        name=name,
-        value=value,
+        allowNone=allowNone,
         min=_MinHexY if not allowInvalid else _MinHexY - 1,
         max=_MaxHexY if not allowInvalid else _MaxHexY + 1)
 
-def validateOptionalHexY(
-        name: str,
-        value: typing.Optional[int],
-        allowInvalid: bool = False, # Used for Border/Region Label & Path Hexes
-        ) -> typing.Optional[int]:
-    return common.validateOptionalInt(
-        name=name,
-        value=value,
-        min=_MinHexY if not allowInvalid else _MinHexY - 1,
-        max=_MaxHexY if not allowInvalid else _MaxHexY + 1)
-
-def validateMandatoryHexCollection(
-        name: str,
-        value: typing.Collection[typing.Tuple[int, int]],
-        allowInvalid: bool = False, # Used for Border/Region Label & Path Hexes
-        allowEmpty: bool = True
-        ) -> typing.Collection[typing.Tuple[int, int]]:
-    return common.validateMandatoryCollection(
-        name=name,
-        value=value,
-        allowEmpty=allowEmpty,
-        validationFn=lambda n, i, v: _hexTupleValidator(n, i, v, allowInvalid))
-
-def validateOptionalHexCollection(
+def validateHexCollection(
         name: str,
         value: typing.Optional[typing.Collection[typing.Tuple[int, int]]],
+        allowNone: bool = False,
+        allowEmpty: bool = True,
         allowInvalid: bool = False, # Used for Border/Region Label & Path Hexes
-        allowEmpty: bool = True
         ) -> typing.Optional[typing.Collection[typing.Tuple[int, int]]]:
-    return common.validateOptionalCollection(
+    return common.validateCollection(
         name=name,
         value=value,
+        allowNone=allowNone,
         allowEmpty=allowEmpty,
-        validationFn=lambda n, i, v: _hexTupleValidator(n, i, v, allowInvalid))
+        validationFn=lambda n, i, v: _validateHexTuple(n, i, v, allowInvalid))
 
 @staticmethod
-def _hexTupleValidator(
+def _validateHexTuple(
         name: str,
         index: int,
         value: typing.Tuple[int, int],
@@ -204,12 +176,12 @@ def _hexTupleValidator(
         ) -> None:
     if len(value) != 2:
         raise ValueError(f'{name} should contain tuples containing 2 integers')
-    common.validateMandatoryInt(
+    common.validateInt(
         name=f'{name}[{index}]\\X',
         value=value[0],
         min=_MinHexX if not allowInvalid else _MinHexX - 1,
         max=_MaxHexX if not allowInvalid else _MaxHexX + 1)
-    common.validateMandatoryInt(
+    common.validateInt(
         name=f'{name}[{index}]\\Y',
         value=value[1],
         min=_MinHexY if not allowInvalid else _MinHexY - 1,

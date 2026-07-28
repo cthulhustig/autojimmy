@@ -9,9 +9,9 @@ class Sophont(object):
             name: str,
             isMajor: bool
             ) -> None:
-        survey.validateMandatorySophontCode(name='code', value=code)
-        survey.validateMandatorySophontName(name='name', value=name)
-        common.validateMandatoryBool(name='isMajor', value=isMajor)
+        survey.validateSophontCode(name='code', value=code)
+        survey.validateSophontName(name='name', value=name)
+        common.validateBool(name='isMajor', value=isMajor)
 
         self._code = code
         self._name = name
@@ -34,10 +34,10 @@ class SophontPopulation(object):
             isHomeWorld: bool,
             isDieBack: bool
             ) -> None:
-        common.validateMandatoryObject(name='sophont', value=sophont, objectType=Sophont)
-        survey.validateOptionalSophontPercentage(name='percentage', value=percentage)
-        common.validateMandatoryBool(name='isHomeWorld', value=isHomeWorld)
-        common.validateMandatoryBool(name='isDieBack', value=isDieBack)
+        common.validateObject(name='sophont', value=sophont, objectType=Sophont)
+        survey.validateSophontPercentage(name='percentage', value=percentage, allowNone=True)
+        common.validateBool(name='isHomeWorld', value=isHomeWorld)
+        common.validateBool(name='isDieBack', value=isDieBack)
 
         self._sophont = sophont
         self._percentage = percentage

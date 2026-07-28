@@ -34,8 +34,9 @@ def formatSystemImportanceString(
         ) -> typing.Optional[str]:
     return f'{{{importance}}}'
 
-def validateMandatoryImportance(name: str, value: int) -> int:
-    return common.validateMandatoryInt(name=name, value=value)
-
-def validateOptionalImportance(name: str, value: typing.Optional[int]) -> typing.Optional[int]:
-    return common.validateOptionalInt(name=name, value=value)
+def validateImportance(
+        name: str,
+        value: typing.Optional[int],
+        allowNone: bool = False
+        ) -> typing.Optional[int]:
+    return common.validateInt(name=name, value=value, allowNone=allowNone)

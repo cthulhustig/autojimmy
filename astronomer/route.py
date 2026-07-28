@@ -17,13 +17,13 @@ class Route(astronomer.Entity):
             ) -> None:
         super().__init__(entityId=entityId)
 
-        common.validateMandatoryObject(name='startHex', value=startHex, objectType=astronomer.HexPosition)
-        common.validateMandatoryObject(name='endHex', value=endHex, objectType=astronomer.HexPosition)
-        common.validateOptionalObject(name='allegiance', value=allegiance, objectType=astronomer.Allegiance)
-        common.validateOptionalStr(name='routeType', value=routeType, allowEmpty=False)
-        common.validateOptionalObject(name='style', value=style, objectType=astronomer.LineStyle)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        survey.validateOptionalLineWidth(name='width', value=width)
+        common.validateObject(name='startHex', value=startHex, objectType=astronomer.HexPosition)
+        common.validateObject(name='endHex', value=endHex, objectType=astronomer.HexPosition)
+        common.validateObject(name='allegiance', value=allegiance, objectType=astronomer.Allegiance, allowNone=True)
+        common.validateStr(name='routeType', value=routeType, allowNone=True, allowEmpty=False)
+        common.validateObject(name='style', value=style, objectType=astronomer.LineStyle, allowNone=True)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        survey.validateLineWidth(name='width', value=width, allowNone=True)
 
         self._startHex = startHex
         self._endHex = endHex

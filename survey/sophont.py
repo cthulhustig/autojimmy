@@ -64,23 +64,15 @@ def _validateSophontName(
         if c in _InvalidSophontNameCharacters:
             raise ValueError(f'{attributeName} can\'t contain {_InvalidSophontNameCharacters!r}')
 
-def validateMandatorySophontName(
+def validateSophontName(
         name: str,
-        value: str
-        ) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        allowEmpty=False,
-        validationFn=_validateSophontName)
-
-def validateOptionalSophontName(
-        name: str,
-        value: typing.Optional[str]
+        value: typing.Optional[str],
+        allowNone: bool = False
         ) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+    return common.validateStr(
         name=name,
         value=value,
+        allowNone=allowNone,
         allowEmpty=False,
         validationFn=_validateSophontName)
 
@@ -95,22 +87,14 @@ def _validateSophontCode(
     if not result:
         raise ValueError(f'{attributeName} is not a valid Sophont Code')
 
-def validateMandatorySophontCode(
+def validateSophontCode(
         name: str,
-        value: str
-        ) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        allowEmpty=False,
-        validationFn=_validateSophontCode)
-
-def validateOptionalSophontCode(
-        name: str,
-        value: typing.Optional[str]
+        value: typing.Optional[str],
+        allowNone: bool = False
         ) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+    return common.validateStr(
         name=name,
         value=value,
+        allowNone=allowNone,
         allowEmpty=False,
         validationFn=_validateSophontCode)

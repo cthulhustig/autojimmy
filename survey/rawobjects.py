@@ -16,14 +16,14 @@ class RawUWP(object):
             ) -> None:
         super().__init__()
 
-        survey.validateOptionalStarport(name='starport', value=starport)
-        survey.validateOptionalWorldSize(name='worldSize', value=worldSize)
-        survey.validateOptionalAtmosphere(name='atmosphere', value=atmosphere)
-        survey.validateOptionalHydrographics(name='hydrographics', value=hydrographics)
-        survey.validateOptionalPopulation(name='population', value=population)
-        survey.validateOptionalGovernment(name='government', value=government)
-        survey.validateOptionalLawLevel(name='lawLevel', value=lawLevel)
-        survey.validateOptionalTechLevel(name='techLevel', value=techLevel)
+        survey.validateStarport(name='starport', value=starport, allowNone=True)
+        survey.validateWorldSize(name='worldSize', value=worldSize, allowNone=True)
+        survey.validateAtmosphere(name='atmosphere', value=atmosphere, allowNone=True)
+        survey.validateHydrographics(name='hydrographics', value=hydrographics, allowNone=True)
+        survey.validatePopulation(name='population', value=population, allowNone=True)
+        survey.validateGovernment(name='government', value=government, allowNone=True)
+        survey.validateLawLevel(name='lawLevel', value=lawLevel, allowNone=True)
+        survey.validateTechLevel(name='techLevel', value=techLevel, allowNone=True)
 
         self._starport = starport
         self._worldSize = worldSize
@@ -68,10 +68,10 @@ class RawEconomics(object):
             ) -> None:
         super().__init__()
 
-        survey.validateOptionalResources(name='resources', value=resources)
-        survey.validateOptionalLabour(name='labour', value=labour)
-        survey.validateOptionalInfrastructure(name='infrastructure', value=infrastructure)
-        survey.validateOptionalEfficiency(name='efficiency', value=efficiency)
+        survey.validateResources(name='resources', value=resources, allowNone=True)
+        survey.validateLabour(name='labour', value=labour, allowNone=True)
+        survey.validateInfrastructure(name='infrastructure', value=infrastructure, allowNone=True)
+        survey.validateEfficiency(name='efficiency', value=efficiency, allowNone=True)
 
         self._resources = resources
         self._labour = labour
@@ -100,10 +100,10 @@ class RawCulture(object):
             ) -> None:
         super().__init__()
 
-        survey.validateOptionalHeterogeneity(name='heterogeneity', value=heterogeneity)
-        survey.validateOptionalAcceptance(name='acceptance', value=acceptance)
-        survey.validateOptionalStrangeness(name='strangeness', value=strangeness)
-        survey.validateOptionalSymbols(name='symbols', value=symbols)
+        survey.validateHeterogeneity(name='heterogeneity', value=heterogeneity, allowNone=True)
+        survey.validateAcceptance(name='acceptance', value=acceptance, allowNone=True)
+        survey.validateStrangeness(name='strangeness', value=strangeness, allowNone=True)
+        survey.validateSymbols(name='symbols', value=symbols, allowNone=True)
 
         self._heterogeneity = heterogeneity
         self._acceptance = acceptance
@@ -130,8 +130,8 @@ class RawSophontPopulation(object):
             ) -> None:
         super().__init__()
 
-        survey.validateMandatorySophontName(name='sophont', value=sophont)
-        survey.validateOptionalSophontPercentage(name='percentage', value=percentage)
+        survey.validateSophontName(name='sophont', value=sophont)
+        survey.validateSophontPercentage(name='percentage', value=percentage, allowNone=True)
 
         self._sophont = sophont
         self._percentage = percentage
@@ -151,9 +151,9 @@ class RawHexRef(object):
             ):
         super().__init__()
 
-        survey.validateMandatoryHexX(name='x', value=x)
-        survey.validateMandatoryHexY(name='y', value=y)
-        common.validateOptionalStr(name='sector', value=sector, allowEmpty=False)
+        survey.validateHexX(name='x', value=x)
+        survey.validateHexY(name='y', value=y)
+        common.validateStr(name='sector', value=sector, allowNone=True, allowEmpty=False)
 
         self._x = x
         self._y = y
@@ -184,16 +184,16 @@ class RawRemarks(object):
             ) -> None:
         super().__init__()
 
-        common.validateOptionalCollection(name='tradeCodes', value=tradeCodes, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryTradeCode(name=f'{n}[{i}]', value=v))
-        common.validateOptionalCollection(name='majorRaceHomeWorlds', value=majorRaceHomeWorlds, elementType=RawSophontPopulation)
-        common.validateOptionalCollection(name='minorRaceHomeWorlds', value=minorRaceHomeWorlds, elementType=RawSophontPopulation)
-        common.validateOptionalCollection(name='sophontPopulations', value=sophontPopulations, elementType=RawSophontPopulation)
-        common.validateOptionalCollection(name='dieBackSophonts', value=dieBackSophonts, elementType=str, validationFn=lambda n, i, v: survey.validateMandatorySophontName(name=f'{n}[{i}]', value=v))
-        common.validateOptionalCollection(name='owningSystems', value=owningSystems, elementType=RawHexRef)
-        common.validateOptionalCollection(name='colonySystems', value=colonySystems, elementType=RawHexRef)
-        common.validateOptionalCollection(name='rulingAllegiances', value=rulingAllegiances, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryAllegianceCode(name=f'{n}[{i}]', value=v))
-        common.validateOptionalCollection(name='researchStations', value=researchStations, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryResearchStation(name=f'{n}[{i}]', value=v))
-        common.validateOptionalCollection(name='customRemarks', value=customRemarks, elementType=str)
+        common.validateCollection(name='tradeCodes', value=tradeCodes, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateTradeCode(name=f'{n}[{i}]', value=v))
+        common.validateCollection(name='majorRaceHomeWorlds', value=majorRaceHomeWorlds, elementType=RawSophontPopulation, allowNone=True)
+        common.validateCollection(name='minorRaceHomeWorlds', value=minorRaceHomeWorlds, elementType=RawSophontPopulation, allowNone=True)
+        common.validateCollection(name='sophontPopulations', value=sophontPopulations, elementType=RawSophontPopulation, allowNone=True)
+        common.validateCollection(name='dieBackSophonts', value=dieBackSophonts, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateSophontName(name=f'{n}[{i}]', value=v))
+        common.validateCollection(name='owningSystems', value=owningSystems, elementType=RawHexRef, allowNone=True)
+        common.validateCollection(name='colonySystems', value=colonySystems, elementType=RawHexRef, allowNone=True)
+        common.validateCollection(name='rulingAllegiances', value=rulingAllegiances, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateAllegianceCode(name=f'{n}[{i}]', value=v))
+        common.validateCollection(name='researchStations', value=researchStations, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateResearchStation(name=f'{n}[{i}]', value=v))
+        common.validateCollection(name='customRemarks', value=customRemarks, elementType=str, allowNone=True)
 
         self._tradeCodes = list(tradeCodes) if tradeCodes is not None else None
         self._sophontPopulations = list(sophontPopulations) if sophontPopulations is not None else None
@@ -245,9 +245,9 @@ class RawPBG(object):
             ) -> None:
         super().__init__()
 
-        survey.validateOptionalPopulationMultiplier(name='populationMultiplier', value=populationMultiplier)
-        survey.validateOptionalPlanetoidBelts(name='planetoidBeltCount', value=planetoidBeltCount)
-        survey.validateOptionalGasGiants(name='gasGiantCount', value=gasGiantCount)
+        survey.validatePopulationMultiplier(name='populationMultiplier', value=populationMultiplier, allowNone=True)
+        survey.validatePlanetoidBelts(name='planetoidBeltCount', value=planetoidBeltCount, allowNone=True)
+        survey.validateGasGiants(name='gasGiantCount', value=gasGiantCount, allowNone=True)
 
         self._populationMultiplier = populationMultiplier
         self._planetoidBeltCount = planetoidBeltCount
@@ -271,9 +271,9 @@ class RawStar(object):
             ) -> None:
         super().__init__()
 
-        survey.validateMandatoryLuminosityClass(name='luminosityClass', value=luminosityClass)
-        survey.validateOptionalSpectralClass(name='spectralClass', value=spectralClass)
-        survey.validateOptionalSpectralScale(name='spectralScale', value=spectralScale)
+        survey.validateLuminosityClass(name='luminosityClass', value=luminosityClass)
+        survey.validateSpectralClass(name='spectralClass', value=spectralClass, allowNone=True)
+        survey.validateSpectralScale(name='spectralScale', value=spectralScale, allowNone=True)
 
         self._luminosityClass = luminosityClass
         self._spectralClass = spectralClass
@@ -309,21 +309,21 @@ class RawWorld(object):
             ) -> None:
         super().__init__()
 
-        survey.validateMandatoryHexX(name='x', value=x)
-        survey.validateMandatoryHexY(name='y', value=y)
-        common.validateOptionalStr(name='name', value=name, allowEmpty=False)
-        survey.validateOptionalAllegianceCode(name='allegianceCode', value=allegianceCode)
-        survey.validateOptionalZone(name='zone', value=zone)
-        common.validateOptionalObject(name='uwp', value=uwp, objectType=RawUWP)
-        common.validateOptionalObject(name='economics', value=economics, objectType=RawEconomics)
-        common.validateOptionalObject(name='culture', value=culture, objectType=RawCulture)
-        common.validateOptionalCollection(name='nobilities', value=nobilities, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryNobility(name=f'{n}[{i}]', value=v))
-        common.validateOptionalCollection(name='bases', value=bases, elementType=str, validationFn=lambda n, i, v: survey.validateMandatoryBase(name=n, value=v))
-        common.validateOptionalObject(name='remarks', value=remarks, objectType=RawRemarks)
-        common.validateOptionalInt(name='importance', value=importance)
-        common.validateOptionalObject(name='pbg', value=pbg, objectType=RawPBG)
-        common.validateOptionalInt(name='systemWorlds', value=systemWorlds, min=0)
-        common.validateOptionalCollection(name=stars, value=stars, elementType=RawStar)
+        survey.validateHexX(name='x', value=x)
+        survey.validateHexY(name='y', value=y)
+        common.validateStr(name='name', value=name, allowNone=True, allowEmpty=False)
+        survey.validateAllegianceCode(name='allegianceCode', value=allegianceCode, allowNone=True)
+        survey.validateZone(name='zone', value=zone, allowNone=True)
+        common.validateObject(name='uwp', value=uwp, objectType=RawUWP, allowNone=True)
+        common.validateObject(name='economics', value=economics, objectType=RawEconomics, allowNone=True)
+        common.validateObject(name='culture', value=culture, objectType=RawCulture, allowNone=True)
+        common.validateCollection(name='nobilities', value=nobilities, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateNobility(name=f'{n}[{i}]', value=v))
+        common.validateCollection(name='bases', value=bases, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateBase(name=f'{n}[{i}]', value=v))
+        common.validateObject(name='remarks', value=remarks, objectType=RawRemarks, allowNone=True)
+        common.validateInt(name='importance', value=importance, allowNone=True)
+        common.validateObject(name='pbg', value=pbg, objectType=RawPBG, allowNone=True)
+        common.validateInt(name='systemWorlds', value=systemWorlds, allowNone=True, min=0)
+        common.validateCollection(name=stars, value=stars, elementType=RawStar, allowNone=True)
 
         self._x = x
         self._y = y
@@ -395,9 +395,9 @@ class RawAllegiance(object):
             ) -> None:
         super().__init__()
 
-        survey.validateMandatoryAllegianceCode(name='code', value=code)
-        survey.validateMandatoryAllegianceName(name='name', value=name)
-        survey.validateOptionalAllegianceCode(name='base', value=base)
+        survey.validateAllegianceCode(name='code', value=code)
+        survey.validateAllegianceName(name='name', value=name)
+        survey.validateAllegianceCode(name='base', value=base, allowNone=True)
 
         self._code = code
         self._name = name
@@ -433,19 +433,19 @@ class RawRoute(object):
 
         # NOTE: The metadata spec says routes can have start/end sectors in the range
         # 0-33 in X and 0-41 in Y rather than the normal 1-32 and 1-40
-        survey.validateMandatoryHexX(name='startHexX', value=startHexX, allowInvalid=True)
-        survey.validateMandatoryHexY(name='startHexY', value=startHexY, allowInvalid=True)
-        survey.validateMandatoryHexX(name='endHexX', value=endHexX, allowInvalid=True)
-        survey.validateMandatoryHexY(name='endHexY', value=endHexY, allowInvalid=True)
-        common.validateOptionalInt(name='startOffsetX', value=startOffsetX)
-        common.validateOptionalInt(name='startOffsetY', value=startOffsetY)
-        common.validateOptionalInt(name='endOffsetX', value=endOffsetX)
-        common.validateOptionalInt(name='endOffsetY', value=endOffsetY)
-        survey.validateOptionalAllegianceCode(name='allegianceCode', value=allegianceCode)
-        common.validateOptionalStr(name='type', value=type, allowEmpty=False)
-        survey.validateOptionalLineStyle(name='style', value=style)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        survey.validateOptionalLineWidth(name='width', value=width)
+        survey.validateHexX(name='startHexX', value=startHexX, allowInvalid=True)
+        survey.validateHexY(name='startHexY', value=startHexY, allowInvalid=True)
+        survey.validateHexX(name='endHexX', value=endHexX, allowInvalid=True)
+        survey.validateHexY(name='endHexY', value=endHexY, allowInvalid=True)
+        common.validateInt(name='startOffsetX', value=startOffsetX, allowNone=True)
+        common.validateInt(name='startOffsetY', value=startOffsetY, allowNone=True)
+        common.validateInt(name='endOffsetX', value=endOffsetX, allowNone=True)
+        common.validateInt(name='endOffsetY', value=endOffsetY, allowNone=True)
+        survey.validateAllegianceCode(name='allegianceCode', value=allegianceCode, allowNone=True)
+        common.validateStr(name='type', value=type, allowNone=True, allowEmpty=False)
+        survey.validateLineStyle(name='style', value=style, allowNone=True)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        survey.validateLineWidth(name='width', value=width, allowNone=True)
 
         self._startHexX = startHexX
         self._startHexY = startHexY
@@ -519,17 +519,17 @@ class RawBorder(object):
             ) -> None:
         super().__init__()
 
-        survey.validateMandatoryHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
-        survey.validateOptionalAllegianceCode(name='allegianceCode', value=allegianceCode)
-        common.validateOptionalBool(name='showLabel', value=showLabel)
-        common.validateOptionalBool(name='wrapLabel', value=wrapLabel)
-        survey.validateOptionalHexX(name='labelHexX', value=labelHexX, allowInvalid=True)
-        survey.validateOptionalHexY(name='labelHexY', value=labelHexY, allowInvalid=True)
-        common.validateOptionalFloat(name='labelOffsetX', value=labelOffsetX)
-        common.validateOptionalFloat(name='labelOffsetY', value=labelOffsetY)
-        common.validateOptionalStr(name='label', value=label, allowEmpty=False)
-        survey.validateOptionalLineStyle(name='style', value=style)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
+        survey.validateAllegianceCode(name='allegianceCode', value=allegianceCode, allowNone=True)
+        common.validateBool(name='showLabel', value=showLabel, allowNone=True)
+        common.validateBool(name='wrapLabel', value=wrapLabel, allowNone=True)
+        survey.validateHexX(name='labelHexX', value=labelHexX, allowNone=True, allowInvalid=True)
+        survey.validateHexY(name='labelHexY', value=labelHexY, allowNone=True, allowInvalid=True)
+        common.validateFloat(name='labelOffsetX', value=labelOffsetX, allowNone=True)
+        common.validateFloat(name='labelOffsetY', value=labelOffsetY, allowNone=True)
+        common.validateStr(name='label', value=label, allowNone=True, allowEmpty=False)
+        survey.validateLineStyle(name='style', value=style, allowNone=True)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
 
         self._hexes = list(hexes)
         self._allegianceCode = allegianceCode
@@ -593,15 +593,15 @@ class RawRegion(object):
             ) -> None:
         super().__init__()
 
-        survey.validateMandatoryHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
-        common.validateOptionalBool(name='showLabel', value=showLabel)
-        common.validateOptionalBool(name='wrapLabel', value=wrapLabel)
-        survey.validateOptionalHexX(name='labelHexX', value=labelHexX, allowInvalid=True)
-        survey.validateOptionalHexY(name='labelHexY', value=labelHexY, allowInvalid=True)
-        common.validateOptionalFloat(name='labelOffsetX', value=labelOffsetX)
-        common.validateOptionalFloat(name='labelOffsetY', value=labelOffsetY)
-        common.validateOptionalStr(name='label', value=label, allowEmpty=False)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
+        survey.validateHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
+        common.validateBool(name='showLabel', value=showLabel, allowNone=True)
+        common.validateBool(name='wrapLabel', value=wrapLabel, allowNone=True)
+        survey.validateHexX(name='labelHexX', value=labelHexX, allowNone=True, allowInvalid=True)
+        survey.validateHexY(name='labelHexY', value=labelHexY, allowNone=True, allowInvalid=True)
+        common.validateFloat(name='labelOffsetX', value=labelOffsetX, allowNone=True)
+        common.validateFloat(name='labelOffsetY', value=labelOffsetY, allowNone=True)
+        common.validateStr(name='label', value=label, allowNone=True, allowEmpty=False)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
 
         self._hexes = list(hexes)
         self._showLabel = showLabel
@@ -654,14 +654,14 @@ class RawSectorLabel(object):
             ) -> None:
         super().__init__()
 
-        common.validateMandatoryStr(name='text', value=text, allowEmpty=False)
-        survey.validateMandatoryHexX(name='hexX', value=hexX, allowInvalid=True)
-        survey.validateMandatoryHexY(name='hexY', value=hexY, allowInvalid=True)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        survey.validateOptionalLabelSize(name='size', value=size)
-        common.validateOptionalBool(name='wrap', value=wrap)
-        common.validateOptionalFloat(name='offsetX', value=offsetX)
-        common.validateOptionalFloat(name='offsetY', value=offsetY)
+        common.validateStr(name='text', value=text, allowEmpty=False)
+        survey.validateHexX(name='hexX', value=hexX, allowInvalid=True)
+        survey.validateHexY(name='hexY', value=hexY, allowInvalid=True)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        survey.validateLabelSize(name='size', value=size, allowNone=True)
+        common.validateBool(name='wrap', value=wrap, allowNone=True)
+        common.validateFloat(name='offsetX', value=offsetX, allowNone=True)
+        common.validateFloat(name='offsetY', value=offsetY, allowNone=True)
 
         self._text = text
         self._hexX = hexX
@@ -706,10 +706,10 @@ class RawSource(object):
             ) -> None:
         super().__init__()
 
-        common.validateOptionalStr(name='publication', value=publication, allowEmpty=False)
-        common.validateOptionalStr(name='author', value=author, allowEmpty=False)
-        common.validateOptionalStr(name='publisher', value=publisher, allowEmpty=False)
-        common.validateOptionalStr(name='reference', value=reference, allowEmpty=False)
+        common.validateStr(name='publication', value=publication, allowNone=True, allowEmpty=False)
+        common.validateStr(name='author', value=author, allowNone=True, allowEmpty=False)
+        common.validateStr(name='publisher', value=publisher, allowNone=True, allowEmpty=False)
+        common.validateStr(name='reference', value=reference, allowNone=True, allowEmpty=False)
 
         self._publication = publication
         self._publisher = publisher
@@ -737,9 +737,9 @@ class RawSources(object):
             ) -> None:
         super().__init__()
 
-        common.validateOptionalStr(name='credits', value=credits, allowEmpty=False)
-        common.validateOptionalObject(name='primary', value=primary, objectType=RawSource)
-        common.validateOptionalCollection(name='products', value=products, elementType=RawSource)
+        common.validateStr(name='credits', value=credits, allowNone=True, allowEmpty=False)
+        common.validateObject(name='primary', value=primary, objectType=RawSource, allowNone=True)
+        common.validateCollection(name='products', value=products, elementType=RawSource, allowNone=True)
 
         self._credits = credits
         self._primary = primary
@@ -764,10 +764,10 @@ class RawRouteStyle(object):
             ) -> None:
         super().__init__()
 
-        common.validateOptionalStr(name='tag', value=tag, allowEmpty=False)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        survey.validateOptionalLineStyle(name='style', value=style)
-        survey.validateOptionalLineWidth(name='width', value=width)
+        common.validateStr(name='tag', value=tag, allowNone=True, allowEmpty=False)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        survey.validateLineStyle(name='style', value=style, allowNone=True)
+        survey.validateLineWidth(name='width', value=width, allowNone=True)
 
         self._tag = tag
         self._colour = colour
@@ -795,9 +795,9 @@ class RawBorderStyle(object):
             ) -> None:
         super().__init__()
 
-        common.validateOptionalStr(name='tag', value=tag, allowEmpty=False)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        survey.validateOptionalLineStyle(name='style', value=style)
+        common.validateStr(name='tag', value=tag, allowNone=True, allowEmpty=False)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        survey.validateLineStyle(name='style', value=style, allowNone=True)
 
         self._tag = tag
         self._colour = colour
@@ -820,8 +820,8 @@ class RawStyleSheet(object):
             ) -> None:
         super().__init__()
 
-        common.validateMandatoryCollection(name='routeStyles', value=routeStyles, elementType=RawRouteStyle)
-        common.validateMandatoryCollection(name='borderStyles', value=borderStyles, elementType=RawBorderStyle)
+        common.validateCollection(name='routeStyles', value=routeStyles, elementType=RawRouteStyle)
+        common.validateCollection(name='borderStyles', value=borderStyles, elementType=RawBorderStyle)
 
         self._routeStyles = list(routeStyles)
         self._borderStyles = list(borderStyles)
@@ -855,23 +855,23 @@ class RawMetadata(object):
             ) -> None:
         super().__init__()
 
-        common.validateMandatoryInt(name='x', value=x)
-        common.validateMandatoryInt(name='y', value=y)
-        common.validateMandatoryStr(name='canonicalName', value=canonicalName, allowEmpty=False)
-        common.validateOptionalCollection(name='alternateNames', value=alternateNames, elementType=str)
-        common.validateOptionalMapping(name='nameLanguages', value=nameLanguages, keyType=str, valueType=str, validationFn=RawMetadata._validateSectorNameLanguage)
-        common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
-        common.validateOptionalStr(name='sectorLabel', value=sectorLabel, allowEmpty=False)
-        common.validateOptionalMapping(name='subsectorNames', value=subsectorNames, keyType=str, valueType=str, validationFn=RawMetadata._validateSubsectorName)
-        common.validateOptionalBool(name='selected', value=selected)
-        common.validateOptionalCollection(name='tags', value=tags, elementType=str)
-        common.validateOptionalCollection(name='allegiances', value=allegiances, elementType=RawAllegiance)
-        common.validateOptionalCollection(name='routes', value=routes, elementType=RawRoute)
-        common.validateOptionalCollection(name='borders', value=borders, elementType=RawBorder)
-        common.validateOptionalCollection(name='labels', value=labels, elementType=RawSectorLabel)
-        common.validateOptionalCollection(name='regions', value=regions, elementType=RawRegion)
-        common.validateOptionalObject(name='sources', value=sources, objectType=RawSources)
-        common.validateOptionalObject(name='styleSheet', value=styleSheet, objectType=RawStyleSheet)
+        common.validateInt(name='x', value=x)
+        common.validateInt(name='y', value=y)
+        common.validateStr(name='canonicalName', value=canonicalName, allowEmpty=False)
+        common.validateCollection(name='alternateNames', value=alternateNames, elementType=str, allowNone=True)
+        common.validateMapping(name='nameLanguages', value=nameLanguages, keyType=str, valueType=str, allowNone=True, validationFn=RawMetadata._validateSectorNameLanguage)
+        common.validateStr(name='abbreviation', value=abbreviation, allowNone=True, allowEmpty=False)
+        common.validateStr(name='sectorLabel', value=sectorLabel, allowNone=True, allowEmpty=False)
+        common.validateMapping(name='subsectorNames', value=subsectorNames, keyType=str, valueType=str, allowNone=True, validationFn=RawMetadata._validateSubsectorName)
+        common.validateBool(name='selected', value=selected, allowNone=True)
+        common.validateCollection(name='tags', value=tags, elementType=str, allowNone=True)
+        common.validateCollection(name='allegiances', value=allegiances, elementType=RawAllegiance, allowNone=True)
+        common.validateCollection(name='routes', value=routes, elementType=RawRoute, allowNone=True)
+        common.validateCollection(name='borders', value=borders, elementType=RawBorder, allowNone=True)
+        common.validateCollection(name='labels', value=labels, elementType=RawSectorLabel, allowNone=True)
+        common.validateCollection(name='regions', value=regions, elementType=RawRegion, allowNone=True)
+        common.validateObject(name='sources', value=sources, objectType=RawSources, allowNone=True)
+        common.validateObject(name='styleSheet', value=styleSheet, objectType=RawStyleSheet, allowNone=True)
 
         self._x = x
         self._y = y
@@ -985,9 +985,9 @@ class RawNameInfo(object):
             ):
         super().__init__()
 
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-        common.validateOptionalStr(name='language', value=language, allowEmpty=False)
-        common.validateOptionalStr(name='source', value=source, allowEmpty=False)
+        common.validateStr(name='name', value=name, allowEmpty=False)
+        common.validateStr(name='language', value=language, allowNone=True, allowEmpty=False)
+        common.validateStr(name='source', value=source, allowNone=True, allowEmpty=False)
 
         self._name = name
         self._language = language
@@ -1014,12 +1014,12 @@ class RawSectorInfo(object):
             ) -> None:
         super().__init__()
 
-        common.validateMandatoryInt(name='x', value=x)
-        common.validateMandatoryInt(name='y', value=y)
-        common.validateMandatoryStr(name='milieu', value=milieu, allowEmpty=False)
-        common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
-        common.validateOptionalStr(name='tags', value=tags, allowEmpty=False)
-        common.validateOptionalCollection(name='nameInfos', value=nameInfos, elementType=RawNameInfo)
+        common.validateInt(name='x', value=x)
+        common.validateInt(name='y', value=y)
+        common.validateStr(name='milieu', value=milieu, allowEmpty=False)
+        common.validateStr(name='abbreviation', value=abbreviation, allowNone=True, allowEmpty=False)
+        common.validateStr(name='tags', value=tags, allowNone=True, allowEmpty=False)
+        common.validateCollection(name='nameInfos', value=nameInfos, elementType=RawNameInfo, allowNone=True)
 
         self._x = x
         self._y = y
@@ -1057,11 +1057,11 @@ class RawStockAllegiance(object):
             ) -> None:
         super().__init__()
 
-        common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-        common.validateMandatoryStr(name='legacy', value=legacy, allowEmpty=False)
-        common.validateOptionalStr(name='base', value=base, allowEmpty=False)
-        common.validateOptionalStr(name='location', value=location, allowEmpty=False)
+        common.validateStr(name='code', value=code, allowEmpty=False)
+        common.validateStr(name='name', value=name, allowEmpty=False)
+        common.validateStr(name='legacy', value=legacy, allowEmpty=False)
+        common.validateStr(name='base', value=base, allowNone=True, allowEmpty=False)
+        common.validateStr(name='location', value=location, allowNone=True, allowEmpty=False)
 
         self._code = code
         self._name = name
@@ -1093,9 +1093,9 @@ class RawStockSophont(object):
             ) -> None:
         super().__init__()
 
-        common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-        common.validateOptionalStr(name='location', value=location, allowEmpty=False)
+        common.validateStr(name='code', value=code, allowEmpty=False)
+        common.validateStr(name='name', value=name, allowEmpty=False)
+        common.validateStr(name='location', value=location, allowNone=True, allowEmpty=False)
 
         self._code = code
         self._name = name
@@ -1120,10 +1120,10 @@ class RawUniverseLabel(object):
             ) -> None:
         super().__init__()
 
-        common.validateMandatoryStr(name='text', value=text)
-        common.validateMandatoryFloat(name='worldX', value=worldX)
-        common.validateMandatoryFloat(name='worldY', value=worldY)
-        common.validateMandatoryBool(name='minor', value=minor)
+        common.validateStr(name='text', value=text)
+        common.validateFloat(name='worldX', value=worldX)
+        common.validateFloat(name='worldY', value=worldY)
+        common.validateBool(name='minor', value=minor)
 
         self._text = text
         self._worldX = worldX
@@ -1155,14 +1155,14 @@ class RawWorldLabel(object):
             ) -> None:
         super().__init__()
 
-        common.validateMandatoryStr(name='name', value=name)
-        common.validateMandatoryStr(name='sector', value=sector, allowEmpty=False)
-        common.validateMandatoryInt(name='hexX', value=hexX)
-        common.validateMandatoryInt(name='hexY', value=hexY)
+        common.validateStr(name='name', value=name)
+        common.validateStr(name='sector', value=sector, allowEmpty=False)
+        common.validateInt(name='hexX', value=hexX)
+        common.validateInt(name='hexY', value=hexY)
         # TODO: This should validate that the strings are valid map options
-        common.validateMandatoryCollection(name='options', value=options, elementType=str, allowEmpty=False)
-        common.validateOptionalInt(name='biasX', value=biasX)
-        common.validateOptionalInt(name='biasY', value=biasY)
+        common.validateCollection(name='options', value=options, elementType=str, allowEmpty=False)
+        common.validateInt(name='biasX', value=biasX, allowNone=True)
+        common.validateInt(name='biasY', value=biasY, allowNone=True)
 
         self._name = name
         self._sector = sector

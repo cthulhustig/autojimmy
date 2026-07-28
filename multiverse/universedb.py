@@ -39,11 +39,11 @@ class SectorInfo(object):
             sectorY: int,
             abbreviation: typing.Optional[str]
             ) -> None:
-        common.validateMandatoryStr(name='id', value=id, allowEmpty=False)
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-        common.validateMandatoryInt(name='sectorX', value=sectorX)
-        common.validateMandatoryInt(name='sectorY', value=sectorY)
-        common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
+        common.validateStr(name='id', value=id, allowEmpty=False)
+        common.validateStr(name='name', value=name, allowEmpty=False)
+        common.validateInt(name='sectorX', value=sectorX)
+        common.validateInt(name='sectorY', value=sectorY)
+        common.validateStr(name='abbreviation', value=abbreviation, allowNone=True, allowEmpty=False)
 
         self._id = id
         self._name = name
@@ -73,9 +73,9 @@ class StockSourceInfo(object):
             sectorY: int,
             dataHash: typing.Optional[str]
             ) -> None:
-        common.validateMandatoryInt(name='sectorX', value=sectorX)
-        common.validateMandatoryInt(name='sectorY', value=sectorY)
-        common.validateOptionalStr(name='dataHash', value=dataHash, allowEmpty=False)
+        common.validateInt(name='sectorX', value=sectorX)
+        common.validateInt(name='sectorY', value=sectorY)
+        common.validateStr(name='dataHash', value=dataHash, allowNone=True, allowEmpty=False)
 
         self._sectorX = sectorX
         self._sectorY = sectorY

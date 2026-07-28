@@ -26,8 +26,8 @@ class Border(astronomer.Region):
             showLabel=showLabel,
             wrapLabel=wrapLabel)
 
-        common.validateOptionalObject(name='allegiance', value=allegiance, objectType=astronomer.Allegiance)
-        common.validateOptionalObject(name='style', value=style, objectType=astronomer.LineStyle)
+        common.validateObject(name='allegiance', value=allegiance, objectType=astronomer.Allegiance, allowNone=True)
+        common.validateObject(name='style', value=style, objectType=astronomer.LineStyle, allowNone=True)
 
         self._allegiance = allegiance
         self._style = style

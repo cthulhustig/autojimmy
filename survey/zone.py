@@ -33,32 +33,22 @@ def formatSystemZoneString(
 
     return checkZone
 
-def _mandatoryZoneValidator(
-        name: str,
-        value: str
-        ) -> None:
-    if value not in _ValidZoneCodes:
-        raise ValueError(f'{name} must be a valid zone code')
-
-def _optionalZoneValidator(
+def _validateZone(
         name: str,
         value: str
         ) -> None:
     if value is not None and value not in _ValidZoneCodes:
-        raise ValueError(f'{name} must be a valid zone code or None')
+        raise ValueError(f'{name} must be a valid zone code')
 
-def validateMandatoryZone(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
+def validateZone(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _mandatoryZoneValidator(
-            name=name,
-            value=value))
-
-def validateOptionalZone(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _optionalZoneValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validateZone(
             name=name,
             value=value))

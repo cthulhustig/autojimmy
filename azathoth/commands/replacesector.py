@@ -10,8 +10,8 @@ class ReplaceSectorCommand(azathoth.EditCommandInterface):
             ) -> None:
         super().__init__()
 
-        common.validateOptionalObject(name='oldSector', value=oldSector, objectType=azathoth.EditableSector)
-        common.validateOptionalObject(name='newSector', value=newSector, objectType=azathoth.EditableSector)
+        common.validateObject(name='oldSector', value=oldSector, objectType=azathoth.EditableSector, allowNone=True)
+        common.validateObject(name='newSector', value=newSector, objectType=azathoth.EditableSector, allowNone=True)
 
         if oldSector and newSector:
             if oldSector.position() != newSector.position():

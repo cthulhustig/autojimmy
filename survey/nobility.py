@@ -44,32 +44,20 @@ def formatSystemNobilityString(
     # sort is done on the upper/lower case-ness (so 'c' is before 'C')
     return ''.join(sorted(validCodes, key=lambda c: (c.lower(), c.isupper())))
 
-def _mandatoryNobilityValidator(
-        name: str,
-        value: str
-        ) -> None:
-    if value.upper() not in _ValidNobilityCodes:
-        raise ValueError(f'{name} must be a valid nobility code')
-
-def _optionalNobilityValidator(
+def _validateNobility(
         name: str,
         value: str
         ) -> None:
     if value is not None and value.upper() not in _ValidNobilityCodes:
-        raise ValueError(f'{name} must be a valid nobility code or None')
+        raise ValueError(f'{name} must be a valid nobility code')
 
-def validateMandatoryNobility(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
+def validateNobility(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _mandatoryNobilityValidator(
-            name=name,
-            value=value))
-
-def validateOptionalNobility(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _optionalNobilityValidator(
-            name=name,
-            value=value))
+        allowNone=allowNone,
+        validationFn=_validateNobility)

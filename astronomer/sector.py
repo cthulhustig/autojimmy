@@ -29,28 +29,28 @@ class Sector(astronomer.Entity):
             ) -> None:
         super().__init__(entityId=entityId)
 
-        common.validateMandatoryObject(name='position', value=position, objectType=astronomer.SectorPosition)
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
+        common.validateObject(name='position', value=position, objectType=astronomer.SectorPosition)
+        common.validateStr(name='name', value=name, allowEmpty=False)
         # TODO: This should check that the names aren't empty strings
-        common.validateOptionalCollection(name='alternateNames', value=alternateNames, elementType=str)
+        common.validateCollection(name='alternateNames', value=alternateNames, elementType=str, allowNone=True)
         # TODO: This should check that the names and languages aren't empty strings
-        common.validateOptionalMapping(name='nameLanguages', value=nameLanguages, keyType=str, valueType=str)
-        common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
-        common.validateOptionalStr(name='sectorLabel', value=sectorLabel, allowEmpty=False)
+        common.validateMapping(name='nameLanguages', value=nameLanguages, keyType=str, valueType=str, allowNone=True)
+        common.validateStr(name='abbreviation', value=abbreviation, allowEmpty=False, allowNone=True)
+        common.validateStr(name='sectorLabel', value=sectorLabel, allowEmpty=False, allowNone=True)
         # TODO: This should check that the codes are A-P and names aren't empty
-        common.validateOptionalMapping(name='subsectorNames', value=subsectorNames, keyType=str, valueType=str)
-        common.validateOptionalCollection(name='worlds', value=worlds, elementType=astronomer.World)
-        common.validateOptionalCollection(name='allegiances', value=allegiances, elementType=astronomer.Allegiance)
-        common.validateOptionalCollection(name='sophonts', value=sophonts, elementType=astronomer.Sophont)
-        common.validateOptionalCollection(name='routes', value=routes, elementType=astronomer.Route)
-        common.validateOptionalCollection(name='borders', value=borders, elementType=astronomer.Border)
-        common.validateOptionalCollection(name='regions', value=regions, elementType=astronomer.Region)
-        common.validateOptionalCollection(name='labels', value=labels, elementType=astronomer.SectorLabel)
-        common.validateMandatoryBool(name='selected', value=selected)
-        common.validateOptionalObject(name='tagging', value=tagging, objectType=astronomer.SectorTagging)
-        common.validateOptionalStr(name='credits', value=credits, allowEmpty=False)
-        common.validateOptionalObject(name='source', value=source, objectType=astronomer.SectorSource)
-        common.validateOptionalCollection(name='products', value=products, elementType=astronomer.SectorSource)
+        common.validateMapping(name='subsectorNames', value=subsectorNames, keyType=str, valueType=str, allowNone=True)
+        common.validateCollection(name='worlds', value=worlds, elementType=astronomer.World, allowNone=True)
+        common.validateCollection(name='allegiances', value=allegiances, elementType=astronomer.Allegiance, allowNone=True)
+        common.validateCollection(name='sophonts', value=sophonts, elementType=astronomer.Sophont, allowNone=True)
+        common.validateCollection(name='routes', value=routes, elementType=astronomer.Route, allowNone=True)
+        common.validateCollection(name='borders', value=borders, elementType=astronomer.Border, allowNone=True)
+        common.validateCollection(name='regions', value=regions, elementType=astronomer.Region, allowNone=True)
+        common.validateCollection(name='labels', value=labels, elementType=astronomer.SectorLabel, allowNone=True)
+        common.validateBool(name='selected', value=selected)
+        common.validateObject(name='tagging', value=tagging, objectType=astronomer.SectorTagging, allowNone=True)
+        common.validateStr(name='credits', value=credits, allowEmpty=False, allowNone=True)
+        common.validateObject(name='source', value=source, objectType=astronomer.SectorSource, allowNone=True)
+        common.validateCollection(name='products', value=products, elementType=astronomer.SectorSource, allowNone=True)
 
         self._position = position
         self._name = name

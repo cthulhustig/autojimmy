@@ -81,99 +81,70 @@ def formatSystemCultureString(
         strangeness=_processFormatCode(code=strangeness, allowed=_ValidStrangenessCodes, name='Strangeness', reporter=reporter),
         symbols=_processFormatCode(code=symbols, allowed=_ValidSymbolsCodes, name='Symbols', reporter=reporter))
 
-def _mandatoryCultureElementValidator(
-        name: str,
-        value: str,
-        element: str,
-        allowed: typing.Collection[str],
-        ) -> None:
-    if value not in allowed:
-        raise ValueError(f'{name} must be a valid culture {element} code')
-
-def _optionalCultureElementValidator(
+def _validateCultureElement(
         name: str,
         value: str,
         element: str,
         allowed: typing.Collection[str],
         ) -> None:
     if value is not None and value not in allowed:
-        raise ValueError(f'{name} must be a valid culture {element} code or None')
+        raise ValueError(f'{name} must be a valid culture {element} code')
 
-def validateMandatoryHeterogeneity(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
+def validateHeterogeneity(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _mandatoryCultureElementValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validateCultureElement(
             name=name,
             value=value,
             element='Heterogeneity',
             allowed=_ValidHeterogeneityCodes))
 
-def validateOptionalHeterogeneity(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+def validateAcceptance(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _optionalCultureElementValidator(
-            name=name,
-            value=value,
-            element='Heterogeneity',
-            allowed=_ValidHeterogeneityCodes))
-
-def validateMandatoryAcceptance(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _mandatoryCultureElementValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validateCultureElement(
             name=name,
             value=value,
             element='Acceptance',
             allowed=_ValidAcceptanceCodes))
 
-def validateOptionalAcceptance(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+def validateStrangeness(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _optionalCultureElementValidator(
-            name=name,
-            value=value,
-            element='Acceptance',
-            allowed=_ValidAcceptanceCodes))
-
-def validateMandatoryStrangeness(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _mandatoryCultureElementValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validateCultureElement(
             name=name,
             value=value,
             element='Strangeness',
             allowed=_ValidStrangenessCodes))
 
-def validateOptionalStrangeness(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+def validateSymbols(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _optionalCultureElementValidator(
-            name=name,
-            value=value,
-            element='Strangeness',
-            allowed=_ValidStrangenessCodes))
-
-def validateMandatorySymbols(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _mandatoryCultureElementValidator(
-            name=name,
-            value=value,
-            element='Symbols',
-            allowed=_ValidSymbolsCodes))
-
-def validateOptionalSymbols(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _optionalCultureElementValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validateCultureElement(
             name=name,
             value=value,
             element='Symbols',

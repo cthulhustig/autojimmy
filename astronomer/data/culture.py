@@ -108,10 +108,10 @@ class Culture(object):
             strangeness: typing.Optional[str] = None,
             symbols: typing.Optional[str] = None
             ) -> None:
-        survey.validateOptionalHeterogeneity(name='heterogeneity', value=heterogeneity)
-        survey.validateOptionalAcceptance(name='acceptance', value=acceptance)
-        survey.validateOptionalStrangeness(name='strangeness', value=strangeness)
-        survey.validateOptionalSymbols(name='symbols', value=symbols)
+        survey.validateHeterogeneity(name='heterogeneity', value=heterogeneity, allowNone=True)
+        survey.validateAcceptance(name='acceptance', value=acceptance, allowNone=True)
+        survey.validateStrangeness(name='strangeness', value=strangeness, allowNone=True)
+        survey.validateSymbols(name='symbols', value=symbols, allowNone=True)
 
         self._valueMap: typing.Dict[Culture.Element, str] = {}
         self._string = None

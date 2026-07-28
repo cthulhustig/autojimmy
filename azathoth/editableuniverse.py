@@ -22,8 +22,8 @@ class EditableUniverse(astronomer.Universe):
             oldSector: typing.Optional[azathoth.EditableSector],
             newSector: typing.Optional[azathoth.EditableSector]
             ) -> None:
-        common.validateOptionalObject(name='oldSector', value=oldSector, objectType=azathoth.EditableSector)
-        common.validateOptionalObject(name='newSector', value=newSector, objectType=azathoth.EditableSector)
+        common.validateObject(name='oldSector', value=oldSector, objectType=azathoth.EditableSector, allowNone=True)
+        common.validateObject(name='newSector', value=newSector, objectType=azathoth.EditableSector, allowNone=True)
 
         if oldSector and newSector:
             if oldSector.position() != newSector.position():

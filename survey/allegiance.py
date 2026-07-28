@@ -68,23 +68,15 @@ def _validateAllegianceName(
         if c in _InvalidAllegianceNameCharacters:
             raise ValueError(f'{attributeName} can\'t contain {_InvalidAllegianceNameCharacters!r}')
 
-def validateMandatoryAllegianceName(
+def validateAllegianceName(
         name: str,
-        value: str
-        ) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        allowEmpty=False,
-        validationFn=_validateAllegianceName)
-
-def validateOptionalAllegianceName(
-        name: str,
-        value: typing.Optional[str]
+        value: typing.Optional[str],
+        allowNone: bool = False
         ) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+    return common.validateStr(
         name=name,
         value=value,
+        allowNone=allowNone,
         allowEmpty=False,
         validationFn=_validateAllegianceName)
 
@@ -99,22 +91,14 @@ def _validateAllegianceCode(
     if not result:
         raise ValueError(f'{attributeName} is not a valid Allegiance Code')
 
-def validateMandatoryAllegianceCode(
+def validateAllegianceCode(
         name: str,
-        value: str
-        ) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        allowEmpty=False,
-        validationFn=_validateAllegianceCode)
-
-def validateOptionalAllegianceCode(
-        name: str,
-        value: typing.Optional[str]
+        value: typing.Optional[str],
+        allowNone: bool = False
         ) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+    return common.validateStr(
         name=name,
         value=value,
+        allowNone=allowNone,
         allowEmpty=False,
         validationFn=_validateAllegianceCode)

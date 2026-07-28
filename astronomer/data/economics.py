@@ -106,10 +106,10 @@ class Economics(object):
             infrastructure: typing.Optional[str] = None,
             efficiency: typing.Optional[str] = None
             ) -> None:
-        survey.validateOptionalResources(name='resources', value=resources)
-        survey.validateOptionalLabour(name='labour', value=labour)
-        survey.validateOptionalInfrastructure(name='infrastructure', value=infrastructure)
-        survey.validateOptionalEfficiency(name='efficiency', value=efficiency)
+        survey.validateResources(name='resources', value=resources, allowNone=True)
+        survey.validateLabour(name='labour', value=labour, allowNone=True)
+        survey.validateInfrastructure(name='infrastructure', value=infrastructure, allowNone=True)
+        survey.validateEfficiency(name='efficiency', value=efficiency, allowNone=True)
 
         self._valueMap: typing.Dict[Economics.Element, str] = {}
         self._string = None

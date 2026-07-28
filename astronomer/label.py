@@ -38,12 +38,12 @@ class SectorLabel(astronomer.Entity):
             ) -> None:
         super().__init__(entityId=entityId)
 
-        common.validateMandatoryStr(name='text', value=text, allowEmpty=False)
-        common.validateMandatoryFloat(name='worldX', value=worldX)
-        common.validateMandatoryFloat(name='worldY', value=worldY)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        common.validateOptionalObject(name='size', value=size, objectType=LabelSize)
-        common.validateMandatoryBool(name='wrap', value=wrap)
+        common.validateStr(name='text', value=text, allowEmpty=False)
+        common.validateFloat(name='worldX', value=worldX)
+        common.validateFloat(name='worldY', value=worldY)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        common.validateObject(name='size', value=size, objectType=LabelSize, allowNone=True)
+        common.validateBool(name='wrap', value=wrap)
 
         self._text = text
         self._worldX = worldX
@@ -85,13 +85,13 @@ class MapLabel(astronomer.Entity):
             ) -> None:
         super().__init__(entityId=entityId)
 
-        common.validateMandatoryStr(name='text', value=text)
-        common.validateMandatoryFloat(name='worldX', value=worldX)
-        common.validateMandatoryFloat(name='worldY', value=worldY)
-        common.validateMandatoryObject(name='layer', value=layer, objectType=LabelLayer)
-        common.validateOptionalObject(name='alignment', value=alignment, objectType=TextAlignment)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        common.validateOptionalObject(name='size', value=size, objectType=LabelSize)
+        common.validateStr(name='text', value=text)
+        common.validateFloat(name='worldX', value=worldX)
+        common.validateFloat(name='worldY', value=worldY)
+        common.validateObject(name='layer', value=layer, objectType=LabelLayer)
+        common.validateObject(name='alignment', value=alignment, objectType=TextAlignment, allowNone=True)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        common.validateObject(name='size', value=size, objectType=LabelSize, allowNone=True)
 
         self._text = text
         self._worldX = worldX

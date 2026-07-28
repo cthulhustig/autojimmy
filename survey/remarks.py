@@ -518,66 +518,48 @@ def formatSystemRemarksString(
 
     return ' '.join(remarks)
 
-def _mandatoryStringValidator(
-        name: str,
-        value: str,
-        element: str,
-        allowed: typing.Collection[str]
-        ) -> None:
-    if value not in allowed:
-        raise ValueError(f'{name} must be a valid {element}')
-
-def _optionalStringValidator(
+def _validateRemarkString(
         name: str,
         value: str,
         element: str,
         allowed: typing.Collection[str]
         ) -> None:
     if value is not None and value not in allowed:
-        raise ValueError(f'{name} must be a valid {element} or None')
+        raise ValueError(f'{name} must be a valid {element}')
 
-def validateMandatoryTradeCode(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
+def validateTradeCode(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _mandatoryStringValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validateRemarkString(
             name=name,
             value=value,
             element='Trade Code',
             allowed=_ValidTradeCodes))
 
-def validateOptionalTradeCode(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
+def validateResearchStation(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False
+        ) -> typing.Optional[str]:
+    return common.validateStr(
         name=name,
         value=value,
-        validationFn=lambda name, value: _optionalStringValidator(
-            name=name,
-            value=value,
-            element='Trade Code',
-            allowed=_ValidTradeCodes))
-
-def validateMandatoryResearchStation(name: str, value: str) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _mandatoryStringValidator(
+        allowNone=allowNone,
+        validationFn=lambda name, value: _validateRemarkString(
             name=name,
             value=value,
             element='Research Station',
             allowed=_ValidResearchStations))
 
-def validateOptionalResearchStation(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
-    return common.validateOptionalStr(
-        name=name,
-        value=value,
-        validationFn=lambda name, value: _optionalStringValidator(
-            name=name,
-            value=value,
-            element='Research Station',
-            allowed=_ValidResearchStations))
-
-def validateMandatorySophontPercentage(name: str, value: int) -> int:
-    return common.validateMandatoryInt(name=name, value=value, min=0, max=100)
-
-def validateOptionalSophontPercentage(name: str, value: typing.Optional[int]) -> typing.Optional[int]:
-    return common.validateOptionalInt(name=name, value=value, min=0, max=100)
+def validateSophontPercentage(
+        name: str,
+        value: typing.Optional[int],
+        allowNone: bool = False
+        ) -> typing.Optional[int]:
+    return common.validateInt(name=name, value=value, allowNone=allowNone, min=0, max=100)

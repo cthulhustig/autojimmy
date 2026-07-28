@@ -9,10 +9,10 @@ class SectorSource(object):
             publisher: typing.Optional[str],
             reference: typing.Optional[str]
             ) -> None:
-        common.validateOptionalStr(name='publication', value=publication, allowEmpty=False)
-        common.validateOptionalStr(name='author', value=author, allowEmpty=False)
-        common.validateOptionalStr(name='publisher', value=publisher, allowEmpty=False)
-        common.validateOptionalStr(name='reference', value=reference, allowEmpty=False)
+        common.validateStr(name='publication', value=publication, allowEmpty=False, allowNone=True)
+        common.validateStr(name='author', value=author, allowEmpty=False, allowNone=True)
+        common.validateStr(name='publisher', value=publisher, allowEmpty=False, allowNone=True)
+        common.validateStr(name='reference', value=reference, allowEmpty=False, allowNone=True)
 
         self._publication = publication
         self._author = author

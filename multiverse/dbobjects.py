@@ -26,7 +26,7 @@ class DbObject(object):
             ) -> None:
         super().__init__()
 
-        common.validateOptionalStr(name='id', value=id, allowEmpty=False)
+        common.validateStr(name='id', value=id, allowNone=True, allowEmpty=False)
 
         # TODO: Some testing showed that switching to uuid7 is 10% faster when
         # importing the custom universe (2 seconds less). Unfortunately it's
@@ -55,7 +55,7 @@ class DbSectorObject(DbObject):
             ) -> None:
         super().__init__(id=id)
 
-        common.validateOptionalStr(name='sectorId', value=sectorId, allowEmpty=False)
+        common.validateStr(name='sectorId', value=sectorId, allowNone=True, allowEmpty=False)
 
         self._sectorId = sectorId
 
@@ -73,7 +73,7 @@ class DbSectorObject(DbObject):
     # reference the sophont from its old sector which would result in horrible
     # bugs and the mangled data being written back to the database.
     def setSectorId(self, sectorId: str) -> None:
-        common.validateMandatoryStr(name='sectorId', value=sectorId, allowEmpty=False)
+        common.validateStr(name='sectorId', value=sectorId, allowEmpty=False)
 
         if sectorId == self._sectorId:
             return # Nothing to do
@@ -91,7 +91,7 @@ class DbSystemObject(DbObject):
             ) -> None:
         super().__init__(id=id)
 
-        common.validateOptionalStr(name='systemId', value=systemId, allowEmpty=False)
+        common.validateStr(name='systemId', value=systemId, allowNone=True, allowEmpty=False)
 
         self._systemId = systemId
 
@@ -109,7 +109,7 @@ class DbSystemObject(DbObject):
     # reference the sophont from its old sector which would result in horrible
     # bugs and the mangled data being written back to the database.
     def setSystemId(self, systemId: str) -> None:
-        common.validateMandatoryStr(name='systemId', value=systemId, allowEmpty=False)
+        common.validateStr(name='systemId', value=systemId, allowEmpty=False)
 
         if systemId == self._systemId:
             return # Nothing to do
@@ -127,7 +127,7 @@ class DbWorldObject(DbObject):
             ) -> None:
         super().__init__(id=id)
 
-        common.validateOptionalStr(name='worldId', value=worldId, allowEmpty=False)
+        common.validateStr(name='worldId', value=worldId, allowNone=True, allowEmpty=False)
 
         self._worldId = worldId
 
@@ -145,7 +145,7 @@ class DbWorldObject(DbObject):
     # reference the sophont from its old sector which would result in horrible
     # bugs and the mangled data being written back to the database.
     def setWorldId(self, worldId: str) -> None:
-        common.validateMandatoryStr(name='worldId', value=worldId, allowEmpty=False)
+        common.validateStr(name='worldId', value=worldId, allowEmpty=False)
 
         if worldId == self._worldId:
             return # Nothing to do
@@ -164,7 +164,7 @@ class DbNobility(DbWorldObject):
             ) -> None:
         super().__init__(id=id, worldId=worldId)
 
-        survey.validateMandatoryNobility(name='code', value=code)
+        survey.validateNobility(name='code', value=code)
 
         self._code = code
 
@@ -180,7 +180,7 @@ class DbTradeCode(DbWorldObject):
             ) -> None:
         super().__init__(id=id, worldId=worldId)
 
-        survey.validateMandatoryTradeCode(name='code', value=code)
+        survey.validateTradeCode(name='code', value=code)
 
         self._code = code
 
@@ -199,10 +199,10 @@ class DbSophontPopulation(DbWorldObject):
             ) -> None:
         super().__init__(id=id, worldId=worldId)
 
-        common.validateMandatoryStr(name='sophontId', value=sophontId, allowEmpty=False)
-        survey.validateOptionalSophontPercentage(name='percentage', value=percentage)
-        common.validateMandatoryBool(name='isHomeWorld', value=isHomeWorld)
-        common.validateMandatoryBool(name='isDieBack', value=isDieBack)
+        common.validateStr(name='sophontId', value=sophontId, allowEmpty=False)
+        survey.validateSophontPercentage(name='percentage', value=percentage, allowNone=True)
+        common.validateBool(name='isHomeWorld', value=isHomeWorld)
+        common.validateBool(name='isDieBack', value=isDieBack)
 
         self._sophontId = sophontId
         self._percentage = percentage
@@ -230,7 +230,7 @@ class DbRulingAllegiance(DbWorldObject):
             ) -> None:
         super().__init__(id=id, worldId=worldId)
 
-        common.validateMandatoryStr(name='allegianceId', value=allegianceId, allowEmpty=False)
+        common.validateStr(name='allegianceId', value=allegianceId, allowEmpty=False)
 
         self._allegianceId = allegianceId
 
@@ -248,9 +248,9 @@ class DbOwningSystem(DbWorldObject):
             ):
         super().__init__(id=id, worldId=worldId)
 
-        survey.validateMandatoryHexX(name='hexX', value=hexX)
-        survey.validateMandatoryHexY(name='hexY', value=hexY)
-        common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
+        survey.validateHexX(name='hexX', value=hexX)
+        survey.validateHexY(name='hexY', value=hexY)
+        common.validateStr(name='sectorAbbreviation', value=sectorAbbreviation, allowNone=True, allowEmpty=False)
 
         self._hexX = hexX
         self._hexY = hexY
@@ -276,9 +276,9 @@ class DbColonySystem(DbWorldObject):
             ):
         super().__init__(id=id, worldId=worldId)
 
-        survey.validateMandatoryHexX(name='hexX', value=hexX)
-        survey.validateMandatoryHexY(name='hexY', value=hexY)
-        common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
+        survey.validateHexX(name='hexX', value=hexX)
+        survey.validateHexY(name='hexY', value=hexY)
+        common.validateStr(name='sectorAbbreviation', value=sectorAbbreviation, allowNone=True, allowEmpty=False)
 
         self._hexX = hexX
         self._hexY = hexY
@@ -302,7 +302,7 @@ class DbCustomRemark(DbWorldObject):
             ):
         super().__init__(id=id, worldId=worldId)
 
-        common.validateMandatoryStr(name='remark', value=remark, allowEmpty=False)
+        common.validateStr(name='remark', value=remark, allowEmpty=False)
 
         self._remark = remark
 
@@ -318,7 +318,7 @@ class DbBase(DbWorldObject):
             ) -> None:
         super().__init__(id=id, worldId=worldId)
 
-        survey.validateMandatoryBase(name='code', value=code)
+        survey.validateBase(name='code', value=code)
 
         self._code = code
 
@@ -334,7 +334,7 @@ class DbResearchStation(DbWorldObject):
             ) -> None:
         super().__init__(id=id, worldId=worldId)
 
-        survey.validateMandatoryResearchStation(name='code', value=code)
+        survey.validateResearchStation(name='code', value=code)
 
         self._code = code
 
@@ -352,9 +352,9 @@ class DbBody(DbSystemObject):
             ) -> None:
         super().__init__(id=id, systemId=systemId)
 
-        common.validateMandatoryInt(name='orbitIndex', value=orbitIndex)
-        common.validateOptionalStr(name='name', value=name, allowEmpty=False)
-        common.validateOptionalStr(name='notes', value=notes)
+        common.validateInt(name='orbitIndex', value=orbitIndex)
+        common.validateStr(name='name', value=name, allowNone=True, allowEmpty=False)
+        common.validateStr(name='notes', value=notes, allowNone=True)
 
         self._orbitIndex = orbitIndex
         self._name = name
@@ -416,24 +416,24 @@ class DbWorld(DbBody):
             name=name,
             notes=notes)
 
-        common.validateMandatoryBool(name='isMainWorld', value=isMainWorld)
-        survey.validateOptionalStarport(name='starport', value=starport)
-        survey.validateOptionalWorldSize(name='worldSize', value=worldSize)
-        survey.validateOptionalAtmosphere(name='atmosphere', value=atmosphere)
-        survey.validateOptionalHydrographics(name='hydrographics', value=hydrographics)
-        survey.validateOptionalPopulation(name='population', value=population)
-        survey.validateOptionalGovernment(name='government', value=government)
-        survey.validateOptionalLawLevel(name='lawLevel', value=lawLevel)
-        survey.validateOptionalTechLevel(name='techLevel', value=techLevel)
-        survey.validateOptionalResources(name='resources', value=resources)
-        survey.validateOptionalLabour(name='labour', value=labour)
-        survey.validateOptionalInfrastructure(name='infrastructure', value=infrastructure)
-        survey.validateOptionalEfficiency(name='efficiency', value=efficiency)
-        survey.validateOptionalHeterogeneity(name='heterogeneity', value=heterogeneity)
-        survey.validateOptionalAcceptance(name='acceptance', value=acceptance)
-        survey.validateOptionalStrangeness(name='strangeness', value=strangeness)
-        survey.validateOptionalSymbols(name='symbols', value=symbols)
-        survey.validateOptionalPopulationMultiplier(name='populationMultiplier', value=populationMultiplier)
+        common.validateBool(name='isMainWorld', value=isMainWorld)
+        survey.validateStarport(name='starport', value=starport, allowNone=True)
+        survey.validateWorldSize(name='worldSize', value=worldSize, allowNone=True)
+        survey.validateAtmosphere(name='atmosphere', value=atmosphere, allowNone=True)
+        survey.validateHydrographics(name='hydrographics', value=hydrographics, allowNone=True)
+        survey.validatePopulation(name='population', value=population, allowNone=True)
+        survey.validateGovernment(name='government', value=government, allowNone=True)
+        survey.validateLawLevel(name='lawLevel', value=lawLevel, allowNone=True)
+        survey.validateTechLevel(name='techLevel', value=techLevel, allowNone=True)
+        survey.validateResources(name='resources', value=resources, allowNone=True)
+        survey.validateLabour(name='labour', value=labour, allowNone=True)
+        survey.validateInfrastructure(name='infrastructure', value=infrastructure, allowNone=True)
+        survey.validateEfficiency(name='efficiency', value=efficiency, allowNone=True)
+        survey.validateHeterogeneity(name='heterogeneity', value=heterogeneity, allowNone=True)
+        survey.validateAcceptance(name='acceptance', value=acceptance, allowNone=True)
+        survey.validateStrangeness(name='strangeness', value=strangeness, allowNone=True)
+        survey.validateSymbols(name='symbols', value=symbols, allowNone=True)
+        survey.validatePopulationMultiplier(name='populationMultiplier', value=populationMultiplier, allowNone=True)
         DbWorld._validateNobilities(name='nobilities', value=nobilities, worldId=id)
         DbWorld._validateBases(name='bases', value=bases, worldId=id)
         DbWorld._validateTradeCodes(name='tradeCodes', value=tradeCodes, worldId=id)
@@ -581,7 +581,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbNobility)
+        common.validateCollection(name=name, value=value, elementType=DbNobility, allowNone=True)
         if not value:
             return
 
@@ -605,7 +605,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbBase)
+        common.validateCollection(name=name, value=value, elementType=DbBase, allowNone=True)
         if not value:
             return
 
@@ -629,7 +629,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbTradeCode)
+        common.validateCollection(name=name, value=value, elementType=DbTradeCode, allowNone=True)
         if not value:
             return
 
@@ -653,7 +653,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbSophontPopulation)
+        common.validateCollection(name=name, value=value, elementType=DbSophontPopulation, allowNone=True)
         if not value:
             return
 
@@ -677,7 +677,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbRulingAllegiance)
+        common.validateCollection(name=name, value=value, elementType=DbRulingAllegiance, allowNone=True)
         if not value:
             return
 
@@ -701,7 +701,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbOwningSystem)
+        common.validateCollection(name=name, value=value, elementType=DbOwningSystem, allowNone=True)
         if not value:
             return
 
@@ -725,7 +725,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbColonySystem)
+        common.validateCollection(name=name, value=value, elementType=DbColonySystem, allowNone=True)
         if not value:
             return
 
@@ -749,7 +749,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbResearchStation)
+        common.validateCollection(name=name, value=value, elementType=DbResearchStation, allowNone=True)
         if not value:
             return
 
@@ -773,7 +773,7 @@ class DbWorld(DbBody):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbCustomRemark)
+        common.validateCollection(name=name, value=value, elementType=DbCustomRemark, allowNone=True)
         if not value:
             return
 
@@ -799,15 +799,15 @@ class DbAllegiance(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        survey.validateMandatoryAllegianceCode(name='code', value=code)
-        survey.validateMandatoryAllegianceName(name='name', value=name)
-        survey.validateOptionalAllegianceCode(name='legacy', value=legacy)
-        survey.validateOptionalAllegianceCode(name='base', value=base)
-        survey.validateOptionalHtmlColour(name='routeColour', value=routeColour)
-        survey.validateOptionalLineStyle(name='routeStyle', value=routeStyle)
-        survey.validateOptionalLineWidth(name='routeWidth', value=routeWidth)
-        survey.validateOptionalHtmlColour(name='borderColour', value=borderColour)
-        survey.validateOptionalLineStyle(name='borderStyle', value=borderStyle)
+        survey.validateAllegianceCode(name='code', value=code)
+        survey.validateAllegianceName(name='name', value=name)
+        survey.validateAllegianceCode(name='legacy', value=legacy, allowNone=True)
+        survey.validateAllegianceCode(name='base', value=base, allowNone=True)
+        survey.validateHtmlColour(name='routeColour', value=routeColour, allowNone=True)
+        survey.validateLineStyle(name='routeStyle', value=routeStyle, allowNone=True)
+        survey.validateLineWidth(name='routeWidth', value=routeWidth, allowNone=True)
+        survey.validateHtmlColour(name='borderColour', value=borderColour, allowNone=True)
+        survey.validateLineStyle(name='borderStyle', value=borderStyle, allowNone=True)
 
         self._code = code
         self._name = name
@@ -857,9 +857,9 @@ class DbSophont(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        survey.validateMandatorySophontCode(name='code', value=code)
-        survey.validateMandatorySophontName(name='name', value=name)
-        common.validateMandatoryBool(name='isMajor', value=isMajor)
+        survey.validateSophontCode(name='code', value=code)
+        survey.validateSophontName(name='name', value=name)
+        common.validateBool(name='isMajor', value=isMajor)
 
         self._code = code
         self._name = name
@@ -885,9 +885,9 @@ class DbStar(DbSystemObject):
             ) -> None:
         super().__init__(id=id, systemId=systemId)
 
-        survey.validateMandatoryLuminosityClass(name='luminosityClass', value=luminosityClass)
-        survey.validateOptionalSpectralClass(name='spectralClass', value=spectralClass)
-        survey.validateOptionalSpectralScale(name='spectralScale', value=spectralScale)
+        survey.validateLuminosityClass(name='luminosityClass', value=luminosityClass)
+        survey.validateSpectralClass(name='spectralClass', value=spectralClass, allowNone=True)
+        survey.validateSpectralScale(name='spectralScale', value=spectralScale, allowNone=True)
 
         self._luminosityClass = luminosityClass
         self._spectralClass = spectralClass
@@ -929,17 +929,17 @@ class DbSystem(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        survey.validateMandatoryHexX(name='hexX', value=hexX)
-        survey.validateMandatoryHexY(name='hexY', value=hexY)
-        common.validateOptionalStr(name='name', value=name, allowEmpty=False)
-        common.validateOptionalInt(name='planetoidBeltCount', value=planetoidBeltCount, min=0)
-        common.validateOptionalInt(name='gasGiantCount', value=gasGiantCount, min=0)
-        common.validateOptionalInt(name='worldCount', value=worldCount, min=0)
-        survey.validateOptionalZone(name='zone', value=zone)
-        common.validateOptionalStr(name='allegianceId', value=allegianceId, allowEmpty=False)
+        survey.validateHexX(name='hexX', value=hexX)
+        survey.validateHexY(name='hexY', value=hexY)
+        common.validateStr(name='name', value=name, allowNone=True, allowEmpty=False)
+        common.validateInt(name='planetoidBeltCount', value=planetoidBeltCount, allowNone=True, min=0)
+        common.validateInt(name='gasGiantCount', value=gasGiantCount, allowNone=True, min=0)
+        common.validateInt(name='worldCount', value=worldCount, allowNone=True, min=0)
+        survey.validateZone(name='zone', value=zone, allowNone=True)
+        common.validateStr(name='allegianceId', value=allegianceId, allowNone=True, allowEmpty=False)
         DbSystem._validateStars(name='stars', value=stars, systemId=id)
         DbSystem._validateBodies(name='bodies', value=bodies, systemId=id)
-        common.validateOptionalStr(name='notes', value=notes)
+        common.validateStr(name='notes', value=notes, allowNone=True)
 
         self._hexX = hexX
         self._hexY = hexY
@@ -1007,7 +1007,7 @@ class DbSystem(DbSectorObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbStar)
+        common.validateCollection(name=name, value=value, elementType=DbStar, allowNone=True)
         if not value:
             return
 
@@ -1025,7 +1025,7 @@ class DbSystem(DbSectorObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbBody)
+        common.validateCollection(name=name, value=value, elementType=DbBody, allowNone=True)
         if not value:
             return
 
@@ -1057,8 +1057,8 @@ class DbAlternateName(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-        common.validateOptionalStr(name='language', value=language, allowEmpty=False)
+        common.validateStr(name='name', value=name, allowEmpty=False)
+        common.validateStr(name='language', value=language, allowNone=True, allowEmpty=False)
 
         self._name = name
         self._language = language
@@ -1079,8 +1079,8 @@ class DbSubsectorName(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateMandatoryStr(name='code', value=code, allowed=_ValidSubsectorCodes)
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
+        common.validateStr(name='code', value=code, allowedValues=_ValidSubsectorCodes)
+        common.validateStr(name='name', value=name, allowEmpty=False)
 
         self._code = code
         self._name = name
@@ -1117,19 +1117,19 @@ class DbRoute(DbSectorObject):
 
         # TODO: Ideally I wouldn't allow invalid hexes here but I need to have
         # the conversion process convert invalid hexes to valid hexes with offsets
-        survey.validateMandatoryHexX(name='startHexX', value=startHexX, allowInvalid=True)
-        survey.validateMandatoryHexY(name='startHexY', value=startHexY, allowInvalid=True)
-        survey.validateMandatoryHexX(name='endHexX', value=endHexX, allowInvalid=True)
-        survey.validateMandatoryHexY(name='endHexY', value=endHexY, allowInvalid=True)
-        common.validateOptionalInt(name='startOffsetX', value=startOffsetX)
-        common.validateOptionalInt(name='startOffsetY', value=startOffsetY)
-        common.validateOptionalInt(name='endOffsetX', value=endOffsetX)
-        common.validateOptionalInt(name='endOffsetY', value=endOffsetY)
-        common.validateOptionalStr(name='type', value=type, allowEmpty=False)
-        survey.validateOptionalLineStyle(name='style', value=style)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        survey.validateOptionalLineWidth(name='width', value=width)
-        common.validateOptionalStr(name='allegianceId', value=allegianceId, allowEmpty=False)
+        survey.validateHexX(name='startHexX', value=startHexX, allowInvalid=True)
+        survey.validateHexY(name='startHexY', value=startHexY, allowInvalid=True)
+        survey.validateHexX(name='endHexX', value=endHexX, allowInvalid=True)
+        survey.validateHexY(name='endHexY', value=endHexY, allowInvalid=True)
+        common.validateInt(name='startOffsetX', value=startOffsetX, allowNone=True)
+        common.validateInt(name='startOffsetY', value=startOffsetY, allowNone=True)
+        common.validateInt(name='endOffsetX', value=endOffsetX, allowNone=True)
+        common.validateInt(name='endOffsetY', value=endOffsetY, allowNone=True)
+        common.validateStr(name='type', value=type, allowNone=True, allowEmpty=False)
+        survey.validateLineStyle(name='style', value=style, allowNone=True)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        survey.validateLineWidth(name='width', value=width, allowNone=True)
+        common.validateStr(name='allegianceId', value=allegianceId, allowNone=True, allowEmpty=False)
 
         self._startHexX = startHexX
         self._startHexY = startHexY
@@ -1201,15 +1201,15 @@ class DbBorder(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        survey.validateMandatoryHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
-        common.validateOptionalStr(name='allegianceId', value=allegianceId, allowEmpty=False)
-        survey.validateOptionalLineStyle(name='style', value=style)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        common.validateOptionalStr(name='label', value=label, allowEmpty=False)
-        common.validateOptionalFloat(name='labelWorldX', value=labelWorldX)
-        common.validateOptionalFloat(name='labelWorldY', value=labelWorldY)
-        common.validateMandatoryBool(name='showLabel', value=showLabel)
-        common.validateMandatoryBool(name='wrapLabel', value=wrapLabel)
+        survey.validateHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
+        common.validateStr(name='allegianceId', value=allegianceId, allowNone=True, allowEmpty=False)
+        survey.validateLineStyle(name='style', value=style, allowNone=True)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        common.validateStr(name='label', value=label, allowNone=True, allowEmpty=False)
+        common.validateFloat(name='labelWorldX', value=labelWorldX, allowNone=True)
+        common.validateFloat(name='labelWorldY', value=labelWorldY, allowNone=True)
+        common.validateBool(name='showLabel', value=showLabel)
+        common.validateBool(name='wrapLabel', value=wrapLabel)
 
         self._hexes = list(hexes)
         self._allegianceId = allegianceId
@@ -1263,13 +1263,13 @@ class DbRegion(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        survey.validateMandatoryHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        common.validateOptionalStr(name='label', value=label, allowEmpty=False)
-        common.validateOptionalFloat(name='labelWorldX', value=labelWorldX)
-        common.validateOptionalFloat(name='labelWorldY', value=labelWorldY)
-        common.validateMandatoryBool(name='showLabel', value=showLabel)
-        common.validateMandatoryBool(name='wrapLabel', value=wrapLabel)
+        survey.validateHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        common.validateStr(name='label', value=label, allowNone=True, allowEmpty=False)
+        common.validateFloat(name='labelWorldX', value=labelWorldX, allowNone=True)
+        common.validateFloat(name='labelWorldY', value=labelWorldY, allowNone=True)
+        common.validateBool(name='showLabel', value=showLabel)
+        common.validateBool(name='wrapLabel', value=wrapLabel)
 
         self._hexes = list(hexes)
         self._colour = colour
@@ -1314,12 +1314,12 @@ class DbSectorLabel(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateMandatoryStr(name='text', value=text, allowEmpty=False)
-        common.validateMandatoryFloat(name='worldX', value=worldX)
-        common.validateMandatoryFloat(name='worldY', value=worldY)
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        survey.validateOptionalLabelSize(name='size', value=size)
-        common.validateMandatoryBool(name='wrap', value=wrap)
+        common.validateStr(name='text', value=text, allowEmpty=False)
+        common.validateFloat(name='worldX', value=worldX)
+        common.validateFloat(name='worldY', value=worldY)
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        survey.validateLabelSize(name='size', value=size, allowNone=True)
+        common.validateBool(name='wrap', value=wrap)
 
         self._text = text
         self._worldX = worldX
@@ -1358,10 +1358,10 @@ class DbProduct(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateOptionalStr(name='publication', value=publication, allowEmpty=False)
-        common.validateOptionalStr(name='author', value=author, allowEmpty=False)
-        common.validateOptionalStr(name='publisher', value=publisher, allowEmpty=False)
-        common.validateOptionalStr(name='reference', value=reference, allowEmpty=False)
+        common.validateStr(name='publication', value=publication, allowNone=True, allowEmpty=False)
+        common.validateStr(name='author', value=author, allowNone=True, allowEmpty=False)
+        common.validateStr(name='publisher', value=publisher, allowNone=True, allowEmpty=False)
+        common.validateStr(name='reference', value=reference, allowNone=True, allowEmpty=False)
 
         self._publication = publication
         self._author = author
@@ -1389,7 +1389,7 @@ class DbTag(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        common.validateMandatoryStr(name='tag', value=tag, allowEmpty=False)
+        common.validateStr(name='tag', value=tag, allowEmpty=False)
 
         self._string = tag
 
@@ -1427,13 +1427,13 @@ class DbSector(DbUniverseObject):
             ) -> None:
         super().__init__(id=id)
 
-        common.validateMandatoryInt(name='sectorX', value=sectorX)
-        common.validateMandatoryInt(name='sectorY', value=sectorY)
-        common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-        common.validateOptionalStr(name='language', value=language, allowEmpty=False)
-        common.validateOptionalStr(name='abbreviation', value=abbreviation, allowEmpty=False)
-        common.validateOptionalStr(name='sectorLabel', value=sectorLabel, allowEmpty=False)
-        common.validateMandatoryBool(name='selected', value=selected)
+        common.validateInt(name='sectorX', value=sectorX)
+        common.validateInt(name='sectorY', value=sectorY)
+        common.validateStr(name='name', value=name, allowEmpty=False)
+        common.validateStr(name='language', value=language, allowNone=True, allowEmpty=False)
+        common.validateStr(name='abbreviation', value=abbreviation, allowNone=True, allowEmpty=False)
+        common.validateStr(name='sectorLabel', value=sectorLabel, allowNone=True, allowEmpty=False)
+        common.validateBool(name='selected', value=selected)
         DbSector._validateAlternateNames(name='alternateNames', value=alternateNames, sectorId=id)
         DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames, sectorId=id)
         DbSector._validateAllegiances(name='allegiances', value=allegiances, sectorId=id)
@@ -1444,13 +1444,13 @@ class DbSector(DbUniverseObject):
         DbSector._validateRegions(name='regions', value=regions, sectorId=id)
         DbSector._validateLabels(name='labels', value=labels, sectorId=id)
         DbSector._validateTags(name='tags', value=tags, sectorId=id)
-        common.validateOptionalStr(name='credits', value=credits, allowEmpty=False)
-        common.validateOptionalStr(name='publication', value=publication, allowEmpty=False)
-        common.validateOptionalStr(name='author', value=author, allowEmpty=False)
-        common.validateOptionalStr(name='publisher', value=publisher, allowEmpty=False)
-        common.validateOptionalStr(name='reference', value=reference, allowEmpty=False)
+        common.validateStr(name='credits', value=credits, allowNone=True, allowEmpty=False)
+        common.validateStr(name='publication', value=publication, allowNone=True, allowEmpty=False)
+        common.validateStr(name='author', value=author, allowNone=True, allowEmpty=False)
+        common.validateStr(name='publisher', value=publisher, allowNone=True, allowEmpty=False)
+        common.validateStr(name='reference', value=reference, allowNone=True, allowEmpty=False)
         DbSector._validateProducts(name='products', value=products, sectorId=id)
-        common.validateOptionalStr(name='notes', value=notes)
+        common.validateStr(name='notes', value=notes, allowNone=True)
 
         self._sectorX = sectorX
         self._sectorY = sectorY
@@ -1579,7 +1579,7 @@ class DbSector(DbUniverseObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbAlternateName)
+        common.validateCollection(name=name, value=value, elementType=DbAlternateName, allowNone=True)
 
         for alternateName in value:
             currentSectorId = alternateName.sectorId()
@@ -1595,7 +1595,7 @@ class DbSector(DbUniverseObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbSubsectorName)
+        common.validateCollection(name=name, value=value, elementType=DbSubsectorName, allowNone=True)
 
         seen = set()
         for subsectorName in value:
@@ -1617,7 +1617,7 @@ class DbSector(DbUniverseObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbAllegiance)
+        common.validateCollection(name=name, value=value, elementType=DbAllegiance, allowNone=True)
 
         seen = set()
         for allegiance in value:
@@ -1639,7 +1639,7 @@ class DbSector(DbUniverseObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbSophont)
+        common.validateCollection(name=name, value=value, elementType=DbSophont, allowNone=True)
 
         seenCodes = set()
         seenNames = set()
@@ -1669,7 +1669,7 @@ class DbSector(DbUniverseObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbSystem)
+        common.validateCollection(name=name, value=value, elementType=DbSystem, allowNone=True)
 
         knownAllegianceIds = knownSophontIds = None
         seenHexes = set()
@@ -1720,7 +1720,7 @@ class DbSector(DbUniverseObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbRoute)
+        common.validateCollection(name=name, value=value, elementType=DbRoute, allowNone=True)
 
         for route in value:
             currentSectorId = route.sectorId()
@@ -1736,7 +1736,7 @@ class DbSector(DbUniverseObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbBorder)
+        common.validateCollection(name=name, value=value, elementType=DbBorder, allowNone=True)
 
         for border in value:
             currentSectorId = border.sectorId()
@@ -1752,7 +1752,7 @@ class DbSector(DbUniverseObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbRegion)
+        common.validateCollection(name=name, value=value, elementType=DbRegion, allowNone=True)
 
         for region in value:
             currentSectorId = region.sectorId()
@@ -1768,7 +1768,7 @@ class DbSector(DbUniverseObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbSectorLabel)
+        common.validateCollection(name=name, value=value, elementType=DbSectorLabel, allowNone=True)
 
         for label in value:
             currentSectorId = label.sectorId()
@@ -1784,7 +1784,7 @@ class DbSector(DbUniverseObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbTag)
+        common.validateCollection(name=name, value=value, elementType=DbTag, allowNone=True)
 
         for tag in value:
             currentSectorId = tag.sectorId()
@@ -1800,7 +1800,7 @@ class DbSector(DbUniverseObject):
         if value is None:
             return
 
-        common.validateOptionalCollection(name=name, value=value, elementType=DbProduct)
+        common.validateCollection(name=name, value=value, elementType=DbProduct, allowNone=True)
 
         for tag in value:
             currentSectorId = tag.sectorId()
@@ -1821,13 +1821,13 @@ class DbMapLabel(DbUniverseObject):
             ) -> None:
         super().__init__(id=id)
 
-        common.validateMandatoryStr(name='text', value=text, allowEmpty=False)
-        common.validateMandatoryFloat(name='worldX', value=worldX)
-        common.validateMandatoryFloat(name='worldY', value=worldY)
-        common.validateMandatoryStr(name='layer', value=layer, validationFn=lambda n, v: self._validateMandatoryNoCase(n, v, _ValidLabelLayer))
-        common.validateOptionalStr(name='alignment', value=alignment, validationFn=lambda n, v: self._validateOptionalNoCase(n, v, _ValidTextAlignments))
-        survey.validateOptionalHtmlColour(name='colour', value=colour)
-        survey.validateOptionalLabelSize(name='size', value=size)
+        common.validateStr(name='text', value=text, allowEmpty=False)
+        common.validateFloat(name='worldX', value=worldX)
+        common.validateFloat(name='worldY', value=worldY)
+        common.validateStr(name='layer', value=layer, validationFn=lambda n, v: self._validateNoCase(n, v, _ValidLabelLayer))
+        common.validateStr(name='alignment', value=alignment, allowNone=True, validationFn=lambda n, v: self._validateNoCase(n, v, _ValidTextAlignments))
+        survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
+        survey.validateLabelSize(name='size', value=size, allowNone=True)
 
         self._text = text
         self._worldX = worldX
@@ -1859,19 +1859,10 @@ class DbMapLabel(DbUniverseObject):
         return self._size
 
     @staticmethod
-    def _validateMandatoryNoCase(
+    def _validateNoCase(
             name: str,
             value: str,
             allowed: typing.Collection[str]
             ) -> None:
-        if value.lower() not in allowed:
-            raise ValueError(f'{name} must be one of [{",".join(allowed)}]')
-
-    @staticmethod
-    def _validateOptionalNoCase(
-            name: str,
-            value: typing.Optional[str],
-            allowed: typing.Collection[str]
-            ) -> None:
         if value is not None and value.lower() not in allowed:
-            raise ValueError(f'{name} must be None or one of [{",".join(allowed)}]')
+            raise ValueError(f'{name} must be one of [{",".join(allowed)}]')
