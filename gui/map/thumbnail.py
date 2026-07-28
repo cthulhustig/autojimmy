@@ -42,12 +42,7 @@ def generateThumbnail(
         style=style,
         options=gui.mapOptionsToRenderOptions(options),
         imageStore=_thumbnailImageCache,
-        vectorStore=_thumbnailVectorCache,
-        # TODO: Generating the LabelStore each time is bad, it causes 3 files to
-        # be read every time. The best solution I can think of is to move the
-        # labels into the database so they can be loaded into the astronomer
-        # Universe and always accessible.
-        labelStore=cartographer.LabelStore(universe=universe))
+        vectorStore=_thumbnailVectorCache)
 
     image = QtGui.QImage(width, height, QtGui.QImage.Format.Format_ARGB32)
     painter = QtGui.QPainter()

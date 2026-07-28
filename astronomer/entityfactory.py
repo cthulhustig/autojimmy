@@ -122,7 +122,8 @@ class EntityFactoryInterface(object):
             text: str,
             worldX: float,
             worldY: float,
-            band: astronomer.LabelBand,
+            layer: astronomer.LabelLayer,
+            alignment: typing.Optional[astronomer.TextAlignment] = None,
             colour: typing.Optional[str] = None,
             size: typing.Optional[astronomer.LabelSize] = None
             ) -> astronomer.SectorLabel:
@@ -326,7 +327,8 @@ class DefaultEntityFactory(EntityFactoryInterface):
             text: str,
             worldX: float,
             worldY: float,
-            band: astronomer.LabelBand,
+            layer: astronomer.LabelLayer,
+            alignment: typing.Optional[astronomer.TextAlignment] = None,
             colour: typing.Optional[str] = None,
             size: typing.Optional[astronomer.LabelSize] = None):
         return astronomer.MapLabel(
@@ -334,7 +336,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             text=text,
             worldX=worldX,
             worldY=worldY,
-            band=band,
+            layer=layer,
+            alignment=alignment,
             colour=colour,
-            size=size,
-            wrap=wrap)
+            size=size)

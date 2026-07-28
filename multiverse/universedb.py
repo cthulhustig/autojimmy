@@ -492,7 +492,8 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
                     database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
                     database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                    database.ColumnDef(columnName='band', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='layer', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='alignment', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
@@ -3178,15 +3179,16 @@ class UniverseDb(object):
             label: multiverse.DbMapLabel
             ) -> None:
         sql = """
-            INSERT INTO {table} (id, text, x, y, band,
-                colour, size)
-            VALUES (:id, :text, :x, :y, :band,
-                :colour, :size)
+            INSERT INTO {table} (id, text, x, y, layer,
+                alignment, colour, size)
+            VALUES (:id, :text, :x, :y, :layer,
+                :alignment, :colour, :size)
             ON CONFLICT(id) DO UPDATE SET
                 text = excluded.text,
                 x = excluded.x,
                 y = excluded.y,
-                band = excluded.band,
+                layer = excluded.layer,
+                alignment = excluded.alignment,
                 colour = excluded.colour,
                 size = excluded.size;
             """.format(table=UniverseDb._MapLabelsTableName)
@@ -3195,7 +3197,8 @@ class UniverseDb(object):
             'text': label.text(),
             'x': label.worldX(),
             'y': label.worldY(),
-            'band': label.band(),
+            'layer': label.layer(),
+            'alignment': label.alignment(),
             'colour': label.colour(),
             'size': label.size()})
 
@@ -3204,7 +3207,7 @@ class UniverseDb(object):
             cursor: sqlite3.Cursor
             ) -> typing.List[multiverse.DbMapLabel]:
         sql = """
-            SELECT id, text, x, y, band, colour, size
+            SELECT id, text, x, y, layer, alignment, colour, size
             FROM {table};
             """.format(
                 table=UniverseDb._MapLabelsTableName)
@@ -3220,9 +3223,10 @@ class UniverseDb(object):
                     text=row[1],
                     worldX=row[2],
                     worldY=row[3],
-                    band=row[4],
-                    colour=row[5],
-                    size=row[6]))
+                    layer=row[4],
+                    alignment=row[5],
+                    colour=row[6],
+                    size=row[7]))
             except Exception as ex:
                 logging.error(
                     f'UniverseDb failed to construct universe label {labelId!r} from universe {self._universePath!r}',

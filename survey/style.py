@@ -4,7 +4,6 @@ import survey
 import typing
 
 _ValidLineStyles = set(['solid', 'dashed', 'dotted'])
-_ValidLabelBands = set(['mega', 'minor'])
 _ValidLabelSizes = set(['small', 'large'])
 
 # Route and border style sheet regexes. Note that the names that follow
@@ -204,24 +203,6 @@ def validateOptionalLineWidth(
         name=name,
         value=value,
         min=0)
-
-def validateMandatoryLabelBand(
-        name: str,
-        value: str
-        ) -> str:
-    return common.validateMandatoryStr(
-        name=name,
-        value=value.lower(),
-        allowed=_ValidLabelBands)
-
-def validateOptionalLabelBand(
-        name: str,
-        value: typing.Optional[str]
-        ) -> typing.Optional[str]:
-    return common.validateOptionalStr(
-        name=name,
-        value=value.lower() if value is not None else None,
-        allowed=_ValidLabelBands)
 
 def validateMandatoryLabelSize(
         name: str,

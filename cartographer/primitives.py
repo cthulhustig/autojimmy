@@ -13,12 +13,12 @@ class MapStyle(enum.Enum):
 
 class TextAlignment(enum.Enum):
     Baseline = 0
-    Centered = 1
+    Center = 1
     TopLeft = 2
     TopCenter = 3
     TopRight = 4
-    MiddleLeft = 5
-    MiddleRight = 6
+    CenterLeft = 5
+    CenterRight = 6
     BottomLeft = 7
     BottomCenter = 8
     BottomRight = 9
@@ -75,9 +75,12 @@ class RenderOptions(enum.IntFlag):
     NamesMinor = 0x0080
     NamesMask = NamesMajor | NamesMinor
 
-    WorldsCapitals = 0x0100
-    WorldsHomeworlds = 0x0200
-    WorldsMask = WorldsCapitals | WorldsHomeworlds
+    # The Traveller Map rendering code splits this into Capitals and Homeworlds,
+    # however the UI only lets you turn them on/off together using the Important
+    # Worlds slider. I've chosen to simplify things as now I'm storing them in
+    # the database (and may want to allow the user to edit them), I want to make
+    # the feature more generic.
+    ImportantWorlds = 0x0100
 
     ForceHexes = 0x2000
     WorldColours = 0x4000

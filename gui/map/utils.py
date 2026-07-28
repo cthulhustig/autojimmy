@@ -25,7 +25,7 @@ _MapOptionsToRenderOptions: typing.Dict[
         app.MapOption.Borders: cartographer.RenderOptions.BordersMask,
         app.MapOption.Routes: cartographer.RenderOptions.RoutesMask,
         app.MapOption.RegionNames: cartographer.RenderOptions.NamesMask,
-        app.MapOption.ImportantWorlds: cartographer.RenderOptions.WorldsMask,
+        app.MapOption.ImportantWorlds: cartographer.RenderOptions.ImportantWorlds,
         app.MapOption.WorldColours: cartographer.RenderOptions.WorldColours,
         app.MapOption.FilledBorders: cartographer.RenderOptions.FilledBorders,
         app.MapOption.DimUnofficial: cartographer.RenderOptions.DimUnofficial,

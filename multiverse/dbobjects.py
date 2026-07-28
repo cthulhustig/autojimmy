@@ -5,6 +5,20 @@ import uuid
 
 _ValidSubsectorCodes = set(map(chr, range(ord('A'), ord('P') + 1)))
 
+_ValidLabelLayer = set(['mega', 'minor', 'world'])
+
+_ValidTextAlignments = set([
+    'baseline',
+    'center',
+    'top_left',
+    'top_center',
+    'top_right',
+    'center_left',
+    'center_right',
+    'bottom_left',
+    'bottom_center',
+    'bottom_right'])
+
 class DbObject(object):
     def __init__(
             self,
@@ -1799,7 +1813,8 @@ class DbMapLabel(DbUniverseObject):
             text: str,
             worldX: float,
             worldY: float,
-            band: str,
+            layer: str,
+            alignment: typing.Optional[str] = None,
             colour: typing.Optional[str] = None,
             size: typing.Optional[str] = None,
             id: typing.Optional[str] = None # None means allocate an id
@@ -1809,14 +1824,16 @@ class DbMapLabel(DbUniverseObject):
         common.validateMandatoryStr(name='text', value=text, allowEmpty=False)
         common.validateMandatoryFloat(name='worldX', value=worldX)
         common.validateMandatoryFloat(name='worldY', value=worldY)
-        survey.validateMandatoryLabelBand(name='band', value=band)
+        common.validateMandatoryStr(name='layer', value=layer, validationFn=lambda n, v: self._validateMandatoryNoCase(n, v, _ValidLabelLayer))
+        common.validateOptionalStr(name='alignment', value=alignment, validationFn=lambda n, v: self._validateOptionalNoCase(n, v, _ValidTextAlignments))
         survey.validateOptionalHtmlColour(name='colour', value=colour)
         survey.validateOptionalLabelSize(name='size', value=size)
 
         self._text = text
         self._worldX = worldX
         self._worldY = worldY
-        self._band = band
+        self._layer = layer
+        self._alignment = alignment
         self._colour = colour
         self._size = size
 
@@ -1829,11 +1846,32 @@ class DbMapLabel(DbUniverseObject):
     def worldY(self) -> float:
         return self._worldY
 
-    def band(self) -> str:
-        return self._band
+    def layer(self) -> str:
+        return self._layer
+
+    def alignment(self) -> typing.Optional[str]:
+        return self._alignment
 
     def colour(self) -> typing.Optional[str]:
         return self._colour
 
     def size(self) -> typing.Optional[str]:
         return self._size
+
+    @staticmethod
+    def _validateMandatoryNoCase(
+            name: str,
+            value: str,
+            allowed: typing.Collection[str]
+            ) -> None:
+        if value.lower() not in allowed:
+            raise ValueError(f'{name} must be one of [{",".join(allowed)}]')
+
+    @staticmethod
+    def _validateOptionalNoCase(
+            name: str,
+            value: typing.Optional[str],
+            allowed: typing.Collection[str]
+            ) -> None:
+        if value is not None and value.lower() not in allowed:
+            raise ValueError(f'{name} must be None or one of [{",".join(allowed)}]')

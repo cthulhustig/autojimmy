@@ -223,47 +223,47 @@ class BoundsGraphics(cartographer.AbstractGraphics):
             font: gui.MapFont,
             brush: gui.MapBrush,
             x: float, y: float,
-            format: cartographer.TextAlignment
+            alignment: cartographer.TextAlignment
             ) -> None:
         qtFont = font.qtFont()
         textRect = font.qtMeasureText(text)
         scale = font.emSize() / qtFont.pointSizeF()
 
-        if format == cartographer.TextAlignment.Baseline:
+        if alignment == cartographer.TextAlignment.Baseline:
             pass
-        elif format == cartographer.TextAlignment.Centered:
+        elif alignment == cartographer.TextAlignment.Center:
             textRect.translate(
                 -textRect.x() - (textRect.width() / 2),
                 -textRect.y() - (textRect.height() / 2))
-        elif format == cartographer.TextAlignment.TopLeft:
+        elif alignment == cartographer.TextAlignment.TopLeft:
             textRect.translate(
                 -textRect.x(),
                 -textRect.y())
-        elif format == cartographer.TextAlignment.TopCenter:
+        elif alignment == cartographer.TextAlignment.TopCenter:
             textRect.translate(
                 -textRect.x() - (textRect.width() / 2),
                 -textRect.y())
-        elif format == cartographer.TextAlignment.TopRight:
+        elif alignment == cartographer.TextAlignment.TopRight:
             textRect.translate(
                 -textRect.x() - textRect.width(),
                 -textRect.y())
-        elif format == cartographer.TextAlignment.MiddleLeft:
+        elif alignment == cartographer.TextAlignment.CenterLeft:
             textRect.translate(
                 -textRect.x(),
                 -textRect.y() - (textRect.height() / 2))
-        elif format == cartographer.TextAlignment.MiddleRight:
+        elif alignment == cartographer.TextAlignment.CenterRight:
             textRect.translate(
                 -textRect.x() - textRect.width(),
                 -textRect.y() - (textRect.height() / 2))
-        elif format == cartographer.TextAlignment.BottomLeft:
+        elif alignment == cartographer.TextAlignment.BottomLeft:
             textRect.translate(
                 -textRect.x(),
                 -textRect.y() - textRect.height())
-        elif format == cartographer.TextAlignment.BottomCenter:
+        elif alignment == cartographer.TextAlignment.BottomCenter:
             textRect.translate(
                 -textRect.x() - (textRect.width() / 2),
                 -textRect.y() - textRect.height())
-        elif format == cartographer.TextAlignment.BottomRight:
+        elif alignment == cartographer.TextAlignment.BottomRight:
             textRect.translate(
                 -textRect.x() - textRect.width(),
                 -textRect.y() - textRect.height())
@@ -436,8 +436,6 @@ class RenderBoundsCalculator(object):
             options=self._options,
             imageStore=self._imageStore,
             vectorStore=self._vectorStore,
-            # TODO: This causes 3 files to be parsed every time the render is recreated
-            labelStore=cartographer.LabelStore(universe=self._universe),
             selector=self._selector)
 
 

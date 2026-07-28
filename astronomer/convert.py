@@ -27,25 +27,26 @@ def _mapAstronomerLineStyleToDbLineStyle(
         ) -> typing.Optional[str]:
     return _AstronomerToDbLineStyleMap.get(style)
 
-_DbToAstronomerLabelBandMap = {
-    'mega': astronomer.LabelBand.Mega,
-    'minor': astronomer.LabelBand.Minor}
-def _mapDbLabelBandToAstronomerLabelBand(
-        band: typing.Optional[str]
-        ) -> typing.Optional[astronomer.LabelBand]:
-    if not band:
+_DbToAstronomerLabelLayerMap = {
+    'mega': astronomer.LabelLayer.Mega,
+    'minor': astronomer.LabelLayer.Minor,
+    'world': astronomer.LabelLayer.World}
+def _mapDbLabelLayerToAstronomerLabelLayer(
+        layer: typing.Optional[str]
+        ) -> typing.Optional[astronomer.LabelLayer]:
+    if not layer:
         return None
-    lower = band.lower()
-    mapped = _DbToAstronomerLabelBandMap.get(lower)
+    lower = layer.lower()
+    mapped = _DbToAstronomerLabelLayerMap.get(lower)
     if not mapped:
         return None
     return mapped
 
-_AstronomerToDbLabelBandMap = {v: k for k, v in _DbToAstronomerLabelBandMap.items()}
-def _mapAstronomerLabelBandToDbLabelBand(
-        band: astronomer.LabelBand
+_AstronomerToDbLabelLayerMap = {v: k for k, v in _DbToAstronomerLabelLayerMap.items()}
+def _mapAstronomerLabelLayerToDbLabelLayer(
+        layer: astronomer.LabelLayer
         ) -> typing.Optional[str]:
-    return _AstronomerToDbLabelBandMap.get(band)
+    return _AstronomerToDbLabelLayerMap.get(layer)
 
 _DbToAstronomerLabelSizeMap = {
     'small': astronomer.LabelSize.Small,
@@ -66,6 +67,34 @@ def _mapAstronomerLabelSizeToDbLabelSize(
         size: astronomer.LabelSize
         ) -> typing.Optional[str]:
     return _AstronomerToDbLabelSizeMap.get(size)
+
+_DbToAstronomerTextAlignmentMap = {
+    'baseline': astronomer.TextAlignment.Baseline,
+    'center': astronomer.TextAlignment.Center,
+    'top_left': astronomer.TextAlignment.TopLeft,
+    'top_center': astronomer.TextAlignment.TopCenter,
+    'top_right': astronomer.TextAlignment.TopRight,
+    'center_left': astronomer.TextAlignment.CenterLeft,
+    'center_right': astronomer.TextAlignment.CenterRight,
+    'bottom_left': astronomer.TextAlignment.BottomLeft,
+    'bottom_center': astronomer.TextAlignment.BottomCenter,
+    'bottom_right': astronomer.TextAlignment.BottomRight}
+def _mapDbTextAlignmentToAstronomerTextAlignment(
+        alignment: typing.Optional[str]
+        ) -> typing.Optional[astronomer.TextAlignment]:
+    if not alignment:
+        return None
+    lowerSize = alignment.lower()
+    mappedSize = _DbToAstronomerTextAlignmentMap.get(lowerSize)
+    if not mappedSize:
+        return None
+    return mappedSize
+
+_AstronomerToDbTextAlignmentMap = {v: k for k, v in _DbToAstronomerTextAlignmentMap.items()}
+def _mapAstronomerTextAlignmentToDbTextAlignment(
+        alignment: typing.Optional[astronomer.TextAlignment]
+        ) -> typing.Optional[str]:
+    return _AstronomerToDbTextAlignmentMap.get(alignment)
 
 def _createAstronomerAlternateNames(
         dbSector: multiverse.DbSector
@@ -1704,7 +1733,8 @@ def convertDbMapLabelToAstronomerMapLabel(
         text=dbLabel.text(),
         worldX=dbLabel.worldX(),
         worldY=dbLabel.worldY(),
-        band=_mapDbLabelBandToAstronomerLabelBand(dbLabel.band()),
+        layer=_mapDbLabelLayerToAstronomerLabelLayer(dbLabel.layer()),
+        alignment=_mapDbTextAlignmentToAstronomerTextAlignment(dbLabel.alignment()),
         colour=dbLabel.colour(),
         size=_mapDbLabelSizeToAstronomerLabelSize(dbLabel.size()))
 
@@ -1716,6 +1746,7 @@ def convertAstronomerMapLabelToDbMapLabel(
         text=astroLabel.text(),
         worldX=astroLabel.worldX(),
         worldY=astroLabel.worldY(),
-        band=_mapAstronomerLabelBandToDbLabelBand(astroLabel.band()),
+        layer=_mapAstronomerLabelLayerToDbLabelLayer(astroLabel.layer()),
+        alignment=_mapAstronomerTextAlignmentToDbTextAlignment(astroLabel.alignment()),
         colour=astroLabel.colour(),
         size=_mapAstronomerLabelSizeToDbLabelSize(astroLabel.size()))

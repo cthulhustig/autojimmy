@@ -4,13 +4,26 @@ import enum
 import survey
 import typing
 
-class LabelBand(enum.Enum):
+class LabelLayer(enum.Enum):
     Mega = 0
     Minor = 1
+    World = 2
 
 class LabelSize(enum.Enum):
     Small = 0
     Large = 1
+
+class TextAlignment(enum.Enum):
+    Baseline = 0
+    Center = 1
+    TopLeft = 2
+    TopCenter = 3
+    TopRight = 4
+    CenterLeft = 5
+    CenterRight = 6
+    BottomLeft = 7
+    BottomCenter = 8
+    BottomRight = 9
 
 class SectorLabel(astronomer.Entity):
     def __init__(
@@ -65,9 +78,9 @@ class MapLabel(astronomer.Entity):
             text: str,
             worldX: float,
             worldY: float,
-            band: LabelBand,
+            layer: LabelLayer,
+            alignment: typing.Optional[TextAlignment] = None,
             colour: typing.Optional[str] = None,
-            # TODO: It feels like this should have a default rather than being nullable
             size: typing.Optional[LabelSize] = None
             ) -> None:
         super().__init__(entityId=entityId)
@@ -75,14 +88,16 @@ class MapLabel(astronomer.Entity):
         common.validateMandatoryStr(name='text', value=text)
         common.validateMandatoryFloat(name='worldX', value=worldX)
         common.validateMandatoryFloat(name='worldY', value=worldY)
-        common.validateMandatoryObject(name='band', value=band, objectType=LabelBand)
+        common.validateMandatoryObject(name='layer', value=layer, objectType=LabelLayer)
+        common.validateOptionalObject(name='alignment', value=alignment, objectType=TextAlignment)
         survey.validateOptionalHtmlColour(name='colour', value=colour)
         common.validateOptionalObject(name='size', value=size, objectType=LabelSize)
 
         self._text = text
         self._worldX = worldX
         self._worldY = worldY
-        self._band = band
+        self._layer = layer
+        self._alignment = alignment
         self._colour = colour
         self._size = size
 
@@ -95,8 +110,11 @@ class MapLabel(astronomer.Entity):
     def worldY(self) -> float:
         return self._worldY
 
-    def band(self) -> LabelBand:
-        return self._band
+    def layer(self) -> LabelLayer:
+        return self._layer
+
+    def alignment(self) -> typing.Optional[TextAlignment]:
+        return self._alignment
 
     def colour(self) -> typing.Optional[str]:
         return self._colour

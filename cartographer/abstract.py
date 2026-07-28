@@ -352,7 +352,7 @@ class AbstractGraphics(object):
     def measureString(self, text: str, font: AbstractFont) -> typing.Tuple[float, float]: # (width, height)
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement measureString')
 
-    def drawString(self, text: str, font: AbstractFont, brush: AbstractBrush, x: float, y: float, format: cartographer.TextAlignment) -> None:
+    def drawString(self, text: str, font: AbstractFont, brush: AbstractBrush, x: float, y: float, alignment: cartographer.TextAlignment) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawString')
 
     def save(self) -> AbstractGraphicsState:

@@ -970,47 +970,47 @@ class MapGraphics(cartographer.AbstractGraphics):
             font: MapFont,
             brush: MapBrush,
             x: float, y: float,
-            format: cartographer.TextAlignment
+            alignment: cartographer.TextAlignment
             ) -> None:
         qtFont = font.qtFont()
         textRect = font.qtMeasureText(text)
         scale = font.emSize() / qtFont.pointSizeF()
 
-        if format == cartographer.TextAlignment.Baseline:
+        if alignment == cartographer.TextAlignment.Baseline:
             textOrigin = QtCore.QPointF(0, 0)
-        elif format == cartographer.TextAlignment.Centered:
+        elif alignment == cartographer.TextAlignment.Center:
             textOrigin = QtCore.QPointF(
                 -textRect.x() - (textRect.width() / 2),
                 -textRect.y() - (textRect.height() / 2))
-        elif format == cartographer.TextAlignment.TopLeft:
+        elif alignment == cartographer.TextAlignment.TopLeft:
             textOrigin = QtCore.QPointF(
                 -textRect.x(),
                 -textRect.y())
-        elif format == cartographer.TextAlignment.TopCenter:
+        elif alignment == cartographer.TextAlignment.TopCenter:
             textOrigin = QtCore.QPointF(
                 -textRect.x() - (textRect.width() / 2),
                 -textRect.y())
-        elif format == cartographer.TextAlignment.TopRight:
+        elif alignment == cartographer.TextAlignment.TopRight:
             textOrigin = QtCore.QPointF(
                 -textRect.x() - textRect.width(),
                 -textRect.y())
-        elif format == cartographer.TextAlignment.MiddleLeft:
+        elif alignment == cartographer.TextAlignment.CenterLeft:
             textOrigin = QtCore.QPointF(
                 -textRect.x(),
                 -textRect.y() - (textRect.height() / 2))
-        elif format == cartographer.TextAlignment.MiddleRight:
+        elif alignment == cartographer.TextAlignment.CenterRight:
             textOrigin = QtCore.QPointF(
                 -textRect.x() - textRect.width(),
                 -textRect.y() - (textRect.height() / 2))
-        elif format == cartographer.TextAlignment.BottomLeft:
+        elif alignment == cartographer.TextAlignment.BottomLeft:
             textOrigin = QtCore.QPointF(
                 -textRect.x(),
                 -textRect.y() - textRect.height())
-        elif format == cartographer.TextAlignment.BottomCenter:
+        elif alignment == cartographer.TextAlignment.BottomCenter:
             textOrigin = QtCore.QPointF(
                 -textRect.x() - (textRect.width() / 2),
                 -textRect.y() - textRect.height())
-        elif format == cartographer.TextAlignment.BottomRight:
+        elif alignment == cartographer.TextAlignment.BottomRight:
             textOrigin = QtCore.QPointF(
                 -textRect.x() - textRect.width(),
                 -textRect.y() - textRect.height())

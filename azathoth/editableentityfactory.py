@@ -201,7 +201,8 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             text: str,
             worldX: float,
             worldY: float,
-            band: astronomer.LabelBand,
+            layer: astronomer.LabelLayer,
+            alignment: typing.Optional[astronomer.TextAlignment] = None,
             colour: str = None,
             size: astronomer.LabelSize = None
             ) -> astronomer.MapLabel:
@@ -210,6 +211,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             text=text,
             worldX=worldX,
             worldY=worldY,
-            band=band,
+            layer=layer,
+            alignment=alignment,
             colour=colour,
             size=size)

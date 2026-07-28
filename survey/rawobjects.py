@@ -1046,20 +1046,6 @@ class RawSectorInfo(object):
     def nameInfos(self) -> typing.Optional[typing.Sequence[RawNameInfo]]:
         return common.ConstSequenceRef(self._nameInfos) if self._nameInfos is not None else None
 
-class RawUniverseInfo(object):
-    def __init__(
-            self,
-            sectorInfos: typing.Sequence[RawSectorInfo]
-            ) -> None:
-        super().__init__()
-
-        common.validateMandatoryCollection(name='sectorInfos', value=sectorInfos, elementType=RawSectorInfo)
-
-        self._sectorInfos = list(sectorInfos)
-
-    def sectorInfos(self) -> typing.Sequence[RawSectorInfo]:
-        return common.ConstSequenceRef(self._sectorInfos)
-
 class RawStockAllegiance(object):
     def __init__(
             self,
@@ -1178,10 +1164,31 @@ class RawWorldLabel(object):
         common.validateOptionalInt(name='biasX', value=biasX)
         common.validateOptionalInt(name='biasY', value=biasY)
 
-        self.name = name
-        self.sector = sector
-        self.hexX = hexX
-        self.hexY = hexY
-        self.options = list(options)
-        self.biasX = biasX
-        self.biasY = biasY
+        self._name = name
+        self._sector = sector
+        self._hexX = hexX
+        self._hexY = hexY
+        self._options = list(options)
+        self._biasX = biasX
+        self._biasY = biasY
+
+    def name(self) -> str:
+        return self._name
+
+    def sector(self) -> str:
+        return self._sector
+
+    def hexX(self) -> int:
+        return self._hexX
+
+    def hexY(self) -> int:
+        return self._hexY
+
+    def options(self) -> typing.Sequence[str]:
+        return common.ConstCollectionRef(self._options)
+
+    def biasX(self) -> typing.Optional[int]:
+        return self._biasX
+
+    def biasY(self) -> typing.Optional[int]:
+        return self._biasY

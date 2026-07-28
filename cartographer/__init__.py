@@ -4,7 +4,6 @@ from .glyphs import *
 from .abstract import *
 from .selector import *
 from .imagestore import *
-from .labelstore import *
 from .vectorstore import *
 from .sectorcache import *
 from .worldcache import *

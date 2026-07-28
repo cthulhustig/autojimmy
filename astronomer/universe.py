@@ -78,31 +78,6 @@ class Universe(object):
             ) -> typing.List[astronomer.World]:
         return list(self.yieldWorlds(filterCallback=filterCallback))
 
-    def worldsBySectorHex(
-            self,
-            sectorHex: str,
-            closestTo: typing.Optional[astronomer.HexPosition] = None
-            ) -> typing.List[astronomer.World]:
-        hexes = self.sectorHexToPositions(sectorHex=sectorHex)
-        worlds: typing.List[astronomer.World] = []
-        for hex in hexes:
-            world = self.worldByPosition(hex=hex)
-            if world:
-                worlds.append(world)
-
-        if closestTo and worlds:
-            closestDistance = None
-            closestWorld = None
-            for world in worlds:
-                distance = closestTo.parsecsTo(world.hex())
-                if closestDistance is None or distance < closestDistance:
-                    closestWorld = world
-                    closestDistance = distance
-
-            worlds = [closestWorld] if closestWorld is not None else []
-
-        return worlds
-
     def worldsByWorldRef(
             self,
             worldRef: astronomer.WorldReference,
@@ -276,7 +251,13 @@ class Universe(object):
 
         result = self._SectorHexSearchPattern.match(testString)
         if result:
-            hexes = self.sectorHexToPositions(sectorHex=testString, closetTo=closetTo)
+            # NOTE: Perform the search on the first group in the result.
+            # This is the sector hex string that was matched in the
+            # supplied string. The second group, if there is one, is
+            # expected to be the subsector
+            hexes = self.sectorHexToPositions(
+                sectorHex=result.group(1),
+                closetTo=closetTo)
             if hexes:
                 return hexes
 

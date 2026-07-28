@@ -1,13 +1,14 @@
 import json
 import survey
+import typing
 
 def parseUniverseInfo(
         content: str
-        ) -> survey.RawUniverseInfo:
+        ) -> typing.List[survey.RawSectorInfo]:
     universeElement = json.loads(content)
 
     sectorsElement = universeElement.get('Sectors')
-    sectorInfos = []
+    sectorInfos: typing.List[survey.RawSectorInfo] = []
     if not sectorsElement:
         raise RuntimeError('No Sectors element found')
 
@@ -65,16 +66,15 @@ def parseUniverseInfo(
             tags=tags,
             nameInfos=nameInfos))
 
-    return survey.RawUniverseInfo(
-        sectorInfos=sectorInfos)
+    return sectorInfos
 
 def formatUniverseInfo(
-        universeInfo: survey.RawUniverseInfo
+        universeInfo: typing.Collection[survey.RawSectorInfo]
         ) -> str:
     universeElement = {}
 
     sectorsElement = []
-    for sectorInfo in universeInfo.sectorInfos():
+    for sectorInfo in universeInfo:
         sectorElement = {
             'X': sectorInfo.x(),
             'Y': sectorInfo.y(),

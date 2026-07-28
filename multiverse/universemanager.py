@@ -177,16 +177,17 @@ class UniverseManager(object):
                 if reporter:
                     reporter.popPrefix()
 
-            # TODO: Support world labels
-            dbMapLabels.extend(multiverse.convertRawLabelsToDbMapLabels(
-                rawMegaLabels=rawMegaLabels,
-                rawMinorLabels=rawMinorLabels))
-
             rawUniverseInfo = survey.parseUniverseInfo(
                 content=multiverse.SnapshotManager.instance().readUniverseInfo(milieu=milieu))
 
+            dbMapLabels.extend(multiverse.convertRawLabelsToDbMapLabels(
+                rawMegaLabels=rawMegaLabels,
+                rawMinorLabels=rawMinorLabels,
+                rawWorldLabels=rawWorldLabels,
+                rawUniverseInfo=rawUniverseInfo))
+
             sectorNames = []
-            for sectorInfo in rawUniverseInfo.sectorInfos():
+            for sectorInfo in rawUniverseInfo:
                 nameInfos = sectorInfo.nameInfos()
                 canonicalName = nameInfos[0].name() if nameInfos else None
                 if not canonicalName:

@@ -502,7 +502,6 @@ class MapWidget(QtWidgets.QWidget):
         self._mapGraphics = gui.MapGraphics()
         self._imageStore = cartographer.ImageStore(graphics=self._mapGraphics)
         self._vectorStore = cartographer.VectorStore(graphics=self._mapGraphics)
-        self._labelStore = cartographer.LabelStore(universe=self._universe)
 
         self._renderer = None
         self._sizer = None
@@ -629,7 +628,6 @@ class MapWidget(QtWidgets.QWidget):
             return
 
         self._universe = universe
-        self._labelStore = cartographer.LabelStore(universe=self._universe)
 
         self._empressWaveOverlay.setUniverse(universe=self._universe)
         self._antaresSupernovaOverlay.setUniverse(universe=self._universe)
@@ -1471,8 +1469,7 @@ class MapWidget(QtWidgets.QWidget):
             style=self._style,
             options=options,
             imageStore=self._imageStore,
-            vectorStore=self._vectorStore,
-            labelStore=self._labelStore)
+            vectorStore=self._vectorStore)
 
         self._sizer = gui.RenderBoundsCalculator(
             universe=self._universe,

@@ -218,6 +218,28 @@ def _sectorWorldOffsetToHex(
 
     return (hexX, hexY, worldOffsetX if worldOffsetX else None, worldOffsetY if worldOffsetY else None)
 
+_ReferenceSectorX = 0
+_ReferenceSectorY = 0
+_ReferenceHexX = 1
+_ReferenceHexY = 40
+_SectorWidth = 32
+_SectorHeight = 40
+def _sectorHexToWorldSpace(
+        sectorX: int,
+        sectorY: int,
+        hexX: int,
+        hexY: int
+        ) -> typing.Tuple[float, float]:
+    absX = (sectorX - _ReferenceSectorX) * \
+        _SectorWidth + \
+        (hexX - _ReferenceHexX)
+    absY = (sectorY - _ReferenceSectorY) * \
+        _SectorHeight + \
+        (hexY - _ReferenceHexY)
+    return (
+        absX - 0.5,
+        absY - (0.0 if ((absX % 2) != 0) else 0.5))
+
 def _findUsedAllegianceCodes(
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld]
@@ -2689,7 +2711,9 @@ def convertDbSectorToRawSector(
 
 def convertRawLabelsToDbMapLabels(
         rawMegaLabels: typing.Collection[survey.RawUniverseLabel],
-        rawMinorLabels: typing.Collection[survey.RawUniverseLabel]
+        rawMinorLabels: typing.Collection[survey.RawUniverseLabel],
+        rawWorldLabels: typing.Collection[survey.RawWorldLabel],
+        rawUniverseInfo: typing.Collection[survey.RawSectorInfo]
         ) -> typing.List[multiverse.DbMapLabel]:
     dbLabels: typing.List[multiverse.DbMapLabel] = []
 
@@ -2698,8 +2722,7 @@ def convertRawLabelsToDbMapLabels(
             text=rawLabel.text(),
             worldX=rawLabel.worldX(),
             worldY=rawLabel.worldY(),
-            band='mega',
-            colour=None,
+            layer='mega',
             size='small' if rawLabel.minor() else 'large'))
 
     for rawLabel in rawMinorLabels:
@@ -2707,8 +2730,63 @@ def convertRawLabelsToDbMapLabels(
             text=rawLabel.text(),
             worldX=rawLabel.worldX(),
             worldY=rawLabel.worldY(),
-            band='minor',
-            colour=None,
+            layer='minor',
             size='small' if rawLabel.minor() else 'large'))
+
+    if rawWorldLabels:
+        sectorNameMap: typing.Dict[str, survey.RawSectorInfo] = {}
+        for sectorInfo in rawUniverseInfo:
+            nameInfos = sectorInfo.nameInfos()
+            if not nameInfos:
+                continue
+            sectorNameMap[nameInfos[0].name()] = sectorInfo
+
+        for rawLabel in rawWorldLabels:
+            sectorInfo = sectorNameMap.get(rawLabel.sector())
+            if sectorInfo is None:
+                # TODO: Log this or write to reporter
+                continue
+
+            worldX, worldY = _sectorHexToWorldSpace(
+                sectorX=sectorInfo.x(),
+                sectorY=sectorInfo.y(),
+                hexX=rawLabel.hexX(),
+                hexY=rawLabel.hexY())
+
+            biasX = rawLabel.biasX()
+            if biasX is None:
+                biasX = 1 # Default comes from traveller map default
+            biasY = rawLabel.biasY()
+            if biasY is None:
+                biasY = 1 # Default comes from traveller map default
+
+            if biasX > 0:
+                if biasY < 0:
+                    alignment = 'bottom_left'
+                elif biasY > 0:
+                    alignment = 'top_left'
+                else:
+                    alignment = 'center_left'
+            elif biasX < 0:
+                if biasY < 0:
+                    alignment = 'bottom_right'
+                elif biasY > 0:
+                    alignment = 'top_right'
+                else:
+                    alignment = 'center_right'
+            else:
+                if biasY < 0:
+                    alignment = 'bottom_center'
+                elif biasY > 0:
+                    alignment = 'top_center'
+                else:
+                    alignment = 'center'
+
+            dbLabels.append(multiverse.DbMapLabel(
+                text=rawLabel.name(),
+                worldX=worldX,
+                worldY=worldY,
+                layer='world',
+                alignment=alignment))
 
     return dbLabels

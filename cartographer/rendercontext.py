@@ -5,6 +5,7 @@ import enum
 import re
 import sys
 import math
+import traveller
 import typing
 
 # This calculates the bounds of a subsector without the sector offset
@@ -25,6 +26,30 @@ def _referenceSubsectorBounds(code: str) -> cartographer.RectangleF:
 
 _SubsectorReferenceBounds = [(code, _referenceSubsectorBounds(code)) for code in map(chr, range(ord('A'), ord('P') + 1))]
 
+# TODO: I don't like the fact this exists
+_AstroToRenderTextAlignmentMap = {
+    astronomer.TextAlignment.Baseline: cartographer.TextAlignment.Baseline,
+    astronomer.TextAlignment.Center: cartographer.TextAlignment.Center,
+    astronomer.TextAlignment.TopLeft: cartographer.TextAlignment.TopLeft,
+    astronomer.TextAlignment.TopCenter: cartographer.TextAlignment.TopCenter,
+    astronomer.TextAlignment.TopRight: cartographer.TextAlignment.TopRight,
+    astronomer.TextAlignment.CenterLeft: cartographer.TextAlignment.CenterLeft,
+    astronomer.TextAlignment.CenterRight: cartographer.TextAlignment.CenterRight,
+    astronomer.TextAlignment.BottomLeft: cartographer.TextAlignment.BottomLeft,
+    astronomer.TextAlignment.BottomCenter: cartographer.TextAlignment.BottomCenter,
+    astronomer.TextAlignment.BottomRight: cartographer.TextAlignment.BottomRight}
+
+_TextAlignmentToBiasMap = {
+    cartographer.TextAlignment.Baseline: (0, 0),
+    cartographer.TextAlignment.Center: (0, 0),
+    cartographer.TextAlignment.TopLeft: (1, 1),
+    cartographer.TextAlignment.TopCenter: (0, 1),
+    cartographer.TextAlignment.TopRight: (-1, 1),
+    cartographer.TextAlignment.CenterLeft: (1, 0),
+    cartographer.TextAlignment.CenterRight: (-1, 0),
+    cartographer.TextAlignment.BottomLeft: (1, -1),
+    cartographer.TextAlignment.BottomCenter: (0, -1),
+    cartographer.TextAlignment.BottomRight: (-1, -1)}
 
 class RenderContext(object):
     class LayerAction(object):
@@ -89,7 +114,6 @@ class RenderContext(object):
             options: cartographer.RenderOptions,
             imageStore: cartographer.ImageStore,
             vectorStore: cartographer.VectorStore,
-            labelStore: cartographer.LabelStore,
             selector: typing.Optional[cartographer.AbstractSelector] = None
             ) -> None:
         self._universe = universe
@@ -102,7 +126,6 @@ class RenderContext(object):
             graphics=self._graphics)
         self._imageStore = imageStore
         self._vectorStore = vectorStore
-        self._labelStore = labelStore
         self._sectorCache = cartographer.SectorCache(
             universe=self._universe,
             graphics=self._graphics)
@@ -267,7 +290,7 @@ class RenderContext(object):
 
             RenderContext.LayerAction(cartographer.LayerId.Names_Sector, RenderContext._drawSectorNames),
             RenderContext.LayerAction(cartographer.LayerId.Macro_GovernmentRiftRouteNames, RenderContext._drawMacroNames),
-            RenderContext.LayerAction(cartographer.LayerId.Macro_CapitalsAndHomeWorlds, RenderContext._drawCapitalsAndHomeWorlds),
+            RenderContext.LayerAction(cartographer.LayerId.Macro_CapitalsAndHomeWorlds, RenderContext._drawImportantWorlds),
             RenderContext.LayerAction(cartographer.LayerId.Mega_Labels, RenderContext._drawMegaLabels),
 
             RenderContext.LayerAction(cartographer.LayerId.Worlds_Background, RenderContext._drawWorldsBackground),
@@ -638,7 +661,7 @@ class RenderContext(object):
                             brush=self._styleSheet.hexNumber.textBrush,
                             x=(px + 0.5) / scaleX,
                             y=(py + yOffset) / scaleY,
-                            format=cartographer.TextAlignment.TopCenter)
+                            alignment=cartographer.TextAlignment.TopCenter)
 
     def _drawSubsectorNames(self) -> None:
         if not self._styleSheet.subsectorNames.visible:
@@ -932,7 +955,7 @@ class RenderContext(object):
 
         if (self._options & cartographer.RenderOptions.NamesMinor) != 0:
             for label in self._universe.labels():
-                if label.band() is not astronomer.LabelBand.Minor:
+                if label.layer() is not astronomer.LabelLayer.Minor:
                     continue
 
                 font = \
@@ -948,6 +971,10 @@ class RenderContext(object):
                     brush = self._graphics.copyBrush(brush)
                     brush.setColour(label.colour())
 
+                alignment = _AstroToRenderTextAlignmentMap.get(
+                    label.alignment(),
+                    cartographer.TextAlignment.Center)
+
                 with self._graphics.save():
                     self._graphics.scaleTransform(
                         scaleX=1.0 / astronomer.ParsecScaleX,
@@ -957,35 +984,48 @@ class RenderContext(object):
                         font=font,
                         brush=brush,
                         x=label.worldX() * astronomer.ParsecScaleX,
-                        y=label.worldY() * astronomer.ParsecScaleY)
+                        y=label.worldY() * astronomer.ParsecScaleY,
+                        alignment=alignment)
 
-    def _drawCapitalsAndHomeWorlds(self) -> None:
+    def _drawImportantWorlds(self) -> None:
         if not self._styleSheet.capitals.visible or \
-                (self._options & cartographer.RenderOptions.WorldsMask) == 0:
+                (self._options & cartographer.RenderOptions.ImportantWorlds) == 0:
             return
 
         dotPen = self._graphics.createPen(
             colour=self._styleSheet.capitals.fillBrush.colour(),
             width=1)
         dotBrush = self._styleSheet.capitals.fillBrush
-        dotRadius = 3
+        dotDiameter = 3
+        dotRadius = dotDiameter / 2
         dotRect = cartographer.RectangleF(
-            x=-dotRadius / 2,
-            y=-dotRadius / 2,
-            width=dotRadius,
-            height=dotRadius)
+            x=-dotRadius,
+            y=-dotRadius,
+            width=dotDiameter,
+            height=dotDiameter)
 
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.HighQuality)
-            for worldLabel in self._labelStore.worldLabels():
-                if (worldLabel.options & self._options) == 0:
+            for label in self._universe.labels():
+                if label.layer() is not astronomer.LabelLayer.World:
                     continue
+
+                brush = self._styleSheet.capitals.textBrush
+                if label.colour() is not None:
+                    brush = self._graphics.copyBrush(brush)
+                    brush.setColour(label.colour())
+
+                alignment = _AstroToRenderTextAlignmentMap.get(
+                    label.alignment(),
+                    cartographer.TextAlignment.Center)
+
+                biasX, biasY = _TextAlignmentToBiasMap[alignment]
 
                 with self._graphics.save():
                     self._graphics.translateTransform(
-                        dx=worldLabel.position.x(),
-                        dy=worldLabel.position.y())
+                        dx=label.worldX(),
+                        dy=label.worldY())
                     self._graphics.scaleTransform(
                         scaleX=1.0 / astronomer.ParsecScaleX,
                         scaleY=1.0 / astronomer.ParsecScaleY)
@@ -995,35 +1035,13 @@ class RenderContext(object):
                         pen=dotPen,
                         brush=dotBrush)
 
-                    if worldLabel.biasX > 0:
-                        if worldLabel.biasY < 0:
-                            format = cartographer.TextAlignment.BottomLeft
-                        elif worldLabel.biasY > 0:
-                            format = cartographer.TextAlignment.TopLeft
-                        else:
-                            format = cartographer.TextAlignment.MiddleLeft
-                    elif worldLabel.biasX < 0:
-                        if worldLabel.biasY < 0:
-                            format = cartographer.TextAlignment.BottomRight
-                        elif worldLabel.biasY > 0:
-                            format = cartographer.TextAlignment.TopRight
-                        else:
-                            format = cartographer.TextAlignment.MiddleRight
-                    else:
-                        if worldLabel.biasY < 0:
-                            format = cartographer.TextAlignment.BottomCenter
-                        elif worldLabel.biasY > 0:
-                            format = cartographer.TextAlignment.TopCenter
-                        else:
-                            format = cartographer.TextAlignment.Centered
-
                     self._drawMultiLineString(
-                        text=worldLabel.text,
+                        text=label.text(),
                         font=self._styleSheet.macroNames.smallFont,
-                        brush=self._styleSheet.capitals.textBrush,
-                        x=worldLabel.biasX * dotRadius / 2,
-                        y=worldLabel.biasY * dotRadius / 2,
-                        format=format)
+                        brush=brush,
+                        x=biasX * dotRadius,
+                        y=biasY * dotRadius,
+                        alignment=alignment)
 
     def _drawMegaLabels(self) -> None:
         if not self._styleSheet.megaNames.visible:
@@ -1032,7 +1050,7 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for label in self._universe.labels():
-            if label.band() is not astronomer.LabelBand.Mega:
+            if label.layer() is not astronomer.LabelLayer.Mega:
                 continue
 
             font = \
@@ -1045,6 +1063,10 @@ class RenderContext(object):
                 brush = self._graphics.copyBrush(brush)
                 brush.setColour(label.colour())
 
+            alignment = _AstroToRenderTextAlignmentMap.get(
+                label.alignment(),
+                cartographer.TextAlignment.Center)
+
             with self._graphics.save():
                 self._graphics.scaleTransform(
                     scaleX=1.0 / astronomer.ParsecScaleX,
@@ -1054,7 +1076,8 @@ class RenderContext(object):
                     font=font,
                     brush=brush,
                     x=label.worldX() * astronomer.ParsecScaleX,
-                    y=label.worldY() * astronomer.ParsecScaleY)
+                    y=label.worldY() * astronomer.ParsecScaleY,
+                    alignment=alignment)
 
     def _drawWorldsBackground(self) -> None:
         if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay \
@@ -1154,7 +1177,7 @@ class RenderContext(object):
                                 brush=self._styleSheet.hexNumber.textBrush,
                                 x=self._styleSheet.hexNumber.position.x(),
                                 y=self._styleSheet.hexNumber.position.y(),
-                                format=cartographer.TextAlignment.TopCenter)
+                                alignment=cartographer.TextAlignment.TopCenter)
                     else: # styles.useWorldImages
                         # "Eye-Candy" style
                         if worldInfo.isPlaceholder:
@@ -1425,7 +1448,7 @@ class RenderContext(object):
                                     brush=self._styleSheet.worlds.textBrush,
                                     x=self._styleSheet.allegiancePosition.x(),
                                     y=self._styleSheet.allegiancePosition.y(),
-                                    format=cartographer.TextAlignment.Centered)
+                                    alignment=cartographer.TextAlignment.Center)
                     else: # styles.useWorldImages
                         # "Eye-Candy" style
                         if worldInfo.isPlaceholder:
@@ -1482,7 +1505,7 @@ class RenderContext(object):
                                 brush=self._styleSheet.worlds.textBrush,
                                 x=decorationRadius,
                                 y=self._styleSheet.uwp.position.y(),
-                                format=cartographer.TextAlignment.MiddleLeft)
+                                alignment=cartographer.TextAlignment.CenterLeft)
 
                         if renderName and worldInfo.name:
                             name = worldInfo.name
@@ -1727,7 +1750,7 @@ class RenderContext(object):
                         brush=self._styleSheet.backgroundBrush,
                         x=position.x() + sx * dx,
                         y=position.y() + sy * dy,
-                        format=cartographer.TextAlignment.Centered)
+                        alignment=cartographer.TextAlignment.Center)
                     dy += outlineSkip
                 dx += outlineSkip
 
@@ -1737,7 +1760,7 @@ class RenderContext(object):
             brush=textBrush,
             x=position.x(),
             y=position.y(),
-            format=cartographer.TextAlignment.Centered)
+            alignment=cartographer.TextAlignment.Center)
 
     def _drawStars(self, world: astronomer.World) -> None:
         with self._graphics.save():
@@ -2123,7 +2146,7 @@ class RenderContext(object):
             brush=brush,
             x=position.x(),
             y=position.y(),
-            format=cartographer.TextAlignment.Centered)
+            alignment=cartographer.TextAlignment.Center)
 
     def _drawOverlayGlyph(
             self,
@@ -2143,7 +2166,7 @@ class RenderContext(object):
                 brush=brush,
                 x=centerX * astronomer.ParsecScaleX,
                 y=centerY * astronomer.ParsecScaleY,
-                format=cartographer.TextAlignment.Centered)
+                alignment=cartographer.TextAlignment.Center)
 
     def _drawLabel(
             self,
@@ -2192,7 +2215,7 @@ class RenderContext(object):
             brush: cartographer.AbstractBrush,
             x: float,
             y: float,
-            format: cartographer.TextAlignment = cartographer.TextAlignment.Centered
+            alignment: cartographer.TextAlignment = cartographer.TextAlignment.Center
             ) -> None:
         if not text:
             return
@@ -2204,7 +2227,7 @@ class RenderContext(object):
                 font=font,
                 brush=brush,
                 x=x, y=y,
-                format=format)
+                alignment=alignment)
             return
 
         widths = [self._graphics.measureString(line, font)[0] for line in lines]
@@ -2218,22 +2241,22 @@ class RenderContext(object):
         y += lineSpacing / 2
 
         widthFactor = 0
-        if format == cartographer.TextAlignment.MiddleLeft or \
-                format == cartographer.TextAlignment.Centered or \
-                format == cartographer.TextAlignment.MiddleRight:
+        if alignment == cartographer.TextAlignment.CenterLeft or \
+                alignment == cartographer.TextAlignment.Center or \
+                alignment == cartographer.TextAlignment.CenterRight:
             y -= totalHeight / 2
-        elif format == cartographer.TextAlignment.BottomLeft or \
-                format == cartographer.TextAlignment.BottomCenter or \
-                format == cartographer.TextAlignment.BottomRight:
+        elif alignment == cartographer.TextAlignment.BottomLeft or \
+                alignment == cartographer.TextAlignment.BottomCenter or \
+                alignment == cartographer.TextAlignment.BottomRight:
             y -= totalHeight
 
-        if format == cartographer.TextAlignment.TopCenter or \
-                format == cartographer.TextAlignment.Centered or \
-                format == cartographer.TextAlignment.BottomCenter:
+        if alignment == cartographer.TextAlignment.TopCenter or \
+                alignment == cartographer.TextAlignment.Center or \
+                alignment == cartographer.TextAlignment.BottomCenter:
             widthFactor = -0.5
-        elif format == cartographer.TextAlignment.TopRight or \
-                format == cartographer.TextAlignment.MiddleRight or \
-                format == cartographer.TextAlignment.BottomRight:
+        elif alignment == cartographer.TextAlignment.TopRight or \
+                alignment == cartographer.TextAlignment.CenterRight or \
+                alignment == cartographer.TextAlignment.BottomRight:
             widthFactor = -1
 
         for line, width in zip(lines, widths):
@@ -2243,7 +2266,7 @@ class RenderContext(object):
                 brush=brush,
                 x=x + widthFactor * width + width / 2,
                 y=y,
-                format=cartographer.TextAlignment.Centered)
+                alignment=cartographer.TextAlignment.Center)
             y += lineSpacing
 
     def _zoneStyle(

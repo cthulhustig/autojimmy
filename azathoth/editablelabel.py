@@ -37,7 +37,8 @@ class EditableMapLabel(astronomer.MapLabel):
             text: str,
             worldX: float,
             worldY: float,
-            band: astronomer.LabelBand,
+            layer: astronomer.LabelLayer,
+            alignment: typing.Optional[astronomer.TextAlignment] = None,
             colour: typing.Optional[str] = None,
             size: typing.Optional[astronomer.LabelSize] = None
             ) -> None:
@@ -46,6 +47,7 @@ class EditableMapLabel(astronomer.MapLabel):
             text=text,
             worldX=worldX,
             worldY=worldY,
-            band=band,
+            layer=layer,
+            alignment=alignment,
             colour=colour,
             size=size)
