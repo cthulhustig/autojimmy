@@ -1159,7 +1159,6 @@ class RawWorldLabel(object):
         common.validateStr(name='sector', value=sector, allowEmpty=False)
         common.validateInt(name='hexX', value=hexX)
         common.validateInt(name='hexY', value=hexY)
-        # TODO: This should validate that the strings are valid map options
         common.validateCollection(name='options', value=options, elementType=str, allowEmpty=False)
         common.validateInt(name='biasX', value=biasX, allowNone=True)
         common.validateInt(name='biasY', value=biasY, allowNone=True)

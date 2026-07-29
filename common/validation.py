@@ -195,20 +195,65 @@ def validateStrCollection(
         if not allowEmpty and not len(value):
             raise ValueError(f'{name} can\'t be empty')
 
-        for index, obj in enumerate(value):
-            if not allowNoneValues and obj is None:
+        for index, element in enumerate(value):
+            if not allowNoneValues and element is None:
                 raise TypeError(f'{name}[{index}] can\'t be None')
 
-            if not isinstance(obj, str):
-                raise TypeError(f'{name}[{index}] must be an object of type str')
+            if element is not None:
+                if not isinstance(element, str):
+                    raise TypeError(f'{name}[{index}] must be an object of type str')
 
-            if not allowEmptyValues and not len(value):
-                raise ValueError(f'{name}[{index}] can\'t be empty')
+                if not allowEmptyValues and not len(element):
+                    raise ValueError(f'{name}[{index}] can\'t be empty')
 
-            if allowedValues is not None and value not in allowedValues:
-                raise ValueError(f'{name}[{index}] must be one of [{",".join(allowedValues)}]')
+                if allowedValues is not None and element not in allowedValues:
+                    raise ValueError(f'{name}[{index}] must be one of [{",".join(allowedValues)}]')
 
             if validationFn is not None:
-                validationFn(name, index, obj)
+                validationFn(name, index, element)
+
+    return value
+
+def validateStrMapping(
+        name: str,
+        value: typing.Optional[typing.Mapping[str, str]],
+        allowNone: bool = False,
+        allowEmpty: bool = True,
+        allowNoneKeys: bool = False,
+        allowEmptyKeys: bool = True,
+        allowNoneValues: bool = False,
+        allowEmptyValues: bool = True,
+        validationFn: typing.Optional[typing.Callable[[str, str, str], typing.Any]] = None
+        ) -> typing.Optional[typing.Mapping[str, str]]:
+    if not allowNone and value is None:
+        raise ValueError(f'{name} can\'t be None')
+
+    if value is not None:
+        if not allowEmpty and not len(value):
+            raise ValueError(f'{name} can\'t be empty')
+
+        for k, v in value.items():
+            if not allowNoneKeys and k is None:
+                raise TypeError(f'{name} values can\'t be None')
+
+            if k is not None:
+                if not isinstance(k, str):
+                    raise TypeError(f'{name} keys must be objects of type str')
+
+                if not allowEmptyKeys and not len(k):
+                    raise TypeError(f'{name} keys can\'t be empty')
+
+            if not allowNoneValues and v is None:
+                raise TypeError(f'{name} values can\'t be None')
+
+            if v is not None:
+                if not isinstance(v, str):
+                    raise TypeError(f'{name} values must be objects of type str')
+
+                if not allowEmptyValues and not len(v):
+                    raise TypeError(f'{name} values can\'t be empty')
+
+            if validationFn is not None:
+                validationFn(name, k, v)
 
     return value

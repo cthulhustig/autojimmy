@@ -31,14 +31,11 @@ class Sector(astronomer.Entity):
 
         common.validateObject(name='position', value=position, objectType=astronomer.SectorPosition)
         common.validateStr(name='name', value=name, allowEmpty=False)
-        # TODO: This should check that the names aren't empty strings
-        common.validateCollection(name='alternateNames', value=alternateNames, elementType=str, allowNone=True)
-        # TODO: This should check that the names and languages aren't empty strings
-        common.validateMapping(name='nameLanguages', value=nameLanguages, keyType=str, valueType=str, allowNone=True)
+        common.validateStrCollection(name='alternateNames', value=alternateNames, allowNone=True, allowEmptyValues=False)
+        common.validateStrMapping(name='nameLanguages', value=nameLanguages, allowNone=True, allowEmptyKeys=False, allowEmptyValues=False)
         common.validateStr(name='abbreviation', value=abbreviation, allowEmpty=False, allowNone=True)
         common.validateStr(name='sectorLabel', value=sectorLabel, allowEmpty=False, allowNone=True)
-        # TODO: This should check that the codes are A-P and names aren't empty
-        common.validateMapping(name='subsectorNames', value=subsectorNames, keyType=str, valueType=str, allowNone=True)
+        common.validateStrMapping(name='subsectorNames', value=subsectorNames, allowNone=True, allowEmptyKeys=False, allowEmptyValues=False, validationFn=Sector._validateSubsectorCode)
         common.validateCollection(name='worlds', value=worlds, elementType=astronomer.World, allowNone=True)
         common.validateCollection(name='allegiances', value=allegiances, elementType=astronomer.Allegiance, allowNone=True)
         common.validateCollection(name='sophonts', value=sophonts, elementType=astronomer.Sophont, allowNone=True)
@@ -176,3 +173,11 @@ class Sector(astronomer.Entity):
     def subsectorNames(self) -> typing.Collection[str]:
         return common.ConstCollectionRef(self._subsectorCodeToNameMap.values())
 
+    @staticmethod
+    def _validateSubsectorCode(
+            name: str,
+            subsectorCode: str,
+            subsectorName: str
+            ) -> None:
+        if subsectorCode not in astronomer.SubsectorCodes:
+            raise ValueError(f'{name} key must be a subsector code in the range A-P')
