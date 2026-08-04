@@ -399,8 +399,8 @@ class RenderContext(object):
     # look to closely as you zoom in and out. In the Traveller Map code the
     # nebula rendering is done in pixel space and the nebula tiles are
     # always drawn at the same pixel dimensions no mater what the current
-    # scale. This is different to how things like the galaxy image which are
-    # rendered in world coordinates as so the image scales as you zoom in
+    # scale. This is different to things like the galaxy image which are
+    # rendered in world coordinates so the image scales as you zoom in
     # and out. I expect the reason this is done is so that the nebula is
     # rendered at a high resolution so it always looks nice (which it does
     # if you're just panning around at a single scale). The downside of
@@ -414,7 +414,6 @@ class RenderContext(object):
     # sideways as you zoom. To help mitigate the issue I've updated the
     # nebula drawing code so that it always scales tiles in the same way as
     # they would scale on Traveller Map tiles
-
     def _drawNebulaBackground(self) -> None:
         if not self._styleSheet.showNebulaBackground:
             return
