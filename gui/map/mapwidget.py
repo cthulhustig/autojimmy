@@ -430,7 +430,7 @@ class MapWidget(QtWidgets.QWidget):
     _UserOverlayMinDepth = 100
 
     _BoxZoomLineAlpha = 0.9
-    _BoxZoomLineWidth = 4
+    _BoxZoomLineWidth = 3
     _BoxZoomFillAlpha = 0.3
 
     # NOTE: This is LocalMapWidget for legacy reasons. The class was renamed as
