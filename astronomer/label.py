@@ -8,6 +8,9 @@ class LabelLayer(enum.Enum):
     Mega = 0
     Minor = 1
     World = 2
+    Border = 3
+    Rift = 4
+    Route = 5
 
 class LabelSize(enum.Enum):
     Small = 0
@@ -81,7 +84,8 @@ class MapLabel(astronomer.Entity):
             layer: LabelLayer,
             alignment: typing.Optional[TextAlignment] = None,
             colour: typing.Optional[str] = None,
-            size: typing.Optional[LabelSize] = None
+            size: typing.Optional[LabelSize] = None,
+            rotation: typing.Optional[float] = None
             ) -> None:
         super().__init__(entityId=entityId)
 
@@ -92,6 +96,7 @@ class MapLabel(astronomer.Entity):
         common.validateObject(name='alignment', value=alignment, objectType=TextAlignment, allowNone=True)
         survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
         common.validateObject(name='size', value=size, objectType=LabelSize, allowNone=True)
+        common.validateFloat(name='rotation', value=rotation, allowNone=True)
 
         self._text = text
         self._worldX = worldX
@@ -100,6 +105,7 @@ class MapLabel(astronomer.Entity):
         self._alignment = alignment
         self._colour = colour
         self._size = size
+        self._rotation = rotation
 
     def text(self) -> str:
         return self._text
@@ -121,3 +127,6 @@ class MapLabel(astronomer.Entity):
 
     def size(self) -> typing.Optional[LabelSize]:
         return self._size
+
+    def rotation(self) -> typing.Optional[float]:
+        return self._rotation

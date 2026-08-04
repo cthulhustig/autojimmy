@@ -40,7 +40,8 @@ class EditableMapLabel(astronomer.MapLabel):
             layer: astronomer.LabelLayer,
             alignment: typing.Optional[astronomer.TextAlignment] = None,
             colour: typing.Optional[str] = None,
-            size: typing.Optional[astronomer.LabelSize] = None
+            size: typing.Optional[astronomer.LabelSize] = None,
+            rotation: typing.Optional[float] = None
             ) -> None:
         super().__init__(
             entityId=entityId,
@@ -50,4 +51,5 @@ class EditableMapLabel(astronomer.MapLabel):
             layer=layer,
             alignment=alignment,
             colour=colour,
-            size=size)
+            size=size,
+            rotation=rotation)

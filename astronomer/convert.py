@@ -30,7 +30,10 @@ def _mapAstronomerLineStyleToDbLineStyle(
 _DbToAstronomerLabelLayerMap = {
     'mega': astronomer.LabelLayer.Mega,
     'minor': astronomer.LabelLayer.Minor,
-    'world': astronomer.LabelLayer.World}
+    'world': astronomer.LabelLayer.World,
+    'border': astronomer.LabelLayer.Border,
+    'rift': astronomer.LabelLayer.Rift,
+    'route': astronomer.LabelLayer.Route}
 def _mapDbLabelLayerToAstronomerLabelLayer(
         layer: typing.Optional[str]
         ) -> typing.Optional[astronomer.LabelLayer]:
@@ -47,6 +50,27 @@ def _mapAstronomerLabelLayerToDbLabelLayer(
         layer: astronomer.LabelLayer
         ) -> typing.Optional[str]:
     return _AstronomerToDbLabelLayerMap.get(layer)
+
+_DbToAstronomerVectorLayerMap = {
+    'border': astronomer.VectorLayer.Border,
+    'rift': astronomer.VectorLayer.Rift,
+    'route': astronomer.VectorLayer.Route}
+def _mapDbVectorLayerToAstronomerVectorLayer(
+        layer: typing.Optional[str]
+        ) -> typing.Optional[astronomer.LabelLayer]:
+    if not layer:
+        return None
+    lower = layer.lower()
+    mapped = _DbToAstronomerVectorLayerMap.get(lower)
+    if not mapped:
+        return None
+    return mapped
+
+_AstronomerToDbVectorLayerMap = {v: k for k, v in _DbToAstronomerVectorLayerMap.items()}
+def _mapAstronomerVectorLayerToDbVectorLayer(
+        layer: astronomer.LabelLayer
+        ) -> typing.Optional[str]:
+    return _AstronomerToDbVectorLayerMap.get(layer)
 
 _DbToAstronomerLabelSizeMap = {
     'small': astronomer.LabelSize.Small,
@@ -1736,7 +1760,8 @@ def convertDbMapLabelToAstronomerMapLabel(
         layer=_mapDbLabelLayerToAstronomerLabelLayer(dbLabel.layer()),
         alignment=_mapDbTextAlignmentToAstronomerTextAlignment(dbLabel.alignment()),
         colour=dbLabel.colour(),
-        size=_mapDbLabelSizeToAstronomerLabelSize(dbLabel.size()))
+        size=_mapDbLabelSizeToAstronomerLabelSize(dbLabel.size()),
+        rotation=dbLabel.rotation())
 
 def convertAstronomerMapLabelToDbMapLabel(
         astroLabel: astronomer.MapLabel
@@ -1749,4 +1774,24 @@ def convertAstronomerMapLabelToDbMapLabel(
         layer=_mapAstronomerLabelLayerToDbLabelLayer(astroLabel.layer()),
         alignment=_mapAstronomerTextAlignmentToDbTextAlignment(astroLabel.alignment()),
         colour=astroLabel.colour(),
-        size=_mapAstronomerLabelSizeToDbLabelSize(astroLabel.size()))
+        size=_mapAstronomerLabelSizeToDbLabelSize(astroLabel.size()),
+        rotation=astroLabel.rotation())
+
+def convertDbMapVectorToAstronomerMapVector(
+        dbVector: multiverse.DbMapVector,
+        entityFactory: astronomer.EntityFactoryInterface
+        ) -> astronomer.MapVector:
+    return entityFactory.createMapVector(
+        entityId=dbVector.id(),
+        points=dbVector.points(),
+        layer=_mapDbVectorLayerToAstronomerVectorLayer(dbVector.layer()),
+        closed=dbVector.closed())
+
+def convertAstronomerMapVectorToDbMapVector(
+        astroVector: astronomer.MapVector
+        ) -> multiverse.DbMapVector:
+    return multiverse.DbMapVector(
+        id=astroVector.entityId(),
+        points=astroVector.points(),
+        layer=_mapAstronomerVectorLayerToDbVectorLayer(astroVector.layer()),
+        closed=astroVector.closed())

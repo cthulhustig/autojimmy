@@ -386,7 +386,6 @@ class RenderBoundsCalculator(object):
         self._graphics = BoundsGraphics()
         self._selector = _BoundsSelector()
         self._imageStore = cartographer.ImageStore(graphics=self._graphics)
-        self._vectorStore = cartographer.VectorStore(graphics=self._graphics)
         self._renderer = None
 
     def setUniverse(self, universe) -> None:
@@ -435,7 +434,6 @@ class RenderBoundsCalculator(object):
             style=self._style,
             options=self._options,
             imageStore=self._imageStore,
-            vectorStore=self._vectorStore,
             selector=self._selector)
 
 

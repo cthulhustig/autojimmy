@@ -5,7 +5,9 @@ import uuid
 
 _ValidSubsectorCodes = set(map(chr, range(ord('A'), ord('P') + 1)))
 
-_ValidLabelLayer = set(['mega', 'minor', 'world'])
+_ValidLabelLayer = set(['mega', 'minor', 'world', 'border', 'rift', 'route'])
+
+_ValidVectorLayer = set(['border', 'rift', 'route'])
 
 _ValidTextAlignments = set([
     'baseline',
@@ -18,6 +20,28 @@ _ValidTextAlignments = set([
     'bottom_left',
     'bottom_center',
     'bottom_right'])
+
+def _validateStrNoCase(
+        name: str,
+        value: str,
+        allowed: typing.Collection[str]
+        ) -> None:
+    if value is not None and value.lower() not in allowed:
+        raise ValueError(f'{name} must be one of [{",".join(allowed)}]')
+
+def _validateWorldSpacePointElement(
+        name: str,
+        index: int,
+        value: typing.Tuple[float, float]
+        ) -> None:
+    if not isinstance(value, tuple):
+        raise TypeError(f'{name} element at index {index} must be a tuple')
+    if len(value) != 2:
+        raise TypeError(f'{name} element at index {index} must have 2 elements')
+    if not isinstance(value[0], (float, int)):
+        raise TypeError(f'{name} element at index {index} x value must be a float')
+    if not isinstance(value[1], (float, int)):
+        raise TypeError(f'{name} element at index {index} y value must be a float')
 
 class DbObject(object):
     def __init__(
@@ -1201,7 +1225,7 @@ class DbBorder(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        survey.validateHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
+        survey.validateHexSequence(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
         common.validateStr(name='allegianceId', value=allegianceId, allowNone=True, allowEmpty=False)
         survey.validateLineStyle(name='style', value=style, allowNone=True)
         survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
@@ -1263,7 +1287,7 @@ class DbRegion(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        survey.validateHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
+        survey.validateHexSequence(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
         survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
         common.validateStr(name='label', value=label, allowNone=True, allowEmpty=False)
         common.validateFloat(name='labelWorldX', value=labelWorldX, allowNone=True)
@@ -1817,6 +1841,7 @@ class DbMapLabel(DbUniverseObject):
             alignment: typing.Optional[str] = None,
             colour: typing.Optional[str] = None,
             size: typing.Optional[str] = None,
+            rotation: typing.Optional[float] = None,
             id: typing.Optional[str] = None # None means allocate an id
             ) -> None:
         super().__init__(id=id)
@@ -1824,10 +1849,11 @@ class DbMapLabel(DbUniverseObject):
         common.validateStr(name='text', value=text, allowEmpty=False)
         common.validateFloat(name='worldX', value=worldX)
         common.validateFloat(name='worldY', value=worldY)
-        common.validateStr(name='layer', value=layer, validationFn=lambda n, v: self._validateNoCase(n, v, _ValidLabelLayer))
-        common.validateStr(name='alignment', value=alignment, allowNone=True, validationFn=lambda n, v: self._validateNoCase(n, v, _ValidTextAlignments))
+        common.validateStr(name='layer', value=layer, validationFn=lambda n, v: _validateStrNoCase(n, v, _ValidLabelLayer))
+        common.validateStr(name='alignment', value=alignment, allowNone=True, validationFn=lambda n, v: _validateStrNoCase(n, v, _ValidTextAlignments))
         survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
         survey.validateLabelSize(name='size', value=size, allowNone=True)
+        common.validateFloat(name='rotation', value=rotation, allowNone=True)
 
         self._text = text
         self._worldX = worldX
@@ -1836,6 +1862,7 @@ class DbMapLabel(DbUniverseObject):
         self._alignment = alignment
         self._colour = colour
         self._size = size
+        self._rotation = rotation
 
     def text(self) -> str:
         return self._text
@@ -1858,11 +1885,32 @@ class DbMapLabel(DbUniverseObject):
     def size(self) -> typing.Optional[str]:
         return self._size
 
-    @staticmethod
-    def _validateNoCase(
-            name: str,
-            value: str,
-            allowed: typing.Collection[str]
+    def rotation(self) -> typing.Optional[float]:
+        return self._rotation
+
+class DbMapVector(DbUniverseObject):
+    def __init__(
+            self,
+            points: typing.Sequence[typing.Tuple[float, float]],
+            layer: str,
+            closed: bool,
+            id: typing.Optional[str] = None # None means allocate an id
             ) -> None:
-        if value is not None and value.lower() not in allowed:
-            raise ValueError(f'{name} must be one of [{",".join(allowed)}]')
+        super().__init__(id=id)
+
+        common.validateSequence(name='points', value=points, allowEmpty=False, validationFn=_validateWorldSpacePointElement)
+        common.validateStr(name='layer', value=layer, validationFn=lambda n, v: _validateStrNoCase(n, v, _ValidVectorLayer))
+        common.validateBool(name='closed', value=closed)
+
+        self._points = list(points)
+        self._layer = layer
+        self._closed = closed
+
+    def points(self) -> typing.Sequence[typing.Tuple[float, float]]:
+        return common.ConstSequenceRef(self._points)
+
+    def layer(self) -> str:
+        return self._layer
+
+    def closed(self) -> bool:
+        return self._closed

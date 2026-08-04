@@ -106,6 +106,28 @@ def validateStr(
 
     return value
 
+def validateBytes(
+        name: str,
+        value: typing.Optional[bytes],
+        allowNone: bool = False,
+        allowEmpty: bool = True,
+        validationFn: typing.Optional[typing.Callable[[str, bytes], typing.Any]] = None
+        ) -> typing.Optional[str]:
+    if not allowNone and value is None:
+        raise ValueError(f'{name} can\'t be None')
+
+    if value is not None:
+        if not isinstance(value, bytes):
+            raise TypeError(f'{name} must be a bytes')
+
+        if not allowEmpty and not len(value):
+            raise ValueError(f'{name} can\'t be empty')
+
+    if validationFn is not None:
+        validationFn(name, value)
+
+    return value
+
 T = typing.TypeVar("T")
 def validateObject(
         name: str,
@@ -141,6 +163,35 @@ def validateCollection(
             raise ValueError(f'{name} can\'t be empty')
 
         for index, obj in enumerate(value):
+            if elementType is not None and not isinstance(obj, elementType):
+                raise TypeError(f'{name}[{index}] must be an object of type {elementType}')
+
+            if validationFn is not None:
+                validationFn(name, index, obj)
+
+    return value
+
+def validateSequence(
+        name: str,
+        value: typing.Optional[typing.Sequence[T]],
+        elementType: typing.Optional[typing.Union[typing.Type[T], typing.Tuple[typing.Type[T], ...]]] = None,
+        allowNone: bool = False,
+        allowEmpty: bool = True,
+        validationFn: typing.Optional[typing.Callable[[str, int, typing.Optional[T]], typing.Any]] = None
+        ) -> typing.Optional[typing.Sequence[T]]:
+    if not allowNone and value is None:
+        raise ValueError(f'{name} can\'t be None')
+
+    if value is not None:
+        if not allowEmpty and not len(value):
+            raise ValueError(f'{name} can\'t be empty')
+
+        for index in range(len(value)):
+            try:
+                obj = value[index]
+            except Exception:
+                raise TypeError(f'{name} must be a sequence of {elementType} elements')
+
             if elementType is not None and not isinstance(obj, elementType):
                 raise TypeError(f'{name}[{index}] must be an object of type {elementType}')
 

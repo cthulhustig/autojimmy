@@ -9,13 +9,15 @@ class EditableUniverse(astronomer.Universe):
             universeId: str,
             milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector],
-            labels: typing.Collection[astronomer.MapLabel]
+            labels: typing.Collection[astronomer.MapLabel],
+            vectors: typing.Collection[astronomer.MapVector]
             ) -> None:
         super().__init__(
             universeId=universeId,
             milieu=milieu,
             sectors=sectors,
-            labels=labels)
+            labels=labels,
+            vectors=vectors)
 
     def replaceSector(
             self,

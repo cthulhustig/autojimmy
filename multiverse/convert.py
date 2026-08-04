@@ -2790,3 +2790,185 @@ def convertRawLabelsToDbMapLabels(
                 alignment=alignment))
 
     return dbLabels
+
+_RawVectorPointTypeStart = 0x00
+_RawVectorPointTypeLine = 0x01
+_RawVectorPointTypeMask = 0x07
+_RawVectorPointTypeCloseSubpath = 0x80
+def _convertRawVectorToDbMapVectors(
+        rawVector: survey.RawVector,
+        layer: str
+        ) -> typing.List[multiverse.DbMapVector]:
+    mapOptions = rawVector.mapOptions()
+    if mapOptions is None or ('BordersMajor' not in mapOptions and 'BordersMinor' not in mapOptions):
+        return []
+
+    originX = rawVector.originX() if rawVector.originX() is not None else 0
+    originY = rawVector.originY() if rawVector.originY() is not None else 0
+    scaleX = rawVector.scaleX() if rawVector.scaleX() is not None else 1
+    scaleY = rawVector.scaleY() if rawVector.scaleY() is not None else 1
+
+    vectorPoints = rawVector.pathDataPoints()
+    pointTypes = rawVector.pathDataTypes()
+    dbVectors: typing.List[multiverse.DbMapVector] = []
+    if pointTypes is None:
+        sectionPoints = []
+        for point in vectorPoints:
+            sectionPoints.append((
+                (point[0] - originX) * scaleX,
+                (point[1] - originY) * scaleY))
+        dbVectors.append(multiverse.DbMapVector(
+            points=sectionPoints,
+            layer=layer,
+            closed=False))
+    else:
+        finishIndex = len(vectorPoints) - 1
+        sectionPoints = []
+
+        for currentIndex, (point, type) in enumerate(zip(vectorPoints, pointTypes)):
+            isStartPoint = (type & _RawVectorPointTypeMask) == _RawVectorPointTypeStart
+            isLastPoint = currentIndex == finishIndex
+            isClosed = (type & _RawVectorPointTypeCloseSubpath) == _RawVectorPointTypeCloseSubpath
+
+            if isClosed or isLastPoint:
+                sectionPoints.append((
+                    (point[0] - originX) * scaleX,
+                    (point[1] - originY) * scaleY))
+
+            if (isStartPoint and sectionPoints) or isClosed or isLastPoint:
+                dbVectors.append(multiverse.DbMapVector(
+                    points=sectionPoints,
+                    layer=layer,
+                    closed=isClosed))
+                sectionPoints.clear()
+
+            sectionPoints.append((
+                (point[0] - originX) * scaleX,
+                (point[1] - originY) * scaleY))
+
+    return dbVectors
+
+def convertRawVectorsToDbMapVectors(
+        rawBorderVectors: typing.Collection[survey.RawVector],
+        rawRiftVectors: typing.Collection[survey.RawVector],
+        rawRouteVectors: typing.Collection[survey.RawVector]
+        ) -> typing.List[multiverse.DbMapVector]:
+    dbVectors: typing.List[multiverse.DbMapVector] = []
+
+    for rawVector in rawBorderVectors:
+        dbVectors.extend(_convertRawVectorToDbMapVectors(
+            rawVector=rawVector,
+            layer='border'))
+
+    # Rift vectors are never drawn so no point converting them (but
+    # the names are drawn)
+    """
+    for rawVector in rawRiftVectors:
+        dbVectors.extend(_convertRawVectorToDbMapVectors(
+            rawVector=rawVector,
+            layer='rift'))
+    """
+
+    for rawVector in rawRouteVectors:
+        dbVectors.extend(_convertRawVectorToDbMapVectors(
+            rawVector=rawVector,
+            layer='route'))
+
+    return dbVectors
+
+def _convertRawVectorToDbMapLabel(
+        rawVector: survey.RawVector,
+        layer: str
+        ) -> typing.Optional[multiverse.DbMapLabel]:
+        text = rawVector.name()
+        if text is None:
+            return None
+
+        mapOptions = rawVector.mapOptions()
+        if mapOptions is None:
+            return None
+
+        if 'NamesMajor' in mapOptions:
+            isMajor = True
+        elif 'NamesMinor' in mapOptions:
+            isMajor = False
+        else:
+            return None
+
+        originX = rawVector.originX() if rawVector.originX() is not None else 0
+        originY = rawVector.originY() if rawVector.originY() is not None else 0
+        scaleX = rawVector.scaleX() if rawVector.scaleX() is not None else 1
+        scaleY = rawVector.scaleY() if rawVector.scaleY() is not None else 1
+        nameX = rawVector.nameX() if rawVector.nameX() is not None else 0
+        nameY = rawVector.nameY() if rawVector.nameY() is not None else 0
+
+        bounds = rawVector.bounds()
+        if bounds is not None:
+            boundsMinX = (bounds.x() - originX) * scaleX
+            boundsMinY = (bounds.y() - originY) * scaleY
+            boundsMaxX = boundsMinX + (bounds.width() * scaleX)
+            boundsMaxY = boundsMinY + (bounds.height() * scaleY)
+            boundsMinX, boundsMaxX = common.minmax(boundsMinX, boundsMaxX)
+            boundsMinY, boundsMaxY = common.minmax(boundsMinY, boundsMaxY)
+
+            textX = (boundsMaxX + boundsMinX) / 2
+            textX += (boundsMaxX - boundsMinX) * (nameX / bounds.width())
+            textY = (boundsMaxY + boundsMinY) / 2
+            textY += (boundsMaxY - boundsMinY) * (nameY / bounds.height())
+        else:
+            # TODO: Check this works
+            boundsMinX = boundsMinY = boundsMaxX = boundsMaxY = None
+            for x, y in rawVector.pathDataPoints():
+                x = (x - originX) * scaleX
+                y = (y - originY) * scaleY
+                if boundsMinX is None or x < boundsMinX:
+                    boundsMinX = x
+                if boundsMinY is None or y < boundsMinY:
+                    boundsMinY = y
+                if boundsMaxX is None or x > boundsMaxX:
+                    boundsMaxX = x
+                if boundsMaxY is None or y > boundsMaxY:
+                    boundsMaxY = y
+            if boundsMinX is None or boundsMinY is None or boundsMaxX is None or boundsMaxY is None:
+                return None
+
+            textX = (boundsMaxX + boundsMinX) / 2
+            textY = (boundsMaxY + boundsMinY) / 2
+
+        return multiverse.DbMapLabel(
+            text=text.upper() if isMajor else text,
+            worldX=textX,
+            worldY=textY,
+            layer=layer,
+            size='large' if isMajor else 'small',
+            rotation=35 if layer == 'rift' else None)
+
+def convertRawVectorsToDbMapLabels(
+        rawBorderVectors: typing.Collection[survey.RawVector],
+        rawRiftVectors: typing.Collection[survey.RawVector],
+        rawRouteVectors: typing.Collection[survey.RawVector]
+        ) -> typing.List[multiverse.DbMapLabel]:
+    dbLabels: typing.List[multiverse.DbMapLabel] = []
+
+    for rawVector in rawBorderVectors:
+        dbLabel = _convertRawVectorToDbMapLabel(
+            rawVector=rawVector,
+            layer='border')
+        if dbLabel is not None:
+            dbLabels.append(dbLabel)
+
+    for rawVector in rawRiftVectors:
+        dbLabel = _convertRawVectorToDbMapLabel(
+            rawVector=rawVector,
+            layer='rift')
+        if dbLabel is not None:
+            dbLabels.append(dbLabel)
+
+    for rawVector in rawRouteVectors:
+        dbLabel = _convertRawVectorToDbMapLabel(
+            rawVector=rawVector,
+            layer='route')
+        if dbLabel is not None:
+            dbLabels.append(dbLabel)
+
+    return dbLabels

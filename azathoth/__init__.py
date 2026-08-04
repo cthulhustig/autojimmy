@@ -1,5 +1,6 @@
 from .changeevent import *
 from .editablelabel import *
+from .editablevector import *
 from .editableroute import *
 from .editableregion import *
 from .editableborder import *

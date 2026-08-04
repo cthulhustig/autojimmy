@@ -184,16 +184,16 @@ class RawRemarks(object):
             ) -> None:
         super().__init__()
 
-        common.validateCollection(name='tradeCodes', value=tradeCodes, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateTradeCode(name=f'{n}[{i}]', value=v))
-        common.validateCollection(name='majorRaceHomeWorlds', value=majorRaceHomeWorlds, elementType=RawSophontPopulation, allowNone=True)
-        common.validateCollection(name='minorRaceHomeWorlds', value=minorRaceHomeWorlds, elementType=RawSophontPopulation, allowNone=True)
-        common.validateCollection(name='sophontPopulations', value=sophontPopulations, elementType=RawSophontPopulation, allowNone=True)
-        common.validateCollection(name='dieBackSophonts', value=dieBackSophonts, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateSophontName(name=f'{n}[{i}]', value=v))
-        common.validateCollection(name='owningSystems', value=owningSystems, elementType=RawHexRef, allowNone=True)
-        common.validateCollection(name='colonySystems', value=colonySystems, elementType=RawHexRef, allowNone=True)
-        common.validateCollection(name='rulingAllegiances', value=rulingAllegiances, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateAllegianceCode(name=f'{n}[{i}]', value=v))
-        common.validateCollection(name='researchStations', value=researchStations, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateResearchStation(name=f'{n}[{i}]', value=v))
-        common.validateCollection(name='customRemarks', value=customRemarks, elementType=str, allowNone=True)
+        common.validateSequence(name='tradeCodes', value=tradeCodes, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateTradeCode(name=f'{n}[{i}]', value=v))
+        common.validateSequence(name='majorRaceHomeWorlds', value=majorRaceHomeWorlds, elementType=RawSophontPopulation, allowNone=True)
+        common.validateSequence(name='minorRaceHomeWorlds', value=minorRaceHomeWorlds, elementType=RawSophontPopulation, allowNone=True)
+        common.validateSequence(name='sophontPopulations', value=sophontPopulations, elementType=RawSophontPopulation, allowNone=True)
+        common.validateSequence(name='dieBackSophonts', value=dieBackSophonts, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateSophontName(name=f'{n}[{i}]', value=v))
+        common.validateSequence(name='owningSystems', value=owningSystems, elementType=RawHexRef, allowNone=True)
+        common.validateSequence(name='colonySystems', value=colonySystems, elementType=RawHexRef, allowNone=True)
+        common.validateSequence(name='rulingAllegiances', value=rulingAllegiances, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateAllegianceCode(name=f'{n}[{i}]', value=v))
+        common.validateSequence(name='researchStations', value=researchStations, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateResearchStation(name=f'{n}[{i}]', value=v))
+        common.validateSequence(name='customRemarks', value=customRemarks, elementType=str, allowNone=True)
 
         self._tradeCodes = list(tradeCodes) if tradeCodes is not None else None
         self._sophontPopulations = list(sophontPopulations) if sophontPopulations is not None else None
@@ -317,13 +317,13 @@ class RawWorld(object):
         common.validateObject(name='uwp', value=uwp, objectType=RawUWP, allowNone=True)
         common.validateObject(name='economics', value=economics, objectType=RawEconomics, allowNone=True)
         common.validateObject(name='culture', value=culture, objectType=RawCulture, allowNone=True)
-        common.validateCollection(name='nobilities', value=nobilities, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateNobility(name=f'{n}[{i}]', value=v))
-        common.validateCollection(name='bases', value=bases, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateBase(name=f'{n}[{i}]', value=v))
+        common.validateSequence(name='nobilities', value=nobilities, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateNobility(name=f'{n}[{i}]', value=v))
+        common.validateSequence(name='bases', value=bases, elementType=str, allowNone=True, validationFn=lambda n, i, v: survey.validateBase(name=f'{n}[{i}]', value=v))
         common.validateObject(name='remarks', value=remarks, objectType=RawRemarks, allowNone=True)
         common.validateInt(name='importance', value=importance, allowNone=True)
         common.validateObject(name='pbg', value=pbg, objectType=RawPBG, allowNone=True)
         common.validateInt(name='systemWorlds', value=systemWorlds, allowNone=True, min=0)
-        common.validateCollection(name=stars, value=stars, elementType=RawStar, allowNone=True)
+        common.validateSequence(name=stars, value=stars, elementType=RawStar, allowNone=True)
 
         self._x = x
         self._y = y
@@ -519,7 +519,7 @@ class RawBorder(object):
             ) -> None:
         super().__init__()
 
-        survey.validateHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
+        survey.validateHexSequence(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
         survey.validateAllegianceCode(name='allegianceCode', value=allegianceCode, allowNone=True)
         common.validateBool(name='showLabel', value=showLabel, allowNone=True)
         common.validateBool(name='wrapLabel', value=wrapLabel, allowNone=True)
@@ -593,7 +593,7 @@ class RawRegion(object):
             ) -> None:
         super().__init__()
 
-        survey.validateHexCollection(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
+        survey.validateHexSequence(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
         common.validateBool(name='showLabel', value=showLabel, allowNone=True)
         common.validateBool(name='wrapLabel', value=wrapLabel, allowNone=True)
         survey.validateHexX(name='labelHexX', value=labelHexX, allowNone=True, allowInvalid=True)
@@ -739,7 +739,7 @@ class RawSources(object):
 
         common.validateStr(name='credits', value=credits, allowNone=True, allowEmpty=False)
         common.validateObject(name='primary', value=primary, objectType=RawSource, allowNone=True)
-        common.validateCollection(name='products', value=products, elementType=RawSource, allowNone=True)
+        common.validateSequence(name='products', value=products, elementType=RawSource, allowNone=True)
 
         self._credits = credits
         self._primary = primary
@@ -820,8 +820,8 @@ class RawStyleSheet(object):
             ) -> None:
         super().__init__()
 
-        common.validateCollection(name='routeStyles', value=routeStyles, elementType=RawRouteStyle)
-        common.validateCollection(name='borderStyles', value=borderStyles, elementType=RawBorderStyle)
+        common.validateSequence(name='routeStyles', value=routeStyles, elementType=RawRouteStyle)
+        common.validateSequence(name='borderStyles', value=borderStyles, elementType=RawBorderStyle)
 
         self._routeStyles = list(routeStyles)
         self._borderStyles = list(borderStyles)
@@ -858,18 +858,18 @@ class RawMetadata(object):
         common.validateInt(name='x', value=x)
         common.validateInt(name='y', value=y)
         common.validateStr(name='canonicalName', value=canonicalName, allowEmpty=False)
-        common.validateCollection(name='alternateNames', value=alternateNames, elementType=str, allowNone=True)
+        common.validateSequence(name='alternateNames', value=alternateNames, elementType=str, allowNone=True)
         common.validateMapping(name='nameLanguages', value=nameLanguages, keyType=str, valueType=str, allowNone=True, validationFn=RawMetadata._validateSectorNameLanguage)
         common.validateStr(name='abbreviation', value=abbreviation, allowNone=True, allowEmpty=False)
         common.validateStr(name='sectorLabel', value=sectorLabel, allowNone=True, allowEmpty=False)
         common.validateMapping(name='subsectorNames', value=subsectorNames, keyType=str, valueType=str, allowNone=True, validationFn=RawMetadata._validateSubsectorName)
         common.validateBool(name='selected', value=selected, allowNone=True)
-        common.validateCollection(name='tags', value=tags, elementType=str, allowNone=True)
-        common.validateCollection(name='allegiances', value=allegiances, elementType=RawAllegiance, allowNone=True)
-        common.validateCollection(name='routes', value=routes, elementType=RawRoute, allowNone=True)
-        common.validateCollection(name='borders', value=borders, elementType=RawBorder, allowNone=True)
-        common.validateCollection(name='labels', value=labels, elementType=RawSectorLabel, allowNone=True)
-        common.validateCollection(name='regions', value=regions, elementType=RawRegion, allowNone=True)
+        common.validateSequence(name='tags', value=tags, elementType=str, allowNone=True)
+        common.validateSequence(name='allegiances', value=allegiances, elementType=RawAllegiance, allowNone=True)
+        common.validateSequence(name='routes', value=routes, elementType=RawRoute, allowNone=True)
+        common.validateSequence(name='borders', value=borders, elementType=RawBorder, allowNone=True)
+        common.validateSequence(name='labels', value=labels, elementType=RawSectorLabel, allowNone=True)
+        common.validateSequence(name='regions', value=regions, elementType=RawRegion, allowNone=True)
         common.validateObject(name='sources', value=sources, objectType=RawSources, allowNone=True)
         common.validateObject(name='styleSheet', value=styleSheet, objectType=RawStyleSheet, allowNone=True)
 
@@ -1019,7 +1019,7 @@ class RawSectorInfo(object):
         common.validateStr(name='milieu', value=milieu, allowEmpty=False)
         common.validateStr(name='abbreviation', value=abbreviation, allowNone=True, allowEmpty=False)
         common.validateStr(name='tags', value=tags, allowNone=True, allowEmpty=False)
-        common.validateCollection(name='nameInfos', value=nameInfos, elementType=RawNameInfo, allowNone=True)
+        common.validateSequence(name='nameInfos', value=nameInfos, elementType=RawNameInfo, allowNone=True)
 
         self._x = x
         self._y = y
@@ -1159,7 +1159,7 @@ class RawWorldLabel(object):
         common.validateStr(name='sector', value=sector, allowEmpty=False)
         common.validateInt(name='hexX', value=hexX)
         common.validateInt(name='hexY', value=hexY)
-        common.validateCollection(name='options', value=options, elementType=str, allowEmpty=False)
+        common.validateSequence(name='options', value=options, elementType=str, allowEmpty=False)
         common.validateInt(name='biasX', value=biasX, allowNone=True)
         common.validateInt(name='biasY', value=biasY, allowNone=True)
 
@@ -1191,3 +1191,130 @@ class RawWorldLabel(object):
 
     def biasY(self) -> typing.Optional[int]:
         return self._biasY
+
+class RawBounds(object):
+    def __init__(
+            self,
+            x: float,
+            y: float,
+            width: float,
+            height: float,
+            ) -> None:
+        common.validateFloat(name='x', value=x)
+        common.validateFloat(name='y', value=y)
+        common.validateFloat(name='width', value=width)
+        common.validateFloat(name='height', value=height)
+
+        self._x = x
+        self._y = y
+        self._width = width
+        self._height = height
+
+    def x(self) -> float:
+        return self._x
+
+    def y(self) -> float:
+        return self._y
+
+    def width(self) -> float:
+        return self._width
+
+    def height(self) -> float:
+        return self._height
+
+class RawVector(object):
+    _ValidMapOptions = ['BordersMajor', 'BordersMinor', 'NamesMajor', 'NamesMinor']
+
+    def __init__(
+            self,
+            pathDataPoints: typing.Sequence[typing.Tuple[float, float]],
+            pathDataTypes: typing.Optional[bytes] = None,
+            originX: typing.Optional[float] = None,
+            originY: typing.Optional[float] = None,
+            scaleX: typing.Optional[float] = None,
+            scaleY: typing.Optional[float] = None,
+            name: typing.Optional[str] = None,
+            nameX: typing.Optional[float] = None,
+            nameY: typing.Optional[float] = None,
+            vectorType: typing.Optional[str] = None,
+            bounds: typing.Optional[RawBounds] = None,
+            mapOptions: typing.Optional[typing.Sequence[str]] = None,
+            ) -> None:
+        super().__init__()
+
+        common.validateSequence(name='pathDataPoints', value=pathDataPoints, allowEmpty=False, validationFn=RawVector._validatePoint)
+        common.validateBytes(name='pathDataTypes', value=pathDataTypes, allowNone=True)
+        common.validateFloat(name='originX', value=originX, allowNone=True)
+        common.validateFloat(name='originY', value=originY, allowNone=True)
+        common.validateFloat(name='scaleX', value=scaleX, allowNone=True)
+        common.validateFloat(name='scaleY', value=scaleY, allowNone=True)
+        common.validateStr(name='name', value=name, allowNone=True)
+        common.validateFloat(name='nameX', value=nameX, allowNone=True)
+        common.validateFloat(name='nameY', value=nameY, allowNone=True)
+        common.validateStr(name='vectorType', value=vectorType, allowNone=True)
+        common.validateObject(name='bounds', value=bounds, objectType=RawBounds, allowNone=True)
+        common.validateStrCollection(name='mapOptions', value=mapOptions, allowNone=True, allowedValues=RawVector._ValidMapOptions)
+
+        self._originX = originX
+        self._originY = originY
+        self._scaleX = scaleX
+        self._scaleY = scaleY
+        self._bounds = bounds
+        self._points = list(pathDataPoints)
+        self._pointTypes = pathDataTypes
+        self._name = name
+        self._nameX = nameX
+        self._nameY = nameY
+        self._vectorType = vectorType
+        self._mapOptions = list(mapOptions) if mapOptions is not None else None
+
+    def pathDataPoints(self) -> typing.Sequence[typing.Tuple[float, float]]:
+        return common.ConstSequenceRef(self._points)
+
+    def pathDataTypes(self) -> typing.Optional[bytes]:
+        return self._pointTypes
+
+    def originX(self) -> typing.Optional[float]:
+        return self._originX
+
+    def originY(self) -> typing.Optional[float]:
+        return self._originY
+
+    def scaleX(self) -> typing.Optional[float]:
+        return self._scaleX
+
+    def scaleY(self) -> typing.Optional[float]:
+        return self._scaleY
+
+    def name(self) -> typing.Optional[str]:
+        return self._name
+
+    def nameX(self) -> typing.Optional[float]:
+        return self._nameX
+
+    def nameY(self) -> typing.Optional[float]:
+        return self._nameY
+
+    def vectorType(self) -> typing.Optional[str]:
+        return self._vectorType
+
+    def bounds(self) -> typing.Optional[RawBounds]:
+        return self._bounds
+
+    def mapOptions(self) -> typing.Optional[typing.Sequence[str]]:
+        return common.ConstSequenceRef(self._mapOptions) if self._mapOptions is not None else None
+
+    @staticmethod
+    def _validatePoint(
+            name: str,
+            index: int,
+            value: typing.Tuple[float, float]
+            ) -> None:
+        if not isinstance(value, tuple):
+            raise TypeError(f'{name} element at index {index} must be a tuple')
+        if len(value) != 2:
+            raise TypeError(f'{name} element at index {index} must have 2 elements')
+        if not isinstance(value[0], (float, int)):
+            raise TypeError(f'{name} element at index {index} x value must be a float')
+        if not isinstance(value[1], (float, int)):
+            raise TypeError(f'{name} element at index {index} y value must be a float')

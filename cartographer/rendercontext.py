@@ -112,7 +112,6 @@ class RenderContext(object):
             style: cartographer.MapStyle,
             options: cartographer.RenderOptions,
             imageStore: cartographer.ImageStore,
-            vectorStore: cartographer.VectorStore,
             selector: typing.Optional[cartographer.AbstractSelector] = None
             ) -> None:
         self._universe = universe
@@ -124,7 +123,6 @@ class RenderContext(object):
             style=style,
             graphics=self._graphics)
         self._imageStore = imageStore
-        self._vectorStore = vectorStore
         self._sectorCache = cartographer.SectorCache(
             universe=self._universe,
             graphics=self._graphics)
@@ -132,6 +130,9 @@ class RenderContext(object):
             universe=self._universe,
             imageStore=self._imageStore,
             capacity=RenderContext._WorldCacheCapacity)
+        self._vectorCache = cartographer.VectorCache(
+            universe=self._universe,
+            graphics=self._graphics)
         self._gridCache = cartographer.GridCache(
             graphics=self._graphics,
             capacity=RenderContext._GridCacheCapacity)
@@ -519,10 +520,10 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
-        for vectorObject in self._vectorStore.borders:
-            if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.BordersMask) != 0:
-                self._drawVectorObjectOutline(
-                    vectorObject=vectorObject,
+        for path in self._vectorCache.borders:
+            if path.bounds().intersects(self._worldViewRect):
+                self._graphics.drawPath(
+                    path=path,
                     pen=self._styleSheet.macroBorders.linePen)
 
     def _drawMacroRoutes(self) -> None:
@@ -531,10 +532,10 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
-        for vectorObject in self._vectorStore.routes:
-            if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.BordersMask) != 0:
-                self._drawVectorObjectOutline(
-                    vectorObject=vectorObject,
+        for path in self._vectorCache.routes:
+            if path.bounds().intersects(self._worldViewRect):
+                self._graphics.drawPath(
+                    path=path,
                     pen=self._styleSheet.macroRoutes.linePen)
 
     def _drawSectorGrid(self) -> None:
@@ -896,95 +897,74 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        for vectorObject in self._vectorStore.borders:
-            if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.NamesMask) == 0:
+        for label in self._universe.labels():
+            if label.layer() is not astronomer.LabelLayer.Border:
                 continue
-            major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
-            labelStyle = cartographer.LabelStyle(uppercase=major)
             font = \
-                self._styleSheet.macroNames.font \
-                if major else \
-                self._styleSheet.macroNames.smallFont
+                self._styleSheet.macroNames.smallFont \
+                if label.size() is astronomer.LabelSize.Small else \
+                self._styleSheet.macroNames.font
             brush = \
-                self._styleSheet.macroNames.textBrush \
-                if major else \
-                self._styleSheet.macroNames.textHighlightBrush
-            self._drawVectorObjectName(
-                vectorObject=vectorObject,
-                font=font,
-                textBrush=brush,
-                labelStyle=labelStyle)
+                self._styleSheet.macroNames.textHighlightBrush \
+                if label.size() is astronomer.LabelSize.Small else \
+                self._styleSheet.macroNames.textBrush
 
-        for vectorObject in self._vectorStore.rifts:
-            major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
-            labelStyle = cartographer.LabelStyle(rotation=35, uppercase=major)
-            font = \
-                self._styleSheet.macroNames.font \
-                if major else \
-                self._styleSheet.macroNames.smallFont
-            brush = \
-                self._styleSheet.macroNames.textBrush \
-                if major else \
-                self._styleSheet.macroNames.textHighlightBrush
-            self._drawVectorObjectName(
-                vectorObject=vectorObject,
+            self._drawMapLabel(
+                label=label,
                 font=font,
-                textBrush=brush,
-                labelStyle=labelStyle)
+                defaultBrush=brush)
+
+        for label in self._universe.labels():
+            if label.layer() is not astronomer.LabelLayer.Rift:
+                continue
+            font = \
+                self._styleSheet.macroNames.smallFont \
+                if label.size() is astronomer.LabelSize.Small else \
+                self._styleSheet.macroNames.font
+            brush = \
+                self._styleSheet.macroNames.textHighlightBrush \
+                if label.size() is astronomer.LabelSize.Small else \
+                self._styleSheet.macroNames.textBrush
+
+            self._drawMapLabel(
+                label=label,
+                font=font,
+                defaultBrush=brush)
 
         if self._styleSheet.macroRoutes.visible:
-            for vectorObject in self._vectorStore.routes:
-                if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.NamesMask) == 0:
-                    continue
-                major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
-                labelStyle = cartographer.LabelStyle(uppercase=major)
-                font = \
-                    self._styleSheet.macroNames.font \
-                    if major else \
-                    self._styleSheet.macroNames.smallFont
-                brush = \
-                    self._styleSheet.macroRoutes.textBrush \
-                    if major else \
-                    self._styleSheet.macroRoutes.textHighlightBrush
-                self._drawVectorObjectName(
-                    vectorObject=vectorObject,
-                    font=font,
-                    textBrush=brush,
-                    labelStyle=labelStyle)
-
-        if (self._options & cartographer.RenderOptions.NamesMinor) != 0:
             for label in self._universe.labels():
-                if label.layer() is not astronomer.LabelLayer.Minor:
+                if label.layer() is not astronomer.LabelLayer.Route:
                     continue
-
                 font = \
                     self._styleSheet.macroNames.smallFont \
                     if label.size() is astronomer.LabelSize.Small else \
-                    self._styleSheet.macroNames.mediumFont
+                    self._styleSheet.macroNames.font
                 brush = \
-                    self._styleSheet.macroRoutes.textBrush \
+                    self._styleSheet.macroRoutes.textHighlightBrush \
                     if label.size() is astronomer.LabelSize.Small else \
-                    self._styleSheet.macroRoutes.textHighlightBrush
+                    self._styleSheet.macroRoutes.textBrush
 
-                if label.colour() is not None:
-                    brush = self._graphics.copyBrush(brush)
-                    brush.setColour(label.colour())
+                self._drawMapLabel(
+                    label=label,
+                    font=font,
+                    defaultBrush=brush)
 
-                alignment = _AstroToRenderTextAlignmentMap.get(
-                    label.alignment(),
-                    cartographer.TextAlignment.Center)
+        for label in self._universe.labels():
+            if label.layer() is not astronomer.LabelLayer.Minor:
+                continue
+            font = \
+                self._styleSheet.macroNames.smallFont \
+                if label.size() is astronomer.LabelSize.Small else \
+                self._styleSheet.macroNames.mediumFont
+            brush = \
+                self._styleSheet.macroRoutes.textBrush \
+                if label.size() is astronomer.LabelSize.Small else \
+                self._styleSheet.macroRoutes.textHighlightBrush
 
-                with self._graphics.save():
-                    self._graphics.scaleTransform(
-                        scaleX=1.0 / astronomer.ParsecScaleX,
-                        scaleY=1.0 / astronomer.ParsecScaleY)
-                    self._drawMultiLineString(
-                        text=label.text(),
-                        font=font,
-                        brush=brush,
-                        x=label.worldX() * astronomer.ParsecScaleX,
-                        y=label.worldY() * astronomer.ParsecScaleY,
-                        alignment=alignment)
+            self._drawMapLabel(
+                label=label,
+                font=font,
+                defaultBrush=brush)
 
     def _drawImportantWorlds(self) -> None:
         if not self._styleSheet.capitals.visible or \
@@ -1058,25 +1038,10 @@ class RenderContext(object):
                 self._styleSheet.megaNames.font
             brush = self._styleSheet.megaNames.textBrush
 
-            if label.colour() is not None:
-                brush = self._graphics.copyBrush(brush)
-                brush.setColour(label.colour())
-
-            alignment = _AstroToRenderTextAlignmentMap.get(
-                label.alignment(),
-                cartographer.TextAlignment.Center)
-
-            with self._graphics.save():
-                self._graphics.scaleTransform(
-                    scaleX=1.0 / astronomer.ParsecScaleX,
-                    scaleY=1.0 / astronomer.ParsecScaleY)
-                self._drawMultiLineString(
-                    text=label.text(),
-                    font=font,
-                    brush=brush,
-                    x=label.worldX() * astronomer.ParsecScaleX,
-                    y=label.worldY() * astronomer.ParsecScaleY,
-                    alignment=alignment)
+            self._drawMapLabel(
+                label=label,
+                font=font,
+                defaultBrush=brush)
 
     def _drawWorldsBackground(self) -> None:
         if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay \
@@ -2074,43 +2039,38 @@ class RenderContext(object):
                 path=outline.path(),
                 brush=brush)
 
-    def _drawVectorObjectOutline(
+    def _drawMapLabel(
             self,
-            vectorObject: cartographer.VectorObject,
-            pen: cartographer.AbstractPen
-            ) -> None:
-        if vectorObject.path and vectorObject.bounds.intersects(self._worldViewRect):
-            with self._graphics.save():
-                self._graphics.scaleTransform(scaleX=vectorObject.scaleX, scaleY=vectorObject.scaleY)
-                self._graphics.translateTransform(dx=-vectorObject.originX, dy=-vectorObject.originY)
-                self._graphics.drawPath(path=vectorObject.path, pen=pen)
-
-    def _drawVectorObjectName(
-            self,
-            vectorObject: cartographer.VectorObject,
+            label: astronomer.MapLabel,
             font: cartographer.AbstractFont,
-            textBrush: cartographer.AbstractBrush,
-            labelStyle: cartographer.LabelStyle
+            defaultBrush: cartographer.AbstractBrush,
+            defaultAlignment: cartographer.TextAlignment = cartographer.TextAlignment.Center
             ) -> None:
-        if vectorObject.name and vectorObject.bounds.intersects(self._worldViewRect):
-            text = vectorObject.name
-            if labelStyle.uppercase:
-                text = text.upper()
+        brush = defaultBrush
+        if label.colour() is not None:
+            brush = self._graphics.copyBrush(brush)
+            brush.setColour(label.colour())
 
-            with self._graphics.save():
-                self._graphics.translateTransform(
-                    dx=vectorObject.namePosition.x(),
-                    dy=vectorObject.namePosition.y())
-                self._graphics.scaleTransform(
-                    scaleX=1.0 / astronomer.ParsecScaleX,
-                    scaleY=1.0 / astronomer.ParsecScaleY)
-                self._graphics.rotateTransform(-labelStyle.rotation)
+        alignment = _AstroToRenderTextAlignmentMap.get(
+            label.alignment(),
+            defaultAlignment)
 
-                self._drawMultiLineString(
-                    text=text,
-                    font=font,
-                    brush=textBrush,
-                    x=0, y=0)
+        with self._graphics.save():
+            self._graphics.translateTransform(
+                dx=label.worldX(),
+                dy=label.worldY())
+            self._graphics.scaleTransform(
+                scaleX=1.0 / astronomer.ParsecScaleX,
+                scaleY=1.0 / astronomer.ParsecScaleY)
+            if label.rotation() is not None:
+                self._graphics.rotateTransform(-label.rotation())
+
+            self._drawMultiLineString(
+                text=label.text(),
+                font=font,
+                brush=brush,
+                x=0, y=0,
+                alignment=alignment)
 
     _WorldDingMap = {
         '\u2666': '\x74', # U+2666 (BLACK DIAMOND SUIT)

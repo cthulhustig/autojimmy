@@ -103,6 +103,12 @@ class UniverseDb(object):
     _MapLabelsTableName = 'map_labels'
     _MapLabelsTableSchema = 1
 
+    _MapVectorsTableName = 'map_vectors'
+    _MapVectorsTableSchema = 1
+
+    _MapVectorPointsTableName = 'map_vector_points'
+    _MapVectorPointsTableSchema = 1
+
     _StockSourcesTableName = 'stock_sources'
     _StockSourcesTableSchema = 1
 
@@ -406,7 +412,7 @@ class UniverseDb(object):
                     sectorId=sectorId,
                     cursor=connection.cursor())
 
-    def saveLabel(
+    def saveMapLabel(
             self,
             label: multiverse.DbMapLabel,
             transaction: typing.Optional[database.Transaction] = None
@@ -425,11 +431,11 @@ class UniverseDb(object):
                     label=label,
                     cursor=connection.cursor())
 
-    def loadLabels(
+    def loadMapLabels(
             self,
             transaction: typing.Optional[database.Transaction] = None
             ) -> typing.List[multiverse.DbMapLabel]:
-        logging.debug(f'UniverseDb loading universe labels from universe {self._universePath!r}')
+        logging.debug(f'UniverseDb loading map labels from universe {self._universePath!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -439,6 +445,41 @@ class UniverseDb(object):
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
                 return self._loadMapLabels(
+                    cursor=connection.cursor())
+
+    def saveMapVector(
+            self,
+            vector: multiverse.DbMapVector,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        logging.debug(f'UniverseDb saving map vector to universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._saveMapVector(
+                vector=vector,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._saveMapVector(
+                    vector=vector,
+                    cursor=connection.cursor())
+
+    def loadMapVectors(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> typing.List[multiverse.DbMapLabel]:
+        logging.debug(f'UniverseDb loading map vectors from universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._loadMapVectors(
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._loadMapVectors(
                     cursor=connection.cursor())
 
     def copyTo(self, targetPath: str) -> None:
@@ -495,7 +536,30 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='layer', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
                     database.ColumnDef(columnName='alignment', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+                    database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='rotation', columnType=database.ColumnDef.ColumnType.Real, isNullable=True)])
+
+            self._database.createTable(
+                cursor=cursor,
+                tableName=UniverseDb._MapVectorsTableName,
+                requiredSchemaVersion=UniverseDb._MapVectorsTableSchema,
+                columns=[
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='layer', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    # TODO: Can I get rid of the closed flag? Can't I just make sure the first point is also
+                    # the last point for closed polygons?
+                    database.ColumnDef(columnName='closed', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
+
+            self._database.createTable(
+                cursor=cursor,
+                tableName=UniverseDb._MapVectorPointsTableName,
+                requiredSchemaVersion=UniverseDb._MapVectorPointsTableSchema,
+                columns=[
+                    database.ColumnDef(columnName='vector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=UniverseDb._MapVectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                    database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
@@ -1050,7 +1114,7 @@ class UniverseDb(object):
                     products=sectorProductsMap.get(sectorId)))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct sector {sectorId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load sector {sectorId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectors
@@ -1256,7 +1320,7 @@ class UniverseDb(object):
                     language=row[3]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct alternate name {nameId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load alternate name {nameId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorNamesMap
@@ -1319,7 +1383,7 @@ class UniverseDb(object):
                     name=row[3]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct subsector name {nameId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load subsector name {nameId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorNamesMap
@@ -1402,7 +1466,7 @@ class UniverseDb(object):
                     borderStyle=row[10]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct allegiance {allegianceId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load allegiance {allegianceId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorAllegiancesMap
@@ -1467,7 +1531,7 @@ class UniverseDb(object):
                     isMajor=True if row[4] else False))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct sophont {sophontId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load sophont {sophontId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorSophontsMap
@@ -1566,7 +1630,7 @@ class UniverseDb(object):
                     bodies=systemBodiesMap.get(systemId)))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct system {systemId!r} from {self._universePath!r}',
+                    f'UniverseDb failed to load system {systemId!r} from {self._universePath!r}',
                     exc_info=ex)
 
         return sectorSystemsMap
@@ -1657,7 +1721,7 @@ class UniverseDb(object):
                     allegianceId=row[14]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct route {routeId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load route {routeId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorRoutesMap
@@ -1757,7 +1821,7 @@ class UniverseDb(object):
                     hexes=hexes))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct border {borderId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load border {borderId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorBordersMap
@@ -1852,7 +1916,7 @@ class UniverseDb(object):
                     hexes=hexes))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct region {regionId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load region {regionId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorRegionsMap
@@ -1925,7 +1989,7 @@ class UniverseDb(object):
                     wrap=True if row[7] else False))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct label {labelId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load label {labelId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorLabelsMap
@@ -1986,7 +2050,7 @@ class UniverseDb(object):
                     tag=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct tag {tagId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load tag {tagId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorTagsMap
@@ -2055,7 +2119,7 @@ class UniverseDb(object):
                     reference=row[5]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct product {productId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load product {productId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return sectorProductsMap
@@ -2128,7 +2192,7 @@ class UniverseDb(object):
                     spectralScale=row[4]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct star {starId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load star {starId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemStarsMap
@@ -2330,7 +2394,7 @@ class UniverseDb(object):
                     customRemarks=worldRemarksMap.get(bodyId)))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct body {bodyId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load body {bodyId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemBodiesMap
@@ -2410,7 +2474,7 @@ class UniverseDb(object):
                     code=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct nobility {nobilityId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load nobility {nobilityId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemNobilitiesMap
@@ -2490,7 +2554,7 @@ class UniverseDb(object):
                     code=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct base {baseId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load base {baseId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemBasesMap
@@ -2570,7 +2634,7 @@ class UniverseDb(object):
                     code=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct trade code {tradeCodeId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load trade code {tradeCodeId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemTradeCodesMap
@@ -2656,7 +2720,7 @@ class UniverseDb(object):
                     isDieBack=True if row[5] else False))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct sophont population {populationId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load sophont population {populationId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemPopulationsMap
@@ -2736,7 +2800,7 @@ class UniverseDb(object):
                     allegianceId=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct ruling allegiance {rulerId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load ruling allegiance {rulerId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemRulingAllegianceMap
@@ -2820,7 +2884,7 @@ class UniverseDb(object):
                     sectorAbbreviation=row[4]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct owning system {ownerId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load owning system {ownerId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemOwnersMap
@@ -2904,7 +2968,7 @@ class UniverseDb(object):
                     sectorAbbreviation=row[4]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct colony system {colonyId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load colony system {colonyId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemColoniesMap
@@ -2984,7 +3048,7 @@ class UniverseDb(object):
                     code=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct research station {stationId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load research station {stationId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemResearchStationsMap
@@ -3064,7 +3128,7 @@ class UniverseDb(object):
                     remark=row[2]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct custom remark {remarkId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load custom remark {remarkId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return systemRemarksMap
@@ -3180,9 +3244,9 @@ class UniverseDb(object):
             ) -> None:
         sql = """
             INSERT INTO {table} (id, text, x, y, layer,
-                alignment, colour, size)
+                alignment, colour, size, rotation)
             VALUES (:id, :text, :x, :y, :layer,
-                :alignment, :colour, :size)
+                :alignment, :colour, :size, :rotation)
             ON CONFLICT(id) DO UPDATE SET
                 text = excluded.text,
                 x = excluded.x,
@@ -3190,7 +3254,8 @@ class UniverseDb(object):
                 layer = excluded.layer,
                 alignment = excluded.alignment,
                 colour = excluded.colour,
-                size = excluded.size;
+                size = excluded.size,
+                rotation = excluded.rotation;
             """.format(table=UniverseDb._MapLabelsTableName)
         cursor.execute(sql, {
             'id': label.id(),
@@ -3200,14 +3265,15 @@ class UniverseDb(object):
             'layer': label.layer(),
             'alignment': label.alignment(),
             'colour': label.colour(),
-            'size': label.size()})
+            'size': label.size(),
+            'rotation': label.rotation()})
 
     def _loadMapLabels(
             self,
             cursor: sqlite3.Cursor
             ) -> typing.List[multiverse.DbMapLabel]:
         sql = """
-            SELECT id, text, x, y, layer, alignment, colour, size
+            SELECT id, text, x, y, layer, alignment, colour, size, rotation
             FROM {table};
             """.format(
                 table=UniverseDb._MapLabelsTableName)
@@ -3226,13 +3292,84 @@ class UniverseDb(object):
                     layer=row[4],
                     alignment=row[5],
                     colour=row[6],
-                    size=row[7]))
+                    size=row[7],
+                    rotation=row[8]))
             except Exception as ex:
                 logging.error(
-                    f'UniverseDb failed to construct universe label {labelId!r} from universe {self._universePath!r}',
+                    f'UniverseDb failed to load map label {labelId!r} from universe {self._universePath!r}',
                     exc_info=ex)
 
         return labels
+
+    def _saveMapVector(
+            self,
+            cursor: sqlite3.Cursor,
+            vector: multiverse.DbMapVector
+            ) -> None:
+        sql = """
+            INSERT INTO {table} (id, layer, closed)
+            VALUES (:id, :layer, :closed)
+            ON CONFLICT(id) DO UPDATE SET
+                layer = excluded.layer;
+            """.format(table=UniverseDb._MapVectorsTableName)
+        cursor.execute(sql, {
+            'id': vector.id(),
+            'layer': vector.layer(),
+            'closed': 1 if vector.closed() else 0})
+
+        sql = """
+            DELETE FROM {table}
+            WHERE vector_id = :vector_id;
+            """.format(table=UniverseDb._MapVectorPointsTableName)
+        cursor.execute(sql, {'vector_id': vector.id()})
+
+        sql = """
+            INSERT INTO {table} (vector_id, x, y)
+            VALUES (:vector_id, :x, :y);
+            """.format(table=UniverseDb._MapVectorPointsTableName)
+        cursor.executemany(sql, [(vector.id(), x, y) for x, y in vector.points()])
+
+    def _loadMapVectors(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.List[multiverse.DbMapVector]:
+        sql = """
+            SELECT vector_id, x, y
+            FROM {table};
+            """.format(table=UniverseDb._MapVectorPointsTableName)
+        cursor.execute(sql)
+
+        vectorPointsMap: typing.Dict[str, typing.List[typing.Tuple[float, float]]] = {}
+        for row in cursor.fetchall():
+            vectorId = row[0]
+            points = vectorPointsMap.get(vectorId)
+            if points is None:
+                points = []
+                vectorPointsMap[vectorId] = points
+            points.append((row[1], row[2]))
+
+        sql = """
+            SELECT id, layer, closed
+            FROM {table};
+            """.format(table=UniverseDb._MapVectorsTableName)
+        cursor.execute(sql)
+
+        vectors: typing.List[multiverse.DbMapVector] = []
+        for row in cursor.fetchall():
+            vectorId = row[0]
+
+            try:
+                vectors.append(multiverse.DbMapVector(
+                    id=vectorId,
+                    points=vectorPointsMap.get(vectorId),
+                    layer=row[1],
+                    closed=True if row[2] else False))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load map vector {vectorId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return vectors
 
     @staticmethod
     def _parseTimestampString(content: typing.Optional[str]) -> typing.Optional[datetime.datetime]:

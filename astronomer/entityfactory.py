@@ -8,7 +8,8 @@ class EntityFactoryInterface(object):
             universeId: str,
             milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector],
-            labels: typing.Collection[astronomer.MapLabel]
+            labels: typing.Collection[astronomer.MapLabel],
+            vectors: typing.Collection[astronomer.VectorLayer]
             ) -> astronomer.Universe:
         raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createUniverse')
 
@@ -125,9 +126,19 @@ class EntityFactoryInterface(object):
             layer: astronomer.LabelLayer,
             alignment: typing.Optional[astronomer.TextAlignment] = None,
             colour: typing.Optional[str] = None,
-            size: typing.Optional[astronomer.LabelSize] = None
-            ) -> astronomer.SectorLabel:
+            size: typing.Optional[astronomer.LabelSize] = None,
+            rotation: typing.Optional[float] = None
+            ) -> astronomer.MapLabel:
         raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createMapLabel')
+
+    def createMapVector(
+            self,
+            entityId: str,
+            points: typing.Sequence[typing.Tuple[float, float]],
+            layer: astronomer.VectorLayer,
+            closed: bool
+            ) -> astronomer.MapVector:
+        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createMapVector')
 
 class DefaultEntityFactory(EntityFactoryInterface):
     def createUniverse(
@@ -135,13 +146,15 @@ class DefaultEntityFactory(EntityFactoryInterface):
             universeId: str,
             milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector],
-            labels: typing.Collection[astronomer.MapLabel]
+            labels: typing.Collection[astronomer.MapLabel],
+            vectors: typing.Collection[astronomer.MapVector]
             ) -> astronomer.Universe:
         return astronomer.Universe(
             universeId=universeId,
             milieu=milieu,
             sectors=sectors,
-            labels=labels)
+            labels=labels,
+            vectors=vectors)
 
     def createSector(
             self,
@@ -330,7 +343,9 @@ class DefaultEntityFactory(EntityFactoryInterface):
             layer: astronomer.LabelLayer,
             alignment: typing.Optional[astronomer.TextAlignment] = None,
             colour: typing.Optional[str] = None,
-            size: typing.Optional[astronomer.LabelSize] = None):
+            size: typing.Optional[astronomer.LabelSize] = None,
+            rotation: typing.Optional[float] = None
+            ) -> astronomer.MapLabel:
         return astronomer.MapLabel(
             entityId=entityId,
             text=text,
@@ -339,4 +354,18 @@ class DefaultEntityFactory(EntityFactoryInterface):
             layer=layer,
             alignment=alignment,
             colour=colour,
-            size=size)
+            size=size,
+            rotation=rotation)
+
+    def createMapVector(
+            self,
+            entityId: str,
+            points: typing.Sequence[typing.Tuple[float, float]],
+            layer: astronomer.VectorLayer,
+            closed: bool
+            ) -> astronomer.MapVector:
+        return astronomer.MapVector(
+            entityId=entityId,
+            points=points,
+            layer=layer,
+            closed=closed)

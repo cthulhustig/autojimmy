@@ -8,20 +8,17 @@ from PyQt5 import QtCore, QtGui
 _thumbnailRenderInitialised = False
 _thumbnailGraphics: typing.Optional[gui.MapGraphics] = None
 _thumbnailImageCache: typing.Optional[cartographer.ImageStore] = None
-_thumbnailVectorCache: typing.Optional[cartographer.VectorStore] = None
 
 def _initThumbnailRenderer():
     global _thumbnailRenderInitialised
     global _thumbnailGraphics
     global _thumbnailImageCache
-    global _thumbnailVectorCache
 
     if _thumbnailRenderInitialised:
         return
 
     _thumbnailGraphics = gui.MapGraphics()
     _thumbnailImageCache = cartographer.ImageStore(graphics=_thumbnailGraphics)
-    _thumbnailVectorCache = cartographer.VectorStore(graphics=_thumbnailGraphics)
     _thumbnailRenderInitialised = True
 
 def generateThumbnail(
@@ -41,8 +38,7 @@ def generateThumbnail(
         graphics=_thumbnailGraphics,
         style=style,
         options=gui.mapOptionsToRenderOptions(options),
-        imageStore=_thumbnailImageCache,
-        vectorStore=_thumbnailVectorCache)
+        imageStore=_thumbnailImageCache)
 
     image = QtGui.QImage(width, height, QtGui.QImage.Format.Format_ARGB32)
     painter = QtGui.QPainter()

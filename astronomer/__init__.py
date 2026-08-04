@@ -21,6 +21,7 @@ from .region import *
 from .border import *
 from .label import *
 from .route import *
+from .vector import *
 from .sector import *
 from .universe import *
 from .entityfactory import *

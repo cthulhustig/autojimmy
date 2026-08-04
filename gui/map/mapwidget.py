@@ -501,7 +501,6 @@ class MapWidget(QtWidgets.QWidget):
 
         self._mapGraphics = gui.MapGraphics()
         self._imageStore = cartographer.ImageStore(graphics=self._mapGraphics)
-        self._vectorStore = cartographer.VectorStore(graphics=self._mapGraphics)
 
         self._renderer = None
         self._sizer = None
@@ -1468,8 +1467,7 @@ class MapWidget(QtWidgets.QWidget):
             graphics=self._mapGraphics,
             style=self._style,
             options=options,
-            imageStore=self._imageStore,
-            vectorStore=self._vectorStore)
+            imageStore=self._imageStore)
 
         self._sizer = gui.RenderBoundsCalculator(
             universe=self._universe,

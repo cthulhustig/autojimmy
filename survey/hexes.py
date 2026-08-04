@@ -167,6 +167,20 @@ def validateHexCollection(
         allowEmpty=allowEmpty,
         validationFn=lambda n, i, v: _validateHexTuple(n, i, v, allowInvalid))
 
+def validateHexSequence(
+        name: str,
+        value: typing.Optional[typing.Sequence[typing.Tuple[int, int]]],
+        allowNone: bool = False,
+        allowEmpty: bool = True,
+        allowInvalid: bool = False, # Used for Border/Region Label & Path Hexes
+        ) -> typing.Optional[typing.Sequence[typing.Tuple[int, int]]]:
+    return common.validateSequence(
+        name=name,
+        value=value,
+        allowNone=allowNone,
+        allowEmpty=allowEmpty,
+        validationFn=lambda n, i, v: _validateHexTuple(n, i, v, allowInvalid))
+
 @staticmethod
 def _validateHexTuple(
         name: str,

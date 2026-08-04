@@ -128,6 +128,7 @@ class UniverseManager(object):
 
         dbSectorData: typing.List[typing.Tuple[multiverse.DbSector, str]] = []
         dbMapLabels: typing.List[multiverse.DbMapLabel] = []
+        dbMapVectors: typing.List[multiverse.DbMapVector] = []
         if importTravellerMap:
             if reporter:
                 reporter.pushPrefix('Stock Allegiances: ')
@@ -177,6 +178,30 @@ class UniverseManager(object):
                 if reporter:
                     reporter.popPrefix()
 
+            if reporter:
+                reporter.pushPrefix('Border Vectors: ')
+            try:
+                rawBorderVectors = multiverse.loadBorderVectors(reporter=reporter)
+            finally:
+                if reporter:
+                    reporter.popPrefix()
+
+            if reporter:
+                reporter.pushPrefix('Rift Vectors: ')
+            try:
+                rawRiftVectors = multiverse.loadRiftVectors(reporter=reporter)
+            finally:
+                if reporter:
+                    reporter.popPrefix()
+
+            if reporter:
+                reporter.pushPrefix('Route Vectors: ')
+            try:
+                rawRouteVectors = multiverse.loadRouteVectors(reporter=reporter)
+            finally:
+                if reporter:
+                    reporter.popPrefix()
+
             rawUniverseInfo = survey.parseUniverseInfo(
                 content=multiverse.SnapshotManager.instance().readUniverseInfo(milieu=milieu))
 
@@ -185,6 +210,16 @@ class UniverseManager(object):
                 rawMinorLabels=rawMinorLabels,
                 rawWorldLabels=rawWorldLabels,
                 rawUniverseInfo=rawUniverseInfo))
+            dbMapLabels.extend(multiverse.convertRawVectorsToDbMapLabels(
+                rawBorderVectors=rawBorderVectors,
+                rawRiftVectors=rawRiftVectors,
+                rawRouteVectors=rawRouteVectors))
+
+
+            dbMapVectors.extend(multiverse.convertRawVectorsToDbMapVectors(
+                rawBorderVectors=rawBorderVectors,
+                rawRiftVectors=rawRiftVectors,
+                rawRouteVectors=rawRouteVectors))
 
             sectorNames = []
             for sectorInfo in rawUniverseInfo:
@@ -293,8 +328,14 @@ class UniverseManager(object):
 
             if dbMapLabels:
                 for dbLabel in dbMapLabels:
-                    universeDb.saveLabel(
+                    universeDb.saveMapLabel(
                         label=dbLabel,
+                        transaction=transaction)
+
+            if dbMapVectors:
+                for dbVector in dbMapVectors:
+                    universeDb.saveMapVector(
+                        vector=dbVector,
                         transaction=transaction)
 
         # Only add the universe to the registry after the database has been
@@ -527,7 +568,18 @@ class UniverseManager(object):
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
         with universeDb.createTransaction() as transaction:
-            return universeDb.loadLabels(transaction=transaction)
+            return universeDb.loadMapLabels(transaction=transaction)
+
+    def mapVectors(self, id: str) -> typing.List[multiverse.DbMapVector]:
+        universeInfo = UniverseManager._registry.universeById(id=id)
+        if not universeInfo:
+            raise ValueError(f'Unknown universe {id!r}')
+
+        dbPath = UniverseManager._universeDbFilePath(id=id)
+        universeDb = multiverse.UniverseDb(universePath=dbPath)
+
+        with universeDb.createTransaction() as transaction:
+            return universeDb.loadMapVectors(transaction=transaction)
 
     @staticmethod
     def _registryDbFilePath() -> str:

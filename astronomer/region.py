@@ -32,7 +32,7 @@ class Region(astronomer.Entity):
     def __init__(
             self,
             entityId: str,
-            hexes: typing.Iterable[astronomer.HexPosition],
+            hexes: typing.Sequence[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
             label: typing.Optional[str] = None,
             labelWorldX: typing.Optional[float] = None,
@@ -42,7 +42,7 @@ class Region(astronomer.Entity):
             ) -> None:
         super().__init__(entityId=entityId)
 
-        common.validateCollection(name='hexes', value=hexes, elementType=astronomer.HexPosition)
+        common.validateSequence(name='hexes', value=hexes, elementType=astronomer.HexPosition)
         survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
         common.validateStr(name='label', value=label, allowEmpty=False, allowNone=True)
         common.validateFloat(name='labelWorldX', value=labelWorldX, allowNone=True)

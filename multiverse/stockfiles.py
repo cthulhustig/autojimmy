@@ -56,3 +56,55 @@ def loadWorldLabels(
         content=multiverse.SnapshotManager.instance().readTextResource(
             filePath=_WorldLabelPath),
         reporter=reporter)
+
+_BorderVectorPaths = [
+    'vectors/Imperium.xml',
+    'vectors/Aslan.xml',
+    'vectors/Kkree.xml',
+    'vectors/Vargr.xml',
+    'vectors/Zhodani.xml',
+    'vectors/Solomani.xml',
+    'vectors/Hive.xml',
+    'vectors/SpinwardClient.xml',
+    'vectors/RimwardClient.xml',
+    'vectors/TrailingClient.xml']
+def loadBorderVectors(
+        # TODO: Do something with reporter
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.List[survey.RawVector]:
+    vectors: typing.List[survey.RawVector] = []
+    for path in _BorderVectorPaths:
+        vectors.append(survey.parseVector(
+            content=multiverse.SnapshotManager.instance().readTextResource(
+                filePath=path)))
+    return vectors
+
+_RiftVectorPaths = [
+    'vectors/GreatRift.xml',
+    'vectors/LesserRift.xml',
+    'vectors/WindhornRift.xml',
+    'vectors/DelphiRift.xml',
+    'vectors/ZhdantRift.xml']
+def loadRiftVectors(
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.List[survey.RawVector]:
+    vectors: typing.List[survey.RawVector] = []
+    for path in _RiftVectorPaths:
+        vectors.append(survey.parseVector(
+            content=multiverse.SnapshotManager.instance().readTextResource(
+                filePath=path)))
+    return vectors
+
+_RouteVectorPaths = [
+    'vectors/J5Route.xml',
+    'vectors/J4Route.xml',
+    'vectors/CoreRoute.xml']
+def loadRouteVectors(
+        reporter: typing.Optional[common.Reporter] = None
+        ) -> typing.List[survey.RawVector]:
+    vectors: typing.List[survey.RawVector] = []
+    for path in _RouteVectorPaths:
+        vectors.append(survey.parseVector(
+            content=multiverse.SnapshotManager.instance().readTextResource(
+                filePath=path)))
+    return vectors

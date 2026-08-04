@@ -4,9 +4,9 @@ from .glyphs import *
 from .abstract import *
 from .selector import *
 from .imagestore import *
-from .vectorstore import *
 from .sectorcache import *
 from .worldcache import *
+from .vectorcache import *
 from .gridcache import *
 from .starfieldcache import *
 from .stylesheet import *

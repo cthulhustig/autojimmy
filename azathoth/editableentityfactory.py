@@ -9,13 +9,15 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             universeId: str,
             milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector],
-            labels: typing.Collection[astronomer.MapLabel]
+            labels: typing.Collection[astronomer.MapLabel],
+            vectors: typing.Collection[astronomer.MapVector]
             ) -> astronomer.Universe:
         return azathoth.EditableUniverse(
             universeId=universeId,
             milieu=milieu,
             sectors=sectors,
-            labels=labels)
+            labels=labels,
+            vectors=vectors)
 
     def createSector(
             self,
@@ -203,8 +205,9 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             worldY: float,
             layer: astronomer.LabelLayer,
             alignment: typing.Optional[astronomer.TextAlignment] = None,
-            colour: str = None,
-            size: astronomer.LabelSize = None
+            colour: typing.Optional[str] = None,
+            size: typing.Optional[astronomer.LabelSize] = None,
+            rotation: typing.Optional[float] = None
             ) -> astronomer.MapLabel:
         return azathoth.EditableMapLabel(
             entityId=entityId,
@@ -214,4 +217,18 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             layer=layer,
             alignment=alignment,
             colour=colour,
-            size=size)
+            size=size,
+            rotation=rotation)
+
+    def createMapVector(
+            self,
+            entityId: str,
+            points: typing.Sequence[typing.Tuple[float, float]],
+            layer: astronomer.VectorLayer,
+            closed: bool
+            ) -> astronomer.MapVector:
+        return azathoth.EditableMapVector(
+            entityId=entityId,
+            points=points,
+            layer=layer,
+            closed=closed)

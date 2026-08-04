@@ -25,12 +25,14 @@ class Universe(object):
             universeId: str,
             milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector],
-            labels: typing.Collection[astronomer.MapLabel]
+            labels: typing.Collection[astronomer.MapLabel],
+            vectors: typing.Collection[astronomer.MapVector]
             ) -> None:
         common.validateStr(name='universeId', value=universeId, allowEmpty=False)
         common.validateObject(name='milieu', value=milieu, objectType=astronomer.Milieu)
         common.validateCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
         common.validateCollection(name='labels', value=labels, elementType=astronomer.MapLabel)
+        common.validateCollection(name='vectors', value=vectors, elementType=astronomer.MapVector)
 
         self._universeId = universeId
         self._milieu = milieu
@@ -50,6 +52,10 @@ class Universe(object):
         self._labels: typing.List[astronomer.MapLabel] = []
         for label in labels:
             self._addLabel(label=label)
+
+        self._vectors: typing.List[astronomer.MapVector] = []
+        for vector in vectors:
+            self._addVector(vector=vector)
 
     def universeId(self) -> str:
         return self._universeId
@@ -498,6 +504,9 @@ class Universe(object):
     def labels(self) -> typing.Collection[astronomer.MapLabel]:
         return common.ConstCollectionRef(self._labels)
 
+    def vectors(self) -> typing.Collection[astronomer.MapVector]:
+        return common.ConstCollectionRef(self._vectors)
+
     def _addSector(self, sector: astronomer.Sector) -> None:
         self._idToEntityMap[sector.entityId()] = sector
         for entity in sector.entities():
@@ -605,3 +614,7 @@ class Universe(object):
     def _addLabel(self, label: astronomer.MapLabel) -> None:
         self._idToEntityMap[label.entityId()] = label
         self._labels.append(label)
+
+    def _addVector(self, vector: astronomer.MapVector) -> None:
+        self._idToEntityMap[vector.entityId()] = vector
+        self._vectors.append(vector)

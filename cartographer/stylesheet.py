@@ -319,9 +319,9 @@ class StyleSheet(object):
         self.macroNames.visible = (self.scale >= StyleSheet._MacroLabelMinScale) and \
             (self.scale <= StyleSheet._MacroLabelMaxScale)
         self.megaNames.visible = self.scale <= StyleSheet._MegaLabelMaxScale and \
-            ((self.options & cartographer.RenderOptions.NamesMask) != 0)
+            ((self.options & cartographer.RenderOptions.Names) != 0)
         self.showMicroNames = (self.scale >= StyleSheet._MicroNameMinScale) and \
-            ((self.options & cartographer.RenderOptions.NamesMask) != 0)
+            ((self.options & cartographer.RenderOptions.Names) != 0)
         self.capitals.visible = (self.scale >= StyleSheet._MacroWorldsMinScale) and \
             (self.scale <= StyleSheet._MacroWorldsMaxScale)
 
@@ -329,9 +329,9 @@ class StyleSheet(object):
 
         self.macroBorders.visible = (self.scale >= StyleSheet._MacroBorderMinScale) and \
             (self.scale < StyleSheet._MicroBorderMinScale) and \
-            ((self.options & cartographer.RenderOptions.BordersMask) != 0)
+            ((self.options & cartographer.RenderOptions.Borders) != 0)
         self.microBorders.visible = (self.scale >= StyleSheet._MicroBorderMinScale) and \
-            ((self.options & cartographer.RenderOptions.BordersMask) != 0)
+            ((self.options & cartographer.RenderOptions.Borders) != 0)
         self.fillMicroBorders = self.microBorders.visible and \
             ((self.options & cartographer.RenderOptions.FilledBorders) != 0)
         self.microRoutes.visible = (self.scale >= StyleSheet._RouteMinScale) and \
@@ -527,7 +527,19 @@ class StyleSheet(object):
             width=0.05 * penScale)
         self.macroBorders.linePen = self._graphics.createPen(
             colour=common.HtmlColours.TravellerRed,
-            width=borderPenWidth)
+            # NOTE: This scaling of the pen width is not in the equivalent Traveller Map
+            # code. It's needed here because the source vectors used for macro borders
+            # have a scale that, in the Traveller Map code, is applied at render time.
+            # This means in the Traveller Map code the line width is also affected by the
+            # scale, causing it to be drawn thinner than the actual border pen width,
+            # with the most noticeable result being the border appears darker. In my
+            # implementation, the scale is applied at import time. To account for the fact
+            # the scale isn't applied at render time, the width of the line is reduced
+            # here. The value used is based on the scales specified in the various border
+            # vector files. It's not an exact match as the allow independent scaling in
+            # x & y, but it looks close enough to what it looks like with the Traveller
+            # Map implementation
+            width=0.4 * borderPenWidth)
         self.macroRoutes.linePen = self._graphics.createPen(
             colour=common.HtmlColours.White,
             width=borderPenWidth,
@@ -1040,8 +1052,10 @@ class StyleSheet(object):
             # levels where the issue was seen.
             borderPenScale = 0.8
 
+            # NOTE: See the comment where macroBorders.linePen is constructed
+            # for non-candy themes for reason why this is scaled by 0.4
             self.macroBorders.linePen.setWidth(
-                (borderPenWidth * borderPenScale) if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4)
+                0.4 * ((borderPenWidth * borderPenScale) if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4))
             self.microBorders.linePen.setWidth(
                 (borderPenWidth * borderPenScale) if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4)
 

@@ -67,13 +67,8 @@ class RenderOptions(enum.IntFlag):
     SectorsAll = 0x0008
     SectorsMask = SectorsSelected | SectorsAll
 
-    BordersMajor = 0x0010
-    BordersMinor = 0x0020
-    BordersMask = BordersMajor | BordersMinor
-
-    NamesMajor = 0x0040
-    NamesMinor = 0x0080
-    NamesMask = NamesMajor | NamesMinor
+    Borders = 0x0010
+    Names = 0x0020
 
     # The Traveller Map rendering code splits this into Capitals and Homeworlds,
     # however the UI only lets you turn them on/off together using the Important

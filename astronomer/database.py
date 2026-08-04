@@ -72,8 +72,24 @@ def loadUniverseFromDatabase(
                 exc_info=ex)
             continue
 
+    dbVectors = multiverse.UniverseManager.instance().mapVectors(id=universeId)
+    vectors: typing.List[astronomer.MapVector] = []
+    for dbVector in dbVectors:
+        try:
+            vector = astronomer.convertDbMapVectorToAstronomerMapVector(
+                dbVector=dbVector,
+                entityFactory=entityFactory)
+            vectors.append(vector)
+        except Exception as ex:
+            logging.error(
+                'Failed to load vector {name!r}'.format(
+                    name=dbVector.id()),
+                exc_info=ex)
+            continue
+
     return entityFactory.createUniverse(
         universeId=universeId,
         milieu=milieu,
         sectors=sectors,
-        labels=labels)
+        labels=labels,
+        vectors=vectors)
