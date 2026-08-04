@@ -1501,7 +1501,7 @@ class MapWidget(QtWidgets.QWidget):
             boxZoomColour = QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Highlight)
             painter.setPen(QtGui.QPen(
                 gui.createAlphaColour(base=boxZoomColour, alpha=MapWidget._BoxZoomLineAlpha),
-                MapWidget._BoxZoomLineWidth,
+                MapWidget._BoxZoomLineWidth * gui.interfaceScale(),
                 QtCore.Qt.PenStyle.SolidLine))
             painter.setBrush(QtGui.QBrush(
                 gui.createAlphaColour(base=boxZoomColour, alpha=MapWidget._BoxZoomFillAlpha)))
