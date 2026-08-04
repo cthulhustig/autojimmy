@@ -429,6 +429,10 @@ class MapWidget(QtWidgets.QWidget):
     # depth value and not creating overlays with a depth under that value
     _UserOverlayMinDepth = 100
 
+    _BoxZoomLineAlpha = 0.9
+    _BoxZoomLineWidth = 4
+    _BoxZoomFillAlpha = 0.3
+
     # NOTE: This is LocalMapWidget for legacy reasons. The class was renamed as
     # part of the work to remove the legacy web map widget but the state
     # structure didn't change
@@ -506,8 +510,10 @@ class MapWidget(QtWidgets.QWidget):
         self._sizer = None
         self._createNewRenderer()
 
-        self._worldDragAnchor: typing.Optional[QtCore.QPointF] = None
-        self._pixelDragStart: typing.Optional[QtCore.QPoint] = None
+        self._leftMouseDownPosition: typing.Optional[QtCore.QPoint] = None
+
+        self._mapDragWorldAnchor: typing.Optional[QtCore.QPointF] = None
+        self._boxZoomWorldAnchor: typing.Optional[QtCore.QPointF] = None
 
         # Off screen buffer used when not using tile rendering to prevent
         # Windows font scaling messing up the size of rendered text on a
@@ -729,7 +735,9 @@ class MapWidget(QtWidgets.QWidget):
 
         self._locked = locked
         if self._locked:
-            self._pixelDragStart = self._worldDragAnchor = None
+            self._leftMouseDownPosition = None
+            self._mapDragWorldAnchor = None
+            self._boxZoomWorldAnchor = None
             self._keyboardMovementTracker.clear()
 
     def setView(
@@ -781,9 +789,20 @@ class MapWidget(QtWidgets.QWidget):
             ) -> None:
         self.setView(scale=scale, immediate=immediate)
 
+    def viewRect(self) -> QtCore.QRectF: # Rect in World coordinates
+        linearScale = self._viewScale.linear
+        worldOutputWidth = self.width() / (linearScale * astronomer.ParsecScaleX)
+        worldOutputHeight = self.height() / (linearScale * astronomer.ParsecScaleY)
+
+        return QtCore.QRectF(
+            self._viewCenter.x() - (worldOutputWidth / 2),
+            self._viewCenter.y() - (worldOutputHeight / 2),
+            worldOutputWidth,
+            worldOutputHeight)
+
     def viewAreaLimits(self) -> typing.Tuple[
-            typing.Optional[QtCore.QPointF], # Upper Left
-            typing.Optional[QtCore.QPointF]]: # Lower Right
+            typing.Optional[QtCore.QPointF], # Upper Left in World coordinates
+            typing.Optional[QtCore.QPointF]]: # Lower Right in World coordinates
         return (
             QtCore.QPointF(self._upperLeftViewLimit) if self._upperLeftViewLimit else None,
             QtCore.QPointF(self._lowerRightViewLimit) if self._lowerRightViewLimit else None)
@@ -910,6 +929,25 @@ class MapWidget(QtWidgets.QWidget):
             scale=scale,
             immediate=immediate)
 
+    def zoomToArea(
+            self,
+            worldRect: QtCore.QRectF
+            ) -> None:
+        if self.width() == 0 or self.height() == 0:
+            return
+
+        newViewCenter = worldRect.center()
+
+        worldPerPixel = max(
+            worldRect.width() / self.width(),
+            worldRect.height() / self.height())
+        if worldPerPixel > 0:
+            newViewScale = gui.MapScale(linear=1 / worldPerPixel)
+        else:
+            newViewScale = gui.MapScale(log=MapWidget._MinLogScale)
+
+        self.setView(center=newViewCenter, scale=newViewScale)
+
     @staticmethod
     def userOverlayMinDepth() -> int:
         return MapWidget._UserOverlayMinDepth
@@ -991,8 +1029,11 @@ class MapWidget(QtWidgets.QWidget):
 
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             if not self._locked:
-                self._pixelDragStart = event.pos()
-                self._worldDragAnchor = self._pixelSpaceToWorldSpace(self._pixelDragStart)
+                self._leftMouseDownPosition = event.pos()
+                if gui.isCtrlKeyDown():
+                    self._boxZoomWorldAnchor = self._pixelSpaceToWorldSpace(self._leftMouseDownPosition)
+                else:
+                    self._mapDragWorldAnchor = self._pixelSpaceToWorldSpace(self._leftMouseDownPosition)
 
             event.accept()
             return
@@ -1000,15 +1041,18 @@ class MapWidget(QtWidgets.QWidget):
         #super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
-        if not self._locked and self._worldDragAnchor:
-            worldCurrentPos = self._pixelSpaceToWorldSpace(event.pos())
-            worldDeltaX = worldCurrentPos.x() - self._worldDragAnchor.x()
-            worldDeltaY = worldCurrentPos.y() - self._worldDragAnchor.y()
+        if not self._locked:
+            if self._boxZoomWorldAnchor is not None:
+                self.update() # Trigger a redraw
+            elif self._mapDragWorldAnchor is not None:
+                worldCurrentPos = self._pixelSpaceToWorldSpace(event.pos())
+                worldDeltaX = worldCurrentPos.x() - self._mapDragWorldAnchor.x()
+                worldDeltaY = worldCurrentPos.y() - self._mapDragWorldAnchor.y()
 
-            newViewCenter = QtCore.QPointF(
-                self._viewCenter.x() - worldDeltaX,
-                self._viewCenter.y() - worldDeltaY)
-            self._updateView(center=newViewCenter)
+                newViewCenter = QtCore.QPointF(
+                    self._viewCenter.x() - worldDeltaX,
+                    self._viewCenter.y() - worldDeltaY)
+                self._updateView(center=newViewCenter)
 
         event.accept()
 
@@ -1018,37 +1062,69 @@ class MapWidget(QtWidgets.QWidget):
         leftRelease = event.button() == QtCore.Qt.MouseButton.LeftButton
         rightRelease = event.button() == QtCore.Qt.MouseButton.RightButton
 
-        if leftRelease or rightRelease:
-            if not self._locked:
-                pixelReleasePos = QtCore.QPointF(event.x(), event.y())
-
-                if leftRelease and self._pixelDragStart:
-                    clickRect = QtCore.QRectF(
-                        self._pixelDragStart.x() - self._LeftClickMoveThreshold,
-                        self._pixelDragStart.y() - self._LeftClickMoveThreshold,
-                        self._LeftClickMoveThreshold * 2,
-                        self._LeftClickMoveThreshold * 2)
-
-                    self._worldDragAnchor = self._pixelDragStart = None
-
-                    if not clickRect.contains(pixelReleasePos):
-                        event.accept()
-                        return # A drag was performed so it doesn't count as a click
-
-                hex = self._pixelSpaceToHex(pixelReleasePos)
-                if leftRelease:
-                    self._handleLeftClickEvent(hex)
-                else:
-                    self._handleRightClickEvent(hex)
-
-            event.accept()
+        if not leftRelease and not rightRelease:
+            super().mouseReleaseEvent(event)
             return
 
-        super().mouseReleaseEvent(event)
+        try:
+            if not self._locked and self.hasFocus():
+                pixelCursorPos = event.pos()
+
+                if leftRelease and self._leftMouseDownPosition is not None:
+                    if self._boxZoomWorldAnchor is not None:
+                        # Perform box zoom
+                        boxZoomWorldCursor = self._pixelSpaceToWorldSpace(pixelCursorPos)
+                        boxZoomMinX, boxZoomMaxX = common.minmax(self._boxZoomWorldAnchor.x(), boxZoomWorldCursor.x())
+                        boxZoomMinY, boxZoomMaxY = common.minmax(self._boxZoomWorldAnchor.y(), boxZoomWorldCursor.y())
+                        boxZoomRect = QtCore.QRectF(
+                            boxZoomMinX,
+                            boxZoomMinY,
+                            boxZoomMaxX - boxZoomMinX,
+                            boxZoomMaxY - boxZoomMinY)
+                        boxZoomRect = boxZoomRect.intersected(self.viewRect())
+
+                        if boxZoomRect.isValid():
+                            self.zoomToArea(worldRect=boxZoomRect)
+
+                        self.update() # Trigger redraw
+                        return # A zoom was performed so it doesn't count as a click
+                    elif self._mapDragWorldAnchor is not None:
+                        # Don't generate a mouse click of the the user was intentionally
+                        # dragging the map. Allow for small accidental movements between
+                        # the down and up events, in these cases a click event should
+                        # still be generated.
+                        clickRect = QtCore.QRectF(
+                            self._leftMouseDownPosition.x() - self._LeftClickMoveThreshold,
+                            self._leftMouseDownPosition.y() - self._LeftClickMoveThreshold,
+                            self._LeftClickMoveThreshold * 2,
+                            self._LeftClickMoveThreshold * 2)
+                        if not clickRect.contains(pixelCursorPos):
+                            return # A drag was performed so it doesn't count as a click
+
+                hex = self._pixelSpaceToHex(pixelCursorPos)
+                if leftRelease:
+                    # For left click, only generate an event if there is a mouse
+                    # down position. It may have been cleared if for example a
+                    # box zoom was cancelled with Esc. In those kind of cases,
+                    # the release shouldn't be counted as a click, even though
+                    # no action was performed
+                    if self._leftMouseDownPosition is not None:
+                        self._sendLeftClickEvent(hex)
+                elif rightRelease:
+                    self._sendRightClickEvent(hex)
+        finally:
+            if leftRelease:
+                self._leftMouseDownPosition = None
+                self._boxZoomWorldAnchor = None
+                self._mapDragWorldAnchor = None
+
+            event.accept()
 
     def focusOutEvent(self, event: QtGui.QFocusEvent) -> None:
         super().focusOutEvent(event)
-        self._worldDragAnchor = self._pixelDragStart = None
+        self._leftMouseDownPosition = None
+        self._mapDragWorldAnchor = None
+        self._boxZoomWorldAnchor = None
         self._keyboardMovementTracker.clear()
         self._keyboardMovementTimer.stop()
 
@@ -1080,6 +1156,14 @@ class MapWidget(QtWidgets.QWidget):
                 self._zoomView(step=-MapWidget._KeyboardZoomDelta)
                 event.accept()
                 return
+            elif event.key() == QtCore.Qt.Key.Key_Escape:
+                if self._boxZoomWorldAnchor is not None:
+                    # Cancel box zoom
+                    self._boxZoomWorldAnchor = None
+                    self._leftMouseDownPosition = None # Mouse release shouldn't be counted as a click
+                    self.update() # Trigger redraw
+                    event.accept()
+                    return
 
         super().keyPressEvent(event)
 
@@ -1161,6 +1245,9 @@ class MapWidget(QtWidgets.QWidget):
                     self._offscreenRenderImage,
                     viewRect)
 
+        if self._boxZoomWorldAnchor is not None:
+            self._drawBoxZoomRect()
+
         self._forceAtomicRedraw = False
 
     def _clampCenter(self, center: QtCore.QPointF) -> QtCore.QPointF:
@@ -1178,6 +1265,11 @@ class MapWidget(QtWidgets.QWidget):
         return center
 
     def _clampScale(self, scale: gui.MapScale) -> gui.MapScale:
+        if scale.log < MapWidget._MinLogScale:
+            scale.log = MapWidget._MinLogScale
+        if scale.log > MapWidget._MaxLogScale:
+            scale.log = MapWidget._MaxLogScale
+
         if self._minViewScale and scale < self._minViewScale:
             scale = self._minViewScale
         if self._maxViewScale and scale > self._maxViewScale:
@@ -1389,7 +1481,33 @@ class MapWidget(QtWidgets.QWidget):
                         QtCore.Qt.AlignmentFlag.AlignCenter,
                         text)
 
-    def _handleLeftClickEvent(
+    def _drawBoxZoomRect(self) -> None:
+        if self._boxZoomWorldAnchor is None:
+            return
+
+        boxZoomPixelAnchor = self._worldSpaceToPixelSpace(self._boxZoomWorldAnchor)
+        boxZoomPixelCurrent = self.mapFromGlobal(QtGui.QCursor.pos())
+        boxZoomMinX, boxZoomMaxX = common.minmax(boxZoomPixelAnchor.x(), boxZoomPixelCurrent.x())
+        boxZoomMinY, boxZoomMaxY = common.minmax(boxZoomPixelAnchor.y(), boxZoomPixelCurrent.y())
+        boxZoomRect = QtCore.QRect(
+            int(boxZoomMinX),
+            int(boxZoomMinY),
+            int(boxZoomMaxX - boxZoomMinX),
+            int(boxZoomMaxY - boxZoomMinY))
+        boxZoomRect = boxZoomRect.intersected(self.rect())
+
+        painter = QtGui.QPainter()
+        with gui.PainterDrawGuard(painter, self):
+            boxZoomColour = QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Highlight)
+            painter.setPen(QtGui.QPen(
+                gui.createAlphaColour(base=boxZoomColour, alpha=MapWidget._BoxZoomLineAlpha),
+                MapWidget._BoxZoomLineWidth,
+                QtCore.Qt.PenStyle.SolidLine))
+            painter.setBrush(QtGui.QBrush(
+                gui.createAlphaColour(base=boxZoomColour, alpha=MapWidget._BoxZoomFillAlpha)))
+            painter.drawRect(boxZoomRect)
+
+    def _sendLeftClickEvent(
             self,
             hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
@@ -1401,7 +1519,7 @@ class MapWidget(QtWidgets.QWidget):
 
             self.leftClicked.emit(hex)
 
-    def _handleRightClickEvent(
+    def _sendRightClickEvent(
             self,
             hex: typing.Optional[astronomer.HexPosition]
             ) -> None:

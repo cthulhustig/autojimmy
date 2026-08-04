@@ -276,3 +276,14 @@ def setClipboardContent(
         clipboard.setImage(content)
     else:
         raise ValueError(f'Clipboard object is unsupported type {type(content)}')
+
+def createAlphaColour(
+        base: typing.Union[QtGui.QColor, str],
+        alpha: typing.Union[int, float] # Int in range 0 to 255 or float in range 0 to 1.0
+        ) -> QtGui.QColor:
+    colour = QtGui.QColor(base)
+    if isinstance(alpha, int):
+        colour.setAlpha(alpha)
+    else:
+        colour.setAlphaF(alpha)
+    return colour
