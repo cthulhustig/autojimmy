@@ -479,7 +479,7 @@ class _TileCache(object):
                 ]]] = {}
         for tileKey in list(self._tiles.keys()):
             universeId, _, _, _, mapStyle, mapOptions = tileKey
-            if universeId != universe.universeId():
+            if universeId != universe.id():
                 continue # Ignore tiles from another universe
 
             sizerKey = (mapStyle, mapOptions)
@@ -1994,7 +1994,7 @@ class MapWidget(QtWidgets.QWidget):
             createMissing: bool
             ) -> typing.Optional[QtGui.QImage]:
         image = MapWidget._sharedTileCache.get(
-            universeId=self._universe.universeId(),
+            universeId=self._universe.id(),
             tileX=tileX,
             tileY=tileY,
             tileScale=tileScale,
@@ -2021,7 +2021,7 @@ class MapWidget(QtWidgets.QWidget):
                     image=image)
 
                 MapWidget._sharedTileCache.insert(
-                    universeId=self._universe.universeId(),
+                    universeId=self._universe.id(),
                     tileX=tileX,
                     tileY=tileY,
                     tileScale=tileScale,
@@ -2119,7 +2119,7 @@ class MapWidget(QtWidgets.QWidget):
                 # NOTE: Don't use _lookupTile as we don't want to create
                 # this tile if it doesn't exist
                 image = MapWidget._sharedTileCache.get(
-                    universeId=self._universe.universeId(),
+                    universeId=self._universe.id(),
                     tileX=x,
                     tileY=y,
                     tileScale=placeholderScale,
@@ -2207,7 +2207,7 @@ class MapWidget(QtWidgets.QWidget):
             image=image)
 
         MapWidget._sharedTileCache.insert(
-            universeId=self._universe.universeId(),
+            universeId=self._universe.id(),
             tileX=tileX,
             tileY=tileY,
             tileScale=tileScale,

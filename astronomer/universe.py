@@ -57,7 +57,7 @@ class Universe(object):
         for vector in vectors:
             self._addVector(vector=vector)
 
-    def universeId(self) -> str:
+    def id(self) -> str:
         return self._universeId
 
     def milieu(self) -> astronomer.Milieu:

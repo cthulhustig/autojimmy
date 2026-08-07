@@ -32,10 +32,10 @@ class EditableUniverse(astronomer.Universe):
                 raise ValueError(f'Sectors have different position ({oldSector.position().elements()} vs {newSector.position().elements()})')
 
         if oldSector and oldSector.entityId() not in self._idToEntityMap:
-            raise ValueError(f'Sectors {oldSector.entityId()} is not in universe {self.universeId()}')
+            raise ValueError(f'Sectors {oldSector.entityId()} is not in universe {self.id()}')
 
         if newSector and newSector.entityId() in self._idToEntityMap:
-            raise ValueError(f'Sectors {newSector.entityId()} is already in universe {self.universeId()}')
+            raise ValueError(f'Sectors {newSector.entityId()} is already in universe {self.id()}')
 
         if oldSector:
             self._removeSector(oldSector)

@@ -68,7 +68,7 @@ class UniverseEditor(object):
             universeId: str,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> None:
-        if self._universe and self._universe.universeId() == universeId:
+        if self._universe and self._universe.id() == universeId:
             return # Nothing to do
 
         self._universe = astronomer.loadUniverseFromDatabase(

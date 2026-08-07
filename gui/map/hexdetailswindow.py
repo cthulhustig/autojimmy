@@ -1,5 +1,6 @@
 import app
 import astronomer
+import azathoth
 import cartographer
 import gui
 import logic
@@ -40,21 +41,21 @@ class _CustomLabel(QtWidgets.QLabel):
             return
 
         self._universe = universe
-        self._updateContent()
+        self.syncContent()
 
     def setRules(self, rules: traveller.Rules) -> None:
         if rules == self._rules:
             return
 
         self._rules = traveller.Rules(rules)
-        self._updateContent()
+        self.syncContent()
 
     def setMapStyle(self, style: cartographer.MapStyle) -> None:
         if style is self._mapStyle:
             return
 
         self._mapStyle = style
-        self._updateContent()
+        self.syncContent()
 
     def setMapOptions(self, options: typing.Collection[app.MapOption]) -> None:
         options = set(options) # Force use of set so options can be compared
@@ -62,7 +63,7 @@ class _CustomLabel(QtWidgets.QLabel):
             return
 
         self._mapOptions = options
-        self._updateContent()
+        self.syncContent()
 
     def setWorldTagging(
             self,
@@ -71,7 +72,7 @@ class _CustomLabel(QtWidgets.QLabel):
         if tagging == self._worldTagging:
             return
         self._worldTagging = logic.WorldTagging(tagging) if tagging else None
-        self._updateContent()
+        self.syncContent()
 
     def setTaggingColours(
             self,
@@ -80,7 +81,7 @@ class _CustomLabel(QtWidgets.QLabel):
         if colours == self._taggingColours:
             return
         self._taggingColours = app.TaggingColours(colours) if colours else None
-        self._updateContent()
+        self.syncContent()
 
     def setHex(
             self,
@@ -90,9 +91,9 @@ class _CustomLabel(QtWidgets.QLabel):
             return
 
         self._hex = hex
-        self._updateContent()
+        self.syncContent()
 
-    def _updateContent(self) -> None:
+    def syncContent(self) -> None:
         if self._hex:
             self.setText(gui.createHexToolTip(
                 universe=self._universe,
@@ -146,6 +147,11 @@ class HexDetailsWindow(gui.WindowWidget):
         self.resize(800, 600)
 
         app.Config.instance().configChanged.connect(self._appConfigChanged)
+
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
 
     def addHex(
             self,
@@ -240,3 +246,16 @@ class HexDetailsWindow(gui.WindowWidget):
             self._hexLabel.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:
             self._hexLabel.setTaggingColours(colours=newValue)
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != astronomer.WorldManager.instance().universe().id():
+            return
+
+        for index, hex in enumerate(self._hexes):
+            tabName = universe.canonicalHexName(hex=hex)
+            self._tabBar.setTabText(index, tabName)
+        self._hexLabel.syncContent()
