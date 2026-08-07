@@ -12,6 +12,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 
 # TODO: Welcome message
 # - Cover fact universe no longer auto updates to latest traveller map data and how the user can update it
+# TODO: Need to save changes made to universe
 # TODO: Something that causes other windows to update when new sectors are imported
 # TODO: Option to update unmodified sectors to the versions from the stock database
 # TODO: Ideally I would have more editor stuff in place for the first release

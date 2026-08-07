@@ -7,6 +7,33 @@ import typing
 
 # TODO: Need to have controls other than map subscribe to be notified when changes
 # occur and update their state when they do
+# - HexDetailsWindow
+# - HexSelectComboBox
+# - HexSelectToolWidget (maybe)
+# - HexTable
+# - HexTableManagerWidget (maybe)
+# - MapOverlays (maybe)
+# - MapWidgetEx (might already be done)
+# - SectorTable
+# - CargoManifestTable
+# - CargoRecordTable
+# - JumpRouteWindow
+#   - Clear jump route
+#   - Stop jump route job if in progress (in pre-update)
+# - PurchaseCalculatorWindow
+# - SaleCalculatorWindow
+# - SimulatorWindow
+#   - Stop sim job if in progress (in pre-update)
+# - TradeOptionTable
+#   - Trade goods may have become invalid, probably need to clear them
+# - TraderWindow
+#   - Stop trade option job if in progress (in pre-update)
+# - WaypointTable
+#   - If a hex has a world in in it might have changed so berthing check boxes might need added/removed
+# - WorldComparisonWindow
+# - WorldSearchWindow
+# - WorldTradeScoreTable
+#   - Trade scores will need recalculated
 
 class UniverseEditor(object):
     _UndoStackSize = 4 # TODO: This should be a lot higher
