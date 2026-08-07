@@ -7,6 +7,10 @@ P = typing.ParamSpec("P")
 class ObserverSet(typing.Generic[P]):
     def __init__(self):
         super().__init__()
+        # NOTE: It's important that the group of observers is ordered so
+        # observers are notified in the order they are registered. This
+        # allows deterministic order of update (such as the tile cache
+        # being updated before map widgets)
         self._observers = common.OrderedSet()
 
     def register(self, callback: typing.Callable[P, None]) -> None:

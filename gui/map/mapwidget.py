@@ -377,6 +377,141 @@ class _MapTile(object):
     def image(self) -> QtGui.QImage:
         return self._image
 
+class _TileCache(object):
+    def __init__(
+            self,
+            capacity: int
+            ) -> None:
+        self._tiles = common.LRUCache[
+            typing.Tuple[
+                str, # Universe id
+                int, # Tile Center X (World Space)
+                int, # Tile Center Y (World Space)
+                int, # Tile Scale
+                cartographer.MapStyle,
+                int], # MapOptions as an int
+            _MapTile](capacity=capacity)
+
+        azathoth.UniverseEditor.instance().addPreUpdateObserver(self._handleUniversePreUpdate)
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._handleUniversePostUpdate)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._handleUniversePreUpdate)
+        azathoth.UniverseEditor.instance().removeObserver(self._handleUniversePostUpdate)
+
+    def insert(
+            self,
+            universeId: str,
+            tileX: int,
+            tileY: int,
+            tileScale: int,
+            mapStyle: cartographer.MapStyle,
+            mapOptions: cartographer.RenderOptions,
+            worldRect: cartographer.RectangleF,
+            image: QtGui.QImage
+            ) -> None:
+        tileKey = (universeId, tileX, tileY, tileScale, mapStyle, int(mapOptions))
+        self._tiles[tileKey] = _MapTile(worldRect=worldRect, image=image)
+
+    def get(
+            self,
+            universeId: str,
+            tileX: int,
+            tileY: int,
+            tileScale: int,
+            mapStyle: cartographer.MapStyle,
+            mapOptions: cartographer.RenderOptions
+            ) -> QtGui.QImage:
+        tileKey = (universeId, tileX, tileY, tileScale, mapStyle, int(mapOptions))
+        tile = self._tiles.get(tileKey)
+        return tile.image() if tile is not None else None
+
+    # This removes the least recently used tile from the cache and returns
+    # the image associated with it
+    def pop(self) -> QtGui.QImage:
+        _, marker = self._tiles.pop()
+        return marker.image()
+
+    def isFull(self) -> bool:
+        return self._tiles.isFull()
+
+    def clear(self) -> None:
+        self._tiles.clear()
+
+    def _handleUniversePreUpdate(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        objects = []
+        objects.extend(changeEvent.deleted())
+        objects.extend(changeEvent.modified())
+        if objects:
+            self._invalidateTiles(universe=universe, objects=objects)
+
+    def _handleUniversePostUpdate(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        objects = []
+        objects.extend(changeEvent.added())
+        objects.extend(changeEvent.modified())
+        if objects:
+            self._invalidateTiles(universe=universe, objects=objects)
+
+    def _invalidateTiles(
+            self,
+            universe: astronomer.Universe,
+            objects: typing.Collection[typing.Union[astronomer.Sector, astronomer.World]]
+            ) -> None:
+        sizeParamsToTileListMap: typing.Dict[
+            typing.Tuple[
+                cartographer.MapStyle,
+                int], # MapOptions as an int
+            typing.List[typing.Tuple[
+                str, # Universe id
+                int, # Tile X
+                int, # Tile Y
+                int, # Tile Scale
+                cartographer.MapStyle,
+                int # MapOptions as an int
+                ]]] = {}
+        for tileKey in list(self._tiles.keys()):
+            universeId, _, _, _, mapStyle, mapOptions = tileKey
+            if universeId != universe.universeId():
+                continue # Ignore tiles from another universe
+
+            sizerKey = (mapStyle, mapOptions)
+            tileList = sizeParamsToTileListMap.get(sizerKey)
+            if tileList is None:
+                tileList = []
+                sizeParamsToTileListMap[sizerKey] = tileList
+            tileList.append(tileKey)
+
+        for (mapStyle, mapOptions), tileList in sizeParamsToTileListMap.items():
+            sizer = gui.RenderBoundsCalculator(
+                universe=universe,
+                style=mapStyle,
+                options=cartographer.RenderOptions(mapOptions))
+
+            scaleToInvalidRectMap: typing.Dict[int, cartographer.RectangleF] = {}
+            for tileKey in tileList:
+                _, _, _, tileScale, _, _ = tileKey
+
+                # NOTE: Use -1 as default to differentiate between a scale that
+                # hasn't had the bounds calculated and one where it has been
+                # calculated but the result was None
+                invalidRect = scaleToInvalidRectMap.get(tileScale, -1)
+                if invalidRect == -1:
+                    invalidRect = sizer.calculateBounds(objects=objects, scale=tileScale)
+                    scaleToInvalidRectMap[tileScale] = invalidRect
+
+                if invalidRect:
+                    tile = self._tiles.get(tileKey)
+                    if invalidRect.intersects(tile.worldRect()):
+                        self._tiles.remove(tileKey)
+
 class MapWidget(QtWidgets.QWidget):
     centerChanged = QtCore.pyqtSignal(QtCore.QPointF)
     scaleChanged = QtCore.pyqtSignal(gui.MapScale)
@@ -438,15 +573,7 @@ class MapWidget(QtWidgets.QWidget):
     # structure didn't change
     _StateVersion = 'LocalMapWidget_v1'
 
-    _sharedTileCache = common.LRUCache[
-        typing.Tuple[
-            int, # Tile X
-            int, # Tile Y
-            int, # Tile Scale
-            str, # Universe id
-            cartographer.MapStyle,
-            int], # MapOptions as an int
-        _MapTile](capacity=_TileCacheSize)
+    _sharedTileCache = _TileCache(capacity=_TileCacheSize)
 
     # PyQt5 has a limitation of 10 custom easing curve functions being
     # registered over the lifetime of the application (i.e. setCustomType) and
@@ -507,7 +634,6 @@ class MapWidget(QtWidgets.QWidget):
         self._imageStore = cartographer.ImageStore(graphics=self._mapGraphics)
 
         self._renderer = None
-        self._sizer = None
         self._createNewRenderer()
 
         self._leftMouseDownPosition: typing.Optional[QtCore.QPoint] = None
@@ -612,11 +738,6 @@ class MapWidget(QtWidgets.QWidget):
 
         self._updateView()
 
-        # TODO: Having the tile cache invalidated by each MapWidget is problematic
-        # as it will happen multiple times for each edit. What I really want to
-        # happen is the tile cache gets notified once then, once the new tiles have
-        # been generated, each MapWidget is told to redraw.
-        azathoth.UniverseEditor.instance().addPreUpdateObserver(self._handleUniversePreUpdate)
         azathoth.UniverseEditor.instance().addPostUpdateObserver(self._handleUniversePostUpdate)
 
     def __del__(self) -> None:
@@ -1587,11 +1708,6 @@ class MapWidget(QtWidgets.QWidget):
             options=options,
             imageStore=self._imageStore)
 
-        self._sizer = gui.RenderBoundsCalculator(
-            universe=self._universe,
-            style=self._style,
-            options=options)
-
     def _updateView(
             self,
             center: typing.Optional[QtCore.QPointF] = None,
@@ -1725,7 +1841,7 @@ class MapWidget(QtWidgets.QWidget):
         tiles = []
         for x in range(leftTile, rightTile + 1):
             for y in range(topTile, bottomTile + 1):
-                tile = self._lookupTile(
+                image = self._lookupTile(
                     tileX=x,
                     tileY=y,
                     tileScale=tileScale,
@@ -1735,8 +1851,8 @@ class MapWidget(QtWidgets.QWidget):
                     ((y - topTile) * tileSize) - offsetY,
                     tileSize,
                     tileSize)
-                if tile:
-                    tiles.append((tile.image(), renderRect, None))
+                if image is not None:
+                    tiles.append((image, renderRect, None))
                 else:
                     placeholders = self._gatherPlaceholderTiles(
                         currentScale=tileScale,
@@ -1876,16 +1992,15 @@ class MapWidget(QtWidgets.QWidget):
             tileY: int,
             tileScale: int, # Log scale rounded down,
             createMissing: bool
-            ) -> typing.Optional[_MapTile]:
-        tileCacheKey = (
-            tileX,
-            tileY,
-            tileScale,
-            self._universe.universeId(),
-            self._renderer.style(),
-            int(self._renderer.options()))
-        tile = MapWidget._sharedTileCache.get(tileCacheKey)
-        if not tile:
+            ) -> typing.Optional[QtGui.QImage]:
+        image = MapWidget._sharedTileCache.get(
+            universeId=self._universe.universeId(),
+            tileX=tileX,
+            tileY=tileY,
+            tileScale=tileScale,
+            mapStyle=self._renderer.style(),
+            mapOptions=self._renderer.options())
+        if image is None:
             if not createMissing:
                 # Add the tile to the queue of tiles to be created in the background
                 requiredTile = (tileX, tileY, tileScale)
@@ -1893,18 +2008,29 @@ class MapWidget(QtWidgets.QWidget):
                     self._tileRenderQueue.append(requiredTile)
             else:
                 # Render the tile
-                image = None
                 if MapWidget._sharedTileCache.isFull():
                     # Reuse oldest cached tile
-                    _, tile = MapWidget._sharedTileCache.pop()
-                    image = tile.image()
-                tile = self._renderTile(
+                    image = MapWidget._sharedTileCache.pop()
+                else:
+                    image = self._createTile()
+
+                worldRect = self._renderTile(
                     tileX=tileX,
                     tileY=tileY,
                     tileScale=tileScale,
                     image=image)
-                MapWidget._sharedTileCache[tileCacheKey] = tile
-        return tile
+
+                MapWidget._sharedTileCache.insert(
+                    universeId=self._universe.universeId(),
+                    tileX=tileX,
+                    tileY=tileY,
+                    tileScale=tileScale,
+                    mapStyle=self._renderer.style(),
+                    mapOptions=self._renderer.options(),
+                    worldRect=worldRect,
+                    image=image)
+
+        return image
 
     def _gatherPlaceholderTiles(
             self,
@@ -1981,14 +2107,6 @@ class MapWidget(QtWidgets.QWidget):
         missing = []
         for x in range(leftTile, rightTile + 1):
             for y in range(topTile, bottomTile + 1):
-                key = (
-                    x,
-                    y,
-                    placeholderScale,
-                    self._universe.universeId(),
-                    self._renderer.style(),
-                    int(self._renderer.options()))
-
                 placeholderRenderRect = QtCore.QRectF(
                     ((x - leftTile) * tileSize) - offsetX,
                     ((y - topTile) * tileSize) - offsetY,
@@ -2000,9 +2118,15 @@ class MapWidget(QtWidgets.QWidget):
 
                 # NOTE: Don't use _lookupTile as we don't want to create
                 # this tile if it doesn't exist
-                tile = MapWidget._sharedTileCache.get(key)
-                if tile:
-                    placeholders.append((tile.image(), placeholderRenderRect, placeholderClipRect))
+                image = MapWidget._sharedTileCache.get(
+                    universeId=self._universe.universeId(),
+                    tileX=x,
+                    tileY=y,
+                    tileScale=placeholderScale,
+                    mapStyle=self._renderer.style(),
+                    mapOptions=self._renderer.options())
+                if image is not None:
+                    placeholders.append((image, placeholderRenderRect, placeholderClipRect))
                 else:
                     if lookLower:
                         lowerPlaceholders = self._findPlaceholderTiles(
@@ -2029,13 +2153,19 @@ class MapWidget(QtWidgets.QWidget):
         self._tileRenderTimer.stop()
         self.update() # Force redraw
 
+    def _createTile(self) -> QtGui.QImage:
+        return QtGui.QImage(
+            MapWidget._TileSize,
+            MapWidget._TileSize,
+            QtGui.QImage.Format.Format_ARGB32)
+
     def _renderTile(
             self,
             tileX: int,
             tileY: int,
             tileScale: int, # Log scale rounded down
-            image: typing.Optional[QtGui.QImage]
-            ) -> _MapTile:
+            image: QtGui.QImage # Tile to render to
+            ) -> cartographer.RectangleF:
         tileScale = gui.logScaleToLinearScale(tileScale)
         scaleX = (tileScale * astronomer.ParsecScaleX)
         scaleY = (tileScale * astronomer.ParsecScaleY)
@@ -2045,11 +2175,6 @@ class MapWidget(QtWidgets.QWidget):
         worldTileCenterX = ((tileX * MapWidget._TileSize) / scaleX) + (worldTileWidth / 2)
         worldTileCenterY = ((tileY * MapWidget._TileSize) / scaleY) + (worldTileHeight / 2)
 
-        if not image:
-            image = QtGui.QImage(
-                MapWidget._TileSize,
-                MapWidget._TileSize,
-                QtGui.QImage.Format.Format_ARGB32)
         painter = QtGui.QPainter()
         painter.begin(image)
         try:
@@ -2064,29 +2189,33 @@ class MapWidget(QtWidgets.QWidget):
             self._mapGraphics.setPainter(painter=None)
             painter.end()
 
-        return _MapTile(worldRect=worldRect, image=image)
+        return worldRect
 
     def _handleRenderTileTimer(self) -> None:
         tileX, tileY, tileScale = self._tileRenderQueue.pop(0)
-        image = None
+
         if MapWidget._sharedTileCache.isFull():
             # Reuse oldest cached tile
-            _, tile = MapWidget._sharedTileCache.pop()
-            image = tile.image()
-        tileCacheKey = (
-            tileX,
-            tileY,
-            tileScale,
-            self._universe.universeId(),
-            # Use the settings for the renderer that is going to render the
-            # tile to make sure the key is accurate
-            self._renderer.style(),
-            int(self._renderer.options()))
-        MapWidget._sharedTileCache[tileCacheKey] = self._renderTile(
+            image = MapWidget._sharedTileCache.pop()
+        else:
+            image = self._createTile()
+
+        worldRect = self._renderTile(
             tileX=tileX,
             tileY=tileY,
             tileScale=tileScale,
             image=image)
+
+        MapWidget._sharedTileCache.insert(
+            universeId=self._universe.universeId(),
+            tileX=tileX,
+            tileY=tileY,
+            tileScale=tileScale,
+            mapStyle=self._renderer.style(),
+            mapOptions=self._renderer.options(),
+            worldRect=worldRect,
+            image=image)
+
         if self._tileRenderQueue:
             self._tileRenderTimer.start()
         self.update()
@@ -2243,63 +2372,18 @@ class MapWidget(QtWidgets.QWidget):
         fget=_animateViewScaleGetter,
         fset=_animateViewScaleSetter)
 
-    def _handleUniversePreUpdate(
-            self,
-            changeEvent: azathoth.ChangeEvent
-            ) -> None:
-        objects = []
-        objects.extend(changeEvent.deleted())
-        objects.extend(changeEvent.modified())
-        if objects:
-            self._invalidateTiles(objects=objects)
-
     def _handleUniversePostUpdate(
             self,
+            universe: azathoth.EditableUniverse,
             changeEvent: azathoth.ChangeEvent
             ) -> None:
-        # NOTE: Clearing the sizer cache must be done before invalidating
-        # tiles as the contents of the caches may have changed due to the
-        # update
         self._renderer.clearCaches()
-        self._sizer.clearCaches()
-
-        objects = []
-        objects.extend(changeEvent.added())
-        objects.extend(changeEvent.modified())
-        if objects:
-            self._invalidateTiles(objects=objects)
 
         # If there is a main it may have become invalidated so clear it.
         self._mainsOverlay.setMain(main=None)
 
         self._forceAtomicRedraw = True
         self.update()
-
-    # TODO: This should only be done once per update not per MapWidget instance
-    def _invalidateTiles(
-            self,
-            objects: typing.Collection[typing.Union[astronomer.Sector, astronomer.World]]
-            ) -> None:
-        # TODO: The way this is done is pretty horrible as it needs to calculate
-        # the rect to be invalidated for each scale
-        invalidRects: typing.Dict[int, cartographer.RectangleF] = {}
-        for key in list(MapWidget._sharedTileCache.keys()):
-            _, _, tileScale, universeId, _, _ = key
-            if universeId != self._universe.universeId():
-                continue # Ignore tiles from another universe
-
-            # NOTE: Use -1 as default to differentiate between a scale that
-            # hasn't had the bounds calculated and one where it has been
-            # calculated but the result was None
-            invalidRect = invalidRects.get(tileScale, -1)
-            if invalidRect == -1:
-                invalidRect = self._sizer.calculateBounds(objects=objects, scale=tileScale)
-                invalidRects[tileScale] = invalidRect
-
-            if invalidRect:
-                tile = MapWidget._sharedTileCache.get(key)
-                if invalidRect.intersects(tile.worldRect()):
-                    MapWidget._sharedTileCache.remove(key)
 
     @staticmethod
     def _createPlaceholderTile() -> QtGui.QImage:

@@ -13,8 +13,8 @@ class UniverseEditor(object):
 
     _instance = None # Singleton instance
     _lock = threading.Lock()
-    _preUpdateObservers = common.ObserverSet[azathoth.ChangeEvent]()
-    _postUpdateObservers = common.ObserverSet[azathoth.ChangeEvent]()
+    _preUpdateObservers = common.ObserverSet[azathoth.EditableUniverse, azathoth.ChangeEvent]()
+    _postUpdateObservers = common.ObserverSet[azathoth.EditableUniverse, azathoth.ChangeEvent]()
     _entityFactory = azathoth.EditableEntityFactory()
     _universe: azathoth.EditableUniverse = None
     _undoStack = azathoth.UndoRedoStack(maxDepth=_UndoStackSize)
@@ -57,13 +57,13 @@ class UniverseEditor(object):
     def entityFactory(self) -> azathoth.EditableEntityFactory:
         return self._entityFactory
 
-    def addPreUpdateObserver(self, handler: typing.Callable[[azathoth.ChangeEvent], None]) -> None:
+    def addPreUpdateObserver(self, handler: typing.Callable[[azathoth.EditableUniverse, azathoth.ChangeEvent], None]) -> None:
         self._preUpdateObservers.register(handler)
 
-    def addPostUpdateObserver(self, handler: typing.Callable[[azathoth.ChangeEvent], None]) -> None:
+    def addPostUpdateObserver(self, handler: typing.Callable[[azathoth.EditableUniverse, azathoth.ChangeEvent], None]) -> None:
         self._postUpdateObservers.register(handler)
 
-    def removeObserver(self, handler: typing.Callable[[azathoth.ChangeEvent], None]) -> None:
+    def removeObserver(self, handler: typing.Callable[[azathoth.EditableUniverse, azathoth.ChangeEvent], None]) -> None:
         self._preUpdateObservers.unregister(handler)
         self._postUpdateObservers.unregister(handler)
 
@@ -94,14 +94,14 @@ class UniverseEditor(object):
     def _applyCommand(self, command: azathoth.EditCommandInterface) -> None:
         changeEvent = command.applyEvent()
 
-        UniverseEditor._notifyObservers(
+        self._notifyObservers(
             observers=self._preUpdateObservers,
             changeEvent=changeEvent,
             errorMsg='Editor observer threw an exception when handling pre change notification')
 
         command.applyChanges(universe=self._universe)
 
-        UniverseEditor._notifyObservers(
+        self._notifyObservers(
             observers=self._postUpdateObservers,
             changeEvent=changeEvent,
             errorMsg='Editor observer threw an exception when handling post change notification')
@@ -109,24 +109,25 @@ class UniverseEditor(object):
     def _revertCommand(self, command: azathoth.EditCommandInterface) -> None:
         changeEvent = command.revertEvent()
 
-        UniverseEditor._notifyObservers(
+        self._notifyObservers(
             observers=self._preUpdateObservers,
             changeEvent=changeEvent,
             errorMsg='Editor observer threw an exception when handling pre revert notification')
 
         command.revertChanges(universe=self._universe)
 
-        UniverseEditor._notifyObservers(
+        self._notifyObservers(
             observers=self._postUpdateObservers,
             changeEvent=changeEvent,
             errorMsg='Editor observer threw an exception when handling post revert notification')
 
-    @staticmethod
     def _notifyObservers(
+            self,
             observers: common.ObserverSet[azathoth.ChangeEvent],
             changeEvent: azathoth.ChangeEvent,
             errorMsg: str
             ) -> None:
         observers.notify(
+            self._universe,
             changeEvent,
             exceptionCallback=lambda ex: logging.error(errorMsg, exc_info=ex))
