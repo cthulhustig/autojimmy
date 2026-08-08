@@ -7,13 +7,12 @@ import typing
 
 # TODO: Need to have controls other than map subscribe to be notified when changes
 # occur and update their state when they do
-# - HexDetailsWindow
-# - HexSelectComboBox
 # - HexSelectToolWidget (maybe)
 # - HexTable
 # - HexTableManagerWidget (maybe)
 # - MapOverlays (maybe)
-# - MapWidgetEx (might already be done)
+# - MapWidgetEx
+#   - Overlays
 # - SectorTable
 # - CargoManifestTable
 # - CargoRecordTable
