@@ -1,5 +1,6 @@
 import app
 import astronomer
+import azathoth
 import cartographer
 import enum
 import gui
@@ -174,6 +175,11 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self.setLayout(widgetLayout)
         self.installEventFilter(self)
+
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
 
     def universe(self) -> astronomer.Universe:
         return self._universe
@@ -442,17 +448,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self._enableDeadSpace = enable
 
-        if not enable:
+        if not self._enableDeadSpace:
             # Dead space hexes are not allowed so remove any that are already in
             # the table
-            contentChanged = False
-            for row in range(self._hexTable.rowCount() - 1, -1, -1):
-                world = self._universe.worldByPosition(hex=self.hex(row=row))
-                if not world:
-                    self._hexTable.removeRow(row=row)
-                    contentChanged = True
-            if contentChanged:
-                self._notifyContentChangeObservers()
+            self._removeDeadSpace()
 
     def isDeadSpaceEnabled(self) -> bool:
         return self._enableDeadSpace
@@ -696,3 +695,26 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def _displayModeChanged(self, index: int) -> None:
         self._hexTable.setActiveColumns(self._displayColumns())
+
+    def _removeDeadSpace(self) -> None:
+        contentChanged = False
+
+        for row in range(self._hexTable.rowCount() - 1, -1, -1):
+            world = self._universe.worldByPosition(hex=self.hex(row=row))
+            if not world:
+                self._hexTable.removeRow(row=row)
+                contentChanged = True
+
+        if contentChanged:
+            self._notifyContentChangeObservers()
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != self._universe.id():
+            return
+
+        if not self._enableDeadSpace:
+            self._removeDeadSpace()
