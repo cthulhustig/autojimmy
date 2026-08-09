@@ -1,7 +1,6 @@
 import astronomer
 import gui
 import logic
-import math
 import typing
 from PyQt5 import QtCore, QtGui
 

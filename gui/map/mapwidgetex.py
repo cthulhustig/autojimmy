@@ -1,5 +1,6 @@
 import app
 import astronomer
+import azathoth
 import cartographer
 import base64
 import enum
@@ -361,6 +362,11 @@ class _InfoWidget(QtWidgets.QWidget):
         self.setLayout(layout)
         self.setAutoFillBackground(True)
 
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
+
     def setUniverse(
             self,
             universe: astronomer.Universe
@@ -517,6 +523,16 @@ class _InfoWidget(QtWidgets.QWidget):
 
     def _linkHovered(self, link: str) -> None:
         QtWidgets.QToolTip.showText(QtGui.QCursor.pos(), link)
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != self._universe.id():
+            return
+
+        self._updateContent(self._label.width())
 
 class _LegendWidget(QtWidgets.QWidget):
     def __init__(
@@ -1422,6 +1438,11 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self._jumpRouteOverlay = None
 
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
+
     def universe(self) -> astronomer.Universe:
         return self._universe
 
@@ -1984,7 +2005,6 @@ class MapWidgetEx(QtWidgets.QWidget):
 
             if selectionChanged:
                 self._updateSelectionOverlay()
-                self.update()
                 self.selectionChanged.emit()
 
     def selectionCategory(self) -> 'MapWidgetEx.SelectionCategory':
@@ -2011,23 +2031,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._searchWidget.enableDeadSpaceSelection(enable=enable)
 
         if not self._enableDeadSpaceSelection:
-            # Deselect any dead space
-            selectionChanged = False
-            for hex in list(self._selectedHexes):
-                world = self._universe.worldByPosition(hex=hex)
-                if not world:
-                    self._selectedHexes.discard(hex)
-                    selectionChanged = True
-            for pos in list(self._selectedSectors):
-                sector = self._universe.sectorByPosition(position=pos)
-                if not sector:
-                    self._selectedSectors.discard(pos)
-                    selectionChanged = True
-
-            if selectionChanged:
-                self._updateSelectionOverlay()
-                self.update()
-                self.selectionChanged.emit()
+            self._removeDeadSpaceFromSelection()
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._enableDeadSpaceSelection
@@ -2499,6 +2503,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             return
         self._selectionOverlay.setHexes(self._selectedHexes)
         self._selectionOverlay.setSectors(self._selectedSectors)
+        self.update()
 
     def _searchHexTextEdited(self) -> None:
         # Clear the current info hex (and hide the widget) as soon as the user starts editing the
@@ -2570,3 +2575,31 @@ class MapWidgetEx(QtWidgets.QWidget):
     def _isSectorSelectAllowed(self) -> bool:
         return self._selectionMode is not MapWidgetEx.SelectionMode.NoSelection and \
             self._selectionCategory is MapWidgetEx.SelectionCategory.SectorSelection
+
+    def _removeDeadSpaceFromSelection(self):
+        selectionChanged = False
+
+        for hex in list(self._selectedHexes):
+            if not self._universe.worldByPosition(hex=hex):
+                self._selectedHexes.discard(hex)
+                selectionChanged = True
+
+        for pos in list(self._selectedSectors):
+            if not self._universe.sectorByPosition(position=pos):
+                self._selectedSectors.discard(pos)
+                selectionChanged = True
+
+        if selectionChanged:
+            self._updateSelectionOverlay()
+            self.selectionChanged.emit()
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != self._universe.id():
+            return
+
+        if not self._enableDeadSpaceSelection:
+            self._removeDeadSpaceFromSelection()

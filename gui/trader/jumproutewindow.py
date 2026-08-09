@@ -1,5 +1,6 @@
 import app
 import astronomer
+import azathoth
 import cartographer
 import common
 import enum
@@ -760,6 +761,10 @@ class JumpRouteWindow(gui.WindowWidget):
         self._enableDisableControls()
 
         app.Config.instance().configChanged.connect(self._appConfigChanged)
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -2647,3 +2652,13 @@ class JumpRouteWindow(gui.WindowWidget):
             html=_WelcomeMessage,
             noShowAgainId='JumpRouteWelcome')
         message.exec()
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != astronomer.WorldManager.instance().universe().id():
+            return
+
+        self._updateJumpOverlays()

@@ -352,7 +352,9 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
         text = _formatHexName(universe=self._universe, hex=self._selectedHex) if self._selectedHex else ''
         if text != self.currentText(): # Avoid event with no change
-            self.setCurrentText(text)
+            # Block signals as we don't want editTextChanged firing
+            with gui.SignalBlocker(self):
+                self.setCurrentText(text)
 
         if self._selectedHex and updateHistory:
             app.HexHistory.instance().addHex(hex=self._selectedHex)
