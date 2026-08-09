@@ -1,5 +1,6 @@
 import app
 import astronomer
+import azathoth
 import csv
 import enum
 import gui
@@ -297,6 +298,11 @@ class HexTable(gui.FrozenColumnListTable):
                     column == self.ColumnType.Sector or \
                     column == self.ColumnType.Subsector:
                 self.setColumnWidth(index, 100)
+
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
 
     def universe(self) -> astronomer.Universe:
         return self._universe
@@ -1264,3 +1270,13 @@ class HexTable(gui.FrozenColumnListTable):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != self._universe.id():
+            return
+
+        self._syncContent()

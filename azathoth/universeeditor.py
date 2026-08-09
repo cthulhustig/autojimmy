@@ -7,9 +7,6 @@ import typing
 
 # TODO: Need to have controls other than map subscribe to be notified when changes
 # occur and update their state when they do
-# - HexSelectToolWidget (maybe)
-# - HexTable
-# - HexTableManagerWidget (maybe)
 # - MapOverlays (maybe)
 # - MapWidgetEx
 #   - Overlays
@@ -27,8 +24,6 @@ import typing
 #   - Trade goods may have become invalid, probably need to clear them
 # - TraderWindow
 #   - Stop trade option job if in progress (in pre-update)
-# - WaypointTable
-#   - If a hex has a world in in it might have changed so berthing check boxes might need added/removed
 # - WorldComparisonWindow
 # - WorldSearchWindow
 # - WorldTradeScoreTable

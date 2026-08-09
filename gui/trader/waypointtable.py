@@ -144,10 +144,11 @@ class WaypointTable(gui.HexTable):
         super().setFrozenColumnVisualIndex(visualIndex)
 
         for row in range(self.rowCount()):
-            self._createBerthingCheckBox(
-                row=row,
-                column=column,
-                checked=row in checkedRows)
+            if self.world(row):
+                self._insertBerthingCheckBox(
+                    row=row,
+                    column=column,
+                    checked=row in checkedRows)
 
     def saveContent(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -210,7 +211,16 @@ class WaypointTable(gui.HexTable):
                     tableItem = QtWidgets.QTableWidgetItem()
                     tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (hex, world))
                     self.setItem(row, column, tableItem)
-                    self._createBerthingCheckBox(row=row, column=column, checked=False)
+
+                    # The row might already have a check box if the row has
+                    # previously had content and is just being updated (e.g
+                    # in the case of a universe change). If this is the case
+                    # then just leave it with its current check state
+                    checkBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(row, column)
+                    if world is not None and checkBox is None:
+                        self._insertBerthingCheckBox(row=row, column=column, checked=False)
+                    elif world is None and checkBox is not None:
+                        self.removeCellWidget(row, column)
 
             # Take note of the sort column item so we can determine which row index after the table
             # has been sorted
@@ -236,16 +246,12 @@ class WaypointTable(gui.HexTable):
 
         return super()._createToolTip(item)
 
-    def _createBerthingCheckBox(
+    def _insertBerthingCheckBox(
             self,
             row: int,
             column: int,
             checked: bool
             ) -> None:
-        world = self.world(row)
-        if not world:
-            return # Don't create check box for dead space
-
         checkBox = _BerthingCheckWidget()
         checkBox.setChecked(checked)
         checkBox.clicked.connect(self._berthingCheckboxClicked)
@@ -271,7 +277,7 @@ class WaypointTable(gui.HexTable):
                 if newRowCheckBox:
                     newRowCheckBox.setChecked(newRowIsChecked)
                 else:
-                    self._createBerthingCheckBox(newRow, column, checked=newRowIsChecked)
+                    self._insertBerthingCheckBox(newRow, column, checked=newRowIsChecked)
             elif newRowCheckBox:
                 self.removeCellWidget(newRow, column)
 
@@ -280,7 +286,7 @@ class WaypointTable(gui.HexTable):
                 if oldRowCheckBox:
                     oldRowCheckBox.setChecked(oldRowIsChecked)
                 else:
-                    self._createBerthingCheckBox(oldRow, column, checked=oldRowIsChecked)
+                    self._insertBerthingCheckBox(oldRow, column, checked=oldRowIsChecked)
             elif oldRowCheckBox:
                 self.removeCellWidget(oldRow, column)
 
