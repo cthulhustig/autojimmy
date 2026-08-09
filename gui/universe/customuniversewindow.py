@@ -206,7 +206,6 @@ class CustomUniverseWindow(gui.WindowWidget):
             currentPos = currentSelection[0] if currentSelection else None
             if currentPos != newPos:
                 self._mapWidget.selectSector(newPos)
-                self._mapWidget.centerOnSector(newPos)
         else:
             self._mapWidget.clearSelection()
 
@@ -354,6 +353,7 @@ class CustomUniverseWindow(gui.WindowWidget):
                 command=azathoth.ReplaceSectorCommand(
                     oldSector=oldSector,
                     newSector=newSector))
+            self._sectorTable.setCurrentSector(newSector)
             self._syncActionState()
         except Exception as ex:
             message = 'An error occurred when importing the sector.'
