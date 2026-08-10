@@ -2143,14 +2143,14 @@ class MapWidgetEx(QtWidgets.QWidget):
             if event.key() == QtCore.Qt.Key.Key_Escape:
                 if self._fullScreenButton.isChecked():
                     self._fullScreenButton.setChecked(False)
-                event.accept()
-                return
+                    event.accept()
+                    return
             elif event.key() == QtCore.Qt.Key.Key_C:
                 hex = self._searchWidget.currentHex()
                 if hex:
                     self.centerOnHex(hex=hex)
-                event.accept()
-                return
+                    event.accept()
+                    return
             elif event.key() == QtCore.Qt.Key.Key_H: # Copied from Traveller Map
                 self.gotoHomePosition()
                 event.accept()
@@ -2178,6 +2178,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 return
             elif event.key() == QtCore.Qt.Key.Key_W:
                 self._infoButton.toggle()
+                event.accept()
                 return
 
         super().keyPressEvent(event)

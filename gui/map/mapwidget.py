@@ -284,7 +284,9 @@ class _MoveKeyTracker(object):
 
     def keyDown(self, event: QtGui.QKeyEvent) -> bool:
         key = event.key()
-        if key in _MoveKeyTracker._TrackedKeys:
+        # NOTE: Only start tracking on unmodified keys. This prevents it
+        # incorrectly swallowing keyboard shortcuts
+        if key in _MoveKeyTracker._TrackedKeys and event.modifiers() == QtCore.Qt.KeyboardModifier.NoModifier:
             if not event.isAutoRepeat():
                 self._trackedKeys.add(key)
             return True
@@ -292,6 +294,8 @@ class _MoveKeyTracker(object):
 
     def keyUp(self, event: QtGui.QKeyEvent) -> bool:
         key = event.key()
+        # NOTE: We intentionally don't check modifiers here as we want to stop
+        # tracking the key as soon as it's released
         if key in _MoveKeyTracker._TrackedKeys:
             if not event.isAutoRepeat():
                 if key in self._trackedKeys:
