@@ -1,5 +1,6 @@
 import app
 import astronomer
+import azathoth
 import cartographer
 import common
 import gui
@@ -92,6 +93,11 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         self.setLayout(layout)
 
         self._syncContent()
+
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
 
     def universe(self) -> astronomer.Universe:
         return self._universe
@@ -206,6 +212,16 @@ class _RegionSelectWidget(QtWidgets.QWidget):
             index = self._subsectorComboBox.findUserData(subsectorCode)
             if index >= 0:
                 self._subsectorComboBox.setCurrentIndex(index)
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != self._universe.id():
+            return
+
+        self._syncContent()
 
 class _HexSearchRadiusWidget(QtWidgets.QWidget):
     showCenterHex = QtCore.pyqtSignal(astronomer.HexPosition)
@@ -396,6 +412,11 @@ class WorldSearchWindow(gui.WindowWidget):
         self.setLayout(windowLayout)
 
         app.Config.instance().configChanged.connect(self._appConfigChanged)
+
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -1086,3 +1107,13 @@ class WorldSearchWindow(gui.WindowWidget):
             html=_WelcomeMessage,
             noShowAgainId='WorldSearchWelcome')
         message.exec()
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != astronomer.WorldManager.instance().universe().id():
+            return
+
+        self._clearResults()

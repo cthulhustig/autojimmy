@@ -20,7 +20,6 @@ import typing
 #   - Trade goods may have become invalid, probably need to clear them
 # - TraderWindow
 #   - Stop trade option job if in progress (in pre-update)
-# - WorldSearchWindow
 
 
 class UniverseEditor(object):
