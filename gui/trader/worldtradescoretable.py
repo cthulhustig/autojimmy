@@ -175,13 +175,15 @@ class WorldTradeScoreTable(gui.HexTable):
             ) -> int:
         world = self._universe.worldByPosition(hex=hex)
 
-        # Always generate the trade score for a world if they aren't in the maps, even if those
-        # columns aren't being displayed. We want them to be available if the get function is called
-        if world and (hex not in self._tradeScoreMap):
+        if world is not None:
+            # There is a world so generate an up-to-date trade score for it. Previously
+            # calculated trade scores are replaced as the world details may have changed
             self._tradeScoreMap[hex] = logic.TradeScore(
                 rules=self._rules,
                 world=world,
                 tradeGoods=self._tradeGoods)
+        elif world is None and hex in self._tradeScoreMap:
+            del self._tradeScoreMap[hex]
 
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns
         # have been updated

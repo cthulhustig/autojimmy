@@ -20,10 +20,8 @@ import typing
 #   - Trade goods may have become invalid, probably need to clear them
 # - TraderWindow
 #   - Stop trade option job if in progress (in pre-update)
-# - WorldComparisonWindow
 # - WorldSearchWindow
-# - WorldTradeScoreTable
-#   - Trade scores will need recalculated
+
 
 class UniverseEditor(object):
     _UndoStackSize = 4 # TODO: This should be a lot higher
