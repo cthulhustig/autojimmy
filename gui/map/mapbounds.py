@@ -398,7 +398,7 @@ class RenderBoundsCalculator(object):
     def calculateBounds(
             self,
             objects: typing.Collection[typing.Union[astronomer.Sector, astronomer.World]],
-            scale: float
+            linearScale: float
             ) -> typing.Optional[cartographer.RectangleF]:
         if self._renderer is None:
             self._createRenderer()
@@ -418,7 +418,7 @@ class RenderBoundsCalculator(object):
 
         self._selector.setObjects(objects)
         try:
-            self._renderer.renderUniverse(scale=scale)
+            self._renderer.renderUniverse(linearScale=linearScale)
             return self._graphics.bounds()
         finally:
             self._selector.setObjects(None)

@@ -186,7 +186,7 @@ class RenderContext(object):
             self,
             worldCenterX: float,
             worldCenterY: float,
-            scale: float,
+            linearScale: float,
             outputPixelWidth: int,
             outputPixelHeight: int,
             clipRect: typing.Optional[typing.Tuple[int, int, int, int]] = None
@@ -194,7 +194,7 @@ class RenderContext(object):
         self._updateView(
             worldCenterX=worldCenterX,
             worldCenterY=worldCenterY,
-            scale=scale,
+            scale=linearScale,
             outputPixelWidth=outputPixelWidth,
             outputPixelHeight=outputPixelHeight,
             clipRect=clipRect)
@@ -203,12 +203,12 @@ class RenderContext(object):
 
     def renderUniverse(
             self,
-            scale: float
+            linearScale: float
             ) -> None:
-        scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
-        scaleUpdated = scale != self._scale
+        linearScale = common.clamp(linearScale, RenderContext._MinScale, RenderContext._MaxScale)
+        scaleUpdated = linearScale != self._scale
 
-        self._scale = scale
+        self._scale = linearScale
         self._styleSheet.scale = self._scale
 
         self._worldOutputRect = cartographer.RectangleF(

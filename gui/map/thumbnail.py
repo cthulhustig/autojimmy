@@ -48,7 +48,7 @@ def generateThumbnail(
         renderer.renderArea(
             worldCenterX=centerX,
             worldCenterY=centerY,
-            scale=linearScale,
+            linearScale=linearScale,
             outputPixelWidth=width,
             outputPixelHeight=height)
     finally:

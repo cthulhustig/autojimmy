@@ -387,7 +387,7 @@ class _TileCache(object):
                 str, # Universe id
                 int, # Tile Center X (World Space)
                 int, # Tile Center Y (World Space)
-                int, # Tile Scale
+                int, # Tile Scale (Log scale rounded down)
                 cartographer.MapStyle,
                 int], # MapOptions as an int
             _MapTile](capacity=capacity)
@@ -404,7 +404,7 @@ class _TileCache(object):
             universeId: str,
             tileX: int,
             tileY: int,
-            tileScale: int,
+            tileScale: int, # Log scale rounded down
             mapStyle: cartographer.MapStyle,
             mapOptions: cartographer.RenderOptions,
             worldRect: cartographer.RectangleF,
@@ -418,7 +418,7 @@ class _TileCache(object):
             universeId: str,
             tileX: int,
             tileY: int,
-            tileScale: int,
+            tileScale: int, # Log scale rounded down
             mapStyle: cartographer.MapStyle,
             mapOptions: cartographer.RenderOptions
             ) -> QtGui.QImage:
@@ -504,7 +504,9 @@ class _TileCache(object):
                 # calculated but the result was None
                 invalidRect = scaleToInvalidRectMap.get(tileScale, -1)
                 if invalidRect == -1:
-                    invalidRect = sizer.calculateBounds(objects=objects, scale=tileScale)
+                    invalidRect = sizer.calculateBounds(
+                        objects=objects,
+                        linearScale=gui.logScaleToLinearScale(tileScale))
                     scaleToInvalidRectMap[tileScale] = invalidRect
 
                 if invalidRect:
@@ -1264,25 +1266,30 @@ class MapWidget(QtWidgets.QWidget):
                     self._keyboardMovementTimer.start()
                 event.accept()
                 return
-            elif event.key() == QtCore.Qt.Key.Key_Z:
-                self._zoomView(
-                    step=MapWidget._KeyboardZoomDelta if not gui.isShiftKeyDown() else -MapWidget._KeyboardZoomDelta)
-                event.accept()
-                return
-            elif event.key() == QtCore.Qt.Key.Key_Plus or event.key() == QtCore.Qt.Key.Key_Equal:
-                self._zoomView(step=MapWidget._KeyboardZoomDelta)
-                event.accept()
-                return
-            elif event.key() == QtCore.Qt.Key.Key_Minus:
-                self._zoomView(step=-MapWidget._KeyboardZoomDelta)
-                event.accept()
-                return
-            elif event.key() == QtCore.Qt.Key.Key_Escape:
-                if self._boxZoomWorldAnchor is not None:
-                    # Cancel box zoom
-                    self._boxZoomWorldAnchor = None
-                    self._leftMouseDownPosition = None # Mouse release shouldn't be counted as a click
-                    self.update() # Trigger redraw
+            elif event.modifiers() == QtCore.Qt.KeyboardModifier.NoModifier:
+                if event.key() == QtCore.Qt.Key.Key_Z:
+                    self._zoomView(step=MapWidget._KeyboardZoomDelta)
+                    event.accept()
+                    return
+                elif event.key() == QtCore.Qt.Key.Key_Plus or event.key() == QtCore.Qt.Key.Key_Equal:
+                    self._zoomView(step=MapWidget._KeyboardZoomDelta)
+                    event.accept()
+                    return
+                elif event.key() == QtCore.Qt.Key.Key_Minus:
+                    self._zoomView(step=-MapWidget._KeyboardZoomDelta)
+                    event.accept()
+                    return
+                elif event.key() == QtCore.Qt.Key.Key_Escape:
+                    if self._boxZoomWorldAnchor is not None:
+                        # Cancel box zoom
+                        self._boxZoomWorldAnchor = None
+                        self._leftMouseDownPosition = None # Mouse release shouldn't be counted as a click
+                        self.update() # Trigger redraw
+                        event.accept()
+                        return
+            elif event.modifiers() == QtCore.Qt.KeyboardModifier.ShiftModifier:
+                if event.key() == QtCore.Qt.Key.Key_Z:
+                    self._zoomView(step=-MapWidget._KeyboardZoomDelta)
                     event.accept()
                     return
 
@@ -1462,7 +1469,7 @@ class MapWidget(QtWidgets.QWidget):
                 self._renderer.renderArea(
                     worldCenterX=self._viewCenter.x(),
                     worldCenterY=self._viewCenter.y(),
-                    scale=self._viewScale.linear,
+                    linearScale=self._viewScale.linear,
                     outputPixelWidth=self.width(),
                     outputPixelHeight=self.height(),
                     clipRect=clipRect)
@@ -2182,7 +2189,7 @@ class MapWidget(QtWidgets.QWidget):
             worldRect = self._renderer.renderArea(
                 worldCenterX=worldTileCenterX,
                 worldCenterY=worldTileCenterY,
-                scale=tileScale,
+                linearScale=tileScale,
                 outputPixelWidth=MapWidget._TileSize,
                 outputPixelHeight=MapWidget._TileSize)
         finally:
