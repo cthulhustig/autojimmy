@@ -59,42 +59,42 @@ class ImportSectorDialog(gui.DialogEx):
             settings=self._settings,
             key='RecentDirectory',
             type=str)
-        if storedValue:
+        if storedValue is not None:
             self._recentDirectoryPath = storedValue
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='SectorFilePath',
             type=str)
-        if storedValue:
+        if storedValue is not None:
             self._sectorFileLineEdit.setText(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='MetadataFilePath',
             type=str)
-        if storedValue:
+        if storedValue is not None:
             self._metadataFileLineEdit.setText(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='RegenerateTradeCodes',
             type=bool)
-        if storedValue:
+        if storedValue is not None:
             self._regenerateTradeCodesCheckBox.setChecked(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='TradeCodeRules',
             type=QtCore.QByteArray)
-        if storedValue:
+        if storedValue is not None:
             self._tradeCodeRulesComboBox.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='ShowImportReport',
             type=bool)
-        if storedValue:
+        if storedValue is not None:
             self._showConversionReportCheckBox.setChecked(storedValue)
 
         self._settings.endGroup()
