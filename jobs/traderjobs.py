@@ -95,7 +95,7 @@ class TraderJobBase(QtCore.QThread):
         shouldYield = (self._lastYieldTime == None) or \
             ((now - self._lastYieldTime) >= self._yieldDelta)
         if shouldYield:
-            time.sleep(0.01)
+            time.sleep(0.05)
             self._lastYieldTime = now
 
 class SingleWorldTraderJob(TraderJobBase):

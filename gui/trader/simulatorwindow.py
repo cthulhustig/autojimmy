@@ -914,7 +914,7 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _stopSimulator(self) -> None:
         if self._simulatorJob:
-            self._simulatorJob.cancel()
+            self._simulatorJob.cancel(block=True)
             self._simulatorJob = None
         self._runSimulationButton.showPrimaryText()
 

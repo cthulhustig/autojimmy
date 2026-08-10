@@ -1,5 +1,6 @@
 import app
 import astronomer
+import azathoth
 import common
 import gui
 import jobs
@@ -68,6 +69,11 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._traderJob: typing.Optional[jobs.TraderJobBase] = None
 
         app.Config.instance().configChanged.connect(self._appConfigChanged)
+        azathoth.UniverseEditor.instance().addPreUpdateObserver(self._preUniverseUpdate)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._preUniverseUpdate)
+        app.Config.instance().configChanged.disconnect(self._appConfigChanged)
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -106,8 +112,7 @@ class _BaseTraderWindow(gui.WindowWidget):
 
     def closeEvent(self, e: QtGui.QCloseEvent):
         if self._traderJob:
-            self._traderJob.cancel(block=True)
-            self._traderJob = None
+            self._cancelTraderJob()
         return super().closeEvent(e)
 
     def _setupConfigurationControls(self) -> None:
@@ -466,9 +471,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionCountLabel.setNum(self._tradeOptionsTable.rowCount())
 
     def _clearTradeOptions(self) -> None:
-        if self._traderJob:
-            self._traderJob.cancel()
-            self._traderJob = None
+        self._cancelTraderJob()
         self._tradeOptionsTable.removeAllRows()
         self._progressLabel.clear()
         self._tradeOptionCountLabel.clear()
@@ -692,7 +695,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             ) -> None:
         self._progressLabel.setText(common.formatNumber(optionsProcessed) + '/' + common.formatNumber(optionsToProcess))
 
-    def _traderJobStart(self) -> None:
+    def _startTraderJob(self) -> None:
         if not self._traderJob:
             return
 
@@ -709,6 +712,13 @@ class _BaseTraderWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _cancelTraderJob(self) -> None:
+        if self._traderJob:
+            self._traderJob.cancel(block=True)
+            self._traderJob = None
+        self._calculateTradeOptionsButton.showPrimaryText()
+        self._enableDisableControls()
 
     def _traderJobFinished(self, result: typing.Union[str, Exception]) -> None:
         if isinstance(result, Exception):
@@ -754,6 +764,25 @@ class _BaseTraderWindow(gui.WindowWidget):
     def _showWelcomeMessage(self) -> None:
         # This should be implemented by the derived class
         assert(False)
+
+    def _preUniverseUpdate(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != astronomer.WorldManager.instance().universe().id():
+            return
+
+        # Cancel any in progress the trader job if the universe is going to
+        # change. This MUST be done in the pre-update handler to avoid issues
+        # due to the job running in a worker thread.
+        self._cancelTraderJob()
+
+        # Trade options are calculated based on the universe state at a point
+        # in time, so if the universe changes the trade options may become
+        # incorrect/invalid. It's not really realistic to determine if they're
+        # still valid so the best we can do is clear them
+        self._clearTradeOptions()
 
 
 # █████   ███   █████                    ████      █████    ███████████                         █████
@@ -2092,7 +2121,7 @@ class WorldTraderWindow(_BaseTraderWindow):
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:
             # A trade option job is already running so cancel it
-            self._traderJob.cancel()
+            self._cancelTraderJob()
             return
 
         if self._speculativeCargoTable.isEmpty() and \
@@ -2280,7 +2309,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._enableDisableControls()
 
         # Start job after a delay to give the ui time to update
-        QtCore.QTimer.singleShot(200, self._traderJobStart)
+        QtCore.QTimer.singleShot(200, self._startTraderJob)
 
     def _createCargoManifest(self) -> None:
         speculativeCargoLookup = set(self._speculativeCargoTable.cargoRecords())
@@ -2757,7 +2786,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:
             # A trade option job is already running so cancel it
-            self._traderJob.cancel()
+            self._cancelTraderJob()
             return
 
         if self._availableFundsSpinBox.value() <= 0:
@@ -2944,7 +2973,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._enableDisableControls()
 
         # Start job after a delay to give the ui time to update
-        QtCore.QTimer.singleShot(200, self._traderJobStart)
+        QtCore.QTimer.singleShot(200, self._startTraderJob)
 
     def _createCargoManifest(self) -> None:
         if self._tradeOptionsTable.isEmpty():
