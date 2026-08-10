@@ -162,9 +162,11 @@ class WorldTradeScoreTable(gui.HexTable):
             ) -> typing.Optional[str]:
         columnType = self.columnHeader(item.column())
         if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
-            return gui.createPurchaseTradeScoreToolTip(self.tradeScore(item.row()))
+            tradeScore = self.tradeScore(item.row())
+            return gui.createPurchaseTradeScoreToolTip(tradeScore) if tradeScore else None
         elif columnType == WorldTradeScoreTableColumnType.SaleScore:
-            return gui.createSaleTradeScoreToolTip(self.tradeScore(item.row()))
+            tradeScore = self.tradeScore(item.row())
+            return gui.createSaleTradeScoreToolTip(tradeScore) if tradeScore else None
 
         return super()._createToolTip(item=item)
 
