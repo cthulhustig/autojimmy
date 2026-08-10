@@ -14,12 +14,11 @@ import typing
 #   - Stop jump route job if in progress (in pre-update)
 # - PurchaseCalculatorWindow
 # - SaleCalculatorWindow
-# - SimulatorWindow
-#   - Stop sim job if in progress (in pre-update)
 # - TradeOptionTable
 #   - Trade goods may have become invalid, probably need to clear them
 # - TraderWindow
 #   - Stop trade option job if in progress (in pre-update)
+#   - Possibly clear existing results
 
 
 class UniverseEditor(object):

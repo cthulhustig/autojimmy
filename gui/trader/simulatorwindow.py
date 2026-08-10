@@ -1,5 +1,6 @@
 import app
 import astronomer
+import azathoth
 import cartographer
 import common
 import gui
@@ -156,6 +157,11 @@ class SimulatorWindow(gui.WindowWidget):
         self.setLayout(windowLayout)
 
         app.Config.instance().configChanged.connect(self._appConfigChanged)
+
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._preUniverseUpdate)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._preUniverseUpdate)
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -933,3 +939,16 @@ class SimulatorWindow(gui.WindowWidget):
             html=_WelcomeMessage,
             noShowAgainId='SimulatorWelcome')
         message.exec()
+
+    def _preUniverseUpdate(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != astronomer.WorldManager.instance().universe().id():
+            return
+
+        # Stop the simulator if the universe is going to change. This MUST
+        # be done in the pre-update handler to avoid issues due to the
+        # simulation running in a worker thread.
+        self._stopSimulator()
