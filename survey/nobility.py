@@ -1,7 +1,9 @@
 import common
 import typing
 
-_ValidNobilityCodes = set([
+# NOTE: Use ordered set to hold valid strings as they may get listed in
+# error messages a validate* function fails
+_ValidNobilityCodes = common.OrderedSet([
     'B', # Knight
     'c', # Baronet
     'C', # Baron
@@ -44,13 +46,6 @@ def formatSystemNobilityString(
     # sort is done on the upper/lower case-ness (so 'c' is before 'C')
     return ''.join(sorted(validCodes, key=lambda c: (c.lower(), c.isupper())))
 
-def _validateNobility(
-        name: str,
-        value: str
-        ) -> None:
-    if value is not None and value.upper() not in _ValidNobilityCodes:
-        raise ValueError(f'{name} must be a valid nobility code')
-
 def validateNobility(
         name: str,
         value: typing.Optional[str],
@@ -60,4 +55,4 @@ def validateNobility(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=_validateNobility)
+        allowedValues=_ValidNobilityCodes)

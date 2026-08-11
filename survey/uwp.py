@@ -3,16 +3,19 @@ import re
 import typing
 
 _UWPPattern = re.compile(r'^\s*([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])-([0-9A-Za-z?])\s*$')
-_ValidStarportCodes = set(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'X', 'Y'])
-_ValidWorldSizeCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'])
-_ValidAtmosphereCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'])
-_ValidHydrographicsCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A'])
-_ValidPopulationCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'])
-_ValidGovernmentCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+
+# NOTE: Use ordered set to hold valid strings as they may get listed in
+# error messages a validate* function fails
+_ValidStarportCodes = common.OrderedSet(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'X', 'Y'])
+_ValidWorldSizeCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'])
+_ValidAtmosphereCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'])
+_ValidHydrographicsCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A'])
+_ValidPopulationCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'])
+_ValidGovernmentCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
                              'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'W', 'X'])
-_ValidLawLevelCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+_ValidLawLevelCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
                            'G', 'H', 'J', 'K', 'L', 'S'])
-_ValidTechLevelCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+_ValidTechLevelCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
                             'G', 'H', 'J', 'K', 'L'])
 
 def _processParsedCode(
@@ -107,15 +110,6 @@ def formatSystemUWPString(
         lawLevel=_processFormatCode(code=lawLevel, allowed=_ValidLawLevelCodes, name='Law Level', reporter=reporter),
         techLevel=_processFormatCode(code=techLevel, allowed=_ValidTechLevelCodes, name='Tech Level', reporter=reporter))
 
-def _validateUWPElement(
-        name: str,
-        value: str,
-        element: str,
-        allowed: typing.Collection[str],
-        ) -> None:
-    if value is not None and value not in allowed:
-        raise ValueError(f'{name} must be a valid UWP {element} code')
-
 def validateStarport(
         name: str,
         value: typing.Optional[str],
@@ -125,11 +119,7 @@ def validateStarport(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateUWPElement(
-            name=name,
-            value=value,
-            element='Starport',
-            allowed=_ValidStarportCodes))
+        allowedValues=_ValidStarportCodes)
 
 def validateWorldSize(
         name: str,
@@ -140,11 +130,7 @@ def validateWorldSize(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateUWPElement(
-            name=name,
-            value=value,
-            element='World Size',
-            allowed=_ValidWorldSizeCodes))
+        allowedValues=_ValidWorldSizeCodes)
 
 def validateAtmosphere(
         name: str,
@@ -155,11 +141,7 @@ def validateAtmosphere(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateUWPElement(
-            name=name,
-            value=value,
-            element='Atmosphere',
-            allowed=_ValidAtmosphereCodes))
+        allowedValues=_ValidAtmosphereCodes)
 
 def validateHydrographics(
         name: str,
@@ -170,11 +152,7 @@ def validateHydrographics(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateUWPElement(
-            name=name,
-            value=value,
-            element='Hydrographics',
-            allowed=_ValidHydrographicsCodes))
+        allowedValues=_ValidHydrographicsCodes)
 
 def validatePopulation(
         name: str,
@@ -185,11 +163,7 @@ def validatePopulation(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateUWPElement(
-            name=name,
-            value=value,
-            element='Population',
-            allowed=_ValidPopulationCodes))
+        allowedValues=_ValidPopulationCodes)
 
 def validateGovernment(
         name: str,
@@ -200,11 +174,7 @@ def validateGovernment(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateUWPElement(
-            name=name,
-            value=value,
-            element='Government',
-            allowed=_ValidGovernmentCodes))
+        allowedValues=_ValidGovernmentCodes)
 
 def validateLawLevel(
         name: str,
@@ -215,11 +185,7 @@ def validateLawLevel(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateUWPElement(
-            name=name,
-            value=value,
-            element='Law Level',
-            allowed=_ValidLawLevelCodes))
+        allowedValues=_ValidLawLevelCodes)
 
 def validateTechLevel(
         name: str,
@@ -230,8 +196,4 @@ def validateTechLevel(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateUWPElement(
-            name=name,
-            value=value,
-            element='Tech Level',
-            allowed=_ValidTechLevelCodes))
+        allowedValues=_ValidTechLevelCodes)

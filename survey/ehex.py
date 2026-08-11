@@ -58,13 +58,6 @@ def ehexFromInteger(
 def ehexCodeMap() -> typing.Mapping[str, int]:
     return _ExtendedHexToIntegerMap
 
-def _validateExtendedHex(
-        name: str,
-        value: str
-        ) -> None:
-    if value is not None and value not in _ExtendedHexToIntegerMap:
-        raise ValueError(f'{name} must be a valid eHex code')
-
 def validateExtendedHex(
         name: str,
         value: typing.Optional[str],
@@ -74,4 +67,4 @@ def validateExtendedHex(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=_validateExtendedHex)
+        allowedValues=_ExtendedHexToIntegerMap.keys())

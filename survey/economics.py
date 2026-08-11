@@ -10,10 +10,13 @@ import typing
 # - Treats ? as a valid value for each attribute
 # - Requires a +/- on the the 4th (Efficiency) attribute (except if it's a ?)
 _EconomicsPattern = re.compile(r'^\s*(?:\(\s*(?:([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])(?:([+-][0-9])|(?:[+-]?([?]))))?\s*\)|([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])(?:([+-][0-9])|(?:[+-]?([?]))))\s*$')
-_ValidResourcesCodes = set(['2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J'])
-_ValidLabourCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'])
-_ValidInfrastructureCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])
-_ValidEfficiencyCodes = set(['-5', '-4', '-3',  '-2', '-1', '+0', '+1', '+2', '+3', '+4', '+5'])
+
+# NOTE: Use ordered set to hold valid strings as they may get listed in
+# error messages a validate* function fails
+_ValidResourcesCodes = common.OrderedSet(['2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J'])
+_ValidLabourCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'])
+_ValidInfrastructureCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])
+_ValidEfficiencyCodes = common.OrderedSet(['-5', '-4', '-3',  '-2', '-1', '+0', '+1', '+2', '+3', '+4', '+5'])
 
 def _processParsedCode(
         code: typing.Optional[str], # Can be None if parsed string is just a empty set of brackets
@@ -82,15 +85,6 @@ def formatSystemEconomicsString(
         infrastructure=_processFormatCode(code=infrastructure, allowed=_ValidInfrastructureCodes, name='Infrastructure', reporter=reporter),
         efficiency=_processFormatCode(code=efficiency, allowed=_ValidEfficiencyCodes, name='Efficiency', reporter=reporter))
 
-def _validateEconomicsElement(
-        name: str,
-        value: str,
-        element: str,
-        allowed: typing.Collection[str],
-        ) -> None:
-    if value is not None and value not in allowed:
-        raise ValueError(f'{name} must be a valid economics {element} code')
-
 def validateResources(
         name: str,
         value: typing.Optional[str],
@@ -100,11 +94,7 @@ def validateResources(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateEconomicsElement(
-            name=name,
-            value=value,
-            element='Resources',
-            allowed=_ValidResourcesCodes))
+        allowedValues=_ValidResourcesCodes)
 
 def validateLabour(
         name: str,
@@ -115,11 +105,7 @@ def validateLabour(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateEconomicsElement(
-            name=name,
-            value=value,
-            element='Labour',
-            allowed=_ValidLabourCodes))
+        allowedValues=_ValidLabourCodes)
 
 def validateInfrastructure(
         name: str,
@@ -130,11 +116,7 @@ def validateInfrastructure(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateEconomicsElement(
-            name=name,
-            value=value,
-            element='Infrastructure',
-            allowed=_ValidInfrastructureCodes))
+        allowedValues=_ValidInfrastructureCodes)
 
 def validateEfficiency(
         name: str,
@@ -145,8 +127,4 @@ def validateEfficiency(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateEconomicsElement(
-            name=name,
-            value=value,
-            element='Efficiency',
-            allowed=_ValidEfficiencyCodes))
+        allowedValues=_ValidEfficiencyCodes)

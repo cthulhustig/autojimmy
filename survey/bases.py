@@ -7,7 +7,9 @@ import typing
 # I've gone with the approach of using a super set of them all, where there
 # are conflicts, going with the 5th edition definition.
 
-_ValidBaseCodes = set([
+# NOTE: Use ordered set to hold valid strings as they may get listed in
+# error messages a validate* function fails
+_ValidBaseCodes = common.OrderedSet([
     'A', # Imperial Naval Base _AND_ Imperial Scout Base
     'B', # Imperial Naval Base _AND_ Way Station
     'C', # Vargr Corsair Base
@@ -63,13 +65,6 @@ def formatSystemBasesString(
 
     return ''.join(sorted(validCodes))
 
-def _validateBase(
-        name: str,
-        value: str
-        ) -> None:
-    if value is not None and value not in _ValidBaseCodes:
-        raise ValueError(f'{name} must be a valid base code')
-
 def validateBase(
         name: str,
         value: typing.Optional[str],
@@ -79,4 +74,4 @@ def validateBase(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=_validateBase)
+        allowedValues=_ValidBaseCodes)

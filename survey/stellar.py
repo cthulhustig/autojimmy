@@ -9,9 +9,12 @@ import typing
 # The additional (\S+) at the end matches unrecognised data so it
 # can be handled if required
 _StellarPattern = re.compile(r'([OBAFGKM][0-9])\s*(D|Ia|Ib|III|II|IV|VII|VI|V||)|(D[OBAFGKM]?)|(BD|BH|NS|PSR)|(\S+)')
-_ValidLuminosityClasses = set(['D', 'Ia', 'Ib', 'III', 'II', 'IV', 'VII', 'VI', 'V', 'BD', 'BH', 'NS', 'PSR'])
-_ValidSpectralClasses = set(['O', 'B', 'A', 'F', 'G', 'K', 'M'])
-_ValidSpectralScales = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+
+# NOTE: Use ordered set to hold valid strings as they may get listed in
+# error messages a validate* function fails
+_ValidLuminosityClasses = common.OrderedSet(['D', 'Ia', 'Ib', 'III', 'II', 'IV', 'VII', 'VI', 'V', 'BD', 'BH', 'NS', 'PSR'])
+_ValidSpectralClasses = common.OrderedSet(['O', 'B', 'A', 'F', 'G', 'K', 'M'])
+_ValidSpectralScales = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
 
 def parseSystemStellarString(
         string: str,
@@ -89,15 +92,6 @@ def formatSystemStellarString(
                 luminosityClass=luminosityClass)
     return string
 
-def _validateStellarElement(
-        name: str,
-        value: str,
-        element: str,
-        allowed: typing.Collection[str],
-        ) -> None:
-    if value is not None and value not in allowed:
-        raise ValueError(f'{name} must be a valid stellar {element} code')
-
 def validateLuminosityClass(
         name: str,
         value: typing.Optional[str],
@@ -107,11 +101,7 @@ def validateLuminosityClass(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateStellarElement(
-            name=name,
-            value=value,
-            element='Luminosity Class',
-            allowed=_ValidLuminosityClasses))
+        allowedValues=_ValidLuminosityClasses)
 
 def validateSpectralClass(
         name: str,
@@ -122,11 +112,7 @@ def validateSpectralClass(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateStellarElement(
-            name=name,
-            value=value,
-            element='Spectral Class',
-            allowed=_ValidSpectralClasses))
+        allowedValues=_ValidSpectralClasses)
 
 def validateSpectralScale(
         name: str,
@@ -137,8 +123,4 @@ def validateSpectralScale(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateStellarElement(
-            name=name,
-            value=value,
-            element='Spectral Scale',
-            allowed=_ValidSpectralScales))
+        allowedValues=_ValidSpectralScales)

@@ -5,13 +5,6 @@ import logging
 import threading
 import typing
 
-# TODO: Need to have controls other than map subscribe to be notified when changes
-# occur and update their state when they do
-# - PurchaseCalculatorWindow
-# - SaleCalculatorWindow
-
-
-
 class UniverseEditor(object):
     _UndoStackSize = 4 # TODO: This should be a lot higher
 

@@ -1,7 +1,9 @@
 import common
 import typing
 
-_ValidZoneCodes = set(['G', 'A', 'R', 'B', 'U', 'F'])
+# NOTE: Use ordered set to hold valid strings as they may get listed in
+# error messages a validate* function fails
+_ValidZoneCodes = common.OrderedSet(['G', 'A', 'R', 'B', 'U', 'F'])
 
 def parseSystemZoneString(
         zone: str,
@@ -33,13 +35,6 @@ def formatSystemZoneString(
 
     return checkZone
 
-def _validateZone(
-        name: str,
-        value: str
-        ) -> None:
-    if value is not None and value not in _ValidZoneCodes:
-        raise ValueError(f'{name} must be a valid zone code')
-
 def validateZone(
         name: str,
         value: typing.Optional[str],
@@ -49,6 +44,4 @@ def validateZone(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateZone(
-            name=name,
-            value=value))
+        allowedValues=_ValidZoneCodes)

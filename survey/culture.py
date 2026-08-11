@@ -9,10 +9,13 @@ import typing
 # - Doesn't match strings that are only white space
 # - Treats ? as a valid value for each attribute
 _CulturePattern = re.compile(r'^\s*(?:\[\s*(?:([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?]))?\s*\]|([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?]))\s*$')
-_ValidHeterogeneityCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G'])
-_ValidAcceptanceCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'])
-_ValidStrangenessCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A'])
-_ValidSymbolsCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L'])
+
+# NOTE: Use ordered set to hold valid strings as they may get listed in
+# error messages a validate* function fails
+_ValidHeterogeneityCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G'])
+_ValidAcceptanceCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'])
+_ValidStrangenessCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A'])
+_ValidSymbolsCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L'])
 
 def _processParsedCode(
         code: typing.Optional[str], # Can be None if parsed string is just a empty set of brackets
@@ -81,15 +84,6 @@ def formatSystemCultureString(
         strangeness=_processFormatCode(code=strangeness, allowed=_ValidStrangenessCodes, name='Strangeness', reporter=reporter),
         symbols=_processFormatCode(code=symbols, allowed=_ValidSymbolsCodes, name='Symbols', reporter=reporter))
 
-def _validateCultureElement(
-        name: str,
-        value: str,
-        element: str,
-        allowed: typing.Collection[str],
-        ) -> None:
-    if value is not None and value not in allowed:
-        raise ValueError(f'{name} must be a valid culture {element} code')
-
 def validateHeterogeneity(
         name: str,
         value: typing.Optional[str],
@@ -99,11 +93,7 @@ def validateHeterogeneity(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateCultureElement(
-            name=name,
-            value=value,
-            element='Heterogeneity',
-            allowed=_ValidHeterogeneityCodes))
+        allowedValues=_ValidHeterogeneityCodes)
 
 def validateAcceptance(
         name: str,
@@ -114,11 +104,7 @@ def validateAcceptance(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateCultureElement(
-            name=name,
-            value=value,
-            element='Acceptance',
-            allowed=_ValidAcceptanceCodes))
+        allowedValues=_ValidAcceptanceCodes)
 
 def validateStrangeness(
         name: str,
@@ -129,11 +115,7 @@ def validateStrangeness(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateCultureElement(
-            name=name,
-            value=value,
-            element='Strangeness',
-            allowed=_ValidStrangenessCodes))
+        allowedValues=_ValidStrangenessCodes)
 
 def validateSymbols(
         name: str,
@@ -144,8 +126,4 @@ def validateSymbols(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateCultureElement(
-            name=name,
-            value=value,
-            element='Symbols',
-            allowed=_ValidSymbolsCodes))
+        allowedValues=_ValidSymbolsCodes)

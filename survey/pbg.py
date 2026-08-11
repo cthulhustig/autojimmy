@@ -3,10 +3,13 @@ import re
 import typing
 
 _PBGPattern = re.compile(r'^\s*([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])\s*$')
-# NOTE: Technically 0 is not a valid option, but, it's allowed as higher level code
-# should interpret it as 1 (as per the Traveller Map second survey documentation)
-_ValidPopulationMultiplierCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
-_ValidPlanetoidBeltsCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+# NOTE: Use ordered set to hold valid strings as they may get listed in
+# error messages a validate* function fails
+# NOTE: Technically 0 is not a valid population multiplier, but, it's allowed as
+# higher level code should interpret it as 1 (as per the Traveller Map second
+# survey documentation)
+_ValidPopulationMultiplierCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+_ValidPlanetoidBeltsCodes = common.OrderedSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
                                 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']) # Any valid ehex
 _ValidGasGiantsCodes = _ValidPlanetoidBeltsCodes
 
@@ -91,15 +94,6 @@ def formatSystemPBGString(
         belts=_processFormatCode(code=planetoidBelts, allowed=_ValidPlanetoidBeltsCodes, name='Planetoid Belts', reporter=reporter),
         giants=_processFormatCode(code=gasGiants, allowed=_ValidGasGiantsCodes, name='Gas Giants', reporter=reporter))
 
-def _validatePBGElement(
-        name: str,
-        value: str,
-        element: str,
-        allowed: typing.Collection[str],
-        ) -> None:
-    if value is not None and value not in allowed:
-        raise ValueError(f'{name} must be a valid PBG {element} code')
-
 def validatePopulationMultiplier(
         name: str,
         value: typing.Optional[str],
@@ -109,11 +103,7 @@ def validatePopulationMultiplier(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validatePBGElement(
-            name=name,
-            value=value,
-            element='PopulationMultiplier',
-            allowed=_ValidPopulationMultiplierCodes))
+        allowedValues=_ValidPopulationMultiplierCodes)
 
 def validatePlanetoidBelts(
         name: str,
@@ -124,11 +114,7 @@ def validatePlanetoidBelts(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validatePBGElement(
-            name=name,
-            value=value,
-            element='Planetoid Belts',
-            allowed=_ValidPlanetoidBeltsCodes))
+        allowedValues=_ValidPlanetoidBeltsCodes)
 
 def validateGasGiants(
         name: str,
@@ -139,8 +125,4 @@ def validateGasGiants(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validatePBGElement(
-            name=name,
-            value=value,
-            element='Gas Giants',
-            allowed=_ValidGasGiantsCodes))
+        allowedValues=_ValidGasGiantsCodes)

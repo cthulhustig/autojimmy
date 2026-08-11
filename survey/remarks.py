@@ -8,7 +8,9 @@ import typing
 
 # All Trade codes
 _TradeCodePattern = re.compile(r'^(Ag|As|Ba|De|Fl|Ga|Hi|Ht|Ic|In|Lo|Lt|Na|Ni|Po|Ri|Va|Wa|Az|Rz|Co|Fr|Ho|Tr|Tu|Pa|Pi|Pr|He|Lk|Oc|Tz|Cp|Cs|Cx|Cy|Di|Ph|Fa|Mi|Mr|Pe|Px|Re|Ab|An|Ax|Da|Fo|Pz|Rs|Sa|Xb)$') # Argument gives trade code
-_ValidTradeCodes = set([
+# NOTE: Use ordered set to hold valid strings as they may get listed in
+# error messages a validate* function fails
+_ValidTradeCodes = common.OrderedSet([
     'Ag', 'As', 'Ba', 'De', 'Fl', 'Ga', 'Hi', 'Ht', 'Ic', 'In',
     'Lo', 'Lt', 'Na', 'Ni', 'Po', 'Ri', 'Va', 'Wa', 'Az', 'Rz',
     'Co', 'Fr', 'Ho', 'Tr', 'Tu', 'Pa', 'Pi', 'Pr', 'He', 'Lk',
@@ -43,7 +45,7 @@ _MilitaryRulePattern = re.compile(r'^Mr\(\s*([0-9A-Za-z\-\']{1,4})\s*\)$')
 # 'T' == Theta
 # 'O' == Omicron
 _ResearchStationPattern = re.compile(r'^Rs([ABGDEZHTO]?)$')
-_ValidResearchStations = set(['A', 'B', 'G', 'D', 'E', 'Z', 'H', 'T', 'O'])
+_ValidResearchStations = common.OrderedSet(['A', 'B', 'G', 'D', 'E', 'Z', 'H', 'T', 'O'])
 
 # Owning System: "O:####" or "O:XXXX-####" where XXXX is the system abbreviation
 # or current system if not specified and #### is the hex in sector coordinates.
@@ -518,15 +520,6 @@ def formatSystemRemarksString(
 
     return ' '.join(remarks)
 
-def _validateRemarkString(
-        name: str,
-        value: str,
-        element: str,
-        allowed: typing.Collection[str]
-        ) -> None:
-    if value is not None and value not in allowed:
-        raise ValueError(f'{name} must be a valid {element}')
-
 def validateTradeCode(
         name: str,
         value: typing.Optional[str],
@@ -536,11 +529,7 @@ def validateTradeCode(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateRemarkString(
-            name=name,
-            value=value,
-            element='Trade Code',
-            allowed=_ValidTradeCodes))
+        allowedValues=_ValidTradeCodes)
 
 def validateResearchStation(
         name: str,
@@ -551,11 +540,7 @@ def validateResearchStation(
         name=name,
         value=value,
         allowNone=allowNone,
-        validationFn=lambda name, value: _validateRemarkString(
-            name=name,
-            value=value,
-            element='Research Station',
-            allowed=_ValidResearchStations))
+        allowedValues=_ValidResearchStations)
 
 def validateSophontPercentage(
         name: str,

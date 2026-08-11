@@ -155,7 +155,7 @@ class DbWorldObject(DbObject):
 
         self._worldId = worldId
 
-    def worldId(self) -> None:
+    def worldId(self) -> typing.Optional[str]:
         return self._worldId
 
     # NOTE: Setting the id back to None is intentionally disallowed as the only
