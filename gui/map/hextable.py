@@ -401,11 +401,19 @@ class HexTable(gui.FrozenColumnListTable):
 
     def setHexes(
             self,
-            hexes: typing.Iterable[astronomer.HexPosition]
+            hexes: typing.Collection[astronomer.HexPosition]
             ) -> None:
-        self.removeAllRows()
-        for hex in hexes:
-            self.addHex(hex)
+        # Disable sorting while adding multiple rows then sort once after they've
+        # all been added
+        sortingEnabled = self.isSortingEnabled()
+        self.setSortingEnabled(False)
+
+        try:
+            self.setRowCount(len(hexes))
+            for row, hex in enumerate(hexes):
+                self._fillRow(row, hex)
+        finally:
+            self.setSortingEnabled(sortingEnabled)
 
     def addHex(
             self,
@@ -415,7 +423,7 @@ class HexTable(gui.FrozenColumnListTable):
 
     def addHexes(
             self,
-            hexes: typing.Iterable[astronomer.HexPosition]
+            hexes: typing.Collection[astronomer.HexPosition]
             ) -> None:
         # Disable sorting while inserting multiple rows then sort once after they've
         # all been added
@@ -423,8 +431,10 @@ class HexTable(gui.FrozenColumnListTable):
         self.setSortingEnabled(False)
 
         try:
-            for hex in hexes:
-                self.insertHex(self.rowCount(), hex)
+            oldCount = self.rowCount()
+            self.setRowCount(oldCount + len(hexes))
+            for offset, hex in enumerate(hexes):
+                self._fillRow(oldCount + offset, hex)
         finally:
             self.setSortingEnabled(sortingEnabled)
 

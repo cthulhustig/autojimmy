@@ -1311,7 +1311,7 @@ class FrozenColumnListTable(ListTable):
             if oldData != newData:
                 frozenItem.setData(role, newData)
 
-    def _hideColumnAction(self, action):
+    def _hideColumnAction(self, action: QtWidgets.QAction) -> None:
         super()._userHideColumnAction(action)
 
         index = action.data()

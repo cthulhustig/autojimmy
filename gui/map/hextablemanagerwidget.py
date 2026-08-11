@@ -269,7 +269,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def addHexes(
             self,
-            hexes: typing.Iterable[astronomer.HexPosition]
+            hexes: typing.Collection[astronomer.HexPosition]
             ) -> None:
         if self._allowHexCallback:
             filteredHexes: typing.List[astronomer.HexPosition] = []
