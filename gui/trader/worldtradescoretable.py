@@ -52,8 +52,8 @@ class WorldTradeScoreTable(gui.HexTable):
             taggingColours=taggingColours,
             columns=columns)
 
-        self._tradeGoods = set()
-        self._tradeScoreMap = {}
+        self._tradeGoods: typing.Set[logic.TradeGood] = set()
+        self._hexToTradeScoreMap: typing.Dict[astronomer.HexPosition, typing.Optional[logic.TradeScore]] = {}
 
         action = QtWidgets.QAction('Show Calculations...', self)
         action.setEnabled(False) # No selection
@@ -95,16 +95,31 @@ class WorldTradeScoreTable(gui.HexTable):
             row: int
             ) -> typing.Optional[logic.TradeScore]:
         hex = self.hex(row)
-        return self._tradeScoreMap.get(hex)
+        if hex is None:
+            return None
+        # NOTE: Use -1 to check for no entry in the map as None is
+        # a valid entry if the hex has no world in it.
+        tradeScore = self._hexToTradeScoreMap.get(hex, -1)
+        if tradeScore == -1:
+            tradeScore = self._cacheTradeScore(hex)
+        return tradeScore
 
     def removeRow(self, row: int):
         hex = self.hex(row)
-        if hex in self._tradeScoreMap:
-            del self._tradeScoreMap[hex]
+        if hex in self._hexToTradeScoreMap:
+            # NOTE: The hex could be in the table multiple times and we're only removing
+            # one of them so deleting the trade score isn't the obvious thing to do here.
+            # However, in practice it's rare for tables to have the same hex in them
+            # multiple times. Rather than check the full table every time a hex is removed
+            # or add some other method of tracking when the trade score is no longer
+            # required, we just delete the trade score on the assumption it isn't needed
+            # any more, if it turns it we were wrong then it will just be recalculated
+            # when it's next needed.
+            del self._hexToTradeScoreMap[hex]
         super().removeRow(row)
 
     def removeAllRows(self) -> None:
-        self._tradeScoreMap.clear()
+        self._hexToTradeScoreMap.clear()
         super().removeAllRows()
 
     def showSelectedCalculations(self) -> None:
@@ -175,17 +190,10 @@ class WorldTradeScoreTable(gui.HexTable):
             row: int,
             hex: astronomer.HexPosition
             ) -> int:
-        world = self._universe.worldByPosition(hex=hex)
-
-        if world is not None:
-            # There is a world so generate an up-to-date trade score for it. Previously
-            # calculated trade scores are replaced as the world details may have changed
-            self._tradeScoreMap[hex] = logic.TradeScore(
-                rules=self._rules,
-                world=world,
-                tradeGoods=self._tradeGoods)
-        elif world is None and hex in self._tradeScoreMap:
-            del self._tradeScoreMap[hex]
+        tradeScore = self._hexToTradeScoreMap.get(hex, -1)
+        if tradeScore == -1:
+            tradeScore = self._cacheTradeScore(hex)
+        world = tradeScore.world() if tradeScore is not None else None
 
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns
         # have been updated
@@ -200,14 +208,13 @@ class WorldTradeScoreTable(gui.HexTable):
                 tableItem = None
                 if columnType == WorldTradeScoreTableColumnType.PurchaseScore or \
                         columnType == WorldTradeScoreTableColumnType.SaleScore:
-                    if world:
-                        tradeScore: logic.TradeScore = self._tradeScoreMap[hex]
+                    if tradeScore:
                         if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
-                            tradeScore = tradeScore.totalPurchaseScore()
+                            columnScore = tradeScore.totalPurchaseScore()
                         else:
-                            tradeScore = tradeScore.totalSaleScore()
+                            columnScore = tradeScore.totalSaleScore()
                         tableItem = gui.FormattedNumberTableWidgetItem(
-                            value=tradeScore,
+                            value=columnScore,
                             alwaysIncludeSign=True)
                     else:
                         # Dead space has no trade score
@@ -228,10 +235,22 @@ class WorldTradeScoreTable(gui.HexTable):
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
 
+    def _cacheTradeScore(self, hex: astronomer.HexPosition) -> logic.TradeScore:
+        world = self._universe.worldByPosition(hex=hex)
+        tradeScore = None
+        if world is not None:
+            tradeScore = logic.TradeScore(
+                rules=self._rules,
+                world=world,
+                tradeGoods=self._tradeGoods)
+
+        self._hexToTradeScoreMap[hex] = tradeScore
+        return tradeScore
+
     def _syncContent(self):
         # Clear the trade score map so the scores will be recalculated when the
         # underlying table triggers a refill of all rows as part of the sync
-        self._tradeScoreMap.clear()
+        self._hexToTradeScoreMap.clear()
         return super()._syncContent()
 
     def _syncWorldTradeScoreTableActions(self) -> None:
