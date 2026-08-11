@@ -7,18 +7,9 @@ import typing
 
 # TODO: Need to have controls other than map subscribe to be notified when changes
 # occur and update their state when they do
-# - CargoManifestTable
-# - CargoRecordTable
-# - JumpRouteWindow
-#   - Clear jump route
-#   - Stop jump route job if in progress (in pre-update)
 # - PurchaseCalculatorWindow
 # - SaleCalculatorWindow
-# - TradeOptionTable
-#   - Trade goods may have become invalid, probably need to clear them
-# - TraderWindow
-#   - Stop trade option job if in progress (in pre-update)
-#   - Possibly clear existing results
+
 
 
 class UniverseEditor(object):

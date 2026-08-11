@@ -761,10 +761,13 @@ class JumpRouteWindow(gui.WindowWidget):
         self._enableDisableControls()
 
         app.Config.instance().configChanged.connect(self._appConfigChanged)
-        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._preUniverseUpdate)
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._postUniverseUpdate)
 
     def __del__(self) -> None:
-        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
+        app.Config.instance().configChanged.disconnect(self._appConfigChanged)
+        azathoth.UniverseEditor.instance().removeObserver(self._preUniverseUpdate)
+        azathoth.UniverseEditor.instance().removeObserver(self._postUniverseUpdate)
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -960,9 +963,7 @@ class JumpRouteWindow(gui.WindowWidget):
         return super().firstShowEvent(e)
 
     def closeEvent(self, e: QtGui.QCloseEvent):
-        if self._jumpRouteJob:
-            self._jumpRouteJob.cancel(block=True)
-            self._jumpRouteJob = None
+        self._cancelJumpRouteJob()
         return super().closeEvent(e)
 
     def eventFilter(
@@ -1430,10 +1431,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._plannedRouteGroupBox.setLayout(routeLayout)
 
     def _clearJumpRoute(self):
-        if self._jumpRouteJob:
-            self._jumpRouteJob.cancel()
-            self._jumpRouteJob = None
-
+        self._cancelJumpRouteJob()
         self._jumpRouteTable.removeAllRows()
         self._refuellingPlanTable.removeAllRows()
         self._processedRoutesLabel.clear()
@@ -1604,7 +1602,7 @@ class JumpRouteWindow(gui.WindowWidget):
     def _calculateJumpRoute(self) -> None:
         if self._jumpRouteJob:
             # A trade option job is already running so cancel it
-            self._jumpRouteJob.cancel()
+            self._cancelJumpRouteJob()
             return
 
         self._clearJumpRoute()
@@ -1786,9 +1784,9 @@ class JumpRouteWindow(gui.WindowWidget):
         self._enableDisableControls()
 
         # Start job after a delay to give the ui time to update
-        QtCore.QTimer.singleShot(200, self._jumpRouteJobStart)
+        QtCore.QTimer.singleShot(200, self._startJumpRouteJob)
 
-    def _jumpRouteJobStart(self) -> None:
+    def _startJumpRouteJob(self) -> None:
         if not self._jumpRouteJob:
             return
 
@@ -1805,6 +1803,16 @@ class JumpRouteWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _cancelJumpRouteJob(self) -> None:
+        if self._jumpRouteJob is None:
+            return
+
+        self._jumpRouteJob.cancel(block=True)
+        self._jumpRouteJob = None
+
+        self._calculateRouteButton.showPrimaryText()
+        self._enableDisableControls()
 
     def _jumpRouteJobProgressUpdate(self, routeCount: int) -> None:
         self._processedRoutesLabel.setNum(routeCount)
@@ -2653,7 +2661,20 @@ class JumpRouteWindow(gui.WindowWidget):
             noShowAgainId='JumpRouteWelcome')
         message.exec()
 
-    def _universeChanged(
+    def _preUniverseUpdate(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != astronomer.WorldManager.instance().universe().id():
+            return
+
+        # Cancel any in progress the route job if the universe is going to
+        # change. This MUST be done in the pre-update handler to avoid issues
+        # due to the job running in a worker thread.
+        self._cancelJumpRouteJob()
+
+    def _postUniverseUpdate(
             self,
             universe: azathoth.EditableUniverse,
             changeEvent: azathoth.ChangeEvent

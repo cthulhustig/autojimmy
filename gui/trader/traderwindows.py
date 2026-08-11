@@ -72,8 +72,8 @@ class _BaseTraderWindow(gui.WindowWidget):
         azathoth.UniverseEditor.instance().addPreUpdateObserver(self._preUniverseUpdate)
 
     def __del__(self) -> None:
-        azathoth.UniverseEditor.instance().removeObserver(self._preUniverseUpdate)
         app.Config.instance().configChanged.disconnect(self._appConfigChanged)
+        azathoth.UniverseEditor.instance().removeObserver(self._preUniverseUpdate)
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -111,8 +111,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         super().firstShowEvent(e)
 
     def closeEvent(self, e: QtGui.QCloseEvent):
-        if self._traderJob:
-            self._cancelTraderJob()
+        self._cancelTraderJob()
         return super().closeEvent(e)
 
     def _setupConfigurationControls(self) -> None:
@@ -714,9 +713,12 @@ class _BaseTraderWindow(gui.WindowWidget):
                 exception=ex)
 
     def _cancelTraderJob(self) -> None:
-        if self._traderJob:
-            self._traderJob.cancel(block=True)
-            self._traderJob = None
+        if self._traderJob is None:
+            return
+
+        self._traderJob.cancel(block=True)
+        self._traderJob = None
+
         self._calculateTradeOptionsButton.showPrimaryText()
         self._enableDisableControls()
 
