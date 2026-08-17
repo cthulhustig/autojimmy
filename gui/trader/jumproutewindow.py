@@ -2376,7 +2376,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
                 worlds = universe.worldsInRadius(
                     center=startHex,
-                    searchRadius=jumpRating,
+                    radius=jumpRating,
                     # Don't highlight start/finish worlds
                     filterCallback=lambda world: (world.hex() != startHex) and (world.hex() != finishHex))
 

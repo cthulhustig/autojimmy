@@ -1038,7 +1038,7 @@ class WorldSearch(object):
             maxResults: int = 1000
             ) -> typing.Iterable[astronomer.World]:
         results = []
-        for sector in universe.yieldSectors():
+        for sector in universe.sectors():
             self._searchWorlds(
                 universe=universe,
                 worlds=sector.worlds(),
@@ -1081,7 +1081,7 @@ class WorldSearch(object):
         filterCallback = lambda world: self.checkWorld(universe=universe, world=world, rules=rules, tagging=tagging)
         return universe.worldsInRadius(
             center=centerHex,
-            searchRadius=searchRadius,
+            radius=searchRadius,
             filterCallback=filterCallback)
 
     def _searchWorlds(

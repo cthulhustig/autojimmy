@@ -1,7 +1,7 @@
 import astronomer
 import common
-import re
 import math
+import re
 import typing
 
 class Universe(object):
@@ -76,13 +76,27 @@ class Universe(object):
             self,
             filterCallback: typing.Callable[[astronomer.Sector], bool] = None
             ) -> typing.List[astronomer.Sector]:
-        return list(self.yieldSectors(filterCallback=filterCallback))
+        if filterCallback is None:
+            return list(self._positionToSectorMap.values())
+        else:
+            sectors = []
+            for sector in self._positionToSectorMap.values():
+                if filterCallback(sector):
+                    sectors.append(sector)
+            return sector
 
     def worlds(
             self,
             filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.List[astronomer.World]:
-        return list(self.yieldWorlds(filterCallback=filterCallback))
+        if filterCallback is None:
+            return list(self._positionToWorldMap.values())
+        else:
+            worlds = []
+            for world in self._positionToWorldMap.values():
+                if filterCallback(world):
+                    worlds.append(world)
+            return worlds
 
     def worldsByWorldRef(
             self,
@@ -131,10 +145,32 @@ class Universe(object):
             lowerRight: astronomer.HexPosition,
             filterCallback: typing.Callable[[astronomer.Sector], bool] = None
             ) -> typing.List[astronomer.Sector]:
-        return list(self.yieldSectorsInArea(
-            upperLeft=upperLeft,
-            lowerRight=lowerRight,
-            filterCallback=filterCallback))
+        startX, finishX = common.minmax(upperLeft.sectorX(), lowerRight.sectorX())
+        startY, finishY = common.minmax(upperLeft.sectorY(), lowerRight.sectorY())
+        sectors = []
+
+        if filterCallback is None:
+            x = startX
+            while x <= finishX:
+                y = startY
+                while y <= finishY:
+                    sector = self._positionToSectorMap.get((x, y))
+                    if sector:
+                        sectors.append(sector)
+                    y += 1
+                x += 1
+        else:
+            x = startX
+            while x <= finishX:
+                y = startY
+                while y <= finishY:
+                    sector = self._positionToSectorMap.get((x, y))
+                    if sector and filterCallback(sector):
+                        sectors.append(sector)
+                    y += 1
+                x += 1
+
+        return sectors
 
     def worldsInArea(
             self,
@@ -142,30 +178,125 @@ class Universe(object):
             lowerRight: astronomer.HexPosition,
             filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.List[astronomer.World]:
-        return list(self.yieldWorldsInArea(
-            upperLeft=upperLeft,
-            lowerRight=lowerRight,
-            filterCallback=filterCallback))
+        startX, finishX = common.minmax(upperLeft.absoluteX(), lowerRight.absoluteX())
+        startY, finishY = common.minmax(upperLeft.absoluteY(), lowerRight.absoluteY())
+
+        worlds = []
+        if filterCallback is None:
+            x = startX
+            while x <= finishX:
+                y = startY
+                while y <= finishY:
+                    key = (x, y)
+                    world = self._positionToWorldMap.get(key)
+                    if world:
+                        worlds.append(world)
+                    y += 1
+                x += 1
+        else:
+            x = startX
+            while x <= finishX:
+                y = startY
+                while y <= finishY:
+                    key = (x, y)
+                    world = self._positionToWorldMap.get(key)
+                    if world and filterCallback(world):
+                        worlds.append(world)
+                    y += 1
+                x += 1
+
+        return worlds
 
     def worldsInRadius(
             self,
             center: astronomer.HexPosition,
-            searchRadius: int,
+            radius: int,
             filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.List[astronomer.World]:
-        return list(self.yieldWorldsInRadius(
-            center=center,
-            radius=searchRadius,
-            filterCallback=filterCallback))
+        minLength = radius + 1
+        maxLength = (radius * 2) + 1
+        deltaLength = int(math.floor((maxLength - minLength) / 2))
+
+        centerX, centerY = center.absolute()
+        startX = centerX - radius
+        finishX = centerX + radius
+        startY = (centerY - radius) + deltaLength
+        finishY = (centerY + radius) - deltaLength
+        if (startX & 0b1) != 0:
+            startY += 1
+            if (radius & 0b1) != 0:
+                finishY -= 1
+        else:
+            if (radius & 0b1) != 0:
+                startY += 1
+            finishY -= 1
+
+        worlds = []
+        if filterCallback is None:
+            for x in range(startX, finishX + 1):
+                if (x & 0b1) != 0:
+                    if x <= centerX:
+                        startY -= 1
+                    else:
+                        finishY -= 1
+                else:
+                    if x <= centerX:
+                        finishY += 1
+                    else:
+                        startY += 1
+
+                for y in range(startY, finishY + 1):
+                    world = self._positionToWorldMap.get((x, y))
+                    if world:
+                        worlds.append(world)
+        else:
+            for x in range(startX, finishX + 1):
+                if (x & 0b1) != 0:
+                    if x <= centerX:
+                        startY -= 1
+                    else:
+                        finishY -= 1
+                else:
+                    if x <= centerX:
+                        finishY += 1
+                    else:
+                        startY += 1
+
+                for y in range(startY, finishY + 1):
+                    world = self._positionToWorldMap.get((x, y))
+                    if world and filterCallback(world):
+                        worlds.append(world)
+
+        return worlds
 
     def worldsInFlood(
             self,
             hex: astronomer.HexPosition,
             filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.List[astronomer.World]:
-        return list(self.yieldWorldsInFlood(
-            hex=hex,
-            filterCallback=filterCallback))
+        world = self._positionToWorldMap.get(hex.absolute())
+        if not world:
+            return []
+
+        worlds = []
+        if not filterCallback or filterCallback(world):
+            worlds.append(world)
+
+        todo = [world]
+        seen = set(todo)
+        while todo:
+            world = todo.pop(0)
+            hex = world.hex()
+            for edge in astronomer.HexEdge:
+                adjacentHex = hex.neighbour(edge=edge)
+                adjacentWorld = self._positionToWorldMap.get(adjacentHex.absolute())
+                if adjacentWorld and (adjacentWorld not in seen):
+                    todo.append(adjacentWorld)
+                    seen.add(adjacentWorld)
+
+                    if not filterCallback or filterCallback(adjacentWorld):
+                        worlds.append(adjacentWorld)
+        return worlds
 
     def entityById(
             self,
@@ -326,133 +457,6 @@ class Universe(object):
 
         return main
 
-    def yieldSectors(
-            self,
-            filterCallback: typing.Callable[[astronomer.Sector], bool] = None
-            ) -> typing.Generator[astronomer.Sector, None, None]:
-        for sector in self._positionToSectorMap.values():
-            if not filterCallback or filterCallback(sector):
-                yield sector
-
-    def yieldSectorsInArea(
-            self,
-            upperLeft: astronomer.HexPosition,
-            lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.Sector], bool] = None
-            ) -> typing.Generator[astronomer.Sector, None, None]:
-        startX, finishX = common.minmax(upperLeft.sectorX(), lowerRight.sectorX())
-        startY, finishY = common.minmax(upperLeft.sectorY(), lowerRight.sectorY())
-
-        x = startX
-        while x <= finishX:
-            y = startY
-            while y <= finishY:
-                key = (x, y)
-                sector = self._positionToSectorMap.get(key)
-                if sector and (not filterCallback or filterCallback(sector)):
-                    yield sector
-                y += 1
-            x += 1
-
-    def yieldWorlds(
-            self,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None
-            ) -> typing.Generator[astronomer.World, None, None]:
-        for world in self._positionToWorldMap.values():
-            if not filterCallback or filterCallback(world):
-                yield world
-
-    def yieldWorldsInArea(
-            self,
-            upperLeft: astronomer.HexPosition,
-            lowerRight: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None
-            ) -> typing.Generator[astronomer.World, None, None]:
-        startX, finishX = common.minmax(upperLeft.absoluteX(), lowerRight.absoluteX())
-        startY, finishY = common.minmax(upperLeft.absoluteY(), lowerRight.absoluteY())
-
-        x = startX
-        while x <= finishX:
-            y = startY
-            while y <= finishY:
-                key = (x, y)
-                world = self._positionToWorldMap.get(key)
-                if world and ((not filterCallback) or filterCallback(world)):
-                    yield world
-                y += 1
-            x += 1
-
-    def yieldWorldsInRadius(
-            self,
-            center: astronomer.HexPosition,
-            radius: int,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None
-            ) -> typing.Generator[astronomer.World, None, None]:
-        minLength = radius + 1
-        maxLength = (radius * 2) + 1
-        deltaLength = int(math.floor((maxLength - minLength) / 2))
-
-        centerX, centerY = center.absolute()
-        startX = centerX - radius
-        finishX = centerX + radius
-        startY = (centerY - radius) + deltaLength
-        finishY = (centerY + radius) - deltaLength
-        if (startX & 0b1) != 0:
-            startY += 1
-            if (radius & 0b1) != 0:
-                finishY -= 1
-        else:
-            if (radius & 0b1) != 0:
-                startY += 1
-            finishY -= 1
-        for x in range(startX, finishX + 1):
-            if (x & 0b1) != 0:
-                if x <= centerX:
-                    startY -= 1
-                else:
-                    finishY -= 1
-            else:
-                if x <= centerX:
-                    finishY += 1
-                else:
-                    startY += 1
-
-            for y in range(startY, finishY + 1):
-                key = (x, y)
-                world = self._positionToWorldMap.get(key)
-                if world and ((not filterCallback) or filterCallback(world)):
-                    yield world
-
-    def yieldWorldsInFlood(
-            self,
-            hex: astronomer.HexPosition,
-            filterCallback: typing.Callable[[astronomer.World], bool] = None
-            ) -> typing.Generator[astronomer.World, None, None]:
-        key = hex.absolute()
-        world = self._positionToWorldMap.get(key)
-        if not world:
-            return
-
-        if not filterCallback or filterCallback(world):
-            yield world
-
-        todo = [world]
-        seen = set(todo)
-        while todo:
-            world = todo.pop(0)
-            hex = world.hex()
-            for edge in astronomer.HexEdge:
-                adjacentHex = hex.neighbour(edge=edge)
-
-                key = adjacentHex.absolute()
-                adjacentWorld = self._positionToWorldMap.get(key)
-                if adjacentWorld and (adjacentWorld not in seen):
-                    todo.append(adjacentWorld)
-                    seen.add(adjacentWorld)
-
-                    if not filterCallback or filterCallback(adjacentWorld):
-                        yield adjacentWorld
-
     def hasRoutes(
             self,
             hex: astronomer.HexPosition
@@ -464,31 +468,20 @@ class Universe(object):
             self,
             hex: astronomer.HexPosition
             ) -> typing.List[astronomer.Route]:
-        return list(self.yieldRouteByPosition(hex=hex))
-
-    def yieldRouteByPosition(
-            self,
-            hex: astronomer.HexPosition
-            ) -> typing.Generator[astronomer.Route, None, None]:
         routes = self._positionToRoutesMap.get(hex.absolute())
-        if routes:
-            for route in routes:
-                yield route
+        if not routes:
+            return []
+        return list(routes)
 
     def connectedWorlds(
             self,
             hex: astronomer.HexPosition
             ) -> typing.List[astronomer.World]:
-        return list(self.yieldConnectedWorlds(hex=hex))
-
-    def yieldConnectedWorlds(
-            self,
-            hex: astronomer.HexPosition
-            ) -> typing.Generator[astronomer.World, None, None]:
         routes = self._positionToRoutesMap.get(hex.absolute())
         if not routes:
-            return
+            return []
 
+        worlds = []
         for route in routes:
             connectedHex = None
             if hex != route.startHex():
@@ -499,7 +492,8 @@ class Universe(object):
             if connectedHex:
                 connectedWorld = self._positionToWorldMap.get(connectedHex.absolute())
                 if connectedWorld:
-                    yield connectedWorld
+                    worlds.append(connectedWorld)
+        return worlds
 
     def labels(self) -> typing.Collection[astronomer.MapLabel]:
         return common.ConstCollectionRef(self._labels)
@@ -551,8 +545,7 @@ class Universe(object):
             sectors.add(sector)
 
         for world in sector.worlds():
-            hex = world.hex()
-            self._positionToWorldMap[hex.absolute()] = world
+            self._positionToWorldMap[world.hex().absolute()] = world
 
         for route in sector.routes():
             for hex in [route.startHex(), route.endHex()]:
@@ -599,8 +592,7 @@ class Universe(object):
                 sectors.discard(sector)
 
         for world in sector.worlds():
-            hex = world.hex()
-            self._positionToWorldMap.pop(hex.absolute(), None)
+            self._positionToWorldMap.pop(world.hex().absolute(), None)
 
         for route in sector.routes():
             for hex in [route.startHex(), route.endHex()]:

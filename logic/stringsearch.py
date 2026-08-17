@@ -29,7 +29,7 @@ def _findSectorWorlds(
         fnmatch.translate(searchString),
         re.IGNORECASE)
 
-    for sector in universe.yieldSectors():
+    for sector in universe.sectors():
         isMatch = expression.match(sector.name())
 
         if not isMatch:
@@ -70,7 +70,7 @@ def _findSubsectorWorlds(
         fnmatch.translate(searchString),
         re.IGNORECASE)
 
-    for sector in universe.yieldSectors():
+    for sector in universe.sectors():
         for subsectorCode in astronomer.SubsectorCodes:
             subsectorName = sector.subsectorName(subsectorCode)
             if not subsectorName:
@@ -184,7 +184,7 @@ def searchForWorlds(
         worldFilter = _createWorldFilter(
             searchString=searchString,
             seenWorlds=seenWorlds)
-        searchWorlds = universe.yieldWorlds(
+        searchWorlds = universe.worlds(
             filterCallback=worldFilter)
 
     matches.extend(_sortResults(universe=universe, worlds=searchWorlds))

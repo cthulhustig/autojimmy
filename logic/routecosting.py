@@ -302,7 +302,7 @@ class StrictXBoatCostCalculator(logic.JumpCostCalculatorInterface):
             ) -> typing.Tuple[
                 typing.Optional[float], # Cost from current to next world
                 typing.Any]: # New cost context
-        for routeWorld in self._universe.yieldConnectedWorlds(hex=currentHex):
+        for routeWorld in self._universe.connectedWorlds(hex=currentHex):
             if routeWorld.hex() == nextHex:
                 return (1, None)
 

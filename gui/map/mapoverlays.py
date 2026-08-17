@@ -292,7 +292,7 @@ class HexRadiusMapOverlay(gui.MapOverlay):
         self._center = center
         self._radius = radius
         self._overlay = HexMapOverlay(
-            hexes=center.yieldRadiusHexes(radius=radius, includeInterior=False),
+            hexes=center.radiusHexes(radius=radius, includeInterior=False),
             includeInterior=False,
             depth=depth,
             lineColour=lineColour,
@@ -309,7 +309,7 @@ class HexRadiusMapOverlay(gui.MapOverlay):
             ) -> None:
         self._center = center
         self._overlay.setHexes(
-            hexes=self._center.yieldRadiusHexes(radius=self._radius, includeInterior=False))
+            hexes=self._center.radiusHexes(radius=self._radius, includeInterior=False))
 
     def radius(self) -> int:
         return self._radius
@@ -320,7 +320,7 @@ class HexRadiusMapOverlay(gui.MapOverlay):
             ) -> None:
         self._radius = radius
         self._overlay.setHexes(
-            hexes=self._center.yieldRadiusHexes(radius=self._radius, includeInterior=False))
+            hexes=self._center.radiusHexes(radius=self._radius, includeInterior=False))
 
     def draw(
             self,

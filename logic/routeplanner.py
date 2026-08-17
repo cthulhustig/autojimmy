@@ -464,7 +464,7 @@ class RoutePlanner(object):
             if progressCallback:
                 progressCallback(closedRoutes, False) # Search isn't finished
 
-            potentialsIterator = self._yieldPotentialHexes(
+            potentialsIterator = self._findPotentialHexes(
                 routingType=routingType,
                 universe=universe,
                 currentNode=currentNode,
@@ -543,7 +543,7 @@ class RoutePlanner(object):
 
         return None # No route found
 
-    def _yieldPotentialHexes(
+    def _findPotentialHexes(
             self,
             routingType: RoutingType,
             universe: astronomer.Universe,
@@ -562,7 +562,7 @@ class RoutePlanner(object):
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator],
             hexFilter: typing.Optional[HexFilterInterface] = None,
             filterResultCache: typing.Optional[typing.Dict[astronomer.HexPosition, bool]] = None
-            ) -> typing.Generator[
+            ) -> typing.List[
                 typing.Tuple[
                     astronomer.HexPosition, # Potential next hex
                     typing.Optional[astronomer.World], # World at hex
@@ -571,9 +571,9 @@ class RoutePlanner(object):
                     float, # Current best score for potential hex
                     int, # Current best fuel parsecs for potential hex
                     int, # Current best parsecs to target for potential hex
-                    int], # Max fuel remaining in tank if ship travels to hex
-                None,
-                None]:
+                    int]]: # Max fuel remaining in tank if ship travels to hex
+        potentials = []
+
         # IMPORTANT: When calculating the search radius it's important that it's
         # not clamped by the distance to the target. This might _seem_ like an
         # optimisation but for best cost route optimisation, if the target is a
@@ -605,14 +605,14 @@ class RoutePlanner(object):
             # but it should be handled
             searchRadius = min(searchRadius, shipParsecsWithoutRefuelling)
             if searchRadius <= 0:
-                return
+                return potentials
 
         currentHex = currentNode.hex()
         alreadyProcessed: typing.Optional[typing.Set[astronomer.HexPosition]] = None
         if routingType is RoutingType.DeadSpace:
             alreadyProcessed = set()
 
-        worldList = universe.yieldWorldsInRadius(
+        worldList = universe.worldsInRadius(
             center=currentHex,
             radius=searchRadius)
         for nearbyWorld in worldList:
@@ -695,7 +695,7 @@ class RoutePlanner(object):
                 if not isMatched:
                     continue # Hex has been excluded
 
-            yield (
+            potentials.append((
                 nearbyHex,
                 nearbyWorld,
                 nearbyParsecs,
@@ -703,7 +703,7 @@ class RoutePlanner(object):
                 nearbyHexBestScore,
                 nearbyHexBestFuelParsecs,
                 nearbyToTargetMinParsecs,
-                fuelParsecs)
+                fuelParsecs))
 
         if routingType is RoutingType.DeadSpace:
             nearbyParsecs = 1
@@ -726,7 +726,7 @@ class RoutePlanner(object):
                     # being set
                     break
 
-                for nearbyHex in currentHex.yieldRadiusHexes(radius=nearbyParsecs, includeInterior=False):
+                for nearbyHex in currentHex.radiusHexes(radius=nearbyParsecs, includeInterior=False):
                     isTarget = nearbyHex == targetHex
                     if isTarget:
                         hitTarget = True
@@ -762,7 +762,7 @@ class RoutePlanner(object):
                         if not isMatched:
                             continue # Hex has been excluded
 
-                    yield (
+                    potentials.append((
                         nearbyHex,
                         None, # We know this is dead space
                         nearbyParsecs,
@@ -770,7 +770,7 @@ class RoutePlanner(object):
                         nearbyHexBestScore,
                         nearbyHexBestFuelParsecs,
                         nearbyToTargetMinParsecs,
-                        fuelParsecs)
+                        fuelParsecs))
 
                 nearbyParsecs += 1
 
@@ -798,7 +798,7 @@ class RoutePlanner(object):
                         (fuelParsecs > nearbyHexBestFuelParsecs) or \
                         (targetHex not in closedSet)
                     if isBetter:
-                        yield (
+                        potentials.append((
                             targetHex,
                             None, # We know this is dead space
                             parsecsToTarget,
@@ -806,7 +806,9 @@ class RoutePlanner(object):
                             nearbyHexBestScore,
                             nearbyHexBestFuelParsecs,
                             nearbyToTargetMinParsecs,
-                            fuelParsecs)
+                            fuelParsecs))
+
+        return potentials
 
     def _finaliseRoute(
             self,

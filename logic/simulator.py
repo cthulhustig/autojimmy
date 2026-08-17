@@ -147,7 +147,7 @@ class Simulator(object):
             worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
             self._nearbyWorlds = self._universe.worldsInRadius(
                 center=self._currentHex,
-                searchRadius=self._searchRadius,
+                radius=self._searchRadius,
                 filterCallback=worldFilterCallback)
 
             # Buy something

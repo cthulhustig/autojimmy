@@ -227,8 +227,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 self._includeDeadSpaceCheckBox.isChecked()
 
             if includeDeadSpace:
-                for hex in centerHex.yieldRadiusHexes(radius=searchRadius):
-                    self._selectedHexes.append(hex)
+                self._selectedHexes.extend(centerHex.radiusHexes(radius=searchRadius))
 
                 overlay = gui.HexRadiusMapOverlay(
                     center=centerHex,
@@ -242,7 +241,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                     universe = self._mapWidget.universe()
                     worlds = universe.worldsInRadius(
                         center=centerHex,
-                        searchRadius=searchRadius)
+                        radius=searchRadius)
                     for world in worlds:
                         self._selectedHexes.append(world.hex())
                 except Exception as ex:

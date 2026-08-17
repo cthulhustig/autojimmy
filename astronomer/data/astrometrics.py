@@ -115,145 +115,6 @@ def clockwiseHexEdge(edge: HexEdge) -> HexEdge:
 def anticlockwiseHexEdge(edge: HexEdge) -> HexEdge:
     return _AnticlockwiseHexEdgeTransitions[edge]
 
-def neighbourAbsoluteHex(
-        origin: typing.Tuple[int, int],
-        edge: HexEdge
-        ) -> typing.Tuple[int, int]:
-    hexX = origin[0]
-    hexY = origin[1]
-    if edge == HexEdge.Top:
-        hexY -= 1
-    elif edge == HexEdge.TopRight:
-        hexY += 0 if (hexX % 2) else -1
-        hexX += 1
-    elif edge == HexEdge.BottomRight:
-        hexY += 1 if (hexX % 2) else 0
-        hexX += 1
-    elif edge == HexEdge.Bottom:
-        hexY += 1
-    elif edge == HexEdge.BottomLeft:
-        hexY += 1 if (hexX % 2) else 0
-        hexX -= 1
-    elif edge == HexEdge.TopLeft:
-        hexY += 0 if (hexX % 2) else -1
-        hexX -= 1
-    else:
-        raise ValueError('Invalid hex edge')
-    return (hexX, hexY)
-
-def neighbourRelativeHex(
-        origin: typing.Tuple[int, int, int, int],
-        edge: HexEdge
-        ) -> typing.Tuple[int, int, int, int]:
-    sectorX = origin[0]
-    sectorY = origin[1]
-    hexX = origin[2]
-    hexY = origin[3]
-
-    if edge == HexEdge.Top:
-        hexY -= 1
-    elif edge == HexEdge.TopRight:
-        hexY += -1 if (hexX % 2) else 0
-        hexX += 1
-    elif edge == HexEdge.BottomRight:
-        hexY += 0 if (hexX % 2) else 1
-        hexX += 1
-    elif edge == HexEdge.Bottom:
-        hexY += 1
-    elif edge == HexEdge.BottomLeft:
-        hexY += 0 if (hexX % 2) else 1
-        hexX -= 1
-    elif edge == HexEdge.TopLeft:
-        hexY += -1 if (hexX % 2) else 0
-        hexX -= 1
-    else:
-        raise ValueError('Invalid neighbour direction')
-
-    if hexX == 0:
-        hexX = 32
-        sectorX -= 1
-    if hexX == 33:
-        hexX = 1
-        sectorX += 1
-    if hexY == 0:
-        hexY = 40
-        sectorY -= 1
-    if hexY == 41:
-        hexY = 1
-        sectorY += 1
-
-    return (sectorX, sectorY, hexX, hexY)
-
-def yieldAbsoluteRadiusHexes(
-        center: typing.Tuple[int, int],
-        radius: int,
-        includeInterior: bool = True
-        ) -> typing.Generator[typing.Tuple[int, int], None, None]:
-    if radius == 0:
-        yield center
-        return
-
-    if includeInterior:
-        minLength = radius + 1
-        maxLength = (radius * 2) + 1
-        deltaLength = int(math.floor((maxLength - minLength) / 2))
-
-        centerX = center[0]
-        centerY = center[1]
-        startX = centerX - radius
-        finishX = centerX + radius
-        startY = (centerY - radius) + deltaLength
-        finishY = (centerY + radius) - deltaLength
-        if (startX & 0b1) != 0:
-            startY += 1
-            if (radius & 0b1) != 0:
-                finishY -= 1
-        else:
-            if (radius & 0b1) != 0:
-                startY += 1
-            finishY -= 1
-
-        for x in range(startX, finishX + 1):
-            if (x & 0b1) != 0:
-                if x <= centerX:
-                    startY -= 1
-                else:
-                    finishY -= 1
-            else:
-                if x <= centerX:
-                    finishY += 1
-                else:
-                    startY += 1
-
-            for y in range(startY, finishY + 1):
-                yield (x, y)
-    else:
-        current = (center[0], center[1] + radius)
-
-        for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.TopRight)
-            yield current
-
-        for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.Top)
-            yield current
-
-        for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.TopLeft)
-            yield current
-
-        for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.BottomLeft)
-            yield current
-
-        for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.Bottom)
-            yield current
-
-        for _ in range(radius):
-            current = neighbourAbsoluteHex(current, HexEdge.BottomRight)
-            yield current
-
 # These neighbours are orientated as displayed when viewing traveller map
 class RectilinearNeighbour(enum.Enum):
     TopLeft = 0
@@ -528,34 +389,140 @@ class HexPosition(object):
             edge: HexEdge
             ) -> 'HexPosition':
         if self._absolute:
-            absoluteX, absoluteY = neighbourAbsoluteHex(
-                origin=self._absolute,
-                edge=edge)
-            return HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
-        else:
-            sectorX, sectorY, offsetX, offsetY = neighbourRelativeHex(
-                origin=self._relative,
-                edge=edge)
-            return HexPosition(
-                sectorX=sectorX,
-                sectorY=sectorY,
-                offsetX=offsetX,
-                offsetY=offsetY)
+            hexX, hexY = self._absolute
 
-    def yieldRadiusHexes(
+            if edge == HexEdge.Top:
+                hexY -= 1
+            elif edge == HexEdge.TopRight:
+                hexY += 0 if (hexX % 2) else -1
+                hexX += 1
+            elif edge == HexEdge.BottomRight:
+                hexY += 1 if (hexX % 2) else 0
+                hexX += 1
+            elif edge == HexEdge.Bottom:
+                hexY += 1
+            elif edge == HexEdge.BottomLeft:
+                hexY += 1 if (hexX % 2) else 0
+                hexX -= 1
+            elif edge == HexEdge.TopLeft:
+                hexY += 0 if (hexX % 2) else -1
+                hexX -= 1
+            else:
+                raise ValueError('Invalid hex edge')
+
+            return HexPosition(hexX, hexY)
+        else:
+            sectorX, sectorY, hexX, hexY = self._relative
+
+            if edge == HexEdge.Top:
+                hexY -= 1
+            elif edge == HexEdge.TopRight:
+                hexY += -1 if (hexX % 2) else 0
+                hexX += 1
+            elif edge == HexEdge.BottomRight:
+                hexY += 0 if (hexX % 2) else 1
+                hexX += 1
+            elif edge == HexEdge.Bottom:
+                hexY += 1
+            elif edge == HexEdge.BottomLeft:
+                hexY += 0 if (hexX % 2) else 1
+                hexX -= 1
+            elif edge == HexEdge.TopLeft:
+                hexY += -1 if (hexX % 2) else 0
+                hexX -= 1
+            else:
+                raise ValueError('Invalid neighbour direction')
+
+            if hexX == 0:
+                hexX = 32
+                sectorX -= 1
+            if hexX == 33:
+                hexX = 1
+                sectorX += 1
+            if hexY == 0:
+                hexY = 40
+                sectorY -= 1
+            if hexY == 41:
+                hexY = 1
+                sectorY += 1
+
+            return HexPosition(sectorX, sectorY, hexX, hexY)
+
+    def radiusHexes(
             self,
             radius: int,
             includeInterior: bool = True
-            ) -> typing.Generator['HexPosition', None, None]:
+            ) -> typing.List['HexPosition']:
         if not self._absolute:
             self._calculateAbsolute()
 
-        generator = yieldAbsoluteRadiusHexes(
-            center=self._absolute,
-            radius=radius,
-            includeInterior=includeInterior)
-        for absoluteX, absoluteY in generator:
-            yield HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
+        if radius == 0:
+            return [self]
+
+        hexes = []
+
+        if includeInterior:
+            minLength = radius + 1
+            maxLength = (radius * 2) + 1
+            deltaLength = int(math.floor((maxLength - minLength) / 2))
+
+            centerX = self._absolute[0]
+            centerY = self._absolute[1]
+            startX = centerX - radius
+            finishX = centerX + radius
+            startY = (centerY - radius) + deltaLength
+            finishY = (centerY + radius) - deltaLength
+            if (startX & 0b1) != 0:
+                startY += 1
+                if (radius & 0b1) != 0:
+                    finishY -= 1
+            else:
+                if (radius & 0b1) != 0:
+                    startY += 1
+                finishY -= 1
+
+            for x in range(startX, finishX + 1):
+                if (x & 0b1) != 0:
+                    if x <= centerX:
+                        startY -= 1
+                    else:
+                        finishY -= 1
+                else:
+                    if x <= centerX:
+                        finishY += 1
+                    else:
+                        startY += 1
+
+                for y in range(startY, finishY + 1):
+                    hexes.append(HexPosition(x, y))
+        else:
+            current = HexPosition(self._absolute[0], self._absolute[1] + radius)
+
+            for _ in range(radius):
+                current = current.neighbour(HexEdge.TopRight)
+                hexes.append(current)
+
+            for _ in range(radius):
+                current = current.neighbour(HexEdge.Top)
+                hexes.append(current)
+
+            for _ in range(radius):
+                current = current.neighbour(HexEdge.TopLeft)
+                hexes.append(current)
+
+            for _ in range(radius):
+                current = current.neighbour(HexEdge.BottomLeft)
+                hexes.append(current)
+
+            for _ in range(radius):
+                current = current.neighbour(HexEdge.Bottom)
+                hexes.append(current)
+
+            for _ in range(radius):
+                current = current.neighbour(HexEdge.BottomRight)
+                hexes.append(current)
+
+        return hexes
 
     def worldCenter(self) -> typing.Tuple[float, float]:
         if not self._worldCenter:

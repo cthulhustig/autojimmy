@@ -854,7 +854,7 @@ class ConfigDialog(gui.DialogEx):
             typing.List[typing.Tuple[
                 astronomer.Sector,
                 astronomer.Allegiance]]] = {}
-        for sector in universe.yieldSectors():
+        for sector in universe.sectors():
             for allegiance in sector.allegiances():
                 allegianceList = codeToAllegianceMap.get(allegiance.code())
                 if allegianceList is None:
