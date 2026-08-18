@@ -11,4 +11,5 @@ from .editableentityfactory import *
 from .editcommand import *
 from .undoredostack import *
 from .universeeditor import *
-from .commands.replacesector import *
+from .commands.deletesector import *
+from .commands.importsector import *

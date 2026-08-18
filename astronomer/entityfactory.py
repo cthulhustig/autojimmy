@@ -8,6 +8,7 @@ class EntityFactoryInterface(object):
             universeId: str,
             milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector],
+            worlds: typing.Collection[astronomer.World],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.VectorLayer]
             ) -> astronomer.Universe:
@@ -146,6 +147,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             universeId: str,
             milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector],
+            worlds: typing.Collection[astronomer.World],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.MapVector]
             ) -> astronomer.Universe:
@@ -153,6 +155,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             universeId=universeId,
             milieu=milieu,
             sectors=sectors,
+            worlds=worlds,
             labels=labels,
             vectors=vectors)
 

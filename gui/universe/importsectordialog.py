@@ -32,6 +32,7 @@ class ImportSectorDialog(gui.DialogEx):
 
         self._recentDirectoryPath = None
         self._sector = None
+        self._worlds = None
 
         self._setupFileSelectControls()
         self._setupOptionControls()
@@ -47,6 +48,9 @@ class ImportSectorDialog(gui.DialogEx):
 
     def sector(self) -> typing.Optional[azathoth.EditableSector]:
         return self._sector
+
+    def worlds(self) -> typing.Optional[typing.Collection[azathoth.EditableWorld]]:
+        return self._worlds
 
     # NOTE: There is no saveSettings as settings are only saved when accept is triggered (i.e. not
     # if the user cancels the dialog)
@@ -353,6 +357,10 @@ class ImportSectorDialog(gui.DialogEx):
                 rawStockSophonts=rawStockSophonts,
                 rawStockStyleSheet=rawStyleSheet,
                 entityFactory=azathoth.UniverseEditor.instance().entityFactory())
+
+            # TODO: This should be done differently by the time I'm finished moving worlds from
+            # sectors to the universe
+            worlds = sector.worlds()
         except Exception as ex:
             message = 'An error occurred when converting the sector.'
             logging.critical(message, exc_info=ex)
@@ -382,6 +390,7 @@ class ImportSectorDialog(gui.DialogEx):
             QtCore.QTimer.singleShot(0, reportWindow.bringToFront)
 
         self._sector = sector
+        self._worlds = worlds
         self.accept()
 
     def _overrideSectorPosition(

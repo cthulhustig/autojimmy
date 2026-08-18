@@ -134,7 +134,7 @@ class SectorCache(object):
             return None
 
         points = []
-        for world in sector.worlds():
+        for world in self._universe.worldsInSector(position=sectorPos):
             centerX, centerY = world.hex().worldCenter()
             points.append(cartographer.PointF(
                 # Scale center point by parsec scale to convert to isotropic coordinates

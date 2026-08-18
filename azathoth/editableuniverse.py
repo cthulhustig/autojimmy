@@ -9,6 +9,7 @@ class EditableUniverse(astronomer.Universe):
             universeId: str,
             milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector],
+            worlds: typing.Collection[astronomer.World],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.MapVector]
             ) -> None:
@@ -16,28 +17,36 @@ class EditableUniverse(astronomer.Universe):
             universeId=universeId,
             milieu=milieu,
             sectors=sectors,
+            worlds=worlds,
             labels=labels,
             vectors=vectors)
 
-    def replaceSector(
+    def insertSector(
             self,
-            oldSector: typing.Optional[azathoth.EditableSector],
-            newSector: typing.Optional[azathoth.EditableSector]
+            sector: azathoth.EditableSector,
+            worlds: typing.Optional[typing.Collection[azathoth.EditableWorld]]
             ) -> None:
-        common.validateObject(name='oldSector', value=oldSector, objectType=azathoth.EditableSector, allowNone=True)
-        common.validateObject(name='newSector', value=newSector, objectType=azathoth.EditableSector, allowNone=True)
+        common.validateObject(name='sector', value=sector, objectType=azathoth.EditableSector, allowNone=False)
+        common.validateCollection(name='worlds', value=worlds, elementType=azathoth.EditableWorld, allowNone=True)
 
-        if oldSector and newSector:
-            if oldSector.position() != newSector.position():
-                raise ValueError(f'Sectors have different position ({oldSector.position().elements()} vs {newSector.position().elements()})')
+        self.deleteSector(sector.position())
 
-        if oldSector and oldSector.entityId() not in self._idToEntityMap:
-            raise ValueError(f'Sectors {oldSector.entityId()} is not in universe {self.id()}')
+        self._addSector(sector)
+        if worlds:
+            for world in worlds:
+                self._addWorld(world)
 
-        if newSector and newSector.entityId() in self._idToEntityMap:
-            raise ValueError(f'Sectors {newSector.entityId()} is already in universe {self.id()}')
+    def deleteSector(
+            self,
+            sectorPos: astronomer.SectorPosition
+            ) -> None:
+        common.validateObject(name='sectorPos', value=sectorPos, objectType=astronomer.SectorPosition, allowNone=False)
 
-        if oldSector:
-            self._removeSector(oldSector)
-        if newSector:
-            self._addSector(newSector)
+        sector = self.sectorByPosition(sectorPos)
+        if sector:
+            self._removeSector(sector)
+
+        worlds = self.worldsInSector(sectorPos)
+        if worlds:
+            for world in worlds:
+                self._removeWorld(world)

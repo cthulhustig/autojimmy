@@ -32,7 +32,7 @@ def loadUniverseFromDatabase(
     dbSectorGenerator = multiverse.UniverseManager.instance().yieldSectors(
         id=universeId,
         progressCallback=progressCallback)
-    sectors = []
+    sectors: typing.List[astronomer.Sector] = []
     for dbSector in dbSectorGenerator:
         try:
             sector = astronomer.convertDbSectorToAstronomerSector(
@@ -87,9 +87,16 @@ def loadUniverseFromDatabase(
                 exc_info=ex)
             continue
 
+    # TODO: This needs done differently when I've finished detaching systems
+    # from sectors
+    worlds = []
+    for sector in sectors:
+        worlds.extend(sector.worlds())
+
     return entityFactory.createUniverse(
         universeId=universeId,
         milieu=milieu,
         sectors=sectors,
+        worlds=worlds,
         labels=labels,
         vectors=vectors)

@@ -96,7 +96,7 @@ class UniverseEditor(object):
             changeEvent=changeEvent,
             errorMsg='Editor observer threw an exception when handling pre change notification')
 
-        command.applyChanges(universe=self._universe)
+        command.applyChanges()
 
         self._notifyObservers(
             observers=self._postUpdateObservers,
@@ -111,7 +111,7 @@ class UniverseEditor(object):
             changeEvent=changeEvent,
             errorMsg='Editor observer threw an exception when handling pre revert notification')
 
-        command.revertChanges(universe=self._universe)
+        command.revertChanges()
 
         self._notifyObservers(
             observers=self._postUpdateObservers,

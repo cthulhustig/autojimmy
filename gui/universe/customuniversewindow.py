@@ -284,23 +284,11 @@ class CustomUniverseWindow(gui.WindowWidget):
         if not sectorPos:
             return
 
-        universe = azathoth.UniverseEditor.instance().universe()
-
-        oldSector = universe.sectorByPosition(position=sectorPos)
-        if oldSector is not None and not isinstance(oldSector, azathoth.EditableSector):
-            message = 'Old sector is not editable.'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-
         try:
             azathoth.UniverseEditor.instance().executeCommand(
-                command=azathoth.ReplaceSectorCommand(
-                    oldSector=oldSector,
-                    newSector=None))
+                command=azathoth.DeleteSectorCommand(
+                    universe=azathoth.UniverseEditor.instance().universe(),
+                    sectorPos=sectorPos))
             self._syncActionState()
         except Exception as ex:
             message = 'An error occurred when deleting the sector.'
@@ -321,16 +309,6 @@ class CustomUniverseWindow(gui.WindowWidget):
 
         universe = azathoth.UniverseEditor.instance().universe()
 
-        oldSector = universe.sectorByPosition(position=sectorPos)
-        if oldSector is not None and not isinstance(oldSector, azathoth.EditableSector):
-            message = 'Old sector is not editable.'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-
         importDlg = gui.ImportSectorDialog(
             milieu=universe.milieu(),
             sectorPos=sectorPos,
@@ -350,9 +328,10 @@ class CustomUniverseWindow(gui.WindowWidget):
 
         try:
             azathoth.UniverseEditor.instance().executeCommand(
-                command=azathoth.ReplaceSectorCommand(
-                    oldSector=oldSector,
-                    newSector=newSector))
+                command=azathoth.ImportSectorCommand(
+                    universe=universe,
+                    sector=newSector,
+                    worlds=importDlg.worlds()))
             self._sectorTable.setCurrentSector(newSector)
             self._syncActionState()
         except Exception as ex:
@@ -373,7 +352,7 @@ class CustomUniverseWindow(gui.WindowWidget):
         try:
             sector = universe.sectorByPosition(position=sectorPos)
         except Exception as ex:
-            message = 'An error occurred when finding sector data'
+            message = 'An error occurred when checking for sector existence'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -381,9 +360,17 @@ class CustomUniverseWindow(gui.WindowWidget):
                 exception=ex)
             return
 
+        if not sector:
+            gui.MessageBoxEx.warning(
+                parent=self,
+                text='No sector at selected location',
+                exception=ex)
+            return
+
         try:
             rawMetadata, rawWorlds = astronomer.convertAstronomerSectorToRawSector(
-                astroSector=sector)
+                astroUniverse=universe,
+                astroSectorPos=sectorPos)
         except Exception as ex:
             message = f'An error occurred when converting sector'
             logging.critical(message, exc_info=ex)

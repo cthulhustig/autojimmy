@@ -1173,12 +1173,11 @@ def _createDbSophonts(
     return astroSophontToDbSophontMap
 
 def _createDbSystems(
-        astroSector: astronomer.Sector,
+        astroWorlds: typing.Collection[astronomer.World],
         sectorLogName: str,
         astroAllegianceToDbAllegianceMap: typing.Optional[typing.Mapping[astronomer.Allegiance, multiverse.DbAllegiance]],
         astroSophontToDbSophontMap: typing.Optional[typing.Mapping[astronomer.Sophont, multiverse.DbSophont]]
         ) -> typing.Optional[typing.List[multiverse.DbSystem]]:
-    astroWorlds = astroSector.worlds()
     if not astroWorlds:
         return None
 
@@ -1652,7 +1651,16 @@ def _createDbProducts(
 
     return dbProducts
 
-def convertAstronomerSectorToDbSector(astroSector: astronomer.Sector) -> multiverse.DbSector:
+def convertAstronomerSectorToDbSector(
+        astroUniverse: astronomer.Universe,
+        astroSectorPos: astronomer.SectorPosition
+        ) -> multiverse.DbSector:
+    astroSector = astroUniverse.sectorByPosition(astroSectorPos)
+    if astroSector is None:
+        raise ValueError(f'No sector at ({astroSectorPos.sectorX()}, {astroSectorPos.sectorY()})')
+
+    astroWorlds = astroUniverse.worldsInSector(astroSectorPos)
+
     sectorName = astroSector.name()
     sectorLanguage = astroSector.nameLanguage(sectorName)
     sectorPos = astroSector.position()
@@ -1679,7 +1687,7 @@ def convertAstronomerSectorToDbSector(astroSector: astronomer.Sector) -> multive
         sectorLogName=sectorLogName)
 
     dbSystems = _createDbSystems(
-        astroSector=astroSector,
+        astroWorlds=astroWorlds,
         sectorLogName=sectorLogName,
         astroAllegianceToDbAllegianceMap=astroAllegianceToDbAllegianceMap,
         astroSophontToDbSophontMap=astroSophontToDbSophontMap)
@@ -1741,11 +1749,12 @@ def convertAstronomerSectorToDbSector(astroSector: astronomer.Sector) -> multive
         notes=None)
 
 def convertAstronomerSectorToRawSector(
-        astroSector: astronomer.Sector
+        astroUniverse: astronomer.Universe,
+        astroSectorPos: astronomer.SectorPosition
         ) -> typing.Tuple[
             survey.RawMetadata,
             typing.List[survey.RawWorld]]:
-    dbSector = convertAstronomerSectorToDbSector(astroSector=astroSector)
+    dbSector = convertAstronomerSectorToDbSector(astroUniverse=astroUniverse, astroSectorPos=astroSectorPos)
     return multiverse.convertDbSectorToRawSector(dbSector=dbSector)
 
 def convertDbMapLabelToAstronomerMapLabel(

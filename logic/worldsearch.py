@@ -1041,7 +1041,7 @@ class WorldSearch(object):
         for sector in universe.sectors():
             self._searchWorlds(
                 universe=universe,
-                worlds=sector.worlds(),
+                worlds=universe.worldsInSector(position=sector.position()),
                 rules=rules,
                 tagging=tagging,
                 inPlaceResults=results,
@@ -1065,7 +1065,7 @@ class WorldSearch(object):
 
         return self._searchWorlds(
             universe=universe,
-            worlds=sector.worlds(subsectorCode),
+            worlds=universe.worldsInSector(position=sectorPos, subsectorCode=subsectorCode),
             rules=rules,
             tagging=tagging,
             maxResults=maxResults)

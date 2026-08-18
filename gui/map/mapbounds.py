@@ -323,19 +323,32 @@ class BoundsGraphics(cartographer.AbstractGraphics):
         return QtCore.QRectF(rect.x(), rect.y(), rect.width(), rect.height())
 
 class _BoundsSelector(cartographer.AbstractSelector):
-    def __init__(self) -> None:
-        self._objects = []
+    def __init__(
+            self,
+            universe: astronomer.Universe
+            ) -> None:
+        self._universe = universe
 
         # Sets are used for the sectors/worlds to prevent objects getting added
         # multiple times and therefore getting "rendered" multiple times.
         self._sectors = set()
         self._worlds = set()
 
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        self._universe = universe
+        self.setObjects(None)
+
     def setObjects(self, objects: typing.Optional[typing.Collection[typing.Union[astronomer.Sector, astronomer.World]]]) -> None:
-        self._objects.clear()
-        if objects is not None:
-            self._objects.extend(objects)
-        self._updateSelection()
+        self._sectors.clear()
+        self._worlds.clear()
+
+        if objects:
+            for obj in objects:
+                if isinstance(obj, astronomer.World):
+                    self._worlds.add(obj)
+                elif isinstance(obj, astronomer.Sector):
+                    self._sectors.add(obj)
+                    self._worlds.update(self._universe.worldsInSector(position=obj.position()))
 
     def setRect(self, rect: cartographer.RectangleF) -> None:
         pass
@@ -361,17 +374,6 @@ class _BoundsSelector(cartographer.AbstractSelector):
     def clearCaches(self):
         pass
 
-    def _updateSelection(self) -> None:
-        self._sectors.clear()
-        self._worlds.clear()
-
-        for obj in self._objects:
-            if isinstance(obj, astronomer.World):
-                self._worlds.add(obj)
-            elif isinstance(obj, astronomer.Sector):
-                self._sectors.add(obj)
-                self._worlds.update(obj.worlds())
-
 class RenderBoundsCalculator(object):
     def __init__(
             self,
@@ -384,8 +386,8 @@ class RenderBoundsCalculator(object):
         self._options = options
 
         self._graphics = BoundsGraphics()
-        self._selector = _BoundsSelector()
         self._imageStore = cartographer.ImageStore(graphics=self._graphics)
+        self._selector = _BoundsSelector(universe=self._universe)
         self._renderer = None
 
     def setUniverse(self, universe) -> None:
@@ -393,6 +395,7 @@ class RenderBoundsCalculator(object):
             return
 
         self._universe = universe
+        self._selector.setUniverse(self._universe)
         self._renderer = None
 
     def calculateBounds(

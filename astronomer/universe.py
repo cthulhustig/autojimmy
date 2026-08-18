@@ -25,6 +25,7 @@ class Universe(object):
             universeId: str,
             milieu: astronomer.Milieu,
             sectors: typing.Collection[astronomer.Sector],
+            worlds: typing.Collection[astronomer.World],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.MapVector]
             ) -> None:
@@ -42,12 +43,17 @@ class Universe(object):
         self._nameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._abbreviationToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._subsectorNameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
-        self._positionToSectorMap: typing.Dict[typing.Tuple[int, int], astronomer.Sector] = {}
-        self._positionToWorldMap: typing.Dict[typing.Tuple[int, int], astronomer.World] = {}
-        self._positionToMainMap: typing.Dict[typing.Tuple[int, int], astronomer.Main] = {}
-        self._positionToRoutesMap: typing.Dict[typing.Tuple[int, int], typing.Set[astronomer.Route]] = {}
+        self._sectorPositionToSectorMap: typing.Dict[typing.Tuple[int, int], astronomer.Sector] = {}
+        self._hexPositionToRoutesMap: typing.Dict[typing.Tuple[int, int], typing.Set[astronomer.Route]] = {}
         for sector in sectors:
             self._addSector(sector=sector)
+
+        self._sectorPositionToWorldsMap: typing.Dict[typing.Tuple[int, int], typing.Set[astronomer.World]] = {}
+        self._subsectorPositionToWorldsMap: typing.Dict[typing.Tuple[int, int, str], typing.Set[astronomer.World]] = {}
+        self._hexPositionToWorldMap: typing.Dict[typing.Tuple[int, int], astronomer.World] = {}
+        self._hexPositionToMainMap: typing.Dict[typing.Tuple[int, int], astronomer.Main] = {}
+        for world in worlds:
+            self._addWorld(world=world)
 
         self._labels: typing.List[astronomer.MapLabel] = []
         for label in labels:
@@ -77,10 +83,10 @@ class Universe(object):
             filterCallback: typing.Callable[[astronomer.Sector], bool] = None
             ) -> typing.List[astronomer.Sector]:
         if filterCallback is None:
-            return list(self._positionToSectorMap.values())
+            return list(self._sectorPositionToSectorMap.values())
         else:
             sectors = []
-            for sector in self._positionToSectorMap.values():
+            for sector in self._sectorPositionToSectorMap.values():
                 if filterCallback(sector):
                     sectors.append(sector)
             return sector
@@ -90,10 +96,10 @@ class Universe(object):
             filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.List[astronomer.World]:
         if filterCallback is None:
-            return list(self._positionToWorldMap.values())
+            return list(self._hexPositionToWorldMap.values())
         else:
             worlds = []
-            for world in self._positionToWorldMap.values():
+            for world in self._hexPositionToWorldMap.values():
                 if filterCallback(world):
                     worlds.append(world)
             return worlds
@@ -128,7 +134,7 @@ class Universe(object):
             self,
             hex: astronomer.HexPosition
             ) -> typing.Optional[astronomer.World]:
-        return self._positionToWorldMap.get(hex.absolute())
+        return self._hexPositionToWorldMap.get(hex.absolute())
 
     def sectorByPosition(
             self,
@@ -137,7 +143,7 @@ class Universe(object):
         if isinstance(position, astronomer.HexPosition):
             position = position.sectorPosition()
 
-        return self._positionToSectorMap.get(position.elements())
+        return self._sectorPositionToSectorMap.get(position.elements())
 
     def sectorsInArea(
             self,
@@ -154,7 +160,7 @@ class Universe(object):
             while x <= finishX:
                 y = startY
                 while y <= finishY:
-                    sector = self._positionToSectorMap.get((x, y))
+                    sector = self._sectorPositionToSectorMap.get((x, y))
                     if sector:
                         sectors.append(sector)
                     y += 1
@@ -164,7 +170,7 @@ class Universe(object):
             while x <= finishX:
                 y = startY
                 while y <= finishY:
-                    sector = self._positionToSectorMap.get((x, y))
+                    sector = self._sectorPositionToSectorMap.get((x, y))
                     if sector and filterCallback(sector):
                         sectors.append(sector)
                     y += 1
@@ -188,7 +194,7 @@ class Universe(object):
                 y = startY
                 while y <= finishY:
                     key = (x, y)
-                    world = self._positionToWorldMap.get(key)
+                    world = self._hexPositionToWorldMap.get(key)
                     if world:
                         worlds.append(world)
                     y += 1
@@ -199,13 +205,31 @@ class Universe(object):
                 y = startY
                 while y <= finishY:
                     key = (x, y)
-                    world = self._positionToWorldMap.get(key)
+                    world = self._hexPositionToWorldMap.get(key)
                     if world and filterCallback(world):
                         worlds.append(world)
                     y += 1
                 x += 1
 
         return worlds
+
+    def worldsInSector(
+            self,
+            position: astronomer.SectorPosition,
+            subsectorCode: typing.Optional[str] = None,
+            filterCallback: typing.Callable[[astronomer.World], bool] = None
+            ) -> typing.List[astronomer.World]:
+        if subsectorCode is None:
+            worlds = self._sectorPositionToWorldsMap.get(position.elements())
+        else:
+            worlds = self._subsectorPositionToWorldsMap.get((*position.elements(), subsectorCode))
+        if worlds is None:
+            return []
+
+        if filterCallback is None:
+            return list(worlds)
+        else:
+            return [world for world in worlds if filterCallback(world)]
 
     def worldsInRadius(
             self,
@@ -246,7 +270,7 @@ class Universe(object):
                         startY += 1
 
                 for y in range(startY, finishY + 1):
-                    world = self._positionToWorldMap.get((x, y))
+                    world = self._hexPositionToWorldMap.get((x, y))
                     if world:
                         worlds.append(world)
         else:
@@ -263,7 +287,7 @@ class Universe(object):
                         startY += 1
 
                 for y in range(startY, finishY + 1):
-                    world = self._positionToWorldMap.get((x, y))
+                    world = self._hexPositionToWorldMap.get((x, y))
                     if world and filterCallback(world):
                         worlds.append(world)
 
@@ -274,7 +298,7 @@ class Universe(object):
             hex: astronomer.HexPosition,
             filterCallback: typing.Callable[[astronomer.World], bool] = None
             ) -> typing.List[astronomer.World]:
-        world = self._positionToWorldMap.get(hex.absolute())
+        world = self._hexPositionToWorldMap.get(hex.absolute())
         if not world:
             return []
 
@@ -289,7 +313,7 @@ class Universe(object):
             hex = world.hex()
             for edge in astronomer.HexEdge:
                 adjacentHex = hex.neighbour(edge=edge)
-                adjacentWorld = self._positionToWorldMap.get(adjacentHex.absolute())
+                adjacentWorld = self._hexPositionToWorldMap.get(adjacentHex.absolute())
                 if adjacentWorld and (adjacentWorld not in seen):
                     todo.append(adjacentWorld)
                     seen.add(adjacentWorld)
@@ -310,7 +334,7 @@ class Universe(object):
             ) -> str:
         sectorX, sectorY, offsetX, offsetY = hex.relative()
         sectorPos = (sectorX, sectorY)
-        sector = self._positionToSectorMap.get(sectorPos)
+        sector = self._sectorPositionToSectorMap.get(sectorPos)
 
         return astronomer.formatSectorHex(
             sectorName=sector.name() if sector else f'{sectorX}:{sectorY}',
@@ -443,7 +467,7 @@ class Universe(object):
             self,
             hex: astronomer.HexPosition
             ) -> typing.Optional[astronomer.Main]:
-        main = self._positionToMainMap.get(hex.absolute())
+        main = self._hexPositionToMainMap.get(hex.absolute())
         if main:
             return main
 
@@ -453,7 +477,7 @@ class Universe(object):
 
         main = astronomer.Main(hexes=(world.hex() for world in worlds))
         for world in worlds:
-            self._positionToMainMap[world.hex().absolute()] = main
+            self._hexPositionToMainMap[world.hex().absolute()] = main
 
         return main
 
@@ -461,14 +485,14 @@ class Universe(object):
             self,
             hex: astronomer.HexPosition
             ) -> bool:
-        routes = self._positionToRoutesMap.get(hex.absolute())
+        routes = self._hexPositionToRoutesMap.get(hex.absolute())
         return routes and len(routes) > 0
 
     def routesByPosition(
             self,
             hex: astronomer.HexPosition
             ) -> typing.List[astronomer.Route]:
-        routes = self._positionToRoutesMap.get(hex.absolute())
+        routes = self._hexPositionToRoutesMap.get(hex.absolute())
         if not routes:
             return []
         return list(routes)
@@ -477,7 +501,7 @@ class Universe(object):
             self,
             hex: astronomer.HexPosition
             ) -> typing.List[astronomer.World]:
-        routes = self._positionToRoutesMap.get(hex.absolute())
+        routes = self._hexPositionToRoutesMap.get(hex.absolute())
         if not routes:
             return []
 
@@ -490,7 +514,7 @@ class Universe(object):
                 connectedHex = route.endHex()
 
             if connectedHex:
-                connectedWorld = self._positionToWorldMap.get(connectedHex.absolute())
+                connectedWorld = self._hexPositionToWorldMap.get(connectedHex.absolute())
                 if connectedWorld:
                     worlds.append(connectedWorld)
         return worlds
@@ -503,11 +527,14 @@ class Universe(object):
 
     def _addSector(self, sector: astronomer.Sector) -> None:
         self._idToEntityMap[sector.entityId()] = sector
+        # TODO: I don't thing I'll need the concept of subentities when
+        # I've finished moving worlds, routes etc from sectors to the
+        # universe
         for entity in sector.entities():
             self._idToEntityMap[entity.entityId()] = entity
 
         sectorPos = sector.position()
-        self._positionToSectorMap[sectorPos.elements()] = sector
+        self._sectorPositionToSectorMap[sectorPos.elements()] = sector
 
         # Add canonical name to the main name map. The name is added lower case as lookups are
         # case insensitive
@@ -544,19 +571,13 @@ class Universe(object):
                 self._subsectorNameToSectorMap[subsectorName] = sectors
             sectors.add(sector)
 
-        for world in sector.worlds():
-            self._positionToWorldMap[world.hex().absolute()] = world
-
         for route in sector.routes():
             for hex in [route.startHex(), route.endHex()]:
-                endpoints = self._positionToRoutesMap.get(hex.absolute())
+                endpoints = self._hexPositionToRoutesMap.get(hex.absolute())
                 if not endpoints:
                     endpoints = set()
-                    self._positionToRoutesMap[hex.absolute()] = endpoints
+                    self._hexPositionToRoutesMap[hex.absolute()] = endpoints
                 endpoints.add(route)
-
-        # Clear mains so they will be regenerated from the updated data
-        self._positionToMainMap.clear()
 
     def _removeSector(self, sector: astronomer.Sector) -> None:
         self._idToEntityMap.pop(sector.entityId(), None)
@@ -564,7 +585,7 @@ class Universe(object):
             self._idToEntityMap.pop(entity.entityId(), None)
 
         sectorPos = sector.position()
-        self._positionToSectorMap.pop(sectorPos.elements(), None)
+        self._sectorPositionToSectorMap.pop(sectorPos.elements(), None)
 
         canonicalName = sector.name().lower()
         sectors = self._nameToSectorMap.get(canonicalName)
@@ -591,17 +612,53 @@ class Universe(object):
             if sectors:
                 sectors.discard(sector)
 
-        for world in sector.worlds():
-            self._positionToWorldMap.pop(world.hex().absolute(), None)
-
         for route in sector.routes():
             for hex in [route.startHex(), route.endHex()]:
-                endpoints = self._positionToRoutesMap.get(hex.absolute())
+                endpoints = self._hexPositionToRoutesMap.get(hex.absolute())
                 if endpoints:
                     endpoints.discard(route)
 
+    def _addWorld(self, world: astronomer.World) -> None:
+        self._idToEntityMap[world.entityId()] = world
+
+        hexPos = world.hex()
+        self._hexPositionToWorldMap[hexPos.absolute()] = world
+
+        sectorPos = hexPos.sectorPosition()
+        sectorWorlds = self._sectorPositionToWorldsMap.get(sectorPos.elements())
+        if sectorWorlds is None:
+            sectorWorlds = set()
+            self._sectorPositionToWorldsMap[sectorPos.elements()] = sectorWorlds
+        sectorWorlds.add(world)
+
+        subsectorPos = (*sectorPos.elements(), hexPos.subsectorCode())
+        subsectorWorlds = self._subsectorPositionToWorldsMap.get(subsectorPos)
+        if subsectorWorlds is None:
+            subsectorWorlds = set()
+            self._subsectorPositionToWorldsMap[subsectorPos] = subsectorWorlds
+        subsectorWorlds.add(world)
+
         # Clear mains so they will be regenerated from the updated data
-        self._positionToMainMap.clear()
+        self._hexPositionToMainMap.clear()
+
+    def _removeWorld(self, world: astronomer.World) -> None:
+        self._idToEntityMap.pop(world.entityId(), None)
+
+        hexPos = world.hex()
+        self._hexPositionToWorldMap.pop(hexPos.absolute(), None)
+
+        sectorPos = hexPos.sectorPosition()
+        sectorWorlds = self._sectorPositionToWorldsMap.get(sectorPos.elements())
+        if sectorWorlds:
+            sectorWorlds.discard(world)
+
+        subsectorPos = (*sectorPos.elements(), hexPos.subsectorCode())
+        subsectorWorlds = self._subsectorPositionToWorldsMap.get(subsectorPos)
+        if subsectorWorlds:
+            subsectorWorlds.discard(world)
+
+        # Clear mains so they will be regenerated from the updated data
+        self._hexPositionToMainMap.clear()
 
     def _addLabel(self, label: astronomer.MapLabel) -> None:
         self._idToEntityMap[label.entityId()] = label

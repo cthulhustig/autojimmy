@@ -143,8 +143,13 @@ class Sector(astronomer.Entity):
     def labels(self) -> typing.Collection[astronomer.SectorLabel]:
         return common.ConstCollectionRef(self._labels)
 
+    # TODO: By the time I'm finished moving worlds, routes etc from the
+    # sector to the universe, sectors shouldn't need to have entities.
+    # For now I need to hack it so it doesn't include the objects I've
+    # moved
     def entities(self) -> typing.Collection[astronomer.Entity]:
-        return common.ConstCollectionRef(self._idToEntityMap.values())
+        #return common.ConstCollectionRef(self._idToEntityMap.values())
+        return [entity for entity in self._idToEntityMap.values() if not isinstance(entity, astronomer.World)]
 
     # The concept of 'selected' comes from Traveller Map and what it is isn't
     # exactly clear. The only thing I've noticed it do is when rendering if

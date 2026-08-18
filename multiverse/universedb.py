@@ -7,6 +7,25 @@ import os
 import sqlite3
 import typing
 
+
+# TODO: I need to move allegiances & sophonts from sectors to the universe before
+# I can move worlds from the sector to the universe
+# - When creating a universe from Traveller Map data, I need to merge the allegiances
+#   and sophonts into a single list of each
+#   - This might be as simple as creating a map of tuples where the keys are the elements of the
+#     object, then iterating over all the instances of the object being imported in all sectors
+#     and creating new DB objects if the name isn't in the map
+# - When importing a sector, I need to use existing universe entries for objects if
+#   there is one that matches what is in the imported data or create a new sophont if
+#   none exist
+# - This will affect everything that uses allegiances and sophonts
+#   - Sophont Population
+#   - World Allegiance (System at the DB level)
+#   - Route Allegiance
+#   - Border Allegiance
+
+
+
 # TODO: Do I want to separate sectors from things like systems/routes/borders etc and treat
 # everything more as a single universe rather than a group of sectors.
 # - Things like systems/routes/borders would need to be stored as absolute hexes rather than sector relative hexes
@@ -193,6 +212,8 @@ class UniverseDb(object):
     _ProductsTableName = 'products'
     _ProductsTableSchema = 1
 
+    # TODO: This should just be 1.0 rather than the full string
+    # as I'll need to parse it at some point
     _FormatString = 'Auto-Jimmy Universe v1.0'
 
     _database = None
