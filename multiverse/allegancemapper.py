@@ -1,8 +1,7 @@
+import logging
 import multiverse
 import survey
 import typing
-
-# TODO: The main algorithm is generating to many disambiguated allegiance names (i.e. ones structured "<ORIGINAL_NAME> (<CODE>)")
 
 # These unofficial allegiances are taken from Traveller Map. It has a
 # comment saying they're for M1120 but as far as I can tell it uses
@@ -45,7 +44,6 @@ _LegacyAllegiances = [
 
 # These mappings are taken from Traveller Map (SecondSurvey.cs)
 # Overrides or additions where Legacy -> T5SS code mapping is ambiguous.
-# TODO: This isn't being used
 _LegacyAllegianceToT5Overrides = {
     'J-': 'JuPr',
     'Jp': 'JuPr',
@@ -64,8 +62,6 @@ _LegacyAllegianceToT5Overrides = {
 # These allegiance codes are used as they're used in sector data to
 # indicate no allegiance.
 _IgnoreAllegianceCodes = set(['--', '??'])
-
-_ValidLineStyles = set(['solid', 'dashed', 'dotted'])
 
 class AllegianceMapper(object):
     class _CodeTracker(object):
@@ -235,8 +231,7 @@ class AllegianceMapper(object):
                 for sectorAbbreviation in location.split('/'):
                     rawMetadata = sectorAbbreviationToMetadata.get(sectorAbbreviation)
                     if rawMetadata is None:
-                        # TODO: Log and continue
-                        print(f'Missing Sector {sectorAbbreviation}')
+                        logging.info(f'Ignoring unknown sector abbreviation {sectorAbbreviation!r} for stock abbreviation {rawAllegiance.name()!r}')
                         continue
 
                     routeColour, routeStyle, routeWidth = self._styleMapper.lookupRouteStyle(
@@ -329,7 +324,6 @@ class AllegianceMapper(object):
 
         return metadataToDbAllegiances
 
-    # TODO: This code needs commented
     def _processDbAllegiances(
             self,
             metadataToDbAllegiances: typing.Mapping[
@@ -365,10 +359,33 @@ class AllegianceMapper(object):
         for name, allegianceData in localNameToAllegianceData.items():
             consistentCode = None
             for dbAllegiance, _ in allegianceData:
-                if consistentCode is not None and dbAllegiance.code() != consistentCode:
+                code = dbAllegiance.code()
+                code = _LegacyAllegianceToT5Overrides.get(code, code)
+
+                if consistentCode is not None and code != consistentCode:
                     consistentCode = None
                     break
-                consistentCode = dbAllegiance.code()
+                consistentCode = code
+
+            if consistentCode is None:
+                # The sectors aren't using a completely consistent code for the allegiance
+                # but check for the case where the only other code they're using is the
+                # legacy code of the allegiance.
+                legacyCodes = set()
+                for dbAllegiance, _ in allegianceData:
+                    legacy = dbAllegiance.legacy()
+                    if legacy is not None:
+                        legacyCodes.add(legacy)
+                if legacyCodes:
+                    for dbAllegiance, _ in allegianceData:
+                        code = dbAllegiance.code()
+                        if code in legacyCodes:
+                            continue
+
+                        if consistentCode is not None and code != consistentCode:
+                            consistentCode = None
+                            break
+                        consistentCode = code
 
             dbAllegianceForName = self._nameToDbAllegiance.get(name)
             if dbAllegianceForName is not None:
@@ -376,20 +393,19 @@ class AllegianceMapper(object):
                 # This will use style information for the global allegiance, any sector specific
                 # styling for this name will need to be handled as a per-sector override
 
-                if consistentCode is not None and dbAllegianceForName.code() != consistentCode:
-                    # The codes used for this allegiance name in sectors is not consistent with
-                    # the code used for the global allegiance
-                    consistentCode = None
-
-                # If all sectors are not using a consistent code for this allegiance, create a
-                # mapping for the code they are using to the global allegiance
-                if not consistentCode:
-                    for dbAllegiance, rawMetadata in allegianceData:
-                        codeMap = self._metadataToCodeMap.get(rawMetadata)
-                        if codeMap is None:
-                            codeMap = {}
-                            self._metadataToCodeMap[rawMetadata] = codeMap
-                        codeMap[dbAllegiance.code()] = dbAllegianceForName
+                # Create mappings for this sector that map the code used by the sector for the
+                # allegiance and (if there is one) the "consistent" code to the DbAllegiance for
+                # this allegiance name. Even if the code is "consistent", the sector may use a
+                # different one as the sector may use the legacy code or have had its code
+                # overridden
+                for dbAllegiance, rawMetadata in allegianceData:
+                    codeMap = self._metadataToCodeMap.get(rawMetadata)
+                    if codeMap is None:
+                        codeMap = {}
+                        self._metadataToCodeMap[rawMetadata] = codeMap
+                    codeMap[dbAllegiance.code()] = dbAllegianceForName
+                    if consistentCode is not None:
+                        codeMap[consistentCode] = dbAllegianceForName
             else:
                 # There is no global allegiance with this name so create as many as are
                 # required for the sectors that reference the same name. The sector style
@@ -455,25 +471,32 @@ class AllegianceMapper(object):
                         borderStyle=consistentBorderStyle)
                     self._nameToDbAllegiance[name] = dbAllegianceForName
 
-                    # Create a mapping for the consistent code for all sectors that use it
-                    for _, rawMetadata in allegianceData:
+                    # Create mappings for this sector that map the code used by the sector for the
+                    # allegiance and the "consistent" code to the DbAllegiance for this allegiance
+                    # name. Even though code is "consistent", the sector may use a different one as
+                    # the sector may use the legacy code or have had its code overridden
+                    for dbAllegiance, rawMetadata in allegianceData:
                         codeMap = self._metadataToCodeMap.get(rawMetadata)
                         if codeMap is None:
                             codeMap = {}
                             self._metadataToCodeMap[rawMetadata] = codeMap
-                        codeMap[dbAllegianceForName.code()] = dbAllegianceForName
+                        codeMap[dbAllegiance.code()] = dbAllegianceForName
+                        codeMap[consistentCode] = dbAllegianceForName
                 else:
                     # The sectors are not consistent in the codes they use for this allegiance
                     # name so we can't really be sure that they are the same allegiance (e.g.
                     # VOpA and  VOpp in allegiance_codes.tab). Disambiguate them by creating
                     # allegiances with the code appended on the name
                     for dbAllegiance, rawMetadata in allegianceData:
-                        name = f'{dbAllegiance.name()} ({dbAllegiance.code()})'
+                        code = dbAllegiance.code()
+                        code = _LegacyAllegianceToT5Overrides.get(code, code)
+
+                        name = f'{dbAllegiance.name()} ({code})'
                         dbAllegianceForName = self._nameToDbAllegiance.get(name)
                         if dbAllegianceForName is None:
                             dbAllegianceForName = multiverse.DbAllegiance(
                                 name=name,
-                                code=dbAllegiance.code(),
+                                code=code,
                                 legacy=dbAllegiance.legacy(),
                                 base=dbAllegiance.base(),
                                 routeColour=consistentRouteColour,
@@ -483,13 +506,16 @@ class AllegianceMapper(object):
                                 borderStyle=consistentBorderStyle)
                             self._nameToDbAllegiance[name] = dbAllegianceForName
 
-                        # Create a mapping for the code this sector used to refer to the
-                        # allegiance name
+                        # Create mappings for this sector that map the code used by the sector
+                        # for the allegiance and its actual code to the DbAllegiance for this
+                        # allegiance name. These codes may be different as the sector may have
+                        # had its code overridden
                         codeMap = self._metadataToCodeMap.get(rawMetadata)
                         if codeMap is None:
                             codeMap = {}
                             self._metadataToCodeMap[rawMetadata] = codeMap
-                        codeMap[dbAllegianceForName.code()] = dbAllegianceForName
+                        codeMap[dbAllegiance.code()] = dbAllegianceForName
+                        codeMap[code] = dbAllegianceForName
 
     def _collectUsedCodes(
             self,

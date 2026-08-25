@@ -9,6 +9,9 @@ import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 # TODO: This needs a welcome dialog explaining what it is
+# TODO: It's hard to spot the button you need to set the active universe.
+# - Splitting it out into it's own toolbar that is on the opposite side of
+#   the list would be one option
 
 class _PreventSetToEmptyDelegate(gui.StyledItemDelegateEx):
     def __init__(self, parent: typing.Optional[QtCore.QObject] = None) -> None:
