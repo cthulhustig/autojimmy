@@ -24,6 +24,7 @@ class Universe(object):
             self,
             universeId: str,
             milieu: astronomer.Milieu,
+            allegiances: typing.Collection[astronomer.Allegiance],
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
             labels: typing.Collection[astronomer.MapLabel],
@@ -31,6 +32,7 @@ class Universe(object):
             ) -> None:
         common.validateStr(name='universeId', value=universeId, allowEmpty=False)
         common.validateObject(name='milieu', value=milieu, objectType=astronomer.Milieu)
+        common.validateCollection(name='allegiances', value=allegiances, elementType=astronomer.Allegiance)
         common.validateCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
         common.validateCollection(name='labels', value=labels, elementType=astronomer.MapLabel)
         common.validateCollection(name='vectors', value=vectors, elementType=astronomer.MapVector)
@@ -39,6 +41,10 @@ class Universe(object):
         self._milieu = milieu
 
         self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
+
+        self._allegiances: typing.List[astronomer.Allegiance] = []
+        for allegiance in allegiances:
+            self._addAllegiance(allegiance=allegiance)
 
         self._nameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._abbreviationToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
@@ -68,6 +74,9 @@ class Universe(object):
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
+
+    def allegiances(self) -> typing.Collection[astronomer.Allegiance]:
+        return common.ConstCollectionRef(self._allegiances)
 
     def sectorsByAbbreviation(
             self,
@@ -524,6 +533,10 @@ class Universe(object):
 
     def vectors(self) -> typing.Collection[astronomer.MapVector]:
         return common.ConstCollectionRef(self._vectors)
+
+    def _addAllegiance(self, allegiance: astronomer.Allegiance) -> None:
+        self._idToEntityMap[allegiance.entityId()] = allegiance
+        self._allegiances.append(allegiance)
 
     def _addSector(self, sector: astronomer.Sector) -> None:
         self._idToEntityMap[sector.entityId()] = sector

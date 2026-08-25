@@ -3,11 +3,12 @@ import common
 import survey
 import typing
 
-class Allegiance(object):
+class Allegiance(astronomer.Entity):
     def __init__(
             self,
-            code: str,
+            entityId: str,
             name: str,
+            code: str,
             legacyCode: typing.Optional[str] = None,
             baseCode: typing.Optional[str] = None,
             routeColour: typing.Optional[str] = None,
@@ -16,8 +17,10 @@ class Allegiance(object):
             borderColour: typing.Optional[str] = None,
             borderStyle: typing.Optional[astronomer.LineStyle] = None
             ) -> None:
-        survey.validateAllegianceCode(name='code', value=code)
+        super().__init__(entityId=entityId)
+
         survey.validateAllegianceName(name='name', value=name)
+        survey.validateAllegianceCode(name='code', value=code)
         survey.validateAllegianceCode(name='legacyCode', value=legacyCode, allowNone=True)
         survey.validateAllegianceCode(name='baseCode', value=baseCode, allowNone=True)
         survey.validateHtmlColour(name='routeColour', value=routeColour, allowNone=True)
@@ -26,8 +29,8 @@ class Allegiance(object):
         survey.validateHtmlColour(name='borderColour', value=borderColour, allowNone=True)
         common.validateObject(name='borderStyle', value=borderStyle, objectType=astronomer.LineStyle, allowNone=True)
 
-        self._code = code
         self._name = name
+        self._code = code
         self._legacyCode = legacyCode
         self._baseCode = baseCode
         self._routeColour = routeColour
@@ -36,11 +39,11 @@ class Allegiance(object):
         self._borderColour = borderColour
         self._borderStyle = borderStyle
 
-    def code(self) -> str:
-        return self._code
-
     def name(self) -> str:
         return self._name
+
+    def code(self) -> str:
+        return self._code
 
     def legacyCode(self) -> typing.Optional[str]:
         return self._legacyCode

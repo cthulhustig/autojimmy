@@ -8,6 +8,7 @@ class EditableUniverse(astronomer.Universe):
             self,
             universeId: str,
             milieu: astronomer.Milieu,
+            allegiances: typing.Collection[astronomer.Allegiance],
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
             labels: typing.Collection[astronomer.MapLabel],
@@ -16,6 +17,7 @@ class EditableUniverse(astronomer.Universe):
         super().__init__(
             universeId=universeId,
             milieu=milieu,
+            allegiances=allegiances,
             sectors=sectors,
             worlds=worlds,
             labels=labels,

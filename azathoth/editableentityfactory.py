@@ -8,6 +8,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             self,
             universeId: str,
             milieu: astronomer.Milieu,
+            allegiances: typing.Collection[astronomer.Allegiance],
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
             labels: typing.Collection[astronomer.MapLabel],
@@ -16,10 +17,36 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
         return azathoth.EditableUniverse(
             universeId=universeId,
             milieu=milieu,
+            allegiances=allegiances,
             sectors=sectors,
             worlds=worlds,
             labels=labels,
             vectors=vectors)
+
+    def createAllegiance(
+            self,
+            entityId: str,
+            name: str,
+            code: str,
+            legacyCode: typing.Optional[str] = None,
+            baseCode: typing.Optional[str] = None,
+            routeColour: typing.Optional[str] = None,
+            routeStyle: typing.Optional[astronomer.LineStyle] = None,
+            routeWidth: typing.Optional[float] = None,
+            borderColour: typing.Optional[str] = None,
+            borderStyle: typing.Optional[astronomer.LineStyle] = None
+            ) -> astronomer.Allegiance:
+        return azathoth.EditableAllegiance(
+            entityId=entityId,
+            name=name,
+            code=code,
+            legacyCode=legacyCode,
+            baseCode=baseCode,
+            routeColour=routeColour,
+            routeStyle=routeStyle,
+            routeWidth=routeWidth,
+            borderColour=borderColour,
+            borderStyle=borderStyle)
 
     def createSector(
             self,
@@ -32,7 +59,6 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
             worlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
-            allegiances: typing.Optional[typing.Iterable[astronomer.Allegiance]] = None,
             sophonts: typing.Optional[typing.Iterable[astronomer.Sophont]] = None,
             routes: typing.Optional[typing.Iterable[astronomer.Route]] = None,
             borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
@@ -54,7 +80,6 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             sectorLabel=sectorLabel,
             subsectorNames=subsectorNames,
             worlds=worlds,
-            allegiances=allegiances,
             sophonts=sophonts,
             routes=routes,
             borders=borders,

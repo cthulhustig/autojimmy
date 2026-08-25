@@ -86,66 +86,6 @@ import typing
 # - System: Canoga (Ilelish)
 #   - Has 5 nobilities
 
-# These unofficial allegiances are taken from Traveller Map. It has a
-# comment saying they're for M1120 but as far as I can tell it uses
-# them no mater which milieu you have selected. In my implementation
-# they are only used for M1120 & M1121
-_T5UnofficialM112xAllegiances = [
-    # -----------------------
-    # Unofficial/Unreviewed
-    # -----------------------
-    survey.RawStockAllegiance(code='FdAr', legacy='Fa', base=None, name='Federation of Arden' ),
-    survey.RawStockAllegiance(code='BoWo', legacy='Bw', base=None, name='Border Worlds' ),
-    survey.RawStockAllegiance(code='LuIm', legacy='Li', base='Im', name='Lucan\'s Imperium' ),
-    survey.RawStockAllegiance(code='MaSt', legacy='Ma', base='Im', name='Maragaret\'s Domain' ),
-    survey.RawStockAllegiance(code='BaCl', legacy='Bc', base=None, name='Backman Cluster' ),
-    survey.RawStockAllegiance(code='FdDa', legacy='Fd', base='Im', name='Federation of Daibei' ),
-    survey.RawStockAllegiance(code='FdIl', legacy='Fi', base='Im', name='Federation of Ilelish' ),
-    survey.RawStockAllegiance(code='AvCn', legacy='Ac', base=None, name='Avalar Consulate' ),
-    survey.RawStockAllegiance(code='CoAl', legacy='Ca', base=None, name='Corsair Alliance' ),
-    survey.RawStockAllegiance(code='StIm', legacy='St', base='Im', name='Strephon\'s Worlds' ),
-    survey.RawStockAllegiance(code='ZiSi', legacy='Rv', base='Im', name='Restored Vilani Imperium' ), # Ziru Sirka
-    survey.RawStockAllegiance(code='VA16', legacy='V6', base=None, name='Assemblage of 1116' ),
-    survey.RawStockAllegiance(code='CRVi', legacy='CV', base=None, name='Vilani Cultural Region' ),
-    survey.RawStockAllegiance(code='CRGe', legacy='CG', base=None, name='Geonee Cultural Region' ),
-    survey.RawStockAllegiance(code='CRSu', legacy='CS', base=None, name='Suerrat Cultural Region' ),
-    survey.RawStockAllegiance(code='CRAk', legacy='CA', base=None, name='Anakudnu Cultural Region' )
-    ]
-_T5UnofficialAllegiancesMap = {
-    'M1120': _T5UnofficialM112xAllegiances,
-    'M1121': _T5UnofficialM112xAllegiances,
-    }
-
-# These allegiances are take from Traveller Map (SecondSurvey.cs)
-# Cases where T5SS codes don't apply: e.g. the Hierate or Imperium, or where no codes exist yet
-_LegacyAllegiances = [
-    survey.RawStockAllegiance(code='As', legacy='As', base='As', name='Aslan Hierate' ), # T5SS: Clan, client state, or unknown; no generic code
-    survey.RawStockAllegiance(code='Dr', legacy='Dr', base='Dr', name='Droyne' ), # T5SS: Polity name or unaligned w/ Droyne population
-    survey.RawStockAllegiance(code='Im', legacy='Im', base='Im', name='Third Imperium' ), # T5SS: Domain or cultural region; no generic code
-    survey.RawStockAllegiance(code='Kk', legacy='Kk', base='Kk', name='The Two Thousand Worlds' ), # T5SS: (Not yet assigned)
-]
-
-# These mappings are taken from Traveller Map (SecondSurvey.cs)
-# Overrides or additions where Legacy -> T5SS code mapping is ambiguous.
-_LegacyAllegianceToT5Overrides = {
-    'J-': 'JuPr',
-    'Jp': 'JuPr',
-    'Ju': 'JuPr',
-    'Na': 'NaHu',
-    'So': 'SoCf',
-    'Va': 'NaVa',
-    'Zh': 'ZhCo',
-    # NOTE: The mappings for ?? and -- will have no effect due to the
-    # _IgnoreAllegianceCodes list below. I've left them here for
-    # completeness
-    '??': 'XXXX',
-    '--': 'XXXX'
-}
-
-# These allegiance codes are used as they're used in sector data to
-# indicate no allegiance.
-_IgnoreAllegianceCodes = set(['--', '??'])
-
 _StockMajorSophonts = set([
     'Human',
     'Aslan',
@@ -240,243 +180,6 @@ def _sectorHexToWorldSpace(
         absX - 0.5,
         absY - (0.0 if ((absX % 2) != 0) else 0.5))
 
-def _findUsedAllegianceCodes(
-        rawMetadata: survey.RawMetadata,
-        rawSystems: typing.Collection[survey.RawWorld]
-        ) -> typing.Set[str]:
-    usedCodes: typing.Set[str] = set()
-    if rawSystems:
-        for rawWorld in rawSystems:
-            rawAllegianceCode = rawWorld.allegianceCode()
-            if rawAllegianceCode and rawAllegianceCode not in _IgnoreAllegianceCodes:
-                usedCodes.add(rawAllegianceCode)
-
-            rawRemarks = rawWorld.remarks()
-            if rawRemarks and rawRemarks.rulingAllegiances():
-                for rawAllegianceCode in rawRemarks.rulingAllegiances():
-                    if rawAllegianceCode not in _IgnoreAllegianceCodes:
-                        usedCodes.add(rawAllegianceCode)
-    if rawMetadata.routes():
-        for rawRoute in rawMetadata.routes():
-            rawAllegianceCode = rawRoute.allegianceCode()
-            if rawAllegianceCode and rawAllegianceCode not in _IgnoreAllegianceCodes:
-                usedCodes.add(rawAllegianceCode)
-    if rawMetadata.borders():
-        for rawBorder in rawMetadata.borders():
-            rawAllegianceCode = rawBorder.allegianceCode()
-            if rawAllegianceCode and rawAllegianceCode not in _IgnoreAllegianceCodes:
-                usedCodes.add(rawAllegianceCode)
-    return usedCodes
-
-def _filterStockAllegiances(
-        milieu: str,
-        rawMetadata: survey.RawMetadata,
-        rawUsedAllegianceCodes: typing.Collection[str],
-        rawStockAllegiances: typing.Collection[survey.RawStockAllegiance] = None,
-        ) -> typing.List[survey.RawStockAllegiance]:
-    rawLocalAllegiances: typing.Collection[survey.RawStockAllegiance] = []
-    rawGlobalAllegiances: typing.Collection[survey.RawStockAllegiance]  = []
-    rawSeenAllegianceCodes = set()
-
-    if rawStockAllegiances:
-        rawAbbreviation = rawMetadata.abbreviation()
-        for rawStockAllegiance in rawStockAllegiances:
-            if not rawStockAllegiance.code():
-                logging.debug(f'Converter ignoring stock allegiance with empty code when converting {rawMetadata.canonicalName()}')
-                continue
-
-            if not rawStockAllegiance.name():
-                logging.debug(f'Converter ignoring stock allegiance with empty name when converting {rawMetadata.canonicalName()}')
-                continue
-
-            if rawStockAllegiance.code() in rawSeenAllegianceCodes:
-                logging.warning(f'Converter ignoring duplicate stock allegiance {rawStockAllegiance.code()} when converting {rawMetadata.canonicalName()}')
-                continue
-
-            rawSeenAllegianceCodes.add(rawStockAllegiance.code())
-
-            rawLocations = rawStockAllegiance.location()
-            if rawLocations is not None:
-                rawLocations = rawLocations.split('/')
-
-            if rawLocations:
-                # The database allegiance if for specific locations so only use it if
-                # it specifies this sectors abbreviation or 'various'. I can't find
-                # an explicit definition for various but all that can really be done with
-                # it is to treat it as global and use it for any sector (the same as if
-                # no locations had been specified)
-                for rawLocation in rawLocations:
-                    if rawAbbreviation and rawLocation == rawAbbreviation:
-                        rawLocalAllegiances.append(rawStockAllegiance)
-                        break
-
-                    if rawLocation.lower() == 'various':
-                        rawGlobalAllegiances.append(rawStockAllegiance)
-                        break
-            else:
-                # The database allegiance is global so it can be used for this sector
-                rawGlobalAllegiances.append(rawStockAllegiance)
-
-    rawMilieuAllegiances = _T5UnofficialAllegiancesMap.get(milieu)
-    if rawMilieuAllegiances:
-        for rawStockAllegiance in rawMilieuAllegiances:
-            if rawStockAllegiance.code() in rawSeenAllegianceCodes:
-                continue # Skip already defined allegiance
-            rawSeenAllegianceCodes.add(rawStockAllegiance.code())
-
-            rawGlobalAllegiances.append(rawStockAllegiance)
-
-    for rawStockAllegiance in _LegacyAllegiances:
-        if rawStockAllegiance.code() in rawSeenAllegianceCodes:
-            continue # Skip already defined allegiance
-        rawSeenAllegianceCodes.add(rawStockAllegiance.code())
-
-        rawGlobalAllegiances.append(rawStockAllegiance)
-
-    # Always include local allegiances
-    rawFilteredAllegiances = list(rawLocalAllegiances)
-
-    # Only include global allegiances if they're actually required
-    for rawAllegiance in rawGlobalAllegiances:
-        if rawAllegiance.code() in rawUsedAllegianceCodes:
-            rawFilteredAllegiances.append(rawAllegiance)
-        elif rawAllegiance.legacy() in rawUsedAllegianceCodes:
-            rawFilteredAllegiances.append(rawAllegiance)
-
-    return rawFilteredAllegiances
-
-def _mergeRouteStyles(
-        rawMetadata: survey.RawMetadata,
-        rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
-        rawSectorStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
-        ) -> typing.Dict[
-            str, # Style tag
-            typing.Tuple[
-                str, # Colour
-                str, # Style
-                float]]: # Width
-    routeStyleMap: typing.Dict[str, typing.Tuple[str, str, float]] = {}
-
-    if rawSectorStyleSheet:
-        for rawStyle in rawSectorStyleSheet.routeStyles():
-            tag = rawStyle.tag()
-            colour = rawStyle.colour()
-            style = rawStyle.style()
-            width = rawStyle.width()
-
-            if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for route style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
-                colour = None
-            if style is not None:
-                if style.lower() in _ValidLineStyles:
-                    style = style.lower()
-                else:
-                    logging.warning(f'Converter ignoring invalid line style {style} for route style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
-                    style = None
-
-            routeStyleMap[tag] = (colour, style, width)
-
-    if rawStockStyleSheet:
-        for rawStyle in rawStockStyleSheet.routeStyles():
-            tag = rawStyle.tag()
-            colour, style, width = routeStyleMap.get(tag, (None, None, None))
-            if colour is None:
-                colour = rawStyle.colour()
-            if style is None:
-                style = rawStyle.style()
-            if width is None:
-                width = rawStyle.width()
-
-            if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for route style {tag} from stock style sheet for {rawMetadata.canonicalName()}')
-                colour = None
-            if style is not None:
-                if style.lower() in _ValidLineStyles:
-                    style = style.lower()
-                else:
-                    logging.warning(f'Converter ignoring invalid line style {style} for route style {tag} from stock style sheet for {rawMetadata.canonicalName()}')
-                    style = None
-
-            routeStyleMap[tag] = (colour, style, width)
-
-    # Update all tag mappings with default values
-    if None in routeStyleMap:
-        defaultColour, defaultStyle, defaultWith = routeStyleMap.get(None)
-        for tag in list(routeStyleMap.keys()):
-            colour, style, width = routeStyleMap[tag]
-            if colour is None:
-                colour = defaultColour
-            if style is None:
-                style = defaultStyle
-            if width is None:
-                width = defaultWith
-            routeStyleMap[tag] = (colour, style, width)
-
-    return routeStyleMap
-
-def _mergeBorderStyles(
-        rawMetadata: survey.RawMetadata,
-        rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
-        rawSectorStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
-        ) -> typing.Dict[
-            str, # Style tag
-            typing.Tuple[
-                str, # Colour
-                str]]: # Style
-    borderStyleMap: typing.Dict[str, typing.Tuple[str, str]] = {}
-
-    if rawSectorStyleSheet:
-        for rawStyle in rawSectorStyleSheet.borderStyles():
-            tag = rawStyle.tag()
-            colour = rawStyle.colour()
-            style = rawStyle.style()
-
-            if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
-                colour = None
-            if style is not None:
-                if style.lower() in _ValidLineStyles:
-                    style = style.lower()
-                else:
-                    logging.warning(f'Converter ignoring invalid line style {style} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
-                    style = None
-
-            borderStyleMap[tag] = (colour, style)
-
-    if rawStockStyleSheet:
-        for rawStyle in rawStockStyleSheet.borderStyles():
-            tag = rawStyle.tag()
-            colour, style = borderStyleMap.get(tag, (None, None))
-            if colour is None:
-                colour = rawStyle.colour()
-            if style is None:
-                style = rawStyle.style()
-
-            if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
-                colour = None
-            if style is not None:
-                if style.lower() in _ValidLineStyles:
-                    style = style.lower()
-                else:
-                    logging.warning(f'Converter ignoring invalid line style {style} for border style {tag} from sector style sheet for {rawMetadata.canonicalName()}')
-                    style = None
-
-            borderStyleMap[tag] = (colour, style)
-
-    # Update all tag mappings with default values
-    if None in borderStyleMap:
-        defaultColour, defaultStyle = borderStyleMap.get(None)
-        for tag in list(borderStyleMap.keys()):
-            colour, style = borderStyleMap[tag]
-            if colour is None:
-                colour = defaultColour
-            if style is None:
-                style = defaultStyle
-            borderStyleMap[tag] = (colour, style)
-
-    return borderStyleMap
-
 def _createDbAlternateNames(
         rawMetadata: survey.RawMetadata
         ) -> typing.List[multiverse.DbAlternateName]:
@@ -519,294 +222,6 @@ def _createDbSubsectorNames(
                 name=name))
 
     return dbSubsectorNames
-
-# This is intended to mimic the logic of GetStockAllegianceFromCode from the
-# Traveller Map source code (SecondSurvey.cs). That code handles the precedence
-# of the various legacy allegiances by checking different maps in a specific
-# order each time it's called. My implementation creates a single map with all
-# the allegiances for the given sector. The way the map is populated is key to
-# maintaining the same precedence as Traveller Map
-def _createDbAllegiances(
-        milieu: str,
-        rawMetadata: survey.RawMetadata,
-        rawSystems: typing.Collection[survey.RawWorld],
-        rawStockAllegiances: typing.Optional[typing.Collection[
-            survey.RawStockAllegiance
-            ]] = None,
-        routeStyleMap: typing.Optional[typing.Mapping[
-            str, # Style tag
-            typing.Tuple[
-                str, # Colour
-                str, # Style
-                float # Width
-                ]]] = None,
-        borderStyleMap: typing.Optional[typing.Mapping[
-            str, # Style tag
-            typing.Tuple[
-                str, # Colour
-                str # Style
-                ]]] = None,
-        ) -> typing.Dict[str, multiverse.DbAllegiance]: # Returns code to DbAllegiance map
-    dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance] = {}
-
-    # Create database allegiances for the raw allegiances defined in the metadata.
-    # These take presence over any stock allegiances. This is done even if the
-    # allegiance isn't used in the sector. The reasoning being, if they were worth
-    # defining in the the metadata, they're worth having pre-defined in the db for
-    # when I add editing.
-    if rawMetadata.allegiances():
-        # The allegiances defined in the metadata are sometimes redefinitions of
-        # stock metadata but without all the information (e.g. missing legacy or
-        # base code). In order to keep as much information as possible, if there
-        # is a stock allegiance with the same code, name (and base/legacy if
-        # supplied in the metadata) then the stock allegiance should be used to
-        # fill in any missing data in the metadata definition.
-
-        # NOTE: It's important that the full list of stock allegiances are used
-        # when generating this map (rather than the just the ones used in the
-        # sector) as the metadata may contain definitions that aren't actually
-        # used but we still want to include them in the list of allegiances added
-        # to the database and we still want to use stock allegiances to fill in
-        # any missing information for them where possible.
-        rawStockAllegiancesCodeMap = {a.code(): a for a in  rawStockAllegiances}
-
-        for rawMetadataAllegiance in rawMetadata.allegiances():
-            code = rawMetadataAllegiance.code()
-            if not code:
-                logging.warning(f'Converter ignoring sector allegiance with empty code in {rawMetadata.canonicalName()}')
-                continue
-
-            name = rawMetadataAllegiance.name()
-            if not name:
-                logging.warning(f'Converter ignoring sector allegiance with empty name in {rawMetadata.canonicalName()}')
-                continue
-
-            baseCode = rawMetadataAllegiance.base()
-            legacyCode = None
-
-            rawStockAllegiance = rawStockAllegiancesCodeMap.get(code)
-            if rawStockAllegiance:
-                useStockInfo = (rawStockAllegiance.name() == name) and \
-                    ((not baseCode) or (rawStockAllegiance.base() == baseCode))
-                if useStockInfo:
-                    if not baseCode:
-                        baseCode = rawStockAllegiance.base()
-                    legacyCode = rawStockAllegiance.legacy()
-
-            routeColour, routeStyle, routeWidth = routeStyleMap.get(
-                code,
-                (None, None, None))
-            borderColour, borderStyle = borderStyleMap.get(
-                code,
-                (None, None))
-
-            dbAllegianceCodeMap[code] = multiverse.DbAllegiance(
-                code=code,
-                name=name,
-                base=baseCode if baseCode else None,
-                legacy=legacyCode if legacyCode else None,
-                routeColour=routeColour,
-                routeStyle=routeStyle,
-                routeWidth=routeWidth,
-                borderColour=borderColour,
-                borderStyle=borderStyle)
-
-    # Get the allegiance codes used in the sector
-    rawUsedAllegianceCodes = _findUsedAllegianceCodes(
-        rawMetadata=rawMetadata,
-        rawSystems=rawSystems)
-
-    # Get stock allegiances for this sector. This is any stock allegiances referenced in
-    # the sector data along with any unused allegiances that are seen as worth having
-    # pre-defined for the user when I add editing. The expectation is, there should be
-    # a database entry created for each of these sophonts, unless they're overridden in
-    # the sector specific metadata
-    rawStockAllegiances = _filterStockAllegiances(
-        milieu=milieu,
-        rawMetadata=rawMetadata,
-        rawUsedAllegianceCodes=rawUsedAllegianceCodes,
-        rawStockAllegiances=rawStockAllegiances)
-
-    # Create database allegiances for stock allegiances used by the sector
-    for rawStockAllegiance in rawStockAllegiances:
-        code = rawStockAllegiance.code()
-        name = rawStockAllegiance.name()
-        legacyCode = rawStockAllegiance.legacy()
-        baseCode = rawStockAllegiance.base()
-
-        dbAllegiance = dbAllegianceCodeMap.get(code)
-        if dbAllegiance:
-            # The metadata has overridden this allegiance code
-            continue
-
-        routeColour, routeStyle, routeWidth = routeStyleMap.get(
-            code,
-            (None, None, None))
-        borderColour, borderStyle = borderStyleMap.get(
-            code,
-            (None, None))
-
-        dbAllegianceCodeMap[code] = multiverse.DbAllegiance(
-            code=code,
-            name=name,
-            legacy=legacyCode if legacyCode else None,
-            base=baseCode if baseCode else None,
-            routeColour=routeColour,
-            routeStyle=routeStyle,
-            routeWidth=routeWidth,
-            borderColour=borderColour,
-            borderStyle=borderStyle)
-
-    # Find any codes that haven't had database allegiance defined. These might be
-    # legacy codes or they might be codes that aren't defined anywhere
-    rawMissingAllegianceCodes = []
-    for code in rawUsedAllegianceCodes:
-        if code not in dbAllegianceCodeMap:
-            rawMissingAllegianceCodes.append(code)
-
-    # Create database allegiances for any missing allegiance codes
-    if rawMissingAllegianceCodes:
-        # Create mapping to use for legacy codes. Only stock allegiances are used here as
-        # allegiances defined in the metadata don't support legacy codes.
-        rawStockAllegianceLegacyMap: typing.Dict[str, survey.RawStockAllegiance] = {}
-        for rawStockAllegiance in rawStockAllegiances:
-            if rawStockAllegiance.legacy() and rawStockAllegiance.legacy() not in rawStockAllegianceLegacyMap:
-                rawStockAllegianceLegacyMap[rawStockAllegiance.legacy()] = rawStockAllegiance
-
-        for code in rawMissingAllegianceCodes:
-            if code in dbAllegianceCodeMap:
-                continue
-
-            overrideCode = _LegacyAllegianceToT5Overrides.get(code)
-            rawStockAllegiance = rawStockAllegianceLegacyMap.get(overrideCode if overrideCode else code)
-
-            if rawStockAllegiance:
-                name = rawStockAllegiance.name()
-                legacyCode = rawStockAllegiance.legacy()
-                baseCode = rawStockAllegiance.base()
-
-                # There is a stock allegiance with a legacy code that matches the missing code.
-                # If there is an existing database allegiance that is an exact match _or_ a match
-                # where the existing database allegiance is just missing a legacy and/or base code
-                # (e.g. because it was defined in the metadata which doesn't support legacy codes),
-                # then that existing database allegiance can be used with the legacy/base codes
-                # updated if missing. This tries to minimise duplicate database allegiances that
-                # just vary by code when sectors use a mix of legacy and T5 allegiance codes.
-                # If there is no such existing database allegiance then we need to create a database
-                # allegiance that uses the missing code but takes the other information from the
-                # raw allegiance. This is done to maintain as much information as possible while
-                # still avoiding ending up with multiple database allegiances with the same code.
-                dbAllegiance = dbAllegianceCodeMap.get(rawStockAllegiance.code())
-                if dbAllegiance:
-                    useExisting = \
-                        dbAllegiance.name() == name and \
-                        dbAllegiance.legacy == legacyCode and \
-                        dbAllegiance.base() == baseCode
-                    if not useExisting:
-                        # There is an existing database allegiance for this code but it's not using
-                        # the same details as the stock allegiance so it's not appropriate to use
-                        # for this code. Create a new database allegiance, as the stock allegiance
-                        # code is already in use, use the raw code with the rest of the stock details
-                        routeColour, routeStyle, routeWidth = routeStyleMap.get(
-                            code,
-                            (None, None, None))
-                        borderColour, borderStyle = borderStyleMap.get(
-                            code,
-                            (None, None))
-
-                        dbAllegiance = multiverse.DbAllegiance(
-                            code=code,
-                            name=name,
-                            legacy=legacyCode if legacyCode else None,
-                            base=baseCode if baseCode else None,
-                            routeColour=routeColour,
-                            routeStyle=routeStyle,
-                            routeWidth=routeWidth,
-                            borderColour=borderColour,
-                            borderStyle=borderStyle)
-                else:
-                    # There is no existing database allegiance for this code so create one
-                    routeColour, routeStyle, routeWidth = routeStyleMap.get(
-                        rawStockAllegiance.code(),
-                        (None, None, None))
-                    borderColour, borderStyle = borderStyleMap.get(
-                        rawStockAllegiance.code(),
-                        (None, None))
-
-                    dbAllegiance = multiverse.DbAllegiance(
-                        code=rawStockAllegiance.code(),
-                        name=name,
-                        legacy=legacyCode if legacyCode else None,
-                        base=baseCode if baseCode else None,
-                        routeColour=routeColour,
-                        routeStyle=routeStyle,
-                        routeWidth=routeWidth,
-                        borderColour=borderColour,
-                        borderStyle=borderStyle)
-            else:
-                # There is no stock allegiance that has a legacy code matching this missing code.
-                # All we can do is create a database allegiance with information we do have
-                routeColour, routeStyle, routeWidth = routeStyleMap.get(
-                    code,
-                    (None, None, None))
-                borderColour, borderStyle = borderStyleMap.get(
-                    code,
-                    (None, None))
-
-                dbAllegiance = multiverse.DbAllegiance(
-                    code=code,
-                    name=code,
-                    legacy=None, # No legacy code known
-                    base=None, # No base code know
-                    routeColour=routeColour,
-                    routeStyle=routeStyle,
-                    routeWidth=routeWidth,
-                    borderColour=borderColour,
-                    borderStyle=borderStyle)
-
-            # NOTE: Use the code from the list of missing allegiances as the code as
-            # that's what the rest of the data will be referring to it as. This may
-            # be different from the allegiance code actually used by the allegiance.
-            # If they differ it has the effect of mapping the old raw code to the
-            # new code used in the database.
-            dbAllegianceCodeMap[code] = dbAllegiance
-
-            # If the allegiance code was overridden, add a mapping for the real code if it's
-            # used and there isn't already a mapping for it
-            if code != dbAllegiance.code() and \
-                    dbAllegiance.code() not in dbAllegianceCodeMap and \
-                    dbAllegiance.code() in rawUsedAllegianceCodes:
-                dbAllegianceCodeMap[dbAllegiance.code()] = dbAllegiance
-
-    # When adding a the legacy/base code mappings, it's important to
-    # use a copy of the list of values currently in the map rather
-    # than iterating over values directly as adding a view entry will
-    # invalidate the iterator
-    dbAllegiances = list(dbAllegianceCodeMap.values())
-
-    # Add mappings for legacy codes
-    for dbAllegiance in dbAllegiances:
-        legacyCode = dbAllegiance.legacy()
-        if not legacyCode:
-            continue
-        if legacyCode in dbAllegianceCodeMap:
-            continue
-        if legacyCode not in rawUsedAllegianceCodes:
-            continue
-        dbAllegianceCodeMap[legacyCode] = dbAllegiance
-
-    # Add mappings for base codes
-    for dbAllegiance in dbAllegiances:
-        baseCode = dbAllegiance.base()
-        if not baseCode:
-            continue
-        if baseCode in dbAllegianceCodeMap:
-            continue
-        if baseCode not in rawUsedAllegianceCodes:
-            continue
-        dbAllegianceCodeMap[baseCode] = dbAllegiance
-
-    return dbAllegianceCodeMap
 
 # This code generates a code for a sophont name following the rules defined on
 # the Traveller Wiki (at least as best as I can understand them)
@@ -1026,7 +441,7 @@ def _createDbStars(
 def _createDbBodies(
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
-        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
+        allegianceMapper: multiverse.AllegianceMapper,
         dbSophontCodeMap: typing.Dict[str, multiverse.DbSophont],
         dbSophontNameMap: typing.Dict[str, multiverse.DbSophont]
         ) -> typing.Optional[typing.List[multiverse.DbBody]]:
@@ -1092,7 +507,7 @@ def _createDbBodies(
     dbRulingAllegiances = _createDbRulingAllegiances(
         rawMetadata=rawMetadata,
         rawWorld=rawWorld,
-        dbAllegianceCodeMap=dbAllegianceCodeMap)
+        allegianceMapper=allegianceMapper)
 
     dbResearchStations = _createDbResearchStations(
         rawMetadata=rawMetadata,
@@ -1470,7 +885,7 @@ def _createDbColonySystems(
 def _createDbRulingAllegiances(
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
-        dbAllegianceCodeMap: typing.Mapping[str, multiverse.DbAllegiance]
+        allegianceMapper: multiverse.AllegianceMapper
         ) -> typing.Optional[typing.List[multiverse.DbRulingAllegiance]]:
     rawRemarks = rawWorld.remarks()
     if rawRemarks is None:
@@ -1483,7 +898,9 @@ def _createDbRulingAllegiances(
     dbRulingAllegiances = []
     seenRulingAllegiances = set()
     for rawAllegianceCode in rawRulingAllegiances:
-        dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode)
+        dbAllegiance = allegianceMapper.lookupAllegiance(
+            rawMetadata=rawMetadata,
+            code=rawAllegianceCode)
         if not dbAllegiance:
             # This should never happen. The remarks should already have been processed
             # to determine which allegiances were used and dbAllegiance created accordingly
@@ -1652,7 +1069,7 @@ def _createDbCustomRemarks(
 def _createDbSystems(
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld],
-        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
+        allegianceMapper: multiverse.AllegianceMapper,
         dbSophontCodeMap: typing.Dict[str, multiverse.DbSophont],
         dbSophontNameMap: typing.Dict[str, multiverse.DbSophont],
         ) -> typing.List[multiverse.DbSystem]:
@@ -1687,7 +1104,11 @@ def _createDbSystems(
                     dbZone = None
 
             rawAllegianceCode = rawWorld.allegianceCode()
-            dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
+            dbAllegiance = None
+            if rawAllegianceCode:
+                dbAllegiance = allegianceMapper.lookupAllegiance(
+                    rawMetadata=rawMetadata,
+                    code=rawAllegianceCode)
             if rawAllegianceCode and not dbAllegiance:
                 # This should never happen. The worlds should already have been processed
                 # to determine which allegiances were used and dbAllegiance created accordingly
@@ -1727,8 +1148,8 @@ def _createDbSystems(
             dbBodies = _createDbBodies(
                 rawMetadata=rawMetadata,
                 rawWorld=rawWorld,
+                allegianceMapper=allegianceMapper,
                 dbSophontCodeMap=dbSophontCodeMap,
-                dbAllegianceCodeMap=dbAllegianceCodeMap,
                 dbSophontNameMap=dbSophontNameMap)
 
             if dbBodies is not None:
@@ -1761,21 +1182,18 @@ def _createDbSystems(
 
 def _createDbRoutes(
         rawMetadata: survey.RawMetadata,
-        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
-        styleMap: typing.Optional[typing.Mapping[
-            str, # Style tag
-            typing.Tuple[
-                str, # Colour
-                str, # Style
-                float # Width
-                ]]] = None
+        allegianceMapper: multiverse.AllegianceMapper,
         ) -> typing.List[multiverse.DbRoute]:
     dbRoutes = []
 
     if rawMetadata.routes():
         for rawRoute in rawMetadata.routes():
             rawAllegianceCode = rawRoute.allegianceCode()
-            dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
+            dbAllegiance = None
+            if rawAllegianceCode:
+                dbAllegiance = allegianceMapper.lookupAllegiance(
+                    rawMetadata=rawMetadata,
+                    code=rawAllegianceCode)
             if rawAllegianceCode and not dbAllegiance:
                 # This should never happen. The routes should already have been processed
                 # to determine which allegiances were used and dbAllegiance created accordingly
@@ -1805,6 +1223,8 @@ def _createDbRoutes(
             # logic is quite fragile in order to mimic the the behaviour from
             # that code while allowing routes to inherit their style from their
             # allegiance.
+            # TODO: Need to add style mapping to allegiance mapper
+            """
             if styleMap and (dbAllegiance is None or dbAllegiance.code() not in styleMap):
                 precedence = []
                 if dbType is not None:
@@ -1824,6 +1244,7 @@ def _createDbRoutes(
                     if dbWidth is None:
                         dbWidth = defaultWidth
                     break
+            """
 
             # TODO: Usually hex range from 1-32 in X and 1-40 in Y. For some reason the
             # metadata spec says route start ends can be in the range 0-33 and 0-41. This
@@ -1854,13 +1275,7 @@ def _createDbRoutes(
 
 def _createDbBorders(
         rawMetadata: survey.RawMetadata,
-        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
-        styleMap: typing.Optional[typing.Mapping[
-            str, # Style tag
-            typing.Tuple[
-                str, # Colour
-                str # Style
-                ]]] = None,
+        allegianceMapper: multiverse.AllegianceMapper
         ) -> typing.List[multiverse.DbBorder]:
     dbBorders = []
 
@@ -1872,7 +1287,11 @@ def _createDbBorders(
                 continue
 
             rawAllegianceCode = rawBorder.allegianceCode()
-            dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
+            dbAllegiance = None
+            if rawAllegianceCode:
+                dbAllegiance = allegianceMapper.lookupAllegiance(
+                    rawMetadata=rawMetadata,
+                    code=rawAllegianceCode)
             if rawAllegianceCode and not dbAllegiance:
                 # This should never happen. The borders should already have been processed
                 # to determine which allegiances were used and dbAllegiance created accordingly
@@ -1897,12 +1316,15 @@ def _createDbBorders(
             # logic is quite fragile in order to mimic the the behaviour from
             # that code while allowing borders to inherit their style from their
             # allegiance.
+            # TODO: Need to add styles to allegiance mapper
+            """
             if styleMap and (dbAllegiance is None or dbAllegiance.code() not in styleMap):
                 defaultColour, defaultStyle = styleMap.get(None, (None, None))
                 if dbColour is None:
                     dbColour = defaultColour
                 if dbStyle is None:
                     dbStyle = defaultStyle
+            """
 
             rawLabel = rawBorder.label()
             dbLabel = rawLabel if rawLabel else None
@@ -2083,140 +1505,6 @@ def _createDbProducts(
                 reference=rawReference if rawReference else None))
 
     return dbProducts
-
-def convertRawSectorToDbSector(
-        # TODO: I don't like the fact I need to pass this in, it's only needed so I know
-        # which milieu specific allegiances to add
-        milieu: str,
-        rawMetadata: survey.RawMetadata,
-        rawSystems: typing.Collection[survey.RawWorld],
-        rawStockAllegiances: typing.Optional[typing.Collection[
-            survey.RawStockAllegiance
-            ]] = None,
-        rawStockSophonts: typing.Optional[typing.Collection[
-            survey.RawStockSophont
-            ]] = None,
-        rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
-        sectorId: typing.Optional[str] = None
-        ) -> multiverse.DbSector:
-    dbSectorX = rawMetadata.x()
-    dbSectorY = rawMetadata.y()
-    dbSectorName = rawMetadata.canonicalName()
-
-    rawSectorLanguage = rawMetadata.nameLanguage(rawMetadata.canonicalName())
-    dbSectorLanguage = rawSectorLanguage if rawSectorLanguage else None
-
-    rawAbbreviation = rawMetadata.abbreviation()
-    dbAbbreviation = rawAbbreviation if rawAbbreviation else None
-
-    rawSectorLabel = rawMetadata.sectorLabel()
-    dbSectorLabel = rawSectorLabel if rawSectorLabel else None
-
-    rawSelected = rawMetadata.selected()
-    dbSelected = rawSelected if rawSelected is not None else False
-
-    rawSectorStyleSheet = rawMetadata.styleSheet()
-
-    routeStyleMap = _mergeRouteStyles(
-        rawMetadata=rawMetadata,
-        rawStockStyleSheet=rawStockStyleSheet,
-        rawSectorStyleSheet=rawSectorStyleSheet)
-    borderStyleMap = _mergeBorderStyles(
-        rawMetadata=rawMetadata,
-        rawStockStyleSheet=rawStockStyleSheet,
-        rawSectorStyleSheet=rawSectorStyleSheet)
-
-    dbAlternateNames = _createDbAlternateNames(
-        rawMetadata=rawMetadata)
-
-    dbSubsectorNames = _createDbSubsectorNames(
-        rawMetadata=rawMetadata)
-
-    dbAllegianceCodeMap = _createDbAllegiances(
-        milieu=milieu,
-        rawMetadata=rawMetadata,
-        rawSystems=rawSystems,
-        rawStockAllegiances=rawStockAllegiances,
-        routeStyleMap=routeStyleMap,
-        borderStyleMap=borderStyleMap)
-    dbAllegiances = set(dbAllegianceCodeMap.values()) # Use unique allegiances
-
-    dbSophontCodeMap, dbSophontNameMap = _createDbSophonts(
-        rawMetadata=rawMetadata,
-        rawSystems=rawSystems,
-        rawStockSophonts=rawStockSophonts)
-    dbSophonts = set(itertools.chain(dbSophontCodeMap.values(), dbSophontNameMap.values())) # Use unique sophonts
-
-    dbSystems = _createDbSystems(
-        rawMetadata=rawMetadata,
-        rawSystems=rawSystems,
-        dbAllegianceCodeMap=dbAllegianceCodeMap,
-        dbSophontCodeMap=dbSophontCodeMap,
-        dbSophontNameMap=dbSophontNameMap)
-
-    dbRoutes = _createDbRoutes(
-        rawMetadata=rawMetadata,
-        dbAllegianceCodeMap=dbAllegianceCodeMap,
-        styleMap=routeStyleMap)
-
-    dbBorders = _createDbBorders(
-        rawMetadata=rawMetadata,
-        dbAllegianceCodeMap=dbAllegianceCodeMap,
-        styleMap=borderStyleMap)
-
-    dbRegions = _createDbRegions(
-        rawMetadata=rawMetadata)
-
-    dbLabels = _createDbLabels(
-        rawMetadata=rawMetadata)
-
-    dbTags = _createDbTags(rawMetadata=rawMetadata)
-
-    dbProducts = _createDbProducts(rawMetadata=rawMetadata)
-
-    rawSources = rawMetadata.sources()
-    rawPrimarySource = rawSources.primary() if rawSources else None
-
-    rawCredits = rawSources.credits() if rawSources else None
-    dbCredits = rawCredits if rawCredits else None
-
-    rawPublication = rawPrimarySource.publication() if rawPrimarySource else None
-    dbPublication = rawPublication if rawPublication else None
-
-    rawAuthor = rawPrimarySource.author() if rawPrimarySource else None
-    dbAuthor = rawAuthor if rawAuthor else None
-
-    rawPublisher = rawPrimarySource.publisher() if rawPrimarySource else None
-    dbPublisher = rawPublisher if rawPublisher else None
-
-    rawReference = rawPrimarySource.reference() if rawPrimarySource else None
-    dbReference = rawReference if rawReference else None
-
-    return multiverse.DbSector(
-        id=sectorId,
-        sectorX=dbSectorX,
-        sectorY=dbSectorY,
-        name=dbSectorName,
-        language=dbSectorLanguage,
-        abbreviation=dbAbbreviation,
-        sectorLabel=dbSectorLabel,
-        selected=dbSelected,
-        alternateNames=dbAlternateNames,
-        subsectorNames=dbSubsectorNames,
-        allegiances=dbAllegiances,
-        sophonts=dbSophonts,
-        systems=dbSystems,
-        routes=dbRoutes,
-        borders=dbBorders,
-        regions=dbRegions,
-        labels=dbLabels,
-        tags=dbTags,
-        credits=dbCredits,
-        publication=dbPublication,
-        author=dbAuthor,
-        publisher=dbPublisher,
-        reference=dbReference,
-        products=dbProducts)
 
 def _createRawAlternateNames(
         dbSector: multiverse.DbSector
@@ -2972,3 +2260,120 @@ def convertRawVectorsToDbMapLabels(
             dbLabels.append(dbLabel)
 
     return dbLabels
+
+def _convertRawSectorToDbSector(
+        rawMetadata: survey.RawMetadata,
+        rawWorlds: typing.Collection[survey.RawWorld],
+        rawStockSophonts: typing.Collection[survey.RawStockSophont],
+        allegianceMapper: multiverse.AllegianceMapper
+        ) -> multiverse.DbSector:
+    dbSectorX = rawMetadata.x()
+    dbSectorY = rawMetadata.y()
+    dbSectorName = rawMetadata.canonicalName()
+
+    rawSectorLanguage = rawMetadata.nameLanguage(rawMetadata.canonicalName())
+    dbSectorLanguage = rawSectorLanguage if rawSectorLanguage else None
+
+    rawAbbreviation = rawMetadata.abbreviation()
+    dbAbbreviation = rawAbbreviation if rawAbbreviation else None
+
+    rawSectorLabel = rawMetadata.sectorLabel()
+    dbSectorLabel = rawSectorLabel if rawSectorLabel else None
+
+    rawSelected = rawMetadata.selected()
+    dbSelected = rawSelected if rawSelected is not None else False
+
+    dbAlternateNames = _createDbAlternateNames(
+        rawMetadata=rawMetadata)
+
+    dbSubsectorNames = _createDbSubsectorNames(
+        rawMetadata=rawMetadata)
+
+    dbSophontCodeMap, dbSophontNameMap = _createDbSophonts(
+        rawMetadata=rawMetadata,
+        rawSystems=rawWorlds,
+        rawStockSophonts=rawStockSophonts)
+    dbSophonts = set(itertools.chain(dbSophontCodeMap.values(), dbSophontNameMap.values())) # Use unique sophonts
+
+    dbSystems = _createDbSystems(
+        rawMetadata=rawMetadata,
+        rawSystems=rawWorlds,
+        allegianceMapper=allegianceMapper,
+        dbSophontCodeMap=dbSophontCodeMap,
+        dbSophontNameMap=dbSophontNameMap)
+
+    dbRoutes = _createDbRoutes(
+        rawMetadata=rawMetadata,
+        allegianceMapper=allegianceMapper)
+
+    dbBorders = _createDbBorders(
+        rawMetadata=rawMetadata,
+        allegianceMapper=allegianceMapper)
+
+    dbRegions = _createDbRegions(
+        rawMetadata=rawMetadata)
+
+    dbLabels = _createDbLabels(
+        rawMetadata=rawMetadata)
+
+    dbTags = _createDbTags(rawMetadata=rawMetadata)
+
+    dbProducts = _createDbProducts(rawMetadata=rawMetadata)
+
+    rawSources = rawMetadata.sources()
+    rawPrimarySource = rawSources.primary() if rawSources else None
+
+    rawCredits = rawSources.credits() if rawSources else None
+    dbCredits = rawCredits if rawCredits else None
+
+    rawPublication = rawPrimarySource.publication() if rawPrimarySource else None
+    dbPublication = rawPublication if rawPublication else None
+
+    rawAuthor = rawPrimarySource.author() if rawPrimarySource else None
+    dbAuthor = rawAuthor if rawAuthor else None
+
+    rawPublisher = rawPrimarySource.publisher() if rawPrimarySource else None
+    dbPublisher = rawPublisher if rawPublisher else None
+
+    rawReference = rawPrimarySource.reference() if rawPrimarySource else None
+    dbReference = rawReference if rawReference else None
+
+    return multiverse.DbSector(
+        sectorX=dbSectorX,
+        sectorY=dbSectorY,
+        name=dbSectorName,
+        language=dbSectorLanguage,
+        abbreviation=dbAbbreviation,
+        sectorLabel=dbSectorLabel,
+        selected=dbSelected,
+        alternateNames=dbAlternateNames,
+        subsectorNames=dbSubsectorNames,
+        sophonts=dbSophonts,
+        systems=dbSystems,
+        routes=dbRoutes,
+        borders=dbBorders,
+        regions=dbRegions,
+        labels=dbLabels,
+        tags=dbTags,
+        credits=dbCredits,
+        publication=dbPublication,
+        author=dbAuthor,
+        publisher=dbPublisher,
+        reference=dbReference,
+        products=dbProducts)
+
+def convertRawSectorsToDbSectors(
+        rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.Collection[survey.RawWorld]]],
+        rawStockSophonts: typing.Collection[survey.RawStockSophont],
+        allegianceMapper: multiverse.AllegianceMapper
+        ) -> typing.List[multiverse.DbSector]:
+    dbSectors: typing.List[multiverse.DbSector] = []
+    for rawMetadata, rawWorlds in rawSectors:
+        dbSector = _convertRawSectorToDbSector(
+            rawMetadata=rawMetadata,
+            rawWorlds=rawWorlds,
+            rawStockSophonts=rawStockSophonts,
+            allegianceMapper=allegianceMapper)
+        dbSectors.append(dbSector)
+
+    return dbSectors

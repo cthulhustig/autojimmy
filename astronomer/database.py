@@ -24,6 +24,21 @@ def loadUniverseFromDatabase(
     except:
         raise ValueError(f'Universe {universeId!r} has unknown milieu {milieu!r}')
 
+    dbAllegiances = multiverse.UniverseManager.instance().allegiances(id=universeId)
+    allegiances: typing.List[astronomer.Allegiance] = []
+    for dbAllegiance in dbAllegiances:
+        try:
+            allegiance = astronomer.convertDbAllegianceToAstronomerAllegiance(
+                dbAllegiance=dbAllegiance,
+                entityFactory=entityFactory)
+            allegiances.append(allegiance)
+        except Exception as ex:
+            logging.error(
+                'Failed to load allegiance {name!r}'.format(
+                    name=dbAllegiance.name()),
+                exc_info=ex)
+            continue
+
     # NOTE: Using a generator is important as it means converting
     # each db sector to an astronomer sector is included in the
     # progress tick for that sector rather than the progress just
@@ -37,6 +52,7 @@ def loadUniverseFromDatabase(
         try:
             sector = astronomer.convertDbSectorToAstronomerSector(
                 dbSector=dbSector,
+                astroAllegiances=allegiances,
                 entityFactory=entityFactory)
             sectors.append(sector)
 
@@ -96,6 +112,7 @@ def loadUniverseFromDatabase(
     return entityFactory.createUniverse(
         universeId=universeId,
         milieu=milieu,
+        allegiances=allegiances,
         sectors=sectors,
         worlds=worlds,
         labels=labels,

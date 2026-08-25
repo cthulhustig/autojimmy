@@ -847,6 +847,8 @@ class ConfigDialog(gui.DialogEx):
             table.setTaggingColours(colours=colours)
 
     def _generateAllegianceDescriptions(self) -> typing.Mapping[str, str]:
+        assert(False) # TODO: This needs updated
+
         universe = astronomer.WorldManager.instance().universe()
 
         codeToAllegianceMap: typing.Dict[

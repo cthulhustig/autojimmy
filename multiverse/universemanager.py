@@ -126,169 +126,12 @@ class UniverseManager(object):
         if not name.strip():
             raise ValueError(f'Universe name can\'t be empty')
 
-        dbSectorData: typing.List[typing.Tuple[multiverse.DbSector, str]] = []
-        dbMapLabels: typing.List[multiverse.DbMapLabel] = []
-        dbMapVectors: typing.List[multiverse.DbMapVector] = []
+        dbAllegiances = dbSectors = dbMapLabels = dbMapVectors = None
         if importTravellerMap:
-            if reporter:
-                reporter.pushPrefix('Stock Allegiances: ')
-            try:
-                rawStockAllegiances = multiverse.loadSnapshotStockAllegiances(reporter=reporter)
-            finally:
-                if reporter:
-                    reporter.popPrefix()
-
-            if reporter:
-                reporter.pushPrefix('Stock Sophonts: ')
-            try:
-                rawStockSophonts = multiverse.loadSnapshotStockSophonts(reporter=reporter)
-            finally:
-                if reporter:
-                    reporter.popPrefix()
-
-            if reporter:
-                reporter.pushPrefix('Stock Style Sheet: ')
-            try:
-                rawStockStyleSheet = multiverse.loadSnapshotStyleSheet(reporter=reporter)
-            finally:
-                if reporter:
-                    reporter.popPrefix()
-
-            if reporter:
-                reporter.pushPrefix('Mega Labels: ')
-            try:
-                rawMegaLabels = multiverse.loadMegaLabels(reporter=reporter)
-            finally:
-                if reporter:
-                    reporter.popPrefix()
-
-            if reporter:
-                reporter.pushPrefix('Minor Labels: ')
-            try:
-                rawMinorLabels = multiverse.loadMinorLabels(reporter=reporter)
-            finally:
-                if reporter:
-                    reporter.popPrefix()
-
-            if reporter:
-                reporter.pushPrefix('World Labels: ')
-            try:
-                rawWorldLabels = multiverse.loadWorldLabels(reporter=reporter)
-            finally:
-                if reporter:
-                    reporter.popPrefix()
-
-            if reporter:
-                reporter.pushPrefix('Border Vectors: ')
-            try:
-                rawBorderVectors = multiverse.loadBorderVectors(reporter=reporter)
-            finally:
-                if reporter:
-                    reporter.popPrefix()
-
-            if reporter:
-                reporter.pushPrefix('Rift Vectors: ')
-            try:
-                rawRiftVectors = multiverse.loadRiftVectors(reporter=reporter)
-            finally:
-                if reporter:
-                    reporter.popPrefix()
-
-            if reporter:
-                reporter.pushPrefix('Route Vectors: ')
-            try:
-                rawRouteVectors = multiverse.loadRouteVectors(reporter=reporter)
-            finally:
-                if reporter:
-                    reporter.popPrefix()
-
-            rawUniverseInfo = survey.parseUniverseInfo(
-                content=multiverse.SnapshotManager.instance().readUniverseInfo(milieu=milieu))
-
-            dbMapLabels.extend(multiverse.convertRawLabelsToDbMapLabels(
-                rawMegaLabels=rawMegaLabels,
-                rawMinorLabels=rawMinorLabels,
-                rawWorldLabels=rawWorldLabels,
-                rawUniverseInfo=rawUniverseInfo))
-            dbMapLabels.extend(multiverse.convertRawVectorsToDbMapLabels(
-                rawBorderVectors=rawBorderVectors,
-                rawRiftVectors=rawRiftVectors,
-                rawRouteVectors=rawRouteVectors))
-
-
-            dbMapVectors.extend(multiverse.convertRawVectorsToDbMapVectors(
-                rawBorderVectors=rawBorderVectors,
-                rawRiftVectors=rawRiftVectors,
-                rawRouteVectors=rawRouteVectors))
-
-            sectorNames = []
-            for sectorInfo in rawUniverseInfo:
-                nameInfos = sectorInfo.nameInfos()
-                canonicalName = nameInfos[0].name() if nameInfos else None
-                if not canonicalName:
-                    logging.warning(f'Stock universe import ignoring sector with no name in milieu {milieu}')
-                    continue
-                sectorNames.append(canonicalName)
-
-            progressCount = 0
-            for sectorName in sectorNames:
-                if progressCallback:
-                    try:
-                        progressCallback(
-                            f'Converting: {milieu} - {sectorName}',
-                            progressCount,
-                            len(sectorNames))
-                        progressCount += 1
-                    except Exception as ex:
-                        logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
-
-                try:
-                    if reporter:
-                        reporter.pushPrefix(f'{milieu} {sectorName} Metadata - ')
-                    try:
-                        sectorMetadata = multiverse.SnapshotManager.instance().readSectorMetadata(
-                            milieu=milieu,
-                            sector=sectorName)
-                        rawMetadata = survey.parseMetadata(content=sectorMetadata, reporter=reporter)
-                    finally:
-                        if reporter:
-                            reporter.popPrefix()
-
-                    if reporter:
-                        reporter.pushPrefix(f'{milieu} {sectorName} Sector - ')
-                    try:
-                        sectorContent = multiverse.SnapshotManager.instance().readSectorContent(
-                            milieu=milieu,
-                            sector=sectorName)
-                        rawSystems = survey.parseSector(content=sectorContent, reporter=reporter)
-                    finally:
-                        if reporter:
-                            reporter.popPrefix()
-
-                    dbSector = multiverse.convertRawSectorToDbSector(
-                        milieu=milieu,
-                        rawMetadata=rawMetadata,
-                        rawSystems=rawSystems,
-                        rawStockAllegiances=rawStockAllegiances,
-                        rawStockSophonts=rawStockSophonts,
-                        rawStockStyleSheet=rawStockStyleSheet)
-
-                    dataHash = hashlib.sha256()
-                    dataHash.update(hashlib.sha256(sectorMetadata.encode()).digest())
-                    dataHash.update(hashlib.sha256(sectorContent.encode()).digest())
-
-                    dbSectorData.append((dbSector, dataHash.hexdigest()))
-                except Exception as ex:
-                    logging.error(f'Stock universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
-
-            if progressCallback:
-                try:
-                    progressCallback(
-                        f'Converting: Complete!',
-                        len(sectorNames),
-                        len(sectorNames))
-                except Exception as ex:
-                    logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
+            dbAllegiances, dbSectors, dbMapLabels, dbMapVectors = multiverse.convertStockUniverseToDbUniverse(
+                milieu=milieu,
+                progressCallback=progressCallback,
+                reporter=reporter)
 
         universeId = str(uuid.uuid4())
         universePath = UniverseManager._universeDbFilePath(id=universeId)
@@ -309,9 +152,15 @@ class UniverseManager(object):
             universeDb.setMilieu(milieu=milieu, transaction=transaction)
             universeDb.setDescription(description=description, transaction=transaction)
 
-            if dbSectorData:
-                sectorCount = len(dbSectorData)
-                for progressCount, (dbSector, dataHash) in enumerate(dbSectorData):
+            if dbAllegiances:
+                for dbAllegiance in dbAllegiances:
+                    universeDb.saveAllegiance(
+                        allegiance=dbAllegiance,
+                        transaction=transaction)
+
+            if dbSectors:
+                sectorCount = len(dbSectors)
+                for progressCount, dbSector in enumerate(dbSectors):
                     if progressCallback:
                         try:
                             progressCallback(
@@ -323,7 +172,8 @@ class UniverseManager(object):
 
                     universeDb.saveSector(
                         sector=dbSector,
-                        stockDataHash=dataHash,
+                        # TODO: Need to re-add support for data hash
+                        #stockDataHash=dataHash,
                         transaction=transaction)
 
             if dbMapLabels:
@@ -558,6 +408,17 @@ class UniverseManager(object):
                         sectorCount)
                 except Exception as ex:
                     logging.warning('UniverseManager universe read progress callback threw an exception', exc_info=ex)
+
+    def allegiances(self, id: str) -> typing.List[multiverse.DbAllegiance]:
+        universeInfo = UniverseManager._registry.universeById(id=id)
+        if not universeInfo:
+            raise ValueError(f'Unknown universe {id!r}')
+
+        dbPath = UniverseManager._universeDbFilePath(id=id)
+        universeDb = multiverse.UniverseDb(universePath=dbPath)
+
+        with universeDb.createTransaction() as transaction:
+            return universeDb.loadAllegiances(transaction=transaction)
 
     def mapLabels(self, id: str) -> typing.List[multiverse.DbMapLabel]:
         universeInfo = UniverseManager._registry.universeById(id=id)

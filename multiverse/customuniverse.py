@@ -164,6 +164,7 @@ def importLegacyCustomSectors(
             # be placed, the database code requires that the new sector object has
             # the same id as the one to be replaced.
             existingSectorInfo = existingSectorInfos.get((rawMetadata.x(), rawMetadata.y()))
+            assert(False) # TODO: This needs rewritten to work with new conversion process
             dbSector = multiverse.convertRawSectorToDbSector(
                 sectorId=existingSectorInfo.id() if existingSectorInfo else None,
                 milieu=milieu,

@@ -23,6 +23,31 @@ import typing
 #   - World Allegiance (System at the DB level)
 #   - Route Allegiance
 #   - Border Allegiance
+#
+# IMPORTANT: There is some kind of bug in the allegiance code that means it's generating
+# multiple copies of very similar allegiances. For example Zii has Zh and ZhCo but ZhCo isn't
+# actually used.
+#
+# IMPORTANT: I think it might make sense to drop Faraway as they're probably a big source
+# of inconsistent allegiances & sophonts
+#
+# Generating the universe list of allegiances
+# - Handling sectors where routes/borders don't use standard allegiance colours
+#   - I could drop styles from allegiances and set the allegiance styles on the routes/borders on import
+#       - DOWNSIDE: It means the user needs to manually set the colour on allegiance routes/borders rather than just assign the allegiance
+#   - I could add something to sectors that allow them to override the styles of an allegiance
+#       - DOWNSIDE: More complicated to implement
+#   - I could set styles on routes/borders in sectors that don't use the stock styles for an allegiance
+#       - The style info on allegiances would just come from the stock style sheet (otu.css)
+#       - If the sector styles match the stock style for an allegiance, ignore the styles from the sector and just use the allegiance style
+#       - If the sector styles don't match the stock style for an allegiance, set the style on the routes/borders from that sector that use the allegiance in question
+# - Rather than storing route/border style info in the allegiance
+#   - This is needed so I can have routes/regions for a given allegiance use different styles in different sectors
+#   - Ideally I'd resolve it all at import and store the correct colours with the routes/regions but render time logic may prevent that
+#   - An alternative would be add allegiance border/style info to the sector
+# - When generating the list I probably want to do it by allegiance name
+
+
 
 
 
@@ -433,12 +458,47 @@ class UniverseDb(object):
                     sectorId=sectorId,
                     cursor=connection.cursor())
 
+    def loadAllegiances(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> typing.List[multiverse.DbAllegiance]:
+        logging.debug(f'UniverseDb loading allegiances from universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._loadAllegiances(
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._loadAllegiances(
+                    cursor=connection.cursor())
+
+    def saveAllegiance(
+            self,
+            allegiance: multiverse.DbAllegiance,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        logging.debug(f'UniverseDb saving allegiance {allegiance.id()!r} to universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._saveAllegiance(
+                allegiance=allegiance,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._saveAllegiance(
+                    allegiance=allegiance,
+                    cursor=connection.cursor())
+
     def saveMapLabel(
             self,
             label: multiverse.DbMapLabel,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseDb saving universe labels to universe {self._universePath!r}')
+        logging.debug(f'UniverseDb saving universe label {label.id()!r} to universe {self._universePath!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -473,7 +533,7 @@ class UniverseDb(object):
             vector: multiverse.DbMapVector,
             transaction: typing.Optional[database.Transaction] = None
             ) -> None:
-        logging.debug(f'UniverseDb saving map vector to universe {self._universePath!r}')
+        logging.debug(f'UniverseDb saving map vector {vector.id()!r} to universe {self._universePath!r}')
 
         if transaction != None:
             connection = transaction.connection()
@@ -628,20 +688,15 @@ class UniverseDb(object):
                 requiredSchemaVersion=UniverseDb._AllegiancesTableSchema,
                 columns=[
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
                     database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
                     database.ColumnDef(columnName='legacy', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='base', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='route_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='route_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='route_width', columnType=database.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
                     database.ColumnDef(columnName='border_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='border_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['sector_id', 'code'])])
+                    database.ColumnDef(columnName='border_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
             self._database.createTable(
                 cursor=cursor,
@@ -1076,8 +1131,6 @@ class UniverseDb(object):
             cursor=cursor)
         sectorSubsectorNamesMap = self._readSubsectorNames(
             cursor=cursor)
-        sectorAllegiancesMap = self._readAllegiances(
-            cursor=cursor)
         sectorSophontsMap = self._readSophonts(
             cursor=cursor)
         sectorSystemsMap = self._readSystems(
@@ -1124,7 +1177,6 @@ class UniverseDb(object):
                     notes=row[13],
                     alternateNames=sectorAlternateNamesMap.get(sectorId),
                     subsectorNames=sectorSubsectorNamesMap.get(sectorId),
-                    allegiances=sectorAllegiancesMap.get(sectorId),
                     sophonts=sectorSophontsMap.get(sectorId),
                     systems=sectorSystemsMap.get(sectorId),
                     routes=sectorRoutesMap.get(sectorId),
@@ -1176,9 +1228,6 @@ class UniverseDb(object):
         self._insertSectorSubsectorNames(
             cursor=cursor,
             sector=sector)
-        self._insertSectorAllegiances(
-            cursor=cursor,
-            sector=sector)
         self._insertSectorSophonts(
             cursor=cursor,
             sector=sector)
@@ -1213,9 +1262,6 @@ class UniverseDb(object):
             cursor=cursor,
             sectorId=sectorId)
         sectorSubsectorNamesMap = self._readSubsectorNames(
-            cursor=cursor,
-            sectorId=sectorId)
-        sectorAllegiancesMap = self._readAllegiances(
             cursor=cursor,
             sectorId=sectorId)
         sectorSophontsMap = self._readSophonts(
@@ -1273,7 +1319,6 @@ class UniverseDb(object):
             notes=row[12],
             alternateNames=sectorAlternateNamesMap.get(sectorId),
             subsectorNames=sectorSubsectorNamesMap.get(sectorId),
-            allegiances=sectorAllegiancesMap.get(sectorId),
             sophonts=sectorSophontsMap.get(sectorId),
             systems=sectorSystemsMap.get(sectorId),
             routes=sectorRoutesMap.get(sectorId),
@@ -1408,89 +1453,6 @@ class UniverseDb(object):
                     exc_info=ex)
 
         return sectorNamesMap
-
-    def _insertSectorAllegiances(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.allegiances():
-            return
-
-        sql = """
-            INSERT INTO {table} (id, sector_id, code, name, legacy, base,
-                route_colour, route_style, route_width,
-                border_colour, border_style)
-            VALUES (:id, :sector_id, :code, :name, :legacy, :base,
-                :route_colour, :route_style, :route_width,
-                :border_colour, :border_style);
-            """.format(table=UniverseDb._AllegiancesTableName)
-        rows = []
-        for allegiance in sector.allegiances():
-            rows.append({
-                'id': allegiance.id(),
-                'sector_id': allegiance.sectorId(),
-                'code': allegiance.code(),
-                'name': allegiance.name(),
-                'legacy': allegiance.legacy(),
-                'base': allegiance.base(),
-                'route_colour': allegiance.routeColour(),
-                'route_style': allegiance.routeStyle(),
-                'route_width': allegiance.routeWidth(),
-                'border_colour': allegiance.borderColour(),
-                'border_style': allegiance.borderStyle()})
-        cursor.executemany(sql, rows)
-
-    def _readAllegiances(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # Sector Id
-                typing.List[multiverse.DbAllegiance]]:
-        sql = """
-            SELECT id, sector_id, code, name, legacy, base,
-                route_colour, route_style, route_width,
-                border_colour, border_style
-            FROM {table}
-            {where};
-            """.format(
-                table=UniverseDb._AllegiancesTableName,
-                where='WHERE sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        sectorAllegiancesMap = {}
-        for row in cursor.fetchall():
-            allegianceId = row[0]
-            sectorId = row[1]
-            allegiances = sectorAllegiancesMap.get(sectorId)
-            if allegiances is None:
-                allegiances = []
-                sectorAllegiancesMap[sectorId] = allegiances
-
-            try:
-                allegiances.append(multiverse.DbAllegiance(
-                    id=allegianceId,
-                    sectorId=sectorId,
-                    code=row[2],
-                    name=row[3],
-                    legacy=row[4],
-                    base=row[5],
-                    routeColour=row[6],
-                    routeStyle=row[7],
-                    routeWidth=row[8],
-                    borderColour=row[9],
-                    borderStyle=row[10]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load allegiance {allegianceId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectorAllegiancesMap
 
     def _insertSectorSophonts(
             self,
@@ -3257,6 +3219,76 @@ class UniverseDb(object):
             """.format(
             table=UniverseDb._SectorsTableName)
         cursor.execute(sql, {'id': sectorId})
+
+    def _saveAllegiance(
+            self,
+            cursor: sqlite3.Cursor,
+            allegiance: multiverse.DbAllegiance
+            ) -> None:
+        sql = """
+            INSERT INTO {table} (id, name, code, legacy, base,
+                route_colour, route_style, route_width,
+                border_colour, border_style)
+            VALUES (:id, :name, :code, :legacy, :base,
+                :route_colour, :route_style, :route_width,
+                :border_colour, :border_style)
+            ON CONFLICT(id) DO UPDATE SET
+                code = excluded.code,
+                name = excluded.name,
+                legacy = excluded.legacy,
+                base = excluded.base,
+                route_colour = excluded.route_colour,
+                route_style = excluded.route_style,
+                route_width = excluded.route_width,
+                border_colour = excluded.border_colour,
+                border_style = excluded.border_style;
+            """.format(table=UniverseDb._AllegiancesTableName)
+        cursor.execute(sql, {
+            'id': allegiance.id(),
+            'name': allegiance.name(),
+            'code': allegiance.code(),
+            'legacy': allegiance.legacy(),
+            'base': allegiance.base(),
+            'route_colour': allegiance.routeColour(),
+            'route_style': allegiance.routeStyle(),
+            'route_width': allegiance.routeWidth(),
+            'border_colour': allegiance.borderColour(),
+            'border_style': allegiance.borderStyle()})
+
+    def _loadAllegiances(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.List[multiverse.DbAllegiance]:
+        sql = """
+            SELECT id, name, code, legacy, base,
+                route_colour, route_style, route_width,
+                border_colour, border_style
+            FROM {table};
+            """.format(
+                table=UniverseDb._AllegiancesTableName)
+        cursor.execute(sql)
+
+        allegiances = []
+        for row in cursor.fetchall():
+            allegianceId = row[0]
+            try:
+                allegiances.append(multiverse.DbAllegiance(
+                    id=allegianceId,
+                    name=row[1],
+                    code=row[2],
+                    legacy=row[3],
+                    base=row[4],
+                    routeColour=row[5],
+                    routeStyle=row[6],
+                    routeWidth=row[7],
+                    borderColour=row[8],
+                    borderStyle=row[9]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load allegiance {allegianceId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return allegiances
 
     def _saveMapLabel(
             self,

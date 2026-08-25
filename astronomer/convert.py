@@ -120,6 +120,22 @@ def _mapAstronomerTextAlignmentToDbTextAlignment(
         ) -> typing.Optional[str]:
     return _AstronomerToDbTextAlignmentMap.get(alignment)
 
+def convertDbAllegianceToAstronomerAllegiance(
+        dbAllegiance: multiverse.DbAllegiance,
+        entityFactory: astronomer.EntityFactoryInterface
+        ) -> astronomer.Allegiance:
+    return entityFactory.createAllegiance(
+        entityId=dbAllegiance.id(),
+        name=dbAllegiance.name(),
+        code=dbAllegiance.code(),
+        legacyCode=dbAllegiance.legacy(),
+        baseCode=dbAllegiance.base(),
+        routeColour=dbAllegiance.routeColour(),
+        routeStyle=_mapDbLineStyleToAstronomerLineStyle(dbAllegiance.routeStyle()),
+        routeWidth=dbAllegiance.routeWidth(),
+        borderColour=dbAllegiance.borderColour(),
+        borderStyle=_mapDbLineStyleToAstronomerLineStyle(dbAllegiance.borderStyle()))
+
 def _createAstronomerAlternateNames(
         dbSector: multiverse.DbSector
         ) -> typing.Optional[typing.List[str]]:
@@ -163,58 +179,6 @@ def _createAstronomerSubsectorNames(
         return None
 
     return {dbSubsectorName.code(): dbSubsectorName.name() for dbSubsectorName in dbSubsectorNames}
-
-def _createAstronomerAllegiances(
-        dbSector: multiverse.DbSector,
-        sectorLogName: str
-        ) -> typing.Optional[typing.Dict[
-            str, # Allegiance Id
-            astronomer.Allegiance]]:
-    dbAllegiances = dbSector.allegiances()
-    if not dbAllegiances:
-        return None
-
-    dbIdToAstroAllegianceMap = {}
-    for dbAllegiance in dbAllegiances:
-        try:
-            routeStyle = dbAllegiance.routeStyle()
-            if routeStyle:
-                routeStyle = _mapDbLineStyleToAstronomerLineStyle(routeStyle)
-                if not routeStyle:
-                    logging.warning('Ignoring invalid route style "{style}" for allegiance {objectId} when loading sector {sectorId} ({name})'.format(
-                        style=dbAllegiance.routeStyle(),
-                        objectId=dbAllegiance.id(),
-                        sectorId=dbSector.id(),
-                        name=sectorLogName))
-
-            borderStyle = dbAllegiance.borderStyle()
-            if borderStyle:
-                borderStyle = _mapDbLineStyleToAstronomerLineStyle(borderStyle)
-                if not borderStyle:
-                    logging.warning('Ignoring invalid border style "{style}" for allegiance {objectId} when loading sector {sectorId} ({name})'.format(
-                        style=dbAllegiance.borderStyle(),
-                        objectId=dbAllegiance.id(),
-                        sectorId=dbSector.id(),
-                        name=sectorLogName))
-
-            dbIdToAstroAllegianceMap[dbAllegiance.id()] = astronomer.Allegiance(
-                code=dbAllegiance.code(),
-                name=dbAllegiance.name(),
-                legacyCode=dbAllegiance.legacy(),
-                baseCode=dbAllegiance.base(),
-                routeColour=dbAllegiance.routeColour(),
-                routeStyle=routeStyle,
-                routeWidth=dbAllegiance.routeWidth(),
-                borderColour=dbAllegiance.borderColour(),
-                borderStyle=borderStyle)
-        except Exception as ex:
-            logging.warning('Failed to create allegiance {objectId} when loading sector {sectorId} ({name})'.format(
-                    objectId=dbAllegiance.id(),
-                    sectorId=dbSector.id(),
-                    name=sectorLogName),
-                exc_info=ex)
-
-    return dbIdToAstroAllegianceMap
 
 def _createAstronomerSophonts(
         dbSector: multiverse.DbSector,
@@ -941,10 +905,13 @@ def _createAstronomerProducts(
 
 def convertDbSectorToAstronomerSector(
         dbSector: multiverse.DbSector,
+        astroAllegiances: typing.Collection[astronomer.Allegiance],
         entityFactory: typing.Optional[astronomer.EntityFactoryInterface] = None
         ) -> astronomer.Sector:
     if entityFactory is None:
         entityFactory = astronomer.DefaultEntityFactory()
+
+    dbIdToAstroAllegianceMap = {a.entityId(): a for a in astroAllegiances}
 
     sectorName = dbSector.name()
     sectorX = dbSector.sectorX()
@@ -960,10 +927,6 @@ def convertDbSectorToAstronomerSector(
     astroNameLanguages = _createAstronomerNameLanguages(dbSector=dbSector)
 
     astroSubsectorNames = _createAstronomerSubsectorNames(dbSector=dbSector)
-
-    dbIdToAstroAllegianceMap = _createAstronomerAllegiances(
-        dbSector=dbSector,
-        sectorLogName=sectorLogName)
 
     dbIdToAstroSophontMap = _createAstronomerSophonts(
         dbSector=dbSector,
@@ -1020,7 +983,6 @@ def convertDbSectorToAstronomerSector(
         sectorLabel=dbSector.sectorLabel(),
         subsectorNames=astroSubsectorNames,
         worlds=astroWorlds,
-        allegiances=dbIdToAstroAllegianceMap.values() if dbIdToAstroAllegianceMap else None,
         sophonts=dbIdToAstroSophontMap.values() if dbIdToAstroSophontMap else None,
         routes=astroRoutes,
         borders=astroBorders,
@@ -1042,17 +1004,8 @@ def convertRawSectorToAstronomerSector(
         entityFactory: typing.Optional[astronomer.EntityFactoryInterface] = None,
         sectorId: typing.Optional[str] = None
         ) -> astronomer.Sector:
-    dbSector = multiverse.convertRawSectorToDbSector(
-        milieu=milieu.value,
-        rawMetadata=rawMetadata,
-        rawSystems=rawSystems,
-        rawStockAllegiances=rawStockAllegiances,
-        rawStockSophonts=rawStockSophonts,
-        rawStockStyleSheet=rawStockStyleSheet,
-        sectorId=sectorId)
-    return convertDbSectorToAstronomerSector(
-        dbSector=dbSector,
-        entityFactory=entityFactory)
+    # TODO: Implement me
+    assert(False)
 
 def _createDbAlternateNames(
         astroSector: astronomer.Sector,
@@ -1099,55 +1052,6 @@ def _createDbSubsectorNames(
                 exc_info=ex)
 
     return dbSubsectorNames
-
-def _createDbAllegiances(
-        astroSector: astronomer.Sector,
-        sectorLogName: str
-        ) -> typing.Optional[typing.Dict[astronomer.Allegiance, multiverse.DbAllegiance]]:
-    astroAllegiances = astroSector.allegiances()
-    if not astroAllegiances:
-        return None
-
-    astroAllegianceToDbAllegianceMap = {}
-    for astroAllegiance in astroAllegiances:
-        astroRouteStyle = astroAllegiance.routeStyle()
-        dbRouteStyle = None
-        if astroRouteStyle:
-            dbRouteStyle = _mapAstronomerLineStyleToDbLineStyle(astroRouteStyle)
-            if dbRouteStyle is None:
-                logging.warning('Ignoring invalid Route Line Style {style} when converting Allegiance {allegiance} in {sector}'.format(
-                    style=astroRouteStyle.name,
-                    allegiance=astroAllegiance.name(),
-                    sector=sectorLogName))
-
-        astroBorderStyle = astroAllegiance.borderStyle()
-        dbBorderStyle = None
-        if astroBorderStyle:
-            dbBorderStyle = _mapAstronomerLineStyleToDbLineStyle(astroBorderStyle)
-            if dbBorderStyle is None:
-                logging.warning('Ignoring invalid Border Line Style {style} when converting Allegiance {allegiance} in {sector}'.format(
-                    style=astroBorderStyle.name,
-                    allegiance=astroAllegiance.name(),
-                    sector=sectorLogName))
-
-        try:
-            astroAllegianceToDbAllegianceMap[astroAllegiance] = multiverse.DbAllegiance(
-                code=astroAllegiance.code(),
-                name=astroAllegiance.name(),
-                legacy=astroAllegiance.legacyCode(),
-                base=astroAllegiance.baseCode(),
-                routeColour=astroAllegiance.routeColour(),
-                routeStyle=dbRouteStyle,
-                routeWidth=astroAllegiance.routeWidth(),
-                borderColour=astroAllegiance.borderColour(),
-                borderStyle=dbBorderStyle)
-        except Exception as ex:
-            logging.warning('Failed to create Allegiance {allegiance} when converting {sector}'.format(
-                    allegiance=astroAllegiance.name(),
-                    sector=sectorLogName),
-                exc_info=ex)
-
-    return astroAllegianceToDbAllegianceMap
 
 def _createDbSophonts(
         astroSector: astronomer.Sector,
@@ -1651,111 +1555,14 @@ def _createDbProducts(
 
     return dbProducts
 
-def convertAstronomerSectorToDbSector(
-        astroUniverse: astronomer.Universe,
-        astroSectorPos: astronomer.SectorPosition
-        ) -> multiverse.DbSector:
-    astroSector = astroUniverse.sectorByPosition(astroSectorPos)
-    if astroSector is None:
-        raise ValueError(f'No sector at ({astroSectorPos.sectorX()}, {astroSectorPos.sectorY()})')
-
-    astroWorlds = astroUniverse.worldsInSector(astroSectorPos)
-
-    sectorName = astroSector.name()
-    sectorLanguage = astroSector.nameLanguage(sectorName)
-    sectorPos = astroSector.position()
-
-    sectorLogName = '{sectorName} ({sectorX}, {sectorY})'.format(
-        sectorName=sectorName if sectorName else '<Unnamed Sector>',
-        sectorX=sectorPos.sectorX(),
-        sectorY=sectorPos.sectorY())
-
-    dbAlternateNames = _createDbAlternateNames(
-        astroSector=astroSector,
-        sectorLogName=sectorLogName)
-
-    dbSubsectorNames = _createDbSubsectorNames(
-        astroSector=astroSector,
-        sectorLogName=sectorLogName)
-
-    astroAllegianceToDbAllegianceMap = _createDbAllegiances(
-        astroSector=astroSector,
-        sectorLogName=sectorLogName)
-
-    astroSophontToDbSophontMap = _createDbSophonts(
-        astroSector=astroSector,
-        sectorLogName=sectorLogName)
-
-    dbSystems = _createDbSystems(
-        astroWorlds=astroWorlds,
-        sectorLogName=sectorLogName,
-        astroAllegianceToDbAllegianceMap=astroAllegianceToDbAllegianceMap,
-        astroSophontToDbSophontMap=astroSophontToDbSophontMap)
-
-    dbRoutes = _createDbRoutes(
-        astroSector=astroSector,
-        sectorLogName=sectorLogName,
-        astroAllegianceToDbAllegianceMap=astroAllegianceToDbAllegianceMap)
-
-    dbBorders = _createDbBorders(
-        astroSector=astroSector,
-        sectorLogName=sectorLogName,
-        astroAllegianceToDbAllegianceMap=astroAllegianceToDbAllegianceMap)
-
-    dbRegions = _createDbRegions(
-        astroSector=astroSector,
-        sectorLogName=sectorLogName)
-
-    dbLabels = _createDbLabels(
-        astroSector=astroSector,
-        sectorLogName=sectorLogName)
-
-    dbTags = _createDbTags(
-        astroSector=astroSector,
-        sectorLogName=sectorLogName)
-
-    dbProducts = _createDbProducts(
-        astroSector=astroSector,
-        sectorLogName=sectorLogName)
-
-    astroSource = astroSector.source()
-
-    return multiverse.DbSector(
-        id=astroSector.entityId(),
-        sectorX=sectorPos.sectorX(),
-        sectorY=sectorPos.sectorY(),
-        name=sectorName,
-        language=sectorLanguage,
-        abbreviation=astroSector.abbreviation(),
-        sectorLabel=astroSector.sectorLabel(),
-        selected=astroSector.selected(),
-        alternateNames=dbAlternateNames,
-        subsectorNames=dbSubsectorNames,
-        allegiances=astroAllegianceToDbAllegianceMap.values() if astroAllegianceToDbAllegianceMap else None,
-        sophonts=astroSophontToDbSophontMap.values() if astroSophontToDbSophontMap else None,
-        systems=dbSystems,
-        routes=dbRoutes,
-        borders=dbBorders,
-        regions=dbRegions,
-        labels=dbLabels,
-        tags=dbTags,
-        credits=astroSector.credits(),
-        publication=astroSource.publication() if astroSource else None,
-        author=astroSource.author() if astroSource else None,
-        publisher=astroSource.publisher() if astroSource else None,
-        reference=astroSource.reference() if astroSource else None,
-        products=dbProducts,
-        # TODO: Support notes
-        notes=None)
-
 def convertAstronomerSectorToRawSector(
         astroUniverse: astronomer.Universe,
         astroSectorPos: astronomer.SectorPosition
         ) -> typing.Tuple[
             survey.RawMetadata,
             typing.List[survey.RawWorld]]:
-    dbSector = convertAstronomerSectorToDbSector(astroUniverse=astroUniverse, astroSectorPos=astroSectorPos)
-    return multiverse.convertDbSectorToRawSector(dbSector=dbSector)
+    # TODO: Reimplement me
+    assert(False)
 
 def convertDbMapLabelToAstronomerMapLabel(
         dbLabel: multiverse.DbMapLabel,

@@ -806,11 +806,11 @@ class DbWorld(DbBody):
             if currentWorldId is not None and currentWorldId != worldId:
                 raise ValueError(f'{name} contains custom remarks that are already attached to a world')
 
-class DbAllegiance(DbSectorObject):
+class DbAllegiance(DbUniverseObject):
     def __init__(
             self,
-            code: str,
             name: str,
+            code: str,
             legacy: typing.Optional[str] = None,
             base: typing.Optional[str] = None,
             routeColour: typing.Optional[str] = None,
@@ -819,12 +819,11 @@ class DbAllegiance(DbSectorObject):
             borderColour: typing.Optional[str] = None,
             borderStyle: typing.Optional[str] = None,
             id: typing.Optional[str] = None, # None means allocate an id
-            sectorId: typing.Optional[str] = None
             ) -> None:
-        super().__init__(id=id, sectorId=sectorId)
+        super().__init__(id=id)
 
-        survey.validateAllegianceCode(name='code', value=code)
         survey.validateAllegianceName(name='name', value=name)
+        survey.validateAllegianceCode(name='code', value=code)
         survey.validateAllegianceCode(name='legacy', value=legacy, allowNone=True)
         survey.validateAllegianceCode(name='base', value=base, allowNone=True)
         survey.validateHtmlColour(name='routeColour', value=routeColour, allowNone=True)
@@ -833,8 +832,8 @@ class DbAllegiance(DbSectorObject):
         survey.validateHtmlColour(name='borderColour', value=borderColour, allowNone=True)
         survey.validateLineStyle(name='borderStyle', value=borderStyle, allowNone=True)
 
-        self._code = code
         self._name = name
+        self._code = code
         self._legacy = legacy
         self._base = base
         self._routeColour = routeColour
@@ -843,11 +842,11 @@ class DbAllegiance(DbSectorObject):
         self._borderColour = borderColour
         self._borderStyle = borderStyle
 
-    def code(self) -> str:
-        return self._code
-
     def name(self) -> str:
         return self._name
+
+    def code(self) -> str:
+        return self._code
 
     def legacy(self) -> typing.Optional[str]:
         return self._legacy
@@ -1432,7 +1431,6 @@ class DbSector(DbUniverseObject):
             selected: bool = False,
             alternateNames: typing.Optional[typing.Collection[DbAlternateName]] = None,
             subsectorNames: typing.Optional[typing.Collection[DbSubsectorName]] = None,
-            allegiances: typing.Optional[typing.Collection[DbAllegiance]] = None,
             sophonts: typing.Optional[typing.Collection[DbSophont]] = None,
             systems: typing.Optional[typing.Collection[DbSystem]] = None,
             routes: typing.Optional[typing.Collection[DbRoute]] = None,
@@ -1460,9 +1458,8 @@ class DbSector(DbUniverseObject):
         common.validateBool(name='selected', value=selected)
         DbSector._validateAlternateNames(name='alternateNames', value=alternateNames, sectorId=id)
         DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames, sectorId=id)
-        DbSector._validateAllegiances(name='allegiances', value=allegiances, sectorId=id)
         DbSector._validateSophonts(name='sophonts', value=sophonts, sectorId=id)
-        DbSector._validateSystems(name='systems', value=systems, sectorId=id, allegiances=allegiances, sophonts=sophonts)
+        DbSector._validateSystems(name='systems', value=systems, sectorId=id, sophonts=sophonts)
         DbSector._validateRoutes(name='routes', value=routes, sectorId=id)
         DbSector._validateBorders(name='borders', value=borders, sectorId=id)
         DbSector._validateRegions(name='regions', value=regions, sectorId=id)
@@ -1494,8 +1491,6 @@ class DbSector(DbUniverseObject):
         self._attachObjects(self._alternateNames)
         self._subsectorNames = list(subsectorNames) if subsectorNames else None
         self._attachObjects(self._subsectorNames)
-        self._allegiances = list(allegiances) if allegiances else None
-        self._attachObjects(self._allegiances)
         self._sophonts = list(sophonts) if sophonts else None
         self._attachObjects(self._sophonts)
         self._systems = list(systems) if systems else None
@@ -1539,9 +1534,6 @@ class DbSector(DbUniverseObject):
 
     def subsectorNames(self) -> typing.Optional[typing.Collection[DbSubsectorName]]:
         return self._subsectorNames
-
-    def allegiances(self) -> typing.Optional[typing.Collection[DbAllegiance]]:
-        return self._allegiances
 
     def sophonts(self) -> typing.Optional[typing.Collection[DbSophont]]:
         return self._sophonts
@@ -1687,7 +1679,6 @@ class DbSector(DbUniverseObject):
             name: str,
             value: typing.Optional[typing.Collection[DbSystem]],
             sectorId: typing.Optional[str],
-            allegiances: typing.Optional[typing.Collection[DbAllegiance]],
             sophonts: typing.Optional[typing.Collection[DbSophont]]
             ) -> None:
         if value is None:
@@ -1695,7 +1686,7 @@ class DbSector(DbUniverseObject):
 
         common.validateCollection(name=name, value=value, elementType=DbSystem, allowNone=True)
 
-        knownAllegianceIds = knownSophontIds = None
+        knownSophontIds = None
         seenHexes = set()
         for system in value:
             currentSectorId = system.sectorId()
@@ -1712,17 +1703,6 @@ class DbSector(DbUniverseObject):
                 for body in bodies:
                     if not isinstance(body, DbWorld):
                         continue
-
-                    rulers = body.rulingAllegiances()
-                    if rulers:
-                        if knownAllegianceIds is None:
-                            knownAllegianceIds = set()
-                            for allegiance in allegiances:
-                                knownAllegianceIds.add(allegiance.id())
-
-                        for ruler in rulers:
-                            if ruler.allegianceId() not in knownAllegianceIds:
-                                raise ValueError(f'{name} contains ruling allegiances that reference allegiances from another sector')
 
                     populations = body.sophontPopulations()
                     if populations:

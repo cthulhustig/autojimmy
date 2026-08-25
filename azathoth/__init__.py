@@ -1,4 +1,5 @@
 from .changeevent import *
+from .editableallegiance import *
 from .editablelabel import *
 from .editablevector import *
 from .editableroute import *

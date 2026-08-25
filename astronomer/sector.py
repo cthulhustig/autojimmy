@@ -15,7 +15,6 @@ class Sector(astronomer.Entity):
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
             worlds: typing.Optional[typing.Collection[astronomer.World]] = None,
-            allegiances: typing.Optional[typing.Collection[astronomer.Allegiance]] = None,
             sophonts: typing.Optional[typing.Collection[astronomer.Sophont]] = None,
             routes: typing.Optional[typing.Collection[astronomer.Route]] = None,
             borders: typing.Optional[typing.Collection[astronomer.Border]] = None,
@@ -37,7 +36,6 @@ class Sector(astronomer.Entity):
         common.validateStr(name='sectorLabel', value=sectorLabel, allowEmpty=False, allowNone=True)
         common.validateStrMapping(name='subsectorNames', value=subsectorNames, allowNone=True, allowEmptyKeys=False, allowEmptyValues=False, validationFn=Sector._validateSubsectorCode)
         common.validateCollection(name='worlds', value=worlds, elementType=astronomer.World, allowNone=True)
-        common.validateCollection(name='allegiances', value=allegiances, elementType=astronomer.Allegiance, allowNone=True)
         common.validateCollection(name='sophonts', value=sophonts, elementType=astronomer.Sophont, allowNone=True)
         common.validateCollection(name='routes', value=routes, elementType=astronomer.Route, allowNone=True)
         common.validateCollection(name='borders', value=borders, elementType=astronomer.Border, allowNone=True)
@@ -56,7 +54,6 @@ class Sector(astronomer.Entity):
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
         self._worlds = list(worlds) if worlds else []
-        self._allegiances = list(allegiances) if allegiances else []
         self._sophonts = list(sophonts) if sophonts else []
         self._routes = list(routes) if routes else []
         self._borders = list(borders) if borders else []
@@ -80,10 +77,6 @@ class Sector(astronomer.Entity):
                 subsectorWorlds = []
                 self._subsectorCodeToWorldsMap[subsectorCode] = subsectorWorlds
             subsectorWorlds.append(world)
-
-        self._allegianceCodeMap: typing.Dict[str, astronomer.Allegiance] = {}
-        for allegiance in self._allegiances:
-            self._allegianceCodeMap[allegiance.code()] = allegiance
 
         self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
         for entity in itertools.chain(self._worlds, self._borders, self._regions, self._routes, self._labels):
@@ -122,14 +115,8 @@ class Sector(astronomer.Entity):
             return []
         return common.ConstCollectionRef(worlds)
 
-    def allegiances(self) -> typing.Collection[astronomer.Allegiance]:
-        return common.ConstCollectionRef(self._allegiances)
-
     def sophonts(self) -> typing.Collection[astronomer.Sophont]:
         return common.ConstCollectionRef(self._sophonts)
-
-    def allegianceByCode(self, code: str) -> typing.Optional[astronomer.Allegiance]:
-        return self._allegianceCodeMap.get(code)
 
     def routes(self) -> typing.Collection[astronomer.Route]:
         return common.ConstCollectionRef(self._routes)
