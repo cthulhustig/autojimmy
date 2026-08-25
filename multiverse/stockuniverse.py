@@ -177,7 +177,7 @@ def convertStockUniverseToDbUniverse(
             logging.warning('Stock universe import progress callback threw an exception', exc_info=ex)
 
     return (
-        allegianceMapper.listAllegiances(usedOnly=True),
+        allegianceMapper.listAllegiances(),
         dbSectors,
         dbMapLabels,
         dbMapVectors)
