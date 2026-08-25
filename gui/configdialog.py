@@ -847,52 +847,22 @@ class ConfigDialog(gui.DialogEx):
             table.setTaggingColours(colours=colours)
 
     def _generateAllegianceDescriptions(self) -> typing.Mapping[str, str]:
-        assert(False) # TODO: This needs updated
-
         universe = astronomer.WorldManager.instance().universe()
 
-        codeToAllegianceMap: typing.Dict[
+        codeToNamesMap: typing.Dict[
             str, # Allegiance Code
-            typing.List[typing.Tuple[
-                astronomer.Sector,
-                astronomer.Allegiance]]] = {}
-        for sector in universe.sectors():
-            for allegiance in sector.allegiances():
-                allegianceList = codeToAllegianceMap.get(allegiance.code())
-                if allegianceList is None:
-                    allegianceList = []
-                    codeToAllegianceMap[allegiance.code()] = allegianceList
-                allegianceList.append((sector, allegiance))
+            typing.List[str]] = {}
+        for allegiance in universe.allegiances():
+            code = allegiance.code()
+            names = codeToNamesMap.get(code)
+            if names is None:
+                names = []
+                codeToNamesMap[code] = names
+            names.append(allegiance.name())
 
         codeToDescriptionMap: typing.Dict[str, str] = {}
-        for allegianceCode, allegianceList in codeToAllegianceMap.items():
-            nameToSectorMap: typing.Dict[
-                str, # Lower case allegiance name
-                typing.List[typing.Tuple[
-                    str, # Normal case allegiance name
-                    str # Sector name
-                    ]]] = {}
-            for sector, allegiance in allegianceList:
-                lowerName = allegiance.name().lower()
-                _, sectorList = nameToSectorMap.get(lowerName, (None, None))
-                if sectorList is None:
-                    sectorList = []
-                    nameToSectorMap[lowerName] = (allegiance.name(), sectorList)
-                sectorList.append(sector.name())
-
-            description = ''
-            for allegianceName, sectorList in nameToSectorMap.values():
-                if len(nameToSectorMap) == 1:
-                    description = allegianceName
-                    break
-
-                if description:
-                    description += '\n'
-                description += '{name} in {sectors}'.format(
-                    name=allegianceName,
-                    sectors=common.humanFriendlyListString(sectorList))
-
-            codeToDescriptionMap[allegianceCode] = description
+        for code, names in codeToNamesMap.items():
+            codeToDescriptionMap[code] = '\n'.join(sorted(names))
 
         # Sort by code
         tempList = [(code, desc) for code, desc in codeToDescriptionMap.items()]
