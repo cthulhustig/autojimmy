@@ -1183,6 +1183,7 @@ def _createDbSystems(
 def _createDbRoutes(
         rawMetadata: survey.RawMetadata,
         allegianceMapper: multiverse.AllegianceMapper,
+        styleMapper: multiverse.StyleMapper
         ) -> typing.List[multiverse.DbRoute]:
     dbRoutes = []
 
@@ -1223,9 +1224,12 @@ def _createDbRoutes(
             # logic is quite fragile in order to mimic the the behaviour from
             # that code while allowing routes to inherit their style from their
             # allegiance.
-            # TODO: Need to add style mapping to allegiance mapper
-            """
-            if styleMap and (dbAllegiance is None or dbAllegiance.code() not in styleMap):
+            # NOTE: When using this we use raw allegiance code as that is how the
+            # sector refers to its allegiance
+            # TODO: I'm really not sure about this logic, needs a lot of testing.
+            # I __think__ the weird not hasBorderStyle might just be achieving the
+            # same thing as dbAllegiance is None now
+            if dbAllegiance is None or not styleMapper.hasRouteStyle(rawMetadata=rawMetadata, tag=rawAllegianceCode):
                 precedence = []
                 if dbType is not None:
                     precedence.append(dbType)
@@ -1234,9 +1238,11 @@ def _createDbRoutes(
                 precedence.append(None)
 
                 for tag in precedence:
-                    if tag not in styleMap:
+                    if not styleMapper.hasRouteStyle(rawMetadata=rawMetadata, tag=tag):
                         continue
-                    defaultColour, defaultStyle, defaultWidth = styleMap.get(tag)
+                    defaultColour, defaultStyle, defaultWidth = styleMapper.lookupRouteStyle(
+                        rawMetadata=rawMetadata,
+                        tag=tag)
                     if dbColour is None:
                         dbColour = defaultColour
                     if dbStyle is None:
@@ -1244,7 +1250,29 @@ def _createDbRoutes(
                     if dbWidth is None:
                         dbWidth = defaultWidth
                     break
-            """
+
+            if dbAllegiance is not None:
+                dbAllegianceColour, dbAllegianceStyle, dbAllegianceWidth = styleMapper.lookupRouteStyle(
+                    rawMetadata=rawMetadata,
+                    # NOTE: Use raw allegiance code as that is how the sector refers
+                    # to its allegiance
+                    tag=rawAllegianceCode)
+
+                # If the style for this route is not the default style for its allegiance,
+                # we need to explicitly specify it as the route style
+                if dbAllegianceColour == dbAllegiance.routeColour():
+                    dbAllegianceColour = None
+                if dbAllegianceStyle == dbAllegiance.routeStyle():
+                    dbAllegianceStyle = None
+                if dbAllegianceWidth == dbAllegiance.routeWidth():
+                    dbAllegianceWidth = None
+
+                if dbColour is None:
+                    dbColour = dbAllegianceColour
+                if dbStyle is None:
+                    dbStyle = dbAllegianceStyle
+                if dbWidth is None:
+                    dbWidth = dbAllegianceWidth
 
             # TODO: Usually hex range from 1-32 in X and 1-40 in Y. For some reason the
             # metadata spec says route start ends can be in the range 0-33 and 0-41. This
@@ -1275,7 +1303,8 @@ def _createDbRoutes(
 
 def _createDbBorders(
         rawMetadata: survey.RawMetadata,
-        allegianceMapper: multiverse.AllegianceMapper
+        allegianceMapper: multiverse.AllegianceMapper,
+        styleMapper: multiverse.StyleMapper
         ) -> typing.List[multiverse.DbBorder]:
     dbBorders = []
 
@@ -1316,15 +1345,36 @@ def _createDbBorders(
             # logic is quite fragile in order to mimic the the behaviour from
             # that code while allowing borders to inherit their style from their
             # allegiance.
-            # TODO: Need to add styles to allegiance mapper
-            """
-            if styleMap and (dbAllegiance is None or dbAllegiance.code() not in styleMap):
-                defaultColour, defaultStyle = styleMap.get(None, (None, None))
+            # NOTE: When using this we use raw allegiance code as that is how the
+            # sector refers to its allegiance
+            # TODO: I'm really not sure about this logic, needs a lot of testing.
+            # I __think__ the weird not hasBorderStyle might just be achieving the
+            # same thing as dbAllegiance is None now
+            if dbAllegiance is None or not styleMapper.hasBorderStyle(rawMetadata=rawMetadata, tag=rawAllegianceCode):
+                defaultColour, defaultStyle = styleMapper.lookupBorderStyle(
+                    rawMetadata=rawMetadata,
+                    tag=None)
                 if dbColour is None:
                     dbColour = defaultColour
                 if dbStyle is None:
                     dbStyle = defaultStyle
-            """
+
+            if dbAllegiance is not None:
+                dbAllegianceColour, dbAllegianceStyle = styleMapper.lookupBorderStyle(
+                    rawMetadata=rawMetadata,
+                    tag=rawAllegianceCode)
+
+                # If the style for this border is not the default style for its allegiance,
+                # we need to explicitly specify it as the border style
+                if dbAllegianceColour == dbAllegiance.borderColour():
+                    dbAllegianceColour = None
+                if dbAllegianceStyle == dbAllegiance.borderStyle():
+                    dbAllegianceStyle = None
+
+                if dbColour is None:
+                    dbColour = dbAllegianceColour
+                if dbStyle is None:
+                    dbStyle = dbAllegianceStyle
 
             rawLabel = rawBorder.label()
             dbLabel = rawLabel if rawLabel else None
@@ -2265,7 +2315,8 @@ def _convertRawSectorToDbSector(
         rawMetadata: survey.RawMetadata,
         rawWorlds: typing.Collection[survey.RawWorld],
         rawStockSophonts: typing.Collection[survey.RawStockSophont],
-        allegianceMapper: multiverse.AllegianceMapper
+        allegianceMapper: multiverse.AllegianceMapper,
+        styleMapper: multiverse.StyleMapper
         ) -> multiverse.DbSector:
     dbSectorX = rawMetadata.x()
     dbSectorY = rawMetadata.y()
@@ -2304,11 +2355,13 @@ def _convertRawSectorToDbSector(
 
     dbRoutes = _createDbRoutes(
         rawMetadata=rawMetadata,
-        allegianceMapper=allegianceMapper)
+        allegianceMapper=allegianceMapper,
+        styleMapper=styleMapper)
 
     dbBorders = _createDbBorders(
         rawMetadata=rawMetadata,
-        allegianceMapper=allegianceMapper)
+        allegianceMapper=allegianceMapper,
+        styleMapper=styleMapper)
 
     dbRegions = _createDbRegions(
         rawMetadata=rawMetadata)
@@ -2365,7 +2418,8 @@ def _convertRawSectorToDbSector(
 def convertRawSectorsToDbSectors(
         rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.Collection[survey.RawWorld]]],
         rawStockSophonts: typing.Collection[survey.RawStockSophont],
-        allegianceMapper: multiverse.AllegianceMapper
+        allegianceMapper: multiverse.AllegianceMapper,
+        styleMapper: multiverse.StyleMapper
         ) -> typing.List[multiverse.DbSector]:
     dbSectors: typing.List[multiverse.DbSector] = []
     for rawMetadata, rawWorlds in rawSectors:
@@ -2373,7 +2427,8 @@ def convertRawSectorsToDbSectors(
             rawMetadata=rawMetadata,
             rawWorlds=rawWorlds,
             rawStockSophonts=rawStockSophonts,
-            allegianceMapper=allegianceMapper)
+            allegianceMapper=allegianceMapper,
+            styleMapper=styleMapper)
         dbSectors.append(dbSector)
 
     return dbSectors

@@ -4,6 +4,9 @@ import multiverse
 import survey
 import typing
 
+# TODO: Why are the stars for bases different on Thoznaen now compared to the last
+# release version. They were 5 point stars, now it looks like asterisks
+
 def convertStockUniverseToDbUniverse(
         milieu: str,
         # TODO: Do something with progress
@@ -156,16 +159,20 @@ def convertStockUniverseToDbUniverse(
         rawRiftVectors=rawRiftVectors,
         rawRouteVectors=rawRouteVectors))
 
+    styleMapper = multiverse.StyleMapper(
+        rawSectors=rawSectors,
+        rawStockStyleSheet=rawStockStyleSheet)
     allegianceMapper = multiverse.AllegianceMapper(
         milieu=milieu,
         rawSectors=rawSectors,
         rawStockAllegiances=rawStockAllegiances,
-        rawStockStyleSheet=rawStockStyleSheet)
+        styleMapper=styleMapper)
 
     dbSectors = multiverse.convertRawSectorsToDbSectors(
         rawSectors=rawSectors,
         rawStockSophonts=rawStockSophonts,
-        allegianceMapper=allegianceMapper)
+        allegianceMapper=allegianceMapper,
+        styleMapper=styleMapper)
 
     if progressCallback:
         try:

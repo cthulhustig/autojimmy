@@ -4,6 +4,7 @@ from .dbobjects import *
 from .universeregistry import *
 from .universedb import *
 from .universemanager import *
+from .stylemapper import *
 from .allegancemapper import *
 from .convert import *
 from .stockuniverse import *
