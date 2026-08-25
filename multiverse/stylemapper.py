@@ -170,9 +170,12 @@ class StyleMapper(object):
             style = rawStyle.style()
             width = rawStyle.width()
 
-            if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for default route style from sector style sheet for {loggingName}')
-                colour = None
+            if colour is not None:
+                try:
+                    colour = common.canonicalHtmlColour(colour)
+                except:
+                    logging.warning(f'Converter ignoring invalid colour {colour} for default route style from sector style sheet for {loggingName}')
+                    colour = None
             if style is not None:
                 if style.lower() in _ValidLineStyles:
                     style = style.lower()
@@ -198,9 +201,12 @@ class StyleMapper(object):
             style = rawStyle.style()
             width = rawStyle.width()
 
-            if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for route style {tag} from sector style sheet for {loggingName}')
-                colour = None
+            if colour is not None:
+                try:
+                    colour = common.canonicalHtmlColour(colour)
+                except:
+                    logging.warning(f'Converter ignoring invalid colour {colour} for route style {tag} from sector style sheet for {loggingName}')
+                    colour = None
             if style is not None:
                 if style.lower() in _ValidLineStyles:
                     style = style.lower()
@@ -293,9 +299,12 @@ class StyleMapper(object):
             colour = rawStyle.colour()
             style = rawStyle.style()
 
-            if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for default border style from sector style sheet for {loggingName}')
-                colour = None
+            if colour is not None:
+                try:
+                    colour = common.canonicalHtmlColour(colour)
+                except:
+                    logging.warning(f'Converter ignoring invalid colour {colour} for default border style from sector style sheet for {loggingName}')
+                    colour = None
             if style is not None:
                 if style.lower() in _ValidLineStyles:
                     style = style.lower()
@@ -318,9 +327,12 @@ class StyleMapper(object):
             colour = rawStyle.colour()
             style = rawStyle.style()
 
-            if colour is not None and not common.isValidHtmlColour(colour):
-                logging.warning(f'Converter ignoring invalid colour {colour} for route style {tag} from sector style sheet for {loggingName}')
-                colour = None
+            if colour is not None:
+                try:
+                    colour = common.canonicalHtmlColour(colour)
+                except:
+                    logging.warning(f'Converter ignoring invalid colour {colour} for route style {tag} from sector style sheet for {loggingName}')
+                    colour = None
             if style is not None:
                 if style.lower() in _ValidLineStyles:
                     style = style.lower()

@@ -621,13 +621,16 @@ def _createAstronomerRoutes(
                 offsetY=dbRoute.endHexY())
 
             colour = dbRoute.colour()
-            if colour and not common.isValidHtmlColour(htmlColour=colour):
-                logging.warning('Ignoring invalid colour "{colour}" for route {objectId} when loading sector {sectorId} ({name})'.format(
-                    colour=colour,
-                    objectId=dbRoute.id(),
-                    sectorId=dbSector.id(),
-                    name=sectorLogName))
-                colour = None
+            if colour is not None:
+                try:
+                    colour = common.canonicalHtmlColour(colour)
+                except:
+                    logging.warning('Ignoring invalid colour "{colour}" for route {objectId} when loading sector {sectorId} ({name})'.format(
+                        colour=colour,
+                        objectId=dbRoute.id(),
+                        sectorId=dbSector.id(),
+                        name=sectorLogName))
+                    colour = None
 
             allegianceId = dbRoute.allegianceId()
             routeAllegiance = None
@@ -690,13 +693,16 @@ def _createAstronomerBorders(
                     offsetY=hexY))
 
             colour = dbBorder.colour()
-            if colour and not common.isValidHtmlColour(htmlColour=colour):
-                logging.warning('Ignoring invalid colour "{colour}" for border {objectId} when loading sector {sectorId} ({name})'.format(
-                    colour=colour,
-                    objectId=dbBorder.id(),
-                    sectorId=dbSector.id(),
-                    name=sectorLogName))
-                colour = None
+            if colour is not None:
+                try:
+                    colour = common.canonicalHtmlColour(colour)
+                except:
+                    logging.warning('Ignoring invalid colour "{colour}" for border {objectId} when loading sector {sectorId} ({name})'.format(
+                        colour=colour,
+                        objectId=dbBorder.id(),
+                        sectorId=dbSector.id(),
+                        name=sectorLogName))
+                    colour = None
 
             allegianceId = dbBorder.allegianceId()
             borderAllegiance = None
@@ -760,13 +766,16 @@ def _createAstronomerRegions(
                     offsetY=hexY))
 
             colour = dbRegion.colour()
-            if colour and not common.isValidHtmlColour(htmlColour=colour):
-                logging.warning('Ignoring invalid colour "{colour}" for region {objectId} when loading sector {sectorId} ({name})'.format(
-                    colour=colour,
-                    objectId=dbRegion.id(),
-                    sectorId=dbSector.id(),
-                    name=sectorLogName))
-                colour = None
+            if colour is not None:
+                try:
+                    colour = common.canonicalHtmlColour(colour)
+                except:
+                    logging.warning('Ignoring invalid colour "{colour}" for region {objectId} when loading sector {sectorId} ({name})'.format(
+                        colour=colour,
+                        objectId=dbRegion.id(),
+                        sectorId=dbSector.id(),
+                        name=sectorLogName))
+                    colour = None
 
             astroRegions.append(entityFactory.createRegion(
                 entityId=dbRegion.id(),
@@ -799,13 +808,16 @@ def _createAstronomerLabels(
     for dbLabel in dbLabels:
         try:
             colour = dbLabel.colour()
-            if colour and not common.isValidHtmlColour(htmlColour=colour):
-                logging.warning('Ignoring invalid colour "{colour}" for label {objectId} when loading sector {sectorId} ({name})'.format(
-                    colour=colour,
-                    objectId=dbLabel.id(),
-                    sectorId=dbSector.id(),
-                    name=sectorLogName))
-                colour = None
+            if colour is not None:
+                try:
+                    colour = common.canonicalHtmlColour(colour)
+                except:
+                    logging.warning('Ignoring invalid colour "{colour}" for label {objectId} when loading sector {sectorId} ({name})'.format(
+                        colour=colour,
+                        objectId=dbLabel.id(),
+                        sectorId=dbSector.id(),
+                        name=sectorLogName))
+                    colour = None
 
             size = dbLabel.size()
             if size:

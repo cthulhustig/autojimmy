@@ -1208,9 +1208,12 @@ def _createDbRoutes(
             dbWidth = rawRoute.width()
 
             dbColour = rawRoute.colour()
-            if dbColour is not None and not common.isValidHtmlColour(dbColour):
-                logging.warning(f'Converter ignoring invalid route colour {dbColour} in {rawMetadata.canonicalName()}')
-                dbColour = None
+            if dbColour is not None:
+                try:
+                    dbColour = common.canonicalHtmlColour(dbColour)
+                except:
+                    logging.warning(f'Converter ignoring invalid route colour {dbColour} in {rawMetadata.canonicalName()}')
+                    dbColour = None
 
             dbStyle = rawRoute.style()
             if dbStyle is not None:
@@ -1329,9 +1332,12 @@ def _createDbBorders(
                     sector=rawMetadata.canonicalName()))
 
             dbColour = rawBorder.colour()
-            if dbColour is not None and not common.isValidHtmlColour(dbColour):
-                logging.warning(f'Converter ignoring invalid border colour {dbColour} in {rawMetadata.canonicalName()}')
-                dbColour = None
+            if dbColour is not None:
+                try:
+                    dbColour = common.canonicalHtmlColour(dbColour)
+                except:
+                    logging.warning(f'Converter ignoring invalid border colour {dbColour} in {rawMetadata.canonicalName()}')
+                    dbColour = None
 
             dbStyle = rawBorder.style()
             if dbStyle is not None:
@@ -1449,9 +1455,12 @@ def _createDbRegions(
                     worldOffsetY=(-rawLabelOffsetY * 0.7) if rawLabelOffsetY is not None else None)
 
             dbColour = rawRegion.colour()
-            if dbColour is not None and not common.isValidHtmlColour(dbColour):
-                logging.warning(f'Converter ignoring invalid region colour {dbColour} in {rawMetadata.canonicalName()}')
-                dbColour = None
+            if dbColour is not None:
+                try:
+                    dbColour = common.canonicalHtmlColour(dbColour)
+                except:
+                    logging.warning(f'Converter ignoring invalid region colour {dbColour} in {rawMetadata.canonicalName()}')
+                    dbColour = None
 
             # Show label use the same defaults as the Traveller Map Border class
             rawShowLabel = rawRegion.showLabel()
@@ -1498,9 +1507,12 @@ def _createDbLabels(
                 worldOffsetY=(-rawOffsetY * 0.7) if rawOffsetY is not None else None)
 
             dbColour = rawLabel.colour()
-            if dbColour is not None and not common.isValidHtmlColour(dbColour):
-                logging.warning(f'Converter ignoring invalid label colour {dbColour} in {rawMetadata.canonicalName()}')
-                dbColour = None
+            if dbColour is not None:
+                try:
+                    dbColour = common.canonicalHtmlColour(dbColour)
+                except:
+                    logging.warning(f'Converter ignoring invalid label colour {dbColour} in {rawMetadata.canonicalName()}')
+                    dbColour = None
 
             dbSize = rawLabel.size()
             if dbSize is not None:
