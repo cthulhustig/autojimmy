@@ -136,6 +136,16 @@ def convertDbAllegianceToAstronomerAllegiance(
         borderColour=dbAllegiance.borderColour(),
         borderStyle=_mapDbLineStyleToAstronomerLineStyle(dbAllegiance.borderStyle()))
 
+def convertDbSophontToAstronomerSophont(
+        dbSophont: multiverse.DbSophont,
+        entityFactory: astronomer.EntityFactoryInterface
+        ) -> astronomer.Allegiance:
+    return entityFactory.createSophont(
+        entityId=dbSophont.id(),
+        name=dbSophont.name(),
+        code=dbSophont.code(),
+        isMajor=dbSophont.isMajor())
+
 def _createAstronomerAlternateNames(
         dbSector: multiverse.DbSector
         ) -> typing.Optional[typing.List[str]]:
@@ -179,32 +189,6 @@ def _createAstronomerSubsectorNames(
         return None
 
     return {dbSubsectorName.code(): dbSubsectorName.name() for dbSubsectorName in dbSubsectorNames}
-
-def _createAstronomerSophonts(
-        dbSector: multiverse.DbSector,
-        sectorLogName: str
-        ) -> typing.Optional[typing.Dict[
-            str, # Sophont Id
-            astronomer.Sophont]]:
-    dbSophonts = dbSector.sophonts()
-    if not dbSophonts:
-        return None
-
-    dbIdToAstroSophontMap = {}
-    for dbSophont in dbSophonts:
-        try:
-            dbIdToAstroSophontMap[dbSophont.id()] = astronomer.Sophont(
-                code=dbSophont.code(),
-                name=dbSophont.name(),
-                isMajor=dbSophont.isMajor())
-        except Exception as ex:
-            logging.warning('Failed to create sophont {objectId} when loading sector {sectorId} ({name})'.format(
-                    objectId=dbSophont.id(),
-                    sectorId=dbSector.id(),
-                    name=sectorLogName),
-                exc_info=ex)
-
-    return dbIdToAstroSophontMap
 
 def _createAstronomerWorlds(
         dbSector: multiverse.DbSector,
@@ -918,12 +902,14 @@ def _createAstronomerProducts(
 def convertDbSectorToAstronomerSector(
         dbSector: multiverse.DbSector,
         astroAllegiances: typing.Collection[astronomer.Allegiance],
+        astroSophonts: typing.Collection[astronomer.Sophont],
         entityFactory: typing.Optional[astronomer.EntityFactoryInterface] = None
         ) -> astronomer.Sector:
     if entityFactory is None:
         entityFactory = astronomer.DefaultEntityFactory()
 
     dbIdToAstroAllegianceMap = {a.entityId(): a for a in astroAllegiances}
+    dbIdToAstroSophontMap = {s.entityId(): s for s in astroSophonts}
 
     sectorName = dbSector.name()
     sectorX = dbSector.sectorX()
@@ -939,10 +925,6 @@ def convertDbSectorToAstronomerSector(
     astroNameLanguages = _createAstronomerNameLanguages(dbSector=dbSector)
 
     astroSubsectorNames = _createAstronomerSubsectorNames(dbSector=dbSector)
-
-    dbIdToAstroSophontMap = _createAstronomerSophonts(
-        dbSector=dbSector,
-        sectorLogName=sectorLogName)
 
     astroWorlds = _createAstronomerWorlds(
         dbSector=dbSector,
@@ -995,7 +977,6 @@ def convertDbSectorToAstronomerSector(
         sectorLabel=dbSector.sectorLabel(),
         subsectorNames=astroSubsectorNames,
         worlds=astroWorlds,
-        sophonts=dbIdToAstroSophontMap.values() if dbIdToAstroSophontMap else None,
         routes=astroRoutes,
         borders=astroBorders,
         regions=astroRegions,
@@ -1064,29 +1045,6 @@ def _createDbSubsectorNames(
                 exc_info=ex)
 
     return dbSubsectorNames
-
-def _createDbSophonts(
-        astroSector: astronomer.Sector,
-        sectorLogName: str
-        ) -> typing.Optional[typing.Dict[astronomer.Sophont, multiverse.DbSophont]]:
-    astroSophonts = astroSector.sophonts()
-    if not astroSophonts:
-        return None
-
-    astroSophontToDbSophontMap = {}
-    for astroSophont in astroSophonts:
-        try:
-            astroSophontToDbSophontMap[astroSophont] = multiverse.DbSophont(
-                code=astroSophont.code(),
-                name=astroSophont.name(),
-                isMajor=astroSophont.isMajor())
-        except Exception as ex:
-            logging.warning('Failed to create Sophont {sophont} when converting {sector}'.format(
-                    sophont=astroSophont.name(),
-                    sector=sectorLogName),
-                exc_info=ex)
-
-    return astroSophontToDbSophontMap
 
 def _createDbSystems(
         astroWorlds: typing.Collection[astronomer.World],

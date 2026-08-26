@@ -1,40 +1,18 @@
+
+import astronomer
 import common
 import survey
 import typing
 
-class Sophont(object):
-    def __init__(
-            self,
-            code: str,
-            name: str,
-            isMajor: bool
-            ) -> None:
-        survey.validateSophontCode(name='code', value=code)
-        survey.validateSophontName(name='name', value=name)
-        common.validateBool(name='isMajor', value=isMajor)
-
-        self._code = code
-        self._name = name
-        self._isMajor = isMajor
-
-    def code(self) -> str:
-        return self._code
-
-    def name(self) -> str:
-        return self._name
-
-    def isMajor(self) -> bool:
-        return self._isMajor
-
 class SophontPopulation(object):
     def __init__(
             self,
-            sophont: Sophont,
+            sophont: 'astronomer.Sophont',
             percentage: typing.Optional[int], # None means unknown percentage
             isHomeWorld: bool,
             isDieBack: bool
             ) -> None:
-        common.validateObject(name='sophont', value=sophont, objectType=Sophont)
+        common.validateObject(name='sophont', value=sophont, objectType=astronomer.Sophont)
         survey.validateSophontPercentage(name='percentage', value=percentage, allowNone=True)
         common.validateBool(name='isHomeWorld', value=isHomeWorld)
         common.validateBool(name='isDieBack', value=isDieBack)
@@ -44,7 +22,7 @@ class SophontPopulation(object):
         self._isHomeWorld = isHomeWorld
         self._isDieBack = isDieBack
 
-    def sophont(self) -> Sophont:
+    def sophont(self) -> 'astronomer.Sophont':
         return self._sophont
 
     def code(self) -> str:

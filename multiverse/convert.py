@@ -72,30 +72,6 @@ import typing
 # - System: Canoga (Ilelish)
 #   - Has 5 nobilities
 
-_StockMajorSophonts = set([
-    'Human',
-    'Aslan',
-    'Droyne',
-    'Hiver',
-    'K\'kree',
-    'Vargr',
-])
-
-# This maps legacy single letter sophont codes to T5 sophont codes. There is no
-# mapping for 'F' as I've no idea what T5 sophont it maps to
-_LegacySophontMap = {
-    'A': 'Asla',
-    'C': 'Chir',
-    'D': 'Droy',
-    #'F': 'Non-Hiver Federation Member',
-    'H': 'Hive',
-    'I': 'Ithk',
-    'M': 'Huma',
-    'V': 'Varg',
-    'X': 'Adda',
-    'Z': 'Zhod'
-}
-
 _DieBackTradeCode = 'Di'
 _MilitaryRuleTradeCode = 'Mr'
 _ResearchStationTradeCode = 'Rs'
@@ -209,198 +185,6 @@ def _createDbSubsectorNames(
 
     return dbSubsectorNames
 
-# This code generates a code for a sophont name following the rules defined on
-# the Traveller Wiki (at least as best as I can understand them)
-# https://wiki.travellerrpg.com/Sophont_Code
-def _generateSophontCode(
-        name: str,
-        existingCodes: typing.Collection[str]
-        ) -> str:
-    length = len(name)
-    code = ''
-    for i in range(4):
-        char = name[i] if i < length else 'X'
-        code += char if char.isalpha() else 'X'
-
-    if code not in existingCodes:
-        return code
-
-    original = code
-    for i in range(len(code) - 1, -1, -1):
-        code = original
-        prefix = code[:i]
-        suffix = code[i + 1:]
-        for j in range(25):
-            old = ord(code[i])
-            new = old + j + 1
-            if old <= 90 and new > 90:
-                new -= 26
-            elif old <= 122 and new > 122:
-                new -= 26
-
-            code = prefix + chr(new) + suffix
-            if code not in existingCodes:
-                return code
-
-    raise RuntimeError(f'Unable to generate unused code for sophont {name}')
-
-def _generateSophontName(
-        code: str,
-        existingNames: typing.Collection[str]
-        ) -> str:
-    name = code
-    while name in existingNames:
-        name += 'X'
-    return name
-
-def _createDbSophonts(
-        rawMetadata: survey.RawMetadata,
-        rawSystems: typing.Collection[survey.RawWorld],
-        rawStockSophonts: typing.Optional[typing.Collection[
-            survey.RawStockSophont
-            ]] = None,
-        ) -> typing.Tuple[
-            typing.Dict[str, multiverse.DbSophont], # Code to DbSophont map
-            typing.Dict[str, multiverse.DbSophont]]: # Name to DbSophont map
-    rawStockSophontCodeMap: typing.Dict[str, survey.RawStockSophont] = {}
-    rawStockSophontNameMap: typing.Dict[str, survey.RawStockSophont] = {}
-    if rawStockSophonts:
-        for rawStockSophont in rawStockSophonts:
-            if not rawStockSophont.code():
-                logging.debug(f'Converter ignoring stock sophont with empty code when converting {rawMetadata.canonicalName()}')
-                continue
-
-            if not rawStockSophont.name():
-                logging.debug(f'Converter ignoring stock sophont with empty name when converting {rawMetadata.canonicalName()}')
-                continue
-
-            if rawStockSophont.code() in rawStockSophontCodeMap:
-                logging.warning(f'Converter ignoring duplicate stock sophont {rawStockSophont.code()} when converting {rawMetadata.canonicalName()}')
-                continue
-
-            if rawStockSophont.name() in rawStockSophontNameMap:
-                logging.warning(f'Converter ignoring duplicate stock sophont {rawStockSophont.name()} when converting {rawMetadata.canonicalName()}')
-                continue
-
-            rawStockSophontCodeMap[rawStockSophont.code()] = rawStockSophont
-            rawStockSophontNameMap[rawStockSophont.name()] = rawStockSophont
-
-    rawUsedSophontCodes: typing.Set[str] = set()
-    rawUsedSophontNames: typing.Set[str] = set()
-    rawMajorSophontNames: typing.Set[str] = set(_StockMajorSophonts)
-    if rawSystems:
-        for rawWorld in rawSystems:
-            rawRemarks = rawWorld.remarks()
-            if not rawRemarks:
-                continue
-
-            if rawRemarks.sophontPopulations():
-                for rawPopulation in rawRemarks.sophontPopulations():
-                    rawUsedSophontCodes.add(rawPopulation.sophont())
-
-            if rawRemarks.majorRaceHomeWorlds():
-                for rawPopulation in rawRemarks.majorRaceHomeWorlds():
-                    rawUsedSophontNames.add(rawPopulation.sophont())
-                    rawMajorSophontNames.add(rawPopulation.sophont())
-
-            if rawRemarks.minorRaceHomeWorlds():
-                for rawPopulation in rawRemarks.minorRaceHomeWorlds():
-                    rawUsedSophontNames.add(rawPopulation.sophont())
-
-            if rawRemarks.dieBackSophonts():
-                for rawSophont in rawRemarks.dieBackSophonts():
-                    rawUsedSophontNames.add(rawSophont)
-
-    dbSophontCodeMap: typing.Dict[str, multiverse.DbSophont] = {}
-    dbSophontNameMap: typing.Dict[str, multiverse.DbSophont] = {}
-
-    if rawUsedSophontNames or rawUsedSophontCodes:
-        uniqueCodes = set(rawStockSophontCodeMap.keys())
-        uniqueNames = set(rawStockSophontNameMap.keys())
-
-        for rawSophontName in rawUsedSophontNames:
-            if rawSophontName in dbSophontNameMap:
-                continue
-
-            rawStockSophont = rawStockSophontNameMap.get(rawSophontName)
-
-            if rawStockSophont:
-                dbSophont = multiverse.DbSophont(
-                    code=rawStockSophont.code(),
-                    name=rawStockSophont.name(),
-                    isMajor=rawSophontName in rawMajorSophontNames)
-            else:
-                # There is no stock sophont and therefore no predefined code, so generate
-                # one instead
-                dbSophontCode = _generateSophontCode(
-                    name=rawSophontName,
-                    existingCodes=uniqueCodes)
-                # NOTE: Only log this at debug as it happens a LOT in stock data
-                logging.debug(f'Converter generating sophont code {dbSophontCode} for sophont {rawSophontName} in {rawMetadata.canonicalName()}')
-                uniqueCodes.add(dbSophontCode)
-
-                dbSophont = multiverse.DbSophont(
-                    code=dbSophontCode,
-                    name=rawSophontName,
-                    isMajor=rawSophontName in rawMajorSophontNames)
-
-            dbSophontNameMap[rawSophontName] = dbSophont
-
-            # Add a mapping for the sophont code if it's used but there isn't
-            # already a mapping
-            if dbSophont.code() not in dbSophontCodeMap and \
-                    dbSophont.code() in rawUsedSophontCodes:
-                dbSophontCodeMap[dbSophont.code()] = dbSophont
-
-        for rawSophontCode in rawUsedSophontCodes:
-            if rawSophontCode in dbSophontCodeMap:
-                continue
-
-            overrideCode = _LegacySophontMap.get(rawSophontCode)
-            rawStockSophont = rawStockSophontCodeMap.get(overrideCode if overrideCode else rawSophontCode)
-
-            if rawStockSophont:
-                # There is a stock sophont that matches the code. If there is no
-                # DbSophont for that code then one needs to be created.
-                dbSophont = dbSophontCodeMap.get(rawStockSophont.code())
-                if not dbSophont:
-                    dbSophont = multiverse.DbSophont(
-                        code=rawStockSophont.code(),
-                        name=rawStockSophont.name(),
-                        isMajor=rawStockSophont.name() in rawMajorSophontNames)
-            else:
-                # There is no stock sophont that matches the code. Create a new
-                # DbSophont using the information we do have.
-                dbSophontName = _generateSophontName(
-                    code=rawSophontCode,
-                    existingNames=uniqueNames)
-                uniqueNames.add(dbSophontName)
-
-                dbSophont = multiverse.DbSophont(
-                    code=rawSophontCode,
-                    name=dbSophontName,
-                    isMajor=False)
-
-            # NOTE: It's important that the rawSophontCode is used as the key here as,
-            # in the case that the code was overridden, we still need a mapping for
-            # the raw code as that's what other raw data will be using
-            dbSophontCodeMap[rawSophontCode] = dbSophont
-
-            # If the sophont code was overridden, add an mapping for the real code if it's
-            # used and there isn't a mapping for it already
-            if rawSophontCode != dbSophont.code() and \
-                    dbSophont.code() not in dbSophontCodeMap and \
-                    dbSophont.code() in rawUsedSophontCodes:
-                dbSophontCodeMap[dbSophont.code()] = dbSophont
-
-            # Add a mapping for the sophont name if it's used but there isn't
-            # already a mapping
-            if dbSophont.name() not in dbSophontNameMap and \
-                    dbSophont.name() in rawUsedSophontNames:
-                dbSophontNameMap[dbSophont.name()] = dbSophont
-
-    return (dbSophontCodeMap, dbSophontNameMap)
-
 def _createDbStars(
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld
@@ -428,8 +212,7 @@ def _createDbBodies(
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
         allegianceMapper: multiverse.AllegianceMapper,
-        dbSophontCodeMap: typing.Dict[str, multiverse.DbSophont],
-        dbSophontNameMap: typing.Dict[str, multiverse.DbSophont]
+        sophontMapper: multiverse.SophontMapper
         ) -> typing.Optional[typing.List[multiverse.DbBody]]:
     rawSystemName = rawWorld.name()
     dbSystemName = rawSystemName if rawSystemName else None
@@ -479,8 +262,7 @@ def _createDbBodies(
     dbSophontPopulations = _createDbSophontPopulations(
         rawMetadata=rawMetadata,
         rawWorld=rawWorld,
-        dbSophontCodeMap=dbSophontCodeMap,
-        dbSophontNameMap=dbSophontNameMap)
+        sophontMapper=sophontMapper)
 
     dbOwningSystems = _createDbOwningSystems(
         rawMetadata=rawMetadata,
@@ -617,8 +399,7 @@ def _createDbBases(
 def _createDbSophontPopulations(
         rawMetadata: survey.RawMetadata,
         rawWorld: survey.RawWorld,
-        dbSophontCodeMap: typing.Mapping[str, multiverse.DbSophont],
-        dbSophontNameMap: typing.Mapping[str, multiverse.DbSophont]
+        sophontMapper: multiverse.SophontMapper
         ) -> typing.Optional[typing.List[multiverse.DbSophontPopulation]]:
     remarks = rawWorld.remarks()
     if remarks is None:
@@ -636,7 +417,8 @@ def _createDbSophontPopulations(
 
     if rawMajorHomeWorlds:
         for rawSophontPopulation in rawMajorHomeWorlds:
-            dbSophont = dbSophontNameMap.get(rawSophontPopulation.sophont())
+            dbSophont = sophontMapper.lookupSophontByName(
+                name=rawSophontPopulation.sophont())
             if not dbSophont:
                 # This should never happen, the remarks should already have been
                 # processed to extract all the used sophont names & codes and
@@ -671,7 +453,8 @@ def _createDbSophontPopulations(
 
     if rawMinorHomeWorlds:
         for rawSophontPopulation in rawMinorHomeWorlds:
-            dbSophont = dbSophontNameMap.get(rawSophontPopulation.sophont())
+            dbSophont = sophontMapper.lookupSophontByName(
+                name=rawSophontPopulation.sophont())
             if not dbSophont:
                 # This should never happen, the remarks should already have been
                 # processed to extract all the used sophont names & codes and
@@ -706,7 +489,9 @@ def _createDbSophontPopulations(
 
     if rawSophontPopulations:
         for rawSophontPopulation in rawSophontPopulations:
-            dbSophont = dbSophontCodeMap.get(rawSophontPopulation.sophont())
+            dbSophont = sophontMapper.lookupSophontByCode(
+                rawMetadata=rawMetadata,
+                code=rawSophontPopulation.sophont())
             if not dbSophont:
                 # This should never happen, the remarks should already have been
                 # processed to extract all the used sophont names & codes and
@@ -719,10 +504,6 @@ def _createDbSophontPopulations(
             if dbSophont in seenDbSophonts:
                 # There is already a population entry for this sophont so
                 # ignore this one
-                logging.warning('Converter ignoring duplicate sophont {sophont} for {world} in {sector}'.format(
-                    sophont=dbSophont.name(),
-                    world=rawWorld.name() if rawWorld.name() else survey.formatHexString(rawWorld.x(), rawWorld.y()),
-                    sector=rawMetadata.canonicalName()))
                 continue
             seenDbSophonts.add(dbSophont)
 
@@ -741,7 +522,7 @@ def _createDbSophontPopulations(
 
     if rawDieBackSophonts:
         for rawSophontName in rawDieBackSophonts:
-            dbSophont = dbSophontNameMap.get(rawSophontName)
+            dbSophont = sophontMapper.lookupSophontByName(name=rawSophontName)
             if not dbSophont:
                 # This should never happen, the remarks should already have been
                 # processed to extract all the used sophont names & codes and
@@ -1056,8 +837,7 @@ def _createDbSystems(
         rawMetadata: survey.RawMetadata,
         rawSystems: typing.Collection[survey.RawWorld],
         allegianceMapper: multiverse.AllegianceMapper,
-        dbSophontCodeMap: typing.Dict[str, multiverse.DbSophont],
-        dbSophontNameMap: typing.Dict[str, multiverse.DbSophont],
+        sophontMapper: multiverse.SophontMapper
         ) -> typing.List[multiverse.DbSystem]:
     dbSystems = []
 
@@ -1135,8 +915,7 @@ def _createDbSystems(
                 rawMetadata=rawMetadata,
                 rawWorld=rawWorld,
                 allegianceMapper=allegianceMapper,
-                dbSophontCodeMap=dbSophontCodeMap,
-                dbSophontNameMap=dbSophontNameMap)
+                sophontMapper=sophontMapper)
 
             if dbBodies is not None:
                 numCreatedWorlds = 0
@@ -2314,6 +2093,7 @@ def _convertRawSectorToDbSector(
         rawWorlds: typing.Collection[survey.RawWorld],
         rawStockSophonts: typing.Collection[survey.RawStockSophont],
         allegianceMapper: multiverse.AllegianceMapper,
+        sophontMapper: multiverse.SophontMapper,
         styleMapper: multiverse.StyleMapper
         ) -> multiverse.DbSector:
     dbSectorX = rawMetadata.x()
@@ -2338,18 +2118,11 @@ def _convertRawSectorToDbSector(
     dbSubsectorNames = _createDbSubsectorNames(
         rawMetadata=rawMetadata)
 
-    dbSophontCodeMap, dbSophontNameMap = _createDbSophonts(
-        rawMetadata=rawMetadata,
-        rawSystems=rawWorlds,
-        rawStockSophonts=rawStockSophonts)
-    dbSophonts = set(itertools.chain(dbSophontCodeMap.values(), dbSophontNameMap.values())) # Use unique sophonts
-
     dbSystems = _createDbSystems(
         rawMetadata=rawMetadata,
         rawSystems=rawWorlds,
         allegianceMapper=allegianceMapper,
-        dbSophontCodeMap=dbSophontCodeMap,
-        dbSophontNameMap=dbSophontNameMap)
+        sophontMapper=sophontMapper)
 
     dbRoutes = _createDbRoutes(
         rawMetadata=rawMetadata,
@@ -2399,7 +2172,6 @@ def _convertRawSectorToDbSector(
         selected=dbSelected,
         alternateNames=dbAlternateNames,
         subsectorNames=dbSubsectorNames,
-        sophonts=dbSophonts,
         systems=dbSystems,
         routes=dbRoutes,
         borders=dbBorders,
@@ -2417,6 +2189,7 @@ def convertRawSectorsToDbSectors(
         rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.Collection[survey.RawWorld]]],
         rawStockSophonts: typing.Collection[survey.RawStockSophont],
         allegianceMapper: multiverse.AllegianceMapper,
+        sophontMapper: multiverse.SophontMapper,
         styleMapper: multiverse.StyleMapper
         ) -> typing.List[multiverse.DbSector]:
     dbSectors: typing.List[multiverse.DbSector] = []
@@ -2426,6 +2199,7 @@ def convertRawSectorsToDbSectors(
             rawWorlds=rawWorlds,
             rawStockSophonts=rawStockSophonts,
             allegianceMapper=allegianceMapper,
+            sophontMapper=sophontMapper,
             styleMapper=styleMapper)
         dbSectors.append(dbSector)
 

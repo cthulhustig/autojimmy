@@ -25,6 +25,7 @@ class Universe(object):
             universeId: str,
             milieu: astronomer.Milieu,
             allegiances: typing.Collection[astronomer.Allegiance],
+            sophonts: typing.Collection[astronomer.Sophont],
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
             labels: typing.Collection[astronomer.MapLabel],
@@ -33,6 +34,7 @@ class Universe(object):
         common.validateStr(name='universeId', value=universeId, allowEmpty=False)
         common.validateObject(name='milieu', value=milieu, objectType=astronomer.Milieu)
         common.validateCollection(name='allegiances', value=allegiances, elementType=astronomer.Allegiance)
+        common.validateCollection(name='sophonts', value=sophonts, elementType=astronomer.Sophont)
         common.validateCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
         common.validateCollection(name='labels', value=labels, elementType=astronomer.MapLabel)
         common.validateCollection(name='vectors', value=vectors, elementType=astronomer.MapVector)
@@ -45,6 +47,10 @@ class Universe(object):
         self._allegiances: typing.List[astronomer.Allegiance] = []
         for allegiance in allegiances:
             self._addAllegiance(allegiance=allegiance)
+
+        self._sophonts: typing.List[astronomer.Sophont] = []
+        for sophont in sophonts:
+            self._addSophont(sophont=sophont)
 
         self._nameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._abbreviationToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
@@ -537,6 +543,10 @@ class Universe(object):
     def _addAllegiance(self, allegiance: astronomer.Allegiance) -> None:
         self._idToEntityMap[allegiance.entityId()] = allegiance
         self._allegiances.append(allegiance)
+
+    def _addSophont(self, sophont: astronomer.Sophont) -> None:
+        self._idToEntityMap[sophont.entityId()] = sophont
+        self._sophonts.append(sophont)
 
     def _addSector(self, sector: astronomer.Sector) -> None:
         self._idToEntityMap[sector.entityId()] = sector

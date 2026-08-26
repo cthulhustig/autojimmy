@@ -872,8 +872,8 @@ class DbAllegiance(DbUniverseObject):
 class DbSophont(DbSectorObject):
     def __init__(
             self,
-            code: str,
             name: str,
+            code: str,
             isMajor: bool,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
@@ -884,15 +884,15 @@ class DbSophont(DbSectorObject):
         survey.validateSophontName(name='name', value=name)
         common.validateBool(name='isMajor', value=isMajor)
 
-        self._code = code
         self._name = name
+        self._code = code
         self._isMajor = isMajor
-
-    def code(self) -> str:
-        return self._code
 
     def name(self) -> str:
         return self._name
+
+    def code(self) -> str:
+        return self._code
 
     def isMajor(self) -> bool:
         return self._isMajor
@@ -1431,7 +1431,6 @@ class DbSector(DbUniverseObject):
             selected: bool = False,
             alternateNames: typing.Optional[typing.Collection[DbAlternateName]] = None,
             subsectorNames: typing.Optional[typing.Collection[DbSubsectorName]] = None,
-            sophonts: typing.Optional[typing.Collection[DbSophont]] = None,
             systems: typing.Optional[typing.Collection[DbSystem]] = None,
             routes: typing.Optional[typing.Collection[DbRoute]] = None,
             borders: typing.Optional[typing.Collection[DbBorder]] = None,
@@ -1458,8 +1457,7 @@ class DbSector(DbUniverseObject):
         common.validateBool(name='selected', value=selected)
         DbSector._validateAlternateNames(name='alternateNames', value=alternateNames, sectorId=id)
         DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames, sectorId=id)
-        DbSector._validateSophonts(name='sophonts', value=sophonts, sectorId=id)
-        DbSector._validateSystems(name='systems', value=systems, sectorId=id, sophonts=sophonts)
+        DbSector._validateSystems(name='systems', value=systems, sectorId=id)
         DbSector._validateRoutes(name='routes', value=routes, sectorId=id)
         DbSector._validateBorders(name='borders', value=borders, sectorId=id)
         DbSector._validateRegions(name='regions', value=regions, sectorId=id)
@@ -1491,8 +1489,6 @@ class DbSector(DbUniverseObject):
         self._attachObjects(self._alternateNames)
         self._subsectorNames = list(subsectorNames) if subsectorNames else None
         self._attachObjects(self._subsectorNames)
-        self._sophonts = list(sophonts) if sophonts else None
-        self._attachObjects(self._sophonts)
         self._systems = list(systems) if systems else None
         self._attachObjects(self._systems)
         self._routes = list(routes) if routes else None
@@ -1678,15 +1674,13 @@ class DbSector(DbUniverseObject):
     def _validateSystems(
             name: str,
             value: typing.Optional[typing.Collection[DbSystem]],
-            sectorId: typing.Optional[str],
-            sophonts: typing.Optional[typing.Collection[DbSophont]]
+            sectorId: typing.Optional[str]
             ) -> None:
         if value is None:
             return
 
         common.validateCollection(name=name, value=value, elementType=DbSystem, allowNone=True)
 
-        knownSophontIds = None
         seenHexes = set()
         for system in value:
             currentSectorId = system.sectorId()
@@ -1697,23 +1691,6 @@ class DbSector(DbUniverseObject):
             if key in seenHexes:
                 raise ValueError(f'{name} contains multiple systems with the same location {key}')
             seenHexes.add(key)
-
-            bodies = system.bodies()
-            if bodies:
-                for body in bodies:
-                    if not isinstance(body, DbWorld):
-                        continue
-
-                    populations = body.sophontPopulations()
-                    if populations:
-                        if knownSophontIds is None:
-                            knownSophontIds = set()
-                            for sophont in sophonts:
-                                knownSophontIds.add(sophont.id())
-
-                        for populations in populations:
-                            if populations.sophontId() not in knownSophontIds:
-                                raise ValueError(f'{name} contains sophont populations that reference sophonts from another sector')
 
     @staticmethod
     def _validateRoutes(

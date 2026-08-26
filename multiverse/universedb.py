@@ -493,6 +493,41 @@ class UniverseDb(object):
                     allegiance=allegiance,
                     cursor=connection.cursor())
 
+    def loadSophonts(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> typing.List[multiverse.DbSophont]:
+        logging.debug(f'UniverseDb loading sophonts from universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._loadSophonts(
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._loadSophonts(
+                    cursor=connection.cursor())
+
+    def saveSophont(
+            self,
+            sophont: multiverse.DbSophont,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        logging.debug(f'UniverseDb saving sophont {sophont.id()!r} to universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._saveSophont(
+                sophont=sophont,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._saveSophont(
+                    sophont=sophont,
+                    cursor=connection.cursor())
+
     def saveMapLabel(
             self,
             label: multiverse.DbMapLabel,
@@ -704,19 +739,9 @@ class UniverseDb(object):
                 requiredSchemaVersion=UniverseDb._SophontsTableSchema,
                 columns=[
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
                     database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='is_major', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['sector_id', 'code']),
-                    # NOTE: Unlike most entities (e.g. allegiances) the sophont name must be unique
-                    # for a given sector. This is because remarks such as major/minor race and dieback
-                    # refer to the sophont by name rather than code so it needs to be unique to prevent
-                    # ambiguity
-                    database.UniqueConstraintDef(columnNames=['sector_id', 'name'])])
+                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='is_major', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
@@ -1131,8 +1156,6 @@ class UniverseDb(object):
             cursor=cursor)
         sectorSubsectorNamesMap = self._readSubsectorNames(
             cursor=cursor)
-        sectorSophontsMap = self._readSophonts(
-            cursor=cursor)
         sectorSystemsMap = self._readSystems(
             cursor=cursor)
         sectorRoutesMap = self._readRoutes(
@@ -1177,7 +1200,6 @@ class UniverseDb(object):
                     notes=row[13],
                     alternateNames=sectorAlternateNamesMap.get(sectorId),
                     subsectorNames=sectorSubsectorNamesMap.get(sectorId),
-                    sophonts=sectorSophontsMap.get(sectorId),
                     systems=sectorSystemsMap.get(sectorId),
                     routes=sectorRoutesMap.get(sectorId),
                     borders=sectorBordersMap.get(sectorId),
@@ -1228,9 +1250,6 @@ class UniverseDb(object):
         self._insertSectorSubsectorNames(
             cursor=cursor,
             sector=sector)
-        self._insertSectorSophonts(
-            cursor=cursor,
-            sector=sector)
         self._insertSectorSystems(
             cursor=cursor,
             sector=sector)
@@ -1262,9 +1281,6 @@ class UniverseDb(object):
             cursor=cursor,
             sectorId=sectorId)
         sectorSubsectorNamesMap = self._readSubsectorNames(
-            cursor=cursor,
-            sectorId=sectorId)
-        sectorSophontsMap = self._readSophonts(
             cursor=cursor,
             sectorId=sectorId)
         sectorSystemsMap = self._readSystems(
@@ -1319,7 +1335,6 @@ class UniverseDb(object):
             notes=row[12],
             alternateNames=sectorAlternateNamesMap.get(sectorId),
             subsectorNames=sectorSubsectorNamesMap.get(sectorId),
-            sophonts=sectorSophontsMap.get(sectorId),
             systems=sectorSystemsMap.get(sectorId),
             routes=sectorRoutesMap.get(sectorId),
             borders=sectorBordersMap.get(sectorId),
@@ -1453,71 +1468,6 @@ class UniverseDb(object):
                     exc_info=ex)
 
         return sectorNamesMap
-
-    def _insertSectorSophonts(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.sophonts():
-            return
-
-        sql = """
-            INSERT INTO {table} (id, sector_id, code, name, is_major)
-            VALUES (:id, :sector_id, :code, :name, :is_major);
-            """.format(table=UniverseDb._SophontsTableName)
-        rows = []
-        for sophont in sector.sophonts():
-            rows.append({
-                'id': sophont.id(),
-                'sector_id': sophont.sectorId(),
-                'code': sophont.code(),
-                'name': sophont.name(),
-                'is_major': 1 if sophont.isMajor() else 0})
-        cursor.executemany(sql, rows)
-
-    def _readSophonts(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # Sector Id
-                typing.List[multiverse.DbSophont]]:
-        sql = """
-            SELECT id, sector_id, code, name, is_major
-            FROM {table}
-            {where};
-            """.format(
-                table=UniverseDb._SophontsTableName,
-                where='WHERE sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        sectorSophontsMap = {}
-        for row in cursor.fetchall():
-            sophontId = row[0]
-            sectorId = row[1]
-            sophonts = sectorSophontsMap.get(sectorId)
-            if sophonts is None:
-                sophonts = []
-                sectorSophontsMap[sectorId] = sophonts
-
-            try:
-                sophonts.append(multiverse.DbSophont(
-                    id=sophontId,
-                    sectorId=sectorId,
-                    code=row[2],
-                    name=row[3],
-                    isMajor=True if row[4] else False))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load sophont {sophontId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectorSophontsMap
 
     def _insertSectorSystems(
             self,
@@ -3289,6 +3239,52 @@ class UniverseDb(object):
                     exc_info=ex)
 
         return allegiances
+
+    def _saveSophont(
+            self,
+            cursor: sqlite3.Cursor,
+            sophont: multiverse.DbSophont
+            ) -> None:
+        sql = """
+            INSERT INTO {table} (id, name, code, is_major)
+            VALUES (:id, :name, :code, :is_major)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                code = excluded.code,
+                is_major = excluded.is_major;
+            """.format(table=UniverseDb._SophontsTableName)
+        cursor.execute(sql, {
+            'id': sophont.id(),
+            'name': sophont.name(),
+            'code': sophont.code(),
+            'is_major': 1 if sophont.isMajor() else 0})
+
+    def _loadSophonts(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.List[multiverse.DbSophont]:
+        sql = """
+            SELECT id, name, code, is_major
+            FROM {table};
+            """.format(
+                table=UniverseDb._SophontsTableName)
+        cursor.execute(sql)
+
+        sophonts = []
+        for row in cursor.fetchall():
+            sophontId = row[0]
+            try:
+                sophonts.append(multiverse.DbSophont(
+                    id=sophontId,
+                    name=row[1],
+                    code=row[2],
+                    isMajor=True if row[3] else False))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load sophont {sophontId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return sophonts
 
     def _saveMapLabel(
             self,

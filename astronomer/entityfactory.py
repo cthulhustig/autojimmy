@@ -8,6 +8,7 @@ class EntityFactoryInterface(object):
             universeId: str,
             milieu: astronomer.Milieu,
             allegiances: typing.Collection[astronomer.Allegiance],
+            sophonts: typing.Collection[astronomer.Sophont],
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
             labels: typing.Collection[astronomer.MapLabel],
@@ -30,6 +31,15 @@ class EntityFactoryInterface(object):
             ) -> astronomer.Allegiance:
         raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createAllegiance')
 
+    def createSophont(
+            self,
+            entityId: str,
+            name: str,
+            code: str,
+            isMajor: bool
+            ) -> astronomer.Sophont:
+        raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createSophont')
+
     def createSector(
             self,
             entityId: str,
@@ -41,7 +51,6 @@ class EntityFactoryInterface(object):
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
             worlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
-            sophonts: typing.Optional[typing.Iterable[astronomer.Sophont]] = None,
             routes: typing.Optional[typing.Iterable[astronomer.Route]] = None,
             borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
             regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
@@ -162,6 +171,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             universeId: str,
             milieu: astronomer.Milieu,
             allegiances: typing.Collection[astronomer.Allegiance],
+            sophonts: typing.Collection[astronomer.Sophont],
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
             labels: typing.Collection[astronomer.MapLabel],
@@ -171,6 +181,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             universeId=universeId,
             milieu=milieu,
             allegiances=allegiances,
+            sophonts=sophonts,
             sectors=sectors,
             worlds=worlds,
             labels=labels,
@@ -201,6 +212,19 @@ class DefaultEntityFactory(EntityFactoryInterface):
             borderColour=borderColour,
             borderStyle=borderStyle)
 
+    def createSophont(
+            self,
+            entityId: str,
+            name: str,
+            code: str,
+            isMajor: bool
+            ) -> astronomer.Sophont:
+        return astronomer.Sophont(
+            entityId=entityId,
+            name=name,
+            code=code,
+            isMajor=isMajor)
+
     def createSector(
             self,
             entityId: str,
@@ -212,7 +236,6 @@ class DefaultEntityFactory(EntityFactoryInterface):
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
             worlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
-            sophonts: typing.Optional[typing.Iterable[astronomer.Sophont]] = None,
             routes: typing.Optional[typing.Iterable[astronomer.Route]] = None,
             borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
             regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
@@ -233,7 +256,6 @@ class DefaultEntityFactory(EntityFactoryInterface):
             sectorLabel=sectorLabel,
             subsectorNames=subsectorNames,
             worlds=worlds,
-            sophonts=sophonts,
             routes=routes,
             borders=borders,
             regions=regions,

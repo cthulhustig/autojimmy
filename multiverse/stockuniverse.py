@@ -15,6 +15,7 @@ def convertStockUniverseToDbUniverse(
         reporter: typing.Optional[common.Reporter] = None
         ) -> typing.Tuple[
             typing.List[multiverse.DbAllegiance],
+            typing.List[multiverse.DbSophont],
             typing.List[multiverse.DbSector],
             typing.List[multiverse.DbMapLabel],
             typing.List[multiverse.DbMapVector]]:
@@ -142,6 +143,25 @@ def convertStockUniverseToDbUniverse(
         except Exception as ex:
             logging.error(f'Stock universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
 
+    styleMapper = multiverse.StyleMapper(
+        rawSectors=rawSectors,
+        rawStockStyleSheet=rawStockStyleSheet)
+    allegianceMapper = multiverse.AllegianceMapper(
+        milieu=milieu,
+        rawSectors=rawSectors,
+        rawStockAllegiances=rawStockAllegiances,
+        styleMapper=styleMapper)
+    sophontMapper = multiverse.SophontMapper(
+        rawSectors=rawSectors,
+        rawStockSophonts=rawStockSophonts)
+
+    dbSectors = multiverse.convertRawSectorsToDbSectors(
+        rawSectors=rawSectors,
+        rawStockSophonts=rawStockSophonts,
+        allegianceMapper=allegianceMapper,
+        sophontMapper=sophontMapper,
+        styleMapper=styleMapper)
+
     dbMapLabels: typing.List[multiverse.DbMapLabel] = []
     dbMapLabels.extend(multiverse.convertRawLabelsToDbMapLabels(
         rawMegaLabels=rawMegaLabels,
@@ -159,21 +179,6 @@ def convertStockUniverseToDbUniverse(
         rawRiftVectors=rawRiftVectors,
         rawRouteVectors=rawRouteVectors))
 
-    styleMapper = multiverse.StyleMapper(
-        rawSectors=rawSectors,
-        rawStockStyleSheet=rawStockStyleSheet)
-    allegianceMapper = multiverse.AllegianceMapper(
-        milieu=milieu,
-        rawSectors=rawSectors,
-        rawStockAllegiances=rawStockAllegiances,
-        styleMapper=styleMapper)
-
-    dbSectors = multiverse.convertRawSectorsToDbSectors(
-        rawSectors=rawSectors,
-        rawStockSophonts=rawStockSophonts,
-        allegianceMapper=allegianceMapper,
-        styleMapper=styleMapper)
-
     if progressCallback:
         try:
             progressCallback(
@@ -185,6 +190,7 @@ def convertStockUniverseToDbUniverse(
 
     return (
         allegianceMapper.listAllegiances(),
+        sophontMapper.listSophonts(),
         dbSectors,
         dbMapLabels,
         dbMapVectors)

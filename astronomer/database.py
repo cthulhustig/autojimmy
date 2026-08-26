@@ -39,6 +39,21 @@ def loadUniverseFromDatabase(
                 exc_info=ex)
             continue
 
+    dbSophonts = multiverse.UniverseManager.instance().sophonts(id=universeId)
+    sophonts: typing.List[astronomer.Allegiance] = []
+    for dbSophont in dbSophonts:
+        try:
+            sophont = astronomer.convertDbSophontToAstronomerSophont(
+                dbSophont=dbSophont,
+                entityFactory=entityFactory)
+            sophonts.append(sophont)
+        except Exception as ex:
+            logging.error(
+                'Failed to load sophont {name!r}'.format(
+                    name=dbSophont.name()),
+                exc_info=ex)
+            continue
+
     # NOTE: Using a generator is important as it means converting
     # each db sector to an astronomer sector is included in the
     # progress tick for that sector rather than the progress just
@@ -53,6 +68,7 @@ def loadUniverseFromDatabase(
             sector = astronomer.convertDbSectorToAstronomerSector(
                 dbSector=dbSector,
                 astroAllegiances=allegiances,
+                astroSophonts=sophonts,
                 entityFactory=entityFactory)
             sectors.append(sector)
 
@@ -113,6 +129,7 @@ def loadUniverseFromDatabase(
         universeId=universeId,
         milieu=milieu,
         allegiances=allegiances,
+        sophonts=sophonts,
         sectors=sectors,
         worlds=worlds,
         labels=labels,

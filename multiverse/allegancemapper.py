@@ -94,21 +94,6 @@ class AllegianceMapper(object):
             ) -> None:
         self._styleMapper = styleMapper
 
-        self._stockBorderStyleData: typing.Dict[
-            str, # Style tag
-            typing.Tuple[
-                typing.Optional[str], # Colour
-                typing.Optional[str]] # Style
-            ] = {}
-        self._metadataToBorderStyleData: typing.Dict[
-            survey.RawMetadata,
-            typing.Dict[
-                str, # Style tag
-                typing.Tuple[
-                    typing.Optional[str], # Colour
-                    typing.Optional[str]] # Style
-            ]] = {}
-
         self._nameToDbAllegiance: typing.Dict[
             str, # Allegiance Name
             multiverse.DbAllegiance

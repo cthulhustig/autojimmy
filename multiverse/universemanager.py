@@ -126,12 +126,13 @@ class UniverseManager(object):
         if not name.strip():
             raise ValueError(f'Universe name can\'t be empty')
 
-        dbAllegiances = dbSectors = dbMapLabels = dbMapVectors = None
+        dbAllegiances = dbSophonts = dbSectors = dbMapLabels = dbMapVectors = None
         if importTravellerMap:
-            dbAllegiances, dbSectors, dbMapLabels, dbMapVectors = multiverse.convertStockUniverseToDbUniverse(
-                milieu=milieu,
-                progressCallback=progressCallback,
-                reporter=reporter)
+            dbAllegiances, dbSophonts, dbSectors, dbMapLabels, dbMapVectors = \
+                multiverse.convertStockUniverseToDbUniverse(
+                    milieu=milieu,
+                    progressCallback=progressCallback,
+                    reporter=reporter)
 
         universeId = str(uuid.uuid4())
         universePath = UniverseManager._universeDbFilePath(id=universeId)
@@ -156,6 +157,12 @@ class UniverseManager(object):
                 for dbAllegiance in dbAllegiances:
                     universeDb.saveAllegiance(
                         allegiance=dbAllegiance,
+                        transaction=transaction)
+
+            if dbSophonts:
+                for dbSophont in dbSophonts:
+                    universeDb.saveSophont(
+                        sophont=dbSophont,
                         transaction=transaction)
 
             if dbSectors:
@@ -419,6 +426,17 @@ class UniverseManager(object):
 
         with universeDb.createTransaction() as transaction:
             return universeDb.loadAllegiances(transaction=transaction)
+
+    def sophonts(self, id: str) -> typing.List[multiverse.DbSophont]:
+        universeInfo = UniverseManager._registry.universeById(id=id)
+        if not universeInfo:
+            raise ValueError(f'Unknown universe {id!r}')
+
+        dbPath = UniverseManager._universeDbFilePath(id=id)
+        universeDb = multiverse.UniverseDb(universePath=dbPath)
+
+        with universeDb.createTransaction() as transaction:
+            return universeDb.loadSophonts(transaction=transaction)
 
     def mapLabels(self, id: str) -> typing.List[multiverse.DbMapLabel]:
         universeInfo = UniverseManager._registry.universeById(id=id)

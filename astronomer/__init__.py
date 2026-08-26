@@ -9,13 +9,14 @@ from .data.bases import *
 from .data.economics import *
 from .data.culture import *
 from .data.nobility import *
-from .data.sophont import *
 from .data.stellar import *
+from .data.population import *
 from .data.sectortagging import *
 from .data.sectorsource import *
 from .data.main import *
 from .entity import *
 from .allegiance import *
+from .sophont import *
 from .world import *
 from .region import *
 from .border import *

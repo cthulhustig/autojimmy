@@ -9,6 +9,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             universeId: str,
             milieu: astronomer.Milieu,
             allegiances: typing.Collection[astronomer.Allegiance],
+            sophonts: typing.Collection[astronomer.Sophont],
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
             labels: typing.Collection[astronomer.MapLabel],
@@ -18,6 +19,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             universeId=universeId,
             milieu=milieu,
             allegiances=allegiances,
+            sophonts=sophonts,
             sectors=sectors,
             worlds=worlds,
             labels=labels,
@@ -48,6 +50,19 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             borderColour=borderColour,
             borderStyle=borderStyle)
 
+    def createSophont(
+            self,
+            entityId: str,
+            name: str,
+            code: str,
+            isMajor: bool
+            ) -> astronomer.Sophont:
+        return azathoth.EditableSophont(
+            entityId=entityId,
+            name=name,
+            code=code,
+            isMajor=isMajor)
+
     def createSector(
             self,
             entityId: str,
@@ -59,7 +74,6 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
             worlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
-            sophonts: typing.Optional[typing.Iterable[astronomer.Sophont]] = None,
             routes: typing.Optional[typing.Iterable[astronomer.Route]] = None,
             borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
             regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
@@ -80,7 +94,6 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             sectorLabel=sectorLabel,
             subsectorNames=subsectorNames,
             worlds=worlds,
-            sophonts=sophonts,
             routes=routes,
             borders=borders,
             regions=regions,
