@@ -142,6 +142,17 @@ def _sectorHexToWorldSpace(
         absX - 0.5,
         absY - (0.0 if ((absX % 2) != 0) else 0.5))
 
+def _relativeSpaceToAbsoluteSpace(
+        pos: typing.Tuple[int, int, int, int],
+        ) -> typing.Tuple[int, int]:
+    absoluteX = (pos[0] - _ReferenceSectorX) * \
+        _SectorWidth + \
+        (pos[2] - _ReferenceHexX)
+    absoluteY = (pos[1] - _ReferenceSectorY) * \
+        _SectorHeight + \
+        (pos[3] - _ReferenceHexY)
+    return (absoluteX, absoluteY)
+
 def _createDbAlternateNames(
         rawMetadata: survey.RawMetadata
         ) -> typing.List[multiverse.DbAlternateName]:
@@ -835,16 +846,18 @@ def _createDbCustomRemarks(
 
 def _createDbSystems(
         rawMetadata: survey.RawMetadata,
-        rawSystems: typing.Collection[survey.RawWorld],
+        rawWorlds: typing.Collection[survey.RawWorld],
         allegianceMapper: multiverse.AllegianceMapper,
         sophontMapper: multiverse.SophontMapper
         ) -> typing.List[multiverse.DbSystem]:
     dbSystems = []
 
-    for systemIndex, rawWorld in enumerate(rawSystems):
+    for worldIndex, rawWorld in enumerate(rawWorlds):
         try:
-            dbHexX = rawWorld.x()
-            dbHexY = rawWorld.y()
+            # TODO: The raw positions are in sector coordinates and need
+            # converted to absolute coordinates for writing to the DB
+            dbHexX, dbHexY = _relativeSpaceToAbsoluteSpace(
+                (rawMetadata.x(), rawMetadata.y(), rawWorld.x(), rawWorld.y()))
             hexString = survey.formatHexString(x=dbHexX, y=dbHexY)
 
             rawSystemName = rawWorld.name()
@@ -941,7 +954,7 @@ def _createDbSystems(
                 stars=dbStars,
                 bodies=dbBodies))
         except Exception as ex:
-            logging.warning(f'Failed to convert system {systemIndex} in {rawMetadata.canonicalName()}', exc_info=ex)
+            logging.warning(f'Failed to convert system {worldIndex} in {rawMetadata.canonicalName()}', exc_info=ex)
 
     return dbSystems
 
@@ -2090,10 +2103,7 @@ def convertRawVectorsToDbMapLabels(
 
 def _convertRawSectorToDbSector(
         rawMetadata: survey.RawMetadata,
-        rawWorlds: typing.Collection[survey.RawWorld],
-        rawStockSophonts: typing.Collection[survey.RawStockSophont],
         allegianceMapper: multiverse.AllegianceMapper,
-        sophontMapper: multiverse.SophontMapper,
         styleMapper: multiverse.StyleMapper
         ) -> multiverse.DbSector:
     dbSectorX = rawMetadata.x()
@@ -2117,12 +2127,6 @@ def _convertRawSectorToDbSector(
 
     dbSubsectorNames = _createDbSubsectorNames(
         rawMetadata=rawMetadata)
-
-    dbSystems = _createDbSystems(
-        rawMetadata=rawMetadata,
-        rawSystems=rawWorlds,
-        allegianceMapper=allegianceMapper,
-        sophontMapper=sophontMapper)
 
     dbRoutes = _createDbRoutes(
         rawMetadata=rawMetadata,
@@ -2172,7 +2176,6 @@ def _convertRawSectorToDbSector(
         selected=dbSelected,
         alternateNames=dbAlternateNames,
         subsectorNames=dbSubsectorNames,
-        systems=dbSystems,
         routes=dbRoutes,
         borders=dbBorders,
         regions=dbRegions,
@@ -2187,20 +2190,30 @@ def _convertRawSectorToDbSector(
 
 def convertRawSectorsToDbSectors(
         rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.Collection[survey.RawWorld]]],
-        rawStockSophonts: typing.Collection[survey.RawStockSophont],
         allegianceMapper: multiverse.AllegianceMapper,
-        sophontMapper: multiverse.SophontMapper,
         styleMapper: multiverse.StyleMapper
         ) -> typing.List[multiverse.DbSector]:
     dbSectors: typing.List[multiverse.DbSector] = []
-    for rawMetadata, rawWorlds in rawSectors:
+    for rawMetadata, _ in rawSectors:
         dbSector = _convertRawSectorToDbSector(
             rawMetadata=rawMetadata,
-            rawWorlds=rawWorlds,
-            rawStockSophonts=rawStockSophonts,
             allegianceMapper=allegianceMapper,
-            sophontMapper=sophontMapper,
             styleMapper=styleMapper)
         dbSectors.append(dbSector)
+
+    return dbSectors
+
+def convertRawWorldsToDbSystems(
+        rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.Collection[survey.RawWorld]]],
+        allegianceMapper: multiverse.AllegianceMapper,
+        sophontMapper: multiverse.SophontMapper
+        ) -> typing.List[multiverse.DbSystem]:
+    dbSectors: typing.List[multiverse.DbSector] = []
+    for rawMetadata, rawWorlds in rawSectors:
+        dbSectors.extend(_createDbSystems(
+            rawMetadata=rawMetadata,
+            rawWorlds=rawWorlds,
+            allegianceMapper=allegianceMapper,
+            sophontMapper=sophontMapper))
 
     return dbSectors

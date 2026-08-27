@@ -14,7 +14,6 @@ class Sector(astronomer.Entity):
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
-            worlds: typing.Optional[typing.Collection[astronomer.World]] = None,
             routes: typing.Optional[typing.Collection[astronomer.Route]] = None,
             borders: typing.Optional[typing.Collection[astronomer.Border]] = None,
             regions: typing.Optional[typing.Collection[astronomer.Region]] = None,
@@ -34,7 +33,6 @@ class Sector(astronomer.Entity):
         common.validateStr(name='abbreviation', value=abbreviation, allowEmpty=False, allowNone=True)
         common.validateStr(name='sectorLabel', value=sectorLabel, allowEmpty=False, allowNone=True)
         common.validateStrMapping(name='subsectorNames', value=subsectorNames, allowNone=True, allowEmptyKeys=False, allowEmptyValues=False, validationFn=Sector._validateSubsectorCode)
-        common.validateCollection(name='worlds', value=worlds, elementType=astronomer.World, allowNone=True)
         common.validateCollection(name='routes', value=routes, elementType=astronomer.Route, allowNone=True)
         common.validateCollection(name='borders', value=borders, elementType=astronomer.Border, allowNone=True)
         common.validateCollection(name='regions', value=regions, elementType=astronomer.Region, allowNone=True)
@@ -51,7 +49,6 @@ class Sector(astronomer.Entity):
         self._nameLanguages = dict(nameLanguages) if nameLanguages else {}
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
-        self._worlds = list(worlds) if worlds else []
         self._routes = list(routes) if routes else []
         self._borders = list(borders) if borders else []
         self._regions = list(regions) if regions else []
@@ -64,19 +61,8 @@ class Sector(astronomer.Entity):
 
         self._subsectorCodeToNameMap = dict(subsectorNames) if subsectorNames else {}
 
-        self._subsectorCodeToWorldsMap = {}
-        for world in self._worlds:
-            hex = world.hex()
-            subsectorCode = hex.subsectorCode()
-
-            subsectorWorlds = self._subsectorCodeToWorldsMap.get(subsectorCode)
-            if not subsectorWorlds:
-                subsectorWorlds = []
-                self._subsectorCodeToWorldsMap[subsectorCode] = subsectorWorlds
-            subsectorWorlds.append(world)
-
         self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
-        for entity in itertools.chain(self._worlds, self._borders, self._regions, self._routes, self._labels):
+        for entity in itertools.chain(self._borders, self._regions, self._routes, self._labels):
             self._idToEntityMap[entity.entityId()] = entity
 
     def position(self) -> astronomer.SectorPosition:
@@ -100,18 +86,6 @@ class Sector(astronomer.Entity):
     def subsectorName(self, code: str) -> typing.Optional[str]:
         return self._subsectorCodeToNameMap.get(code)
 
-    def worldCount(self) -> int:
-        return len(self._worlds)
-
-    def worlds(
-            self,
-            subsectorCode: typing.Optional[str] = None
-            ) -> typing.Collection[astronomer.World]:
-        worlds = self._worlds if subsectorCode is None else self._subsectorCodeToWorldsMap.get(subsectorCode)
-        if not worlds:
-            return []
-        return common.ConstCollectionRef(worlds)
-
     def routes(self) -> typing.Collection[astronomer.Route]:
         return common.ConstCollectionRef(self._routes)
 
@@ -124,13 +98,8 @@ class Sector(astronomer.Entity):
     def labels(self) -> typing.Collection[astronomer.SectorLabel]:
         return common.ConstCollectionRef(self._labels)
 
-    # TODO: By the time I'm finished moving worlds, routes etc from the
-    # sector to the universe, sectors shouldn't need to have entities.
-    # For now I need to hack it so it doesn't include the objects I've
-    # moved
     def entities(self) -> typing.Collection[astronomer.Entity]:
-        #return common.ConstCollectionRef(self._idToEntityMap.values())
-        return [entity for entity in self._idToEntityMap.values() if not isinstance(entity, astronomer.World)]
+        return common.ConstCollectionRef(self._idToEntityMap.values())
 
     # The concept of 'selected' comes from Traveller Map and what it is isn't
     # exactly clear. The only thing I've noticed it do is when rendering if

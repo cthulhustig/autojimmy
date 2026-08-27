@@ -3,6 +3,8 @@ import logging
 import multiverse
 import typing
 
+# TODO: Progress is currently broken
+_ProgressStageCount = 6
 def loadUniverseFromDatabase(
         universeId: str,
         entityFactory: typing.Optional[astronomer.EntityFactoryInterface] = None,
@@ -16,7 +18,9 @@ def loadUniverseFromDatabase(
     if not universeInfo:
         raise ValueError(f'Unknown universe {universeId!r}')
 
-    logging.info(f'Loaded universe {universeId!r} ({universeInfo.name()})')
+    logging.info('Loading universe {name!r} ({id})'.format(
+        name=universeInfo.name(),
+        id=universeInfo.id()))
 
     milieu = multiverse.UniverseManager.instance().universeMilieu(id=universeId)
     try:
@@ -24,106 +28,72 @@ def loadUniverseFromDatabase(
     except:
         raise ValueError(f'Universe {universeId!r} has unknown milieu {milieu!r}')
 
-    dbAllegiances = multiverse.UniverseManager.instance().allegiances(id=universeId)
-    allegiances: typing.List[astronomer.Allegiance] = []
-    for dbAllegiance in dbAllegiances:
-        try:
-            allegiance = astronomer.convertDbAllegianceToAstronomerAllegiance(
-                dbAllegiance=dbAllegiance,
-                entityFactory=entityFactory)
-            allegiances.append(allegiance)
-        except Exception as ex:
-            logging.error(
-                'Failed to load allegiance {name!r}'.format(
-                    name=dbAllegiance.name()),
-                exc_info=ex)
-            continue
+    progressStage = None
+    progressCount = 0
+    if progressCallback:
+        progressStage = 'Loading Universe {name!r}:'.format(name=universeInfo.name())
+        progressCallback(progressStage, progressCount, _ProgressStageCount)
 
-    dbSophonts = multiverse.UniverseManager.instance().sophonts(id=universeId)
-    sophonts: typing.List[astronomer.Allegiance] = []
-    for dbSophont in dbSophonts:
-        try:
-            sophont = astronomer.convertDbSophontToAstronomerSophont(
-                dbSophont=dbSophont,
-                entityFactory=entityFactory)
-            sophonts.append(sophont)
-        except Exception as ex:
-            logging.error(
-                'Failed to load sophont {name!r}'.format(
-                    name=dbSophont.name()),
-                exc_info=ex)
-            continue
+    allegiances = astronomer.convertDbAllegiancesToAstronomerAllegiances(
+        dbAllegiances=multiverse.UniverseManager.instance().allegiances(id=universeId),
+        entityFactory=entityFactory)
 
-    # NOTE: Using a generator is important as it means converting
-    # each db sector to an astronomer sector is included in the
-    # progress tick for that sector rather than the progress just
-    # covering loading the sectors then a long pause at the end
-    # while it converts them all to astronomer sectors.
-    dbSectorGenerator = multiverse.UniverseManager.instance().yieldSectors(
-        id=universeId,
-        progressCallback=progressCallback)
-    sectors: typing.List[astronomer.Sector] = []
-    for dbSector in dbSectorGenerator:
-        try:
-            sector = astronomer.convertDbSectorToAstronomerSector(
-                dbSector=dbSector,
-                astroAllegiances=allegiances,
-                astroSophonts=sophonts,
-                entityFactory=entityFactory)
-            sectors.append(sector)
+    if progressCallback:
+        progressCount += 1
+        progressCallback(progressStage, progressCount, _ProgressStageCount)
 
-            logging.debug(
-                'Loaded {worlds} worlds for sector {name!r} at ({x}, {y})'.format(
-                    worlds=sector.worldCount(),
-                    name=sector.name(),
-                    x=sector.position().sectorX(),
-                    y=sector.position().sectorY()))
-        except Exception as ex:
-            logging.error(
-                'Failed to load sector {name!r} at ({x}, {y})'.format(
-                    name=dbSector.name(),
-                    x=dbSector.sectorX(),
-                    y=dbSector.sectorY()),
-                exc_info=ex)
-            continue
+    sophonts = astronomer.convertDbSophontsToAstronomerSophonts(
+        dbSophonts=multiverse.UniverseManager.instance().sophonts(id=universeId),
+        entityFactory=entityFactory)
 
-    dbLabels = multiverse.UniverseManager.instance().mapLabels(id=universeId)
-    labels: typing.List[astronomer.MapLabel] = []
-    for dbLabel in dbLabels:
-        try:
-            label = astronomer.convertDbMapLabelToAstronomerMapLabel(
-                dbLabel=dbLabel,
-                entityFactory=entityFactory)
-            labels.append(label)
-        except Exception as ex:
-            logging.error(
-                'Failed to load label {name!r} at ({x}, {y})'.format(
-                    name=dbLabel.text(),
-                    x=dbLabel.worldX(),
-                    y=dbLabel.worldY()),
-                exc_info=ex)
-            continue
+    if progressCallback:
+        progressCount += 1
+        progressCallback(progressStage, progressCount, _ProgressStageCount)
 
-    dbVectors = multiverse.UniverseManager.instance().mapVectors(id=universeId)
-    vectors: typing.List[astronomer.MapVector] = []
-    for dbVector in dbVectors:
-        try:
-            vector = astronomer.convertDbMapVectorToAstronomerMapVector(
-                dbVector=dbVector,
-                entityFactory=entityFactory)
-            vectors.append(vector)
-        except Exception as ex:
-            logging.error(
-                'Failed to load vector {name!r}'.format(
-                    name=dbVector.id()),
-                exc_info=ex)
-            continue
+    sectors = astronomer.convertDbSectorsToAstronomerSectors(
+        dbSectors=multiverse.UniverseManager.instance().sectors(id=universeId),
+        astroAllegiances=allegiances,
+        entityFactory=entityFactory)
 
-    # TODO: This needs done differently when I've finished detaching systems
-    # from sectors
-    worlds = []
-    for sector in sectors:
-        worlds.extend(sector.worlds())
+    if progressCallback:
+        progressCount += 1
+        progressCallback(progressStage, progressCount, _ProgressStageCount)
+
+    worlds = astronomer.convertDbSystemsToAstronomerWorlds(
+        dbSystems=multiverse.UniverseManager.instance().systems(id=universeId),
+        astroAllegiances=allegiances,
+        astroSophonts=sophonts,
+        entityFactory=entityFactory)
+
+    if progressCallback:
+        progressCount += 1
+        progressCallback(progressStage, progressCount, _ProgressStageCount)
+
+    labels = astronomer.convertDbMapLabelsToAstronomerMapLabels(
+        dbLabels=multiverse.UniverseManager.instance().mapLabels(id=universeId),
+        entityFactory=entityFactory)
+
+    if progressCallback:
+        progressCount += 1
+        progressCallback(progressStage, progressCount, _ProgressStageCount)
+
+    vectors = astronomer.convertDbMapVectorsToAstronomerMapVectors(
+        dbVectors=multiverse.UniverseManager.instance().mapVectors(id=universeId),
+        entityFactory=entityFactory)
+
+    if progressCallback:
+        progressCount += 1
+        progressCallback(progressStage, _ProgressStageCount, _ProgressStageCount)
+
+    logging.debug('Universe {name!r} ({id}) contains:'.format(
+        name=universeInfo.name(),
+        id=universeInfo.id()))
+    logging.debug('Allegiances: {count}'.format(count=len(allegiances)))
+    logging.debug('Sophonts: {count}'.format(count=len(sophonts)))
+    logging.debug('Sectors: {count}'.format(count=len(sectors)))
+    logging.debug('Systems: {count}'.format(count=len(worlds)))
+    logging.debug('Map Labels: {count}'.format(count=len(labels)))
+    logging.debug('Map Vectors: {count}'.format(count=len(vectors)))
 
     return entityFactory.createUniverse(
         universeId=universeId,

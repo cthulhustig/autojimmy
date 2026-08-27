@@ -952,8 +952,8 @@ class DbSystem(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        survey.validateHexX(name='hexX', value=hexX)
-        survey.validateHexY(name='hexY', value=hexY)
+        common.validateInt(name='hexX', value=hexX)
+        common.validateInt(name='hexY', value=hexY)
         common.validateStr(name='name', value=name, allowNone=True, allowEmpty=False)
         common.validateInt(name='planetoidBeltCount', value=planetoidBeltCount, allowNone=True, min=0)
         common.validateInt(name='gasGiantCount', value=gasGiantCount, allowNone=True, min=0)
@@ -1431,7 +1431,6 @@ class DbSector(DbUniverseObject):
             selected: bool = False,
             alternateNames: typing.Optional[typing.Collection[DbAlternateName]] = None,
             subsectorNames: typing.Optional[typing.Collection[DbSubsectorName]] = None,
-            systems: typing.Optional[typing.Collection[DbSystem]] = None,
             routes: typing.Optional[typing.Collection[DbRoute]] = None,
             borders: typing.Optional[typing.Collection[DbBorder]] = None,
             regions: typing.Optional[typing.Collection[DbRegion]] = None,
@@ -1457,7 +1456,6 @@ class DbSector(DbUniverseObject):
         common.validateBool(name='selected', value=selected)
         DbSector._validateAlternateNames(name='alternateNames', value=alternateNames, sectorId=id)
         DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames, sectorId=id)
-        DbSector._validateSystems(name='systems', value=systems, sectorId=id)
         DbSector._validateRoutes(name='routes', value=routes, sectorId=id)
         DbSector._validateBorders(name='borders', value=borders, sectorId=id)
         DbSector._validateRegions(name='regions', value=regions, sectorId=id)
@@ -1489,8 +1487,6 @@ class DbSector(DbUniverseObject):
         self._attachObjects(self._alternateNames)
         self._subsectorNames = list(subsectorNames) if subsectorNames else None
         self._attachObjects(self._subsectorNames)
-        self._systems = list(systems) if systems else None
-        self._attachObjects(self._systems)
         self._routes = list(routes) if routes else None
         self._attachObjects(self._routes)
         self._borders = list(borders) if borders else None
@@ -1530,12 +1526,6 @@ class DbSector(DbUniverseObject):
 
     def subsectorNames(self) -> typing.Optional[typing.Collection[DbSubsectorName]]:
         return self._subsectorNames
-
-    def sophonts(self) -> typing.Optional[typing.Collection[DbSophont]]:
-        return self._sophonts
-
-    def systems(self) -> typing.Optional[typing.Collection[DbSystem]]:
-        return self._systems
 
     def routes(self) -> typing.Optional[typing.Collection[DbRoute]]:
         return self._routes
@@ -1619,78 +1609,6 @@ class DbSector(DbUniverseObject):
             if code in seen:
                 raise ValueError(f'{name} contains multiple names for the same subsector')
             seen.add(code)
-
-    @staticmethod
-    def _validateAllegiances(
-            name: str,
-            value: typing.Optional[typing.Collection[DbAllegiance]],
-            sectorId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateCollection(name=name, value=value, elementType=DbAllegiance, allowNone=True)
-
-        seen = set()
-        for allegiance in value:
-            currentSectorId = allegiance.sectorId()
-            if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError(f'{name} contains allegiances that are already attached to a sector')
-
-            code = allegiance.code()
-            if code in seen:
-                raise ValueError(f'{name} contains multiple allegiances with the same code')
-            seen.add(code)
-
-    @staticmethod
-    def _validateSophonts(
-            name: str,
-            value: typing.Optional[typing.Collection[DbSophont]],
-            sectorId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateCollection(name=name, value=value, elementType=DbSophont, allowNone=True)
-
-        seenCodes = set()
-        seenNames = set()
-        for sophont in value:
-            currentSectorId = sophont.sectorId()
-            if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError(f'{name} contains sophonts that are already attached to a sector')
-
-            code = sophont.code()
-            if code in seenCodes:
-                raise ValueError(f'{name} contains multiple sophonts with the same code')
-            seenCodes.add(code)
-
-            name = sophont.code()
-            if name in seenNames:
-                raise ValueError(f'{name} contains multiple sophonts with the same name')
-            seenNames.add(name)
-
-    @staticmethod
-    def _validateSystems(
-            name: str,
-            value: typing.Optional[typing.Collection[DbSystem]],
-            sectorId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateCollection(name=name, value=value, elementType=DbSystem, allowNone=True)
-
-        seenHexes = set()
-        for system in value:
-            currentSectorId = system.sectorId()
-            if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError(f'{name} contains systems that are already attached to a sector')
-
-            key = (system.hexX(), system.hexY())
-            if key in seenHexes:
-                raise ValueError(f'{name} contains multiple systems with the same location {key}')
-            seenHexes.add(key)
 
     @staticmethod
     def _validateRoutes(

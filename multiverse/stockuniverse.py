@@ -17,6 +17,7 @@ def convertStockUniverseToDbUniverse(
             typing.List[multiverse.DbAllegiance],
             typing.List[multiverse.DbSophont],
             typing.List[multiverse.DbSector],
+            typing.List[multiverse.DbSystem],
             typing.List[multiverse.DbMapLabel],
             typing.List[multiverse.DbMapVector]]:
     if reporter:
@@ -157,10 +158,13 @@ def convertStockUniverseToDbUniverse(
 
     dbSectors = multiverse.convertRawSectorsToDbSectors(
         rawSectors=rawSectors,
-        rawStockSophonts=rawStockSophonts,
         allegianceMapper=allegianceMapper,
-        sophontMapper=sophontMapper,
         styleMapper=styleMapper)
+
+    dbSystems = multiverse.convertRawWorldsToDbSystems(
+        rawSectors=rawSectors,
+        allegianceMapper=allegianceMapper,
+        sophontMapper=sophontMapper)
 
     dbMapLabels: typing.List[multiverse.DbMapLabel] = []
     dbMapLabels.extend(multiverse.convertRawLabelsToDbMapLabels(
@@ -192,5 +196,6 @@ def convertStockUniverseToDbUniverse(
         allegianceMapper.listAllegiances(),
         sophontMapper.listSophonts(),
         dbSectors,
+        dbSystems,
         dbMapLabels,
         dbMapVectors)

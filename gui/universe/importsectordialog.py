@@ -214,6 +214,7 @@ class ImportSectorDialog(gui.DialogEx):
         return path
 
     def _importClicked(self) -> None:
+        assert(False) # TODO: This needs updated to work with the change to move worlds to the universe
         metadataFilePath = self._metadataFileLineEdit.text()
         if not metadataFilePath:
             gui.MessageBoxEx.critical(

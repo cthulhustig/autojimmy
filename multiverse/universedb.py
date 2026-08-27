@@ -50,7 +50,6 @@ import typing
 
 
 
-
 # TODO: Do I want to separate sectors from things like systems/routes/borders etc and treat
 # everything more as a single universe rather than a group of sectors.
 # - Things like systems/routes/borders would need to be stored as absolute hexes rather than sector relative hexes
@@ -140,6 +139,11 @@ class UniverseDb(object):
     _MetadataFormatKey = 'format'
     _MetadataMilieuKey = 'milieu'
     _MetadataDescriptionKey = 'description'
+
+    # TODO: Once I've finished moving stuff to the universe I should probably
+    # rename all the tables (and variables) where the table has a delete foreign
+    # key so they start with the parent table (e.g custom_remarks -> world_custom_remarks,
+    # alternate_names -> sector_alternate_names)
 
     _SectorsTableName = 'sectors'
     _SectorsTableSchema = 1
@@ -372,92 +376,6 @@ class UniverseDb(object):
                     key=UniverseDb._MetadataDescriptionKey,
                     value=description)
 
-    def listSectors(
-            self,
-            transaction: typing.Optional[database.Transaction] = None
-            ) -> typing.List[SectorInfo]:
-        logging.debug(f'UniverseDb listing sectors in universe {self._universePath!r}')
-
-        if transaction != None:
-            connection = transaction.connection()
-            return self._listSectors(cursor=connection.cursor())
-        else:
-            with self.createTransaction() as transaction:
-                connection = transaction.connection()
-                return self._listSectors(cursor=connection.cursor())
-
-    def saveSector(
-            self,
-            sector: multiverse.DbSector,
-            stockDataHash: typing.Optional[str] = None,
-            transaction: typing.Optional[database.Transaction] = None
-            ) -> None:
-        logging.debug(f'UniverseDb saving sector {sector.id()!r} to universe {self._universePath!r}')
-
-        if transaction != None:
-            connection = transaction.connection()
-            cursor = connection.cursor()
-            self._saveSector(cursor=cursor, sector=sector, stockDataHash=stockDataHash)
-        else:
-            with self.createTransaction() as transaction:
-                connection = transaction.connection()
-                cursor = connection.cursor()
-                self._saveSector(cursor=cursor, sector=sector, stockDataHash=stockDataHash)
-
-    def loadSector(
-            self,
-            sectorId: str,
-            transaction: typing.Optional[database.Transaction] = None
-            ) -> multiverse.DbSector:
-        logging.debug(f'UniverseDb loading sector {sectorId!r} from universe {self._universePath!r}')
-
-        if transaction != None:
-            connection = transaction.connection()
-            return self._readSector(
-                sectorId=sectorId,
-                cursor=connection.cursor())
-        else:
-            with self.createTransaction() as transaction:
-                connection = transaction.connection()
-                return self._readSector(
-                    sectorId=sectorId,
-                    cursor=connection.cursor())
-
-    def loadSectors(
-            self,
-            transaction: typing.Optional[database.Transaction] = None
-            ) -> typing.List[multiverse.DbSector]:
-        logging.debug(f'UniverseDb loading sector from universe {self._universePath!r}')
-
-        if transaction != None:
-            connection = transaction.connection()
-            return self._loadSectors(
-                cursor=connection.cursor())
-        else:
-            with self.createTransaction() as transaction:
-                connection = transaction.connection()
-                return self._loadSectors(
-                    cursor=connection.cursor())
-
-    def deleteSector(
-            self,
-            sectorId: str,
-            transaction: typing.Optional[database.Transaction] = None
-            ) -> None:
-        logging.debug(f'UniverseDb deleting sector {sectorId!r} from universe {self._universePath!r}')
-
-        if transaction != None:
-            connection = transaction.connection()
-            self._deleteSector(
-                sectorId=sectorId,
-                cursor=connection.cursor())
-        else:
-            with self.createTransaction() as transaction:
-                connection = transaction.connection()
-                self._deleteSector(
-                    sectorId=sectorId,
-                    cursor=connection.cursor())
-
     def loadAllegiances(
             self,
             transaction: typing.Optional[database.Transaction] = None
@@ -526,6 +444,128 @@ class UniverseDb(object):
                 connection = transaction.connection()
                 return self._saveSophont(
                     sophont=sophont,
+                    cursor=connection.cursor())
+
+
+    def listSectors(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> typing.List[SectorInfo]:
+        logging.debug(f'UniverseDb listing sectors in universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._listSectors(cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._listSectors(cursor=connection.cursor())
+
+    def saveSector(
+            self,
+            sector: multiverse.DbSector,
+            stockDataHash: typing.Optional[str] = None,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        logging.debug(f'UniverseDb saving sector {sector.id()!r} to universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            cursor = connection.cursor()
+            self._saveSector(cursor=cursor, sector=sector, stockDataHash=stockDataHash)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                cursor = connection.cursor()
+                self._saveSector(cursor=cursor, sector=sector, stockDataHash=stockDataHash)
+
+    def loadSectors(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> typing.List[multiverse.DbSector]:
+        logging.debug(f'UniverseDb loading sector from universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._loadSectors(
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._loadSectors(
+                    cursor=connection.cursor())
+
+    def deleteSector(
+            self,
+            sectorId: str,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        logging.debug(f'UniverseDb deleting sector {sectorId!r} from universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            self._deleteSector(
+                sectorId=sectorId,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                self._deleteSector(
+                    sectorId=sectorId,
+                    cursor=connection.cursor())
+
+    def loadSystems(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> typing.List[multiverse.DbSystem]:
+        logging.debug(f'UniverseDb loading systems from universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            return self._loadSystems(
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._loadSystems(
+                    cursor=connection.cursor())
+
+    def saveSystems(
+            self,
+            systems: typing.Collection[multiverse.DbSystem],
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        logging.debug(f'UniverseDb saving systems to universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            self._saveSystems(
+                systems=systems,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                self._saveSystems(
+                    systems=systems,
+                    cursor=connection.cursor())
+
+    def deleteSystem(
+            self,
+            systemId: str,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        logging.debug(f'UniverseDb deleting system {systemId!r} to universe {self._universePath!r}')
+
+        if transaction != None:
+            connection = transaction.connection()
+            self._deleteSystem(
+                systemId=systemId,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                self._deleteSystem(
+                    systemId=systemId,
                     cursor=connection.cursor())
 
     def saveMapLabel(
@@ -749,9 +789,6 @@ class UniverseDb(object):
                 requiredSchemaVersion=UniverseDb._SystemsTableSchema,
                 columns=[
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
@@ -768,7 +805,7 @@ class UniverseDb(object):
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
                     database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['sector_id', 'hex_x', 'hex_y'])])
+                    database.UniqueConstraintDef(columnNames=['hex_x', 'hex_y'])])
 
             self._database.createTable(
                 cursor=cursor,
@@ -1126,2049 +1163,17 @@ class UniverseDb(object):
             """.format(metadataTable=UniverseDb._MetadataTableName)
         cursor.execute(sql, {'key': key, 'value': value})
 
-    def _listSectors(
-            self,
-            cursor: sqlite3.Cursor
-            ) -> typing.List[SectorInfo]:
-        sql = """
-            SELECT id, name, sector_x, sector_y, abbreviation
-            FROM {sectorsTable};
-            """.format(sectorsTable=UniverseDb._SectorsTableName)
-        parameters = {}
-
-        cursor.execute(sql, parameters)
-
-        sectorList = []
-        for row in cursor.fetchall():
-            sectorList.append(SectorInfo(
-                id=row[0],
-                name=row[1],
-                sectorX=row[2],
-                sectorY=row[3],
-                abbreviation=row[4]))
-        return sectorList
-
-    def _loadSectors(
-            self,
-            cursor: sqlite3.Cursor
-            ) -> typing.List[multiverse.DbSector]:
-        sectorAlternateNamesMap = self._readAlternateNames(
-            cursor=cursor)
-        sectorSubsectorNamesMap = self._readSubsectorNames(
-            cursor=cursor)
-        sectorSystemsMap = self._readSystems(
-            cursor=cursor)
-        sectorRoutesMap = self._readRoutes(
-            cursor=cursor)
-        sectorBordersMap = self._readBorders(
-            cursor=cursor)
-        sectorRegionsMap = self._readRegions(
-            cursor=cursor)
-        sectorLabelsMap = self._readSectorLabels(
-            cursor=cursor)
-        sectorTagsMap = self._readSectorTags(
-            cursor=cursor)
-        sectorProductsMap = self._readProducts(
-            cursor=cursor)
-
-        sql = """
-            SELECT id, sector_x, sector_y,
-                name, language, abbreviation, sector_label, selected,
-                credits, publication, author, publisher, reference, notes
-            FROM {table};
-            """.format(table=UniverseDb._SectorsTableName)
-        cursor.execute(sql)
-        sectors = []
-        for row in cursor.fetchall():
-            sectorId = row[0]
-
-            try:
-                sectors.append(multiverse.DbSector(
-                    id=sectorId,
-                    sectorX=row[1],
-                    sectorY=row[2],
-                    name=row[3],
-                    language=row[4],
-                    abbreviation=row[5],
-                    sectorLabel=row[6],
-                    selected=True if row[7] else False,
-                    credits=row[8],
-                    publication=row[9],
-                    author=row[10],
-                    publisher=row[11],
-                    reference=row[12],
-                    notes=row[13],
-                    alternateNames=sectorAlternateNamesMap.get(sectorId),
-                    subsectorNames=sectorSubsectorNamesMap.get(sectorId),
-                    systems=sectorSystemsMap.get(sectorId),
-                    routes=sectorRoutesMap.get(sectorId),
-                    borders=sectorBordersMap.get(sectorId),
-                    regions=sectorRegionsMap.get(sectorId),
-                    labels=sectorLabelsMap.get(sectorId),
-                    tags=sectorTagsMap.get(sectorId),
-                    products=sectorProductsMap.get(sectorId)))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load sector {sectorId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectors
-
-    def _insertSector(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        sql = """
-            INSERT INTO {table} (id, sector_x, sector_y,
-                name, language, abbreviation, sector_label, selected,
-                credits, publication, author, publisher, reference, notes)
-            VALUES (:id, :sector_x, :sector_y,
-                :name, :language, :abbreviation, :sector_label, :selected,
-                :credits, :publication, :author, :publisher, :reference, :notes);
-            """.format(table=UniverseDb._SectorsTableName)
-        rows = {
-            'id': sector.id(),
-            'sector_x': sector.sectorX(),
-            'sector_y': sector.sectorY(),
-            'name': sector.name(),
-            'language': sector.language(),
-            'abbreviation': sector.abbreviation(),
-            'sector_label': sector.sectorLabel(),
-            'selected': 1 if sector.selected() else 0,
-            'credits': sector.credits(),
-            'publication': sector.publication(),
-            'author': sector.author(),
-            'publisher': sector.publisher(),
-            'reference': sector.reference(),
-            'notes': sector.notes()}
-        cursor.execute(sql, rows)
-
-        self._insertSectorAlternateNames(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorSubsectorNames(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorSystems(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorRoutes(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorBorders(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorRegions(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorLabels(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorTags(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorProducts(
-            cursor=cursor,
-            sector=sector)
-
-    def _readSector(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: str
-            ) -> multiverse.DbSector:
-        sectorAlternateNamesMap = self._readAlternateNames(
-            cursor=cursor,
-            sectorId=sectorId)
-        sectorSubsectorNamesMap = self._readSubsectorNames(
-            cursor=cursor,
-            sectorId=sectorId)
-        sectorSystemsMap = self._readSystems(
-            cursor=cursor,
-            sectorId=sectorId)
-        sectorRoutesMap = self._readRoutes(
-            cursor=cursor,
-            sectorId=sectorId)
-        sectorBordersMap = self._readBorders(
-            cursor=cursor,
-            sectorId=sectorId)
-        sectorRegionsMap = self._readRegions(
-            cursor=cursor,
-            sectorId=sectorId)
-        sectorLabelsMap = self._readSectorLabels(
-            cursor=cursor,
-            sectorId=sectorId)
-        sectorTagsMap = self._readSectorTags(
-            cursor=cursor,
-            sectorId=sectorId)
-        sectorProductsMap = self._readProducts(
-            cursor=cursor,
-            sectorId=sectorId)
-
-        sql = """
-            SELECT sector_x, sector_y,
-                name, language, abbreviation, sector_label, selected,
-                credits, publication, author, publisher, reference, notes
-            FROM {table}
-            WHERE id = :id
-            LIMIT 1;
-            """.format(table=UniverseDb._SectorsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        row = cursor.fetchone()
-        if not row:
-            raise ValueError(f'Unknown sector {sectorId!r} in universe {self._universePath!r}')
-
-        return multiverse.DbSector(
-            id=sectorId,
-            sectorX=row[0],
-            sectorY=row[1],
-            name=row[2],
-            language=row[3],
-            abbreviation=row[4],
-            sectorLabel=row[5],
-            selected=True if row[6] else False,
-            credits=row[7],
-            publication=row[8],
-            author=row[9],
-            publisher=row[10],
-            reference=row[11],
-            notes=row[12],
-            alternateNames=sectorAlternateNamesMap.get(sectorId),
-            subsectorNames=sectorSubsectorNamesMap.get(sectorId),
-            systems=sectorSystemsMap.get(sectorId),
-            routes=sectorRoutesMap.get(sectorId),
-            borders=sectorBordersMap.get(sectorId),
-            regions=sectorRegionsMap.get(sectorId),
-            labels=sectorLabelsMap.get(sectorId),
-            tags=sectorTagsMap.get(sectorId),
-            products=sectorProductsMap.get(sectorId))
-
-    def _insertSectorAlternateNames(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.alternateNames():
-            return
-
-        sql = """
-            INSERT INTO {table} (id, sector_id, name, language)
-            VALUES (:id, :sector_id, :name, :language);
-            """.format(table=UniverseDb._AlternateNamesTableName)
-        rows = []
-        for alternateName in sector.alternateNames():
-            rows.append({
-                'id': alternateName.id(),
-                'sector_id': alternateName.sectorId(),
-                'name': alternateName.name(),
-                'language': alternateName.language()})
-        cursor.executemany(sql, rows)
-
-    def _readAlternateNames(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # Sector Id
-                typing.List[multiverse.DbAlternateName]]:
-        sql = """
-            SELECT id, sector_id, name, language
-            FROM {table}
-            {where};
-            """.format(
-                table=UniverseDb._AlternateNamesTableName,
-                where='WHERE sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        sectorNamesMap = {}
-        for row in cursor.fetchall():
-            nameId = row[0]
-            sectorId = row[1]
-            names = sectorNamesMap.get(sectorId)
-            if names is None:
-                names = []
-                sectorNamesMap[sectorId] = names
-
-            try:
-                names.append(multiverse.DbAlternateName(
-                    id=nameId,
-                    sectorId=sectorId,
-                    name=row[2],
-                    language=row[3]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load alternate name {nameId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectorNamesMap
-
-    def _insertSectorSubsectorNames(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.subsectorNames():
-            return
-
-        sql = """
-            INSERT INTO {table} (id, sector_id, code, name)
-            VALUES (:id, :sector_id, :code, :name);
-            """.format(table=UniverseDb._SubsectorNamesTableName)
-        rows = []
-        for subsectorName in sector.subsectorNames():
-            rows.append({
-                'id': subsectorName.id(),
-                'sector_id': subsectorName.sectorId(),
-                'code': subsectorName.code(),
-                'name': subsectorName.name()})
-        cursor.executemany(sql, rows)
-
-    def _readSubsectorNames(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # Sector Id
-                typing.List[multiverse.DbSubsectorName]]:
-        sql = """
-            SELECT id, sector_id, code, name
-            FROM {table}
-            {where};
-            """.format(
-                table=UniverseDb._SubsectorNamesTableName,
-                where='WHERE sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        sectorNamesMap = {}
-        for row in cursor.fetchall():
-            nameId = row[0]
-            sectorId = row[1]
-            names = sectorNamesMap.get(sectorId)
-            if names is None:
-                names = []
-                sectorNamesMap[sectorId] = names
-
-            try:
-                names.append(multiverse.DbSubsectorName(
-                    id=nameId,
-                    sectorId=sectorId,
-                    code=row[2],
-                    name=row[3]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load subsector name {nameId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectorNamesMap
-
-    def _insertSectorSystems(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        sql = """
-            INSERT INTO {table} (id, sector_id, hex_x, hex_y, name,
-                planetoid_belt_count, gas_giant_count, world_count,
-                zone, allegiance_id, notes)
-            VALUES (:id, :sector_id, :hex_x, :hex_y, :name,
-                :planetoid_belt_count, :gas_giant_count, :world_count,
-                :zone, :allegiance_id, :notes);
-            """.format(table=UniverseDb._SystemsTableName)
-        rows = []
-        for system in sector.systems():
-            rows.append({
-                'id': system.id(),
-                'sector_id': system.sectorId(),
-                'hex_x': system.hexX(),
-                'hex_y': system.hexY(),
-                'name': system.name(),
-                'planetoid_belt_count': system.planetoidBeltCount(),
-                'gas_giant_count': system.gasGiantCount(),
-                'world_count': system.worldCount(),
-                'zone': system.zone(),
-                'allegiance_id': system.allegianceId(),
-                'notes': system.notes()})
-        cursor.executemany(sql, rows)
-
-        self._insertSectorStars(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorBodies(
-            cursor=cursor,
-            sector=sector)
-
-    def _readSystems(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # Sector Id
-                typing.List[multiverse.DbSystem]]:
-        systemStarsMap = self._readStars(
-            cursor=cursor,
-            sectorId=sectorId)
-        systemBodiesMap = self._readBodies(
-            cursor=cursor,
-            sectorId=sectorId)
-
-        sql = """
-            SELECT id, sector_id, hex_x, hex_y, name,
-                planetoid_belt_count, gas_giant_count, world_count,
-                zone, allegiance_id, notes
-            FROM {table}
-            {where};
-            """.format(
-                table=UniverseDb._SystemsTableName,
-                where='WHERE sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        sectorSystemsMap = {}
-        for row in cursor.fetchall():
-            systemId = row[0]
-            sectorId = row[1]
-            systems = sectorSystemsMap.get(sectorId)
-            if systems is None:
-                systems = []
-                sectorSystemsMap[sectorId] = systems
-
-            try:
-                systems.append(multiverse.DbSystem(
-                    id=systemId,
-                    sectorId=sectorId,
-                    hexX=row[2],
-                    hexY=row[3],
-                    name=row[4],
-                    planetoidBeltCount=row[5],
-                    gasGiantCount=row[6],
-                    worldCount=row[7],
-                    zone=row[8],
-                    allegianceId=row[9],
-                    notes=row[10],
-                    stars=systemStarsMap.get(systemId),
-                    bodies=systemBodiesMap.get(systemId)))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load system {systemId!r} from {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectorSystemsMap
-
-    def _insertSectorRoutes(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.routes():
-            return
-
-        sql = """
-            INSERT INTO {table} (id, sector_id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
-                start_offset_x, start_offset_y, end_offset_x, end_offset_y, type, style,
-                colour, width, allegiance_id)
-            VALUES (:id, :sector_id, :start_hex_x, :start_hex_y, :end_hex_x, :end_hex_y,
-                :start_offset_x, :start_offset_y, :end_offset_x, :end_offset_y, :type, :style,
-                :colour, :width, :allegiance_id);
-            """.format(table=UniverseDb._RoutesTableName)
-        rows = []
-        for route in sector.routes():
-            rows.append({
-                'id': route.id(),
-                'sector_id': route.sectorId(),
-                'start_hex_x': route.startHexX(),
-                'start_hex_y': route.startHexY(),
-                'end_hex_x': route.endHexX(),
-                'end_hex_y': route.endHexY(),
-                'start_offset_x': route.startOffsetX(),
-                'start_offset_y': route.startOffsetY(),
-                'end_offset_x': route.endOffsetX(),
-                'end_offset_y': route.endOffsetY(),
-                'type': route.type(),
-                'style': route.style(),
-                'colour': route.colour(),
-                'width': route.width(),
-                'allegiance_id': route.allegianceId()})
-        cursor.executemany(sql, rows)
-
-    def _readRoutes(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # Sector Id
-                typing.List[multiverse.DbRoute]]:
-        sql = """
-            SELECT id, sector_id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
-                start_offset_x, start_offset_y, end_offset_x, end_offset_y,
-                type, style, colour, width, allegiance_id
-            FROM {table}
-            {where};
-            """.format(
-                table=UniverseDb._RoutesTableName,
-                where='WHERE sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        sectorRoutesMap = {}
-        for row in cursor.fetchall():
-            routeId = row[0]
-            sectorId = row[1]
-            routes = sectorRoutesMap.get(sectorId)
-            if routes is None:
-                routes = []
-                sectorRoutesMap[sectorId] = routes
-
-            try:
-                routes.append(multiverse.DbRoute(
-                    id=routeId,
-                    sectorId=sectorId,
-                    startHexX=row[2],
-                    startHexY=row[3],
-                    endHexX=row[4],
-                    endHexY=row[5],
-                    startOffsetX=row[6],
-                    startOffsetY=row[7],
-                    endOffsetX=row[8],
-                    endOffsetY=row[9],
-                    type=row[10],
-                    style=row[11],
-                    colour=row[12],
-                    width=row[13],
-                    allegianceId=row[14]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load route {routeId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectorRoutesMap
-
-    def _insertSectorBorders(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.borders():
-            return
-
-        bordersSql = """
-            INSERT INTO {table} (id, sector_id, allegiance_id, style, colour,
-                label, label_x, label_y, show_label, wrap_label)
-            VALUES (:id, :sector_id, :allegiance_id, :style, :colour,
-                :label, :label_x, :label_y, :show_label, :wrap_label);
-            """.format(table=UniverseDb._BordersTableName)
-        hexesSql =  """
-            INSERT INTO {table} (border_id, hex_x, hex_y)
-            VALUES (:border_id, :hex_x, :hex_y);
-            """.format(table=UniverseDb._BorderHexesTableName)
-        borderRows = []
-        hexRows = []
-        for border in sector.borders():
-            borderRows.append({
-                'id': border.id(),
-                'sector_id': border.sectorId(),
-                'allegiance_id': border.allegianceId(),
-                'style': border.style(),
-                'colour': border.colour(),
-                'label': border.label(),
-                'label_x': border.labelWorldX(),
-                'label_y': border.labelWorldY(),
-                'show_label': 1 if border.showLabel() else 0,
-                'wrap_label': 1 if border.wrapLabel() else 0})
-            for hexX, hexY in border.hexes():
-                hexRows.append({
-                    'border_id': border.id(),
-                    'hex_x': hexX,
-                    'hex_y': hexY})
-        cursor.executemany(bordersSql, borderRows)
-        cursor.executemany(hexesSql, hexRows)
-
-    def _readBorders(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # Sector Id
-                typing.List[multiverse.DbBorder]]:
-        sql = """
-            SELECT id, sector_id, allegiance_id, style, colour, label,
-                label_x, label_y, show_label, wrap_label
-            FROM {table}
-            {where};
-            """.format(
-                table=UniverseDb._BordersTableName,
-                where='WHERE sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        sql = """
-            SELECT hex_x, hex_y
-            FROM {table}
-            WHERE border_id = :id;
-            """.format(table=UniverseDb._BorderHexesTableName)
-        sectorBordersMap = {}
-        for row in cursor.fetchall():
-            borderId = row[0]
-            sectorId = row[1]
-            borders = sectorBordersMap.get(sectorId)
-            if borders is None:
-                borders = []
-                sectorBordersMap[sectorId] = borders
-
-            cursor.execute(sql, {'id': borderId})
-            hexes = []
-            for hexRow in cursor.fetchall():
-                hexes.append((hexRow[0], hexRow[1]))
-
-            try:
-                borders.append(multiverse.DbBorder(
-                    id=borderId,
-                    sectorId=sectorId,
-                    allegianceId=row[2],
-                    style=row[3],
-                    colour=row[4],
-                    label=row[5],
-                    labelWorldX=row[6],
-                    labelWorldY=row[7],
-                    showLabel=True if row[8] else False,
-                    wrapLabel=True if row[9] else False,
-                    hexes=hexes))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load border {borderId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectorBordersMap
-
-    def _insertSectorRegions(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.regions():
-            return
-
-        regionsSql = """
-            INSERT INTO {table} (id, sector_id, colour, label,
-                label_x, label_y, show_label, wrap_label)
-            VALUES (:id, :sector_id, :colour, :label,
-                :label_x, :label_y, :show_label, :wrap_label);
-            """.format(table=UniverseDb._RegionsTableName)
-        hexesSql =  """
-            INSERT INTO {table} (region_id, hex_x, hex_y)
-            VALUES (:region_id, :hex_x, :hex_y);
-            """.format(table=UniverseDb._RegionHexesTableName)
-        regionsRows = []
-        hexRows = []
-        for region in sector.regions():
-            regionsRows.append({
-                'id': region.id(),
-                'sector_id': region.sectorId(),
-                'colour': region.colour(),
-                'label': region.label(),
-                'label_x': region.labelWorldX(),
-                'label_y': region.labelWorldY(),
-                'show_label': 1 if region.showLabel() else 0,
-                'wrap_label': 1 if region.wrapLabel() else 0})
-            for hexX, hexY in region.hexes():
-                hexRows.append({
-                    'region_id': region.id(),
-                    'hex_x': hexX,
-                    'hex_y': hexY})
-        cursor.executemany(regionsSql, regionsRows)
-        cursor.executemany(hexesSql, hexRows)
-
-    def _readRegions(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # Sector Id
-                typing.List[multiverse.DbRegion]]:
-        sql = """
-            SELECT id, sector_id, colour, label, label_x, label_y, show_label, wrap_label
-            FROM {table}
-            {where};
-            """.format(
-                table=UniverseDb._RegionsTableName,
-                where='WHERE sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        sql = """
-            SELECT hex_x, hex_y
-            FROM {table}
-            WHERE region_id = :id;
-            """.format(table=UniverseDb._RegionHexesTableName)
-        sectorRegionsMap = {}
-        for row in cursor.fetchall():
-            regionId = row[0]
-            sectorId = row[1]
-            regions = sectorRegionsMap.get(sectorId)
-            if regions is None:
-                regions = []
-                sectorRegionsMap[sectorId] = regions
-
-            cursor.execute(sql, {'id': regionId})
-            hexes = []
-            for hexRow in cursor.fetchall():
-                hexes.append((hexRow[0], hexRow[1]))
-
-            try:
-                regions.append(multiverse.DbRegion(
-                    id=regionId,
-                    sectorId=sectorId,
-                    colour=row[2],
-                    label=row[3],
-                    labelWorldX=row[4],
-                    labelWorldY=row[5],
-                    showLabel=True if row[6] else False,
-                    wrapLabel=True if row[7] else False,
-                    hexes=hexes))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load region {regionId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectorRegionsMap
-
-    def _insertSectorLabels(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.labels():
-            return
-
-        sql = """
-            INSERT INTO {table} (id, sector_id, text, x, y,
-                colour, size, wrap)
-            VALUES (:id, :sector_id, :text, :x, :y,
-                :colour, :size, :wrap);
-            """.format(table=UniverseDb._SectorLabelsTableName)
-        rows = []
-        for label in sector.labels():
-            rows.append({
-                'id': label.id(),
-                'sector_id': label.sectorId(),
-                'text': label.text(),
-                'x': label.worldX(),
-                'y': label.worldY(),
-                'colour': label.colour(),
-                'size': label.size(),
-                'wrap': 1 if label.wrap() else 0})
-        cursor.executemany(sql, rows)
-
-    def _readSectorLabels(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # Sector Id
-                typing.List[multiverse.DbSectorLabel]]:
-        sql = """
-            SELECT id, sector_id, text, x, y, colour, size, wrap
-            FROM {table}
-            {where};
-            """.format(
-                table=UniverseDb._SectorLabelsTableName,
-                where='WHERE sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        sectorLabelsMap = {}
-        for row in cursor.fetchall():
-            labelId = row[0]
-            sectorId = row[1]
-            labels = sectorLabelsMap.get(sectorId)
-            if labels is None:
-                labels = []
-                sectorLabelsMap[sectorId] = labels
-
-            try:
-                labels.append(multiverse.DbSectorLabel(
-                    id=labelId,
-                    sectorId=sectorId,
-                    text=row[2],
-                    worldX=row[3],
-                    worldY=row[4],
-                    colour=row[5],
-                    size=row[6],
-                    wrap=True if row[7] else False))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load label {labelId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectorLabelsMap
-
-    def _insertSectorTags(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.tags():
-            return
-
-        sql = """
-            INSERT INTO {table} (id, sector_id, tag)
-            VALUES (:id, :sector_id, :tag);
-            """.format(table=UniverseDb._SectorTagsTableName)
-        rows = []
-        for tag in sector.tags():
-            rows.append({
-                'id': tag.id(),
-                'sector_id': tag.sectorId(),
-                'tag': tag.tag()})
-        cursor.executemany(sql, rows)
-
-    def _readSectorTags(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # Sector Id
-                typing.List[multiverse.DbTag]]:
-        sql = """
-            SELECT id, sector_id, tag
-            FROM {table}
-            {where};
-            """.format(
-                table=UniverseDb._SectorTagsTableName,
-                where='WHERE sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        sectorTagsMap = {}
-        for row in cursor.fetchall():
-            tagId = row[0]
-            sectorId = row[1]
-            tags = sectorTagsMap.get(sectorId)
-            if tags is None:
-                tags = []
-                sectorTagsMap[sectorId] = tags
-
-            try:
-                tags.append(multiverse.DbTag(
-                    id=tagId,
-                    sectorId=sectorId,
-                    tag=row[2]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load tag {tagId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectorTagsMap
-
-    def _insertSectorProducts(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.products():
-            return
-
-        sql = """
-            INSERT INTO {table} (id, sector_id, publication, author,
-                publisher, reference)
-            VALUES (:id, :sector_id, :publication, :author,
-                :publisher, :reference);
-            """.format(table=UniverseDb._ProductsTableName)
-        rows = []
-        for product in sector.products():
-            rows.append({
-                'id': product.id(),
-                'sector_id': product.sectorId(),
-                'publication': product.publication(),
-                'author': product.author(),
-                'publisher': product.publisher(),
-                'reference': product.reference()})
-        cursor.executemany(sql, rows)
-
-    def _readProducts(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # Sector Id
-                typing.List[multiverse.DbTag]]:
-        sql = """
-            SELECT id, sector_id, publication, author, publisher, reference
-            FROM {table}
-            {where};
-            """.format(
-                table=UniverseDb._ProductsTableName,
-                where='WHERE sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        sectorProductsMap = {}
-        for row in cursor.fetchall():
-            productId = row[0]
-            sectorId = row[1]
-            products = sectorProductsMap.get(sectorId)
-            if products is None:
-                products = []
-                sectorProductsMap[sectorId] = products
-
-            try:
-                products.append(multiverse.DbProduct(
-                    id=productId,
-                    sectorId=sectorId,
-                    publication=row[2],
-                    author=row[3],
-                    publisher=row[4],
-                    reference=row[5]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load product {productId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return sectorProductsMap
-
-    def _insertSectorStars(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        rows = []
-        for system in sector.systems():
-            if not system.stars():
-                continue
-
-            for star in system.stars():
-                rows.append({
-                    'id': star.id(),
-                    'system_id': star.systemId(),
-                    'luminosity_class': star.luminosityClass(),
-                    'spectral_class': star.spectralClass(),
-                    'spectral_scale': star.spectralScale()})
-
-        if rows:
-            sql = """
-                INSERT INTO {table} (id, system_id, luminosity_class, spectral_class, spectral_scale)
-                VALUES (:id, :system_id, :luminosity_class, :spectral_class, :spectral_scale);
-                """.format(table=UniverseDb._StarsTableName)
-            cursor.executemany(sql, rows)
-
-    def _readStars(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # System Id
-                typing.List[multiverse.DbStar]]:
-        sql = """
-            SELECT t.id, t.system_id, t.luminosity_class, t.spectral_class, t.spectral_scale
-            FROM {starsTable} AS t
-            JOIN {systemsTable} AS s ON s.id = t.system_id
-            {where};
-            """.format(
-                starsTable=UniverseDb._StarsTableName,
-                systemsTable=UniverseDb._SystemsTableName,
-                where='WHERE s.sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        systemStarsMap: typing.Dict[str, typing.List[multiverse.DbStar]] = {}
-        for row in cursor.fetchall():
-            starId = row[0]
-            systemId = row[1]
-            stars = systemStarsMap.get(systemId)
-            if not stars:
-                stars = []
-                systemStarsMap[systemId] = stars
-
-            try:
-                stars.append(multiverse.DbStar(
-                    id=starId,
-                    systemId=systemId,
-                    luminosityClass=row[2],
-                    spectralClass=row[3],
-                    spectralScale=row[4]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load star {starId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return systemStarsMap
-
-    def _insertSectorBodies(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        bodiesRows = []
-        worldsRows = []
-        for system in sector.systems():
-            if not system.bodies():
-                continue
-
-            for body in system.bodies():
-                bodiesRows.append({
-                    'id': body.id(),
-                    'system_id': body.systemId(),
-                    'orbit_index': body.orbitIndex(),
-                    'name': body.name(),
-                    'notes': body.notes()})
-
-                if isinstance(body, multiverse.DbWorld):
-                    worldsRows.append({
-                        'body_id': body.id(),
-                        'is_main_world': body.isMainWorld(),
-                        'starport': body.starport(),
-                        'world_size': body.worldSize(),
-                        'atmosphere': body.atmosphere(),
-                        'hydrographics': body.hydrographics(),
-                        'population': body.population(),
-                        'government': body.government(),
-                        'law_level': body.lawLevel(),
-                        'tech_level': body.techLevel(),
-                        'resources': body.resources(),
-                        'labour': body.labour(),
-                        'infrastructure': body.infrastructure(),
-                        'efficiency': body.efficiency(),
-                        'heterogeneity': body.heterogeneity(),
-                        'acceptance': body.acceptance(),
-                        'strangeness': body.strangeness(),
-                        'symbols': body.symbols(),
-                        'population_multiplier': body.populationMultiplier()})
-
-        if bodiesRows:
-            sql = """
-                INSERT INTO {table} (id, system_id, orbit_index, name, notes)
-                VALUES (:id, :system_id, :orbit_index, :name, :notes)
-                """.format(table=UniverseDb._BodiesTableName)
-            cursor.executemany(sql, bodiesRows)
-        if worldsRows:
-            sql = """
-                INSERT INTO {table} (body_id, is_main_world,
-                    starport, world_size, atmosphere, hydrographics, population, government, law_level, tech_level,
-                    resources, labour, infrastructure, efficiency,
-                    heterogeneity, acceptance, strangeness, symbols,
-                    population_multiplier)
-                VALUES (:body_id, :is_main_world,
-                    :starport, :world_size, :atmosphere, :hydrographics, :population, :government, :law_level, :tech_level,
-                    :resources, :labour, :infrastructure, :efficiency,
-                    :heterogeneity, :acceptance, :strangeness, :symbols,
-                    :population_multiplier);
-                """.format(table=UniverseDb._WorldsTableName)
-            cursor.executemany(sql, worldsRows)
-
-        self._insertSectorNobilities(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorBases(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorTradeCodes(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorSophontPopulations(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorRulingAllegiances(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorOwningSystems(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorColonySystems(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorResearchStations(
-            cursor=cursor,
-            sector=sector)
-        self._insertSectorCustomRemarks(
-            cursor=cursor,
-            sector=sector)
-
-    def _readBodies(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # System Id
-                typing.List[multiverse.DbBody]]:
-        worldNobilitiesMap = self._readNobilities(
-            cursor=cursor,
-            sectorId=sectorId)
-        worldBasesMap = self._readBases(
-            cursor=cursor,
-            sectorId=sectorId)
-        worldTradeCodesMap = self._readTradeCodes(
-            cursor=cursor,
-            sectorId=sectorId)
-        worldPopulationsMap = self._readSophontPopulations(
-            cursor=cursor,
-            sectorId=sectorId)
-        worldRulingAllegianceMap = self._readRulingAllegiances(
-            cursor=cursor,
-            sectorId=sectorId)
-        worldOwnersMap = self._readOwningSystems(
-            cursor=cursor,
-            sectorId=sectorId)
-        worldColoniesMap = self._readColonySystems(
-            cursor=cursor,
-            sectorId=sectorId)
-        worldResearchStationsMap = self._readResearchStations(
-            cursor=cursor,
-            sectorId=sectorId)
-        worldRemarksMap = self._readCustomRemarks(
-            cursor=cursor,
-            sectorId=sectorId)
-
-        systemBodiesMap: typing.Dict[str, typing.List[multiverse.DbBody]] = {}
-        sql = """
-            SELECT
-                b.id, b.system_id, b.orbit_index, b.name,
-                w.is_main_world,
-                w.starport, w.world_size, w.atmosphere, w.hydrographics, w.population, w.government, w.law_level, w.tech_level,
-                w.resources, w.labour, w.infrastructure, w.efficiency,
-                w.heterogeneity, w.acceptance, w.strangeness, w.symbols,
-                w.population_multiplier,
-                b.notes
-            FROM {worldsTable} w
-            JOIN {bodiesTable} b ON b.id = w.body_id
-            JOIN {systemsTable} s ON s.id = b.system_id
-            {where};
-            """.format(
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName,
-                systemsTable=UniverseDb._SystemsTableName,
-                where='WHERE s.sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        for row in cursor.fetchall():
-            bodyId = row[0]
-            systemId = row[1]
-            bodies = systemBodiesMap.get(systemId)
-            if not bodies:
-                bodies = []
-                systemBodiesMap[systemId] = bodies
-
-            try:
-                bodies.append(multiverse.DbWorld(
-                    id=bodyId,
-                    systemId=systemId,
-                    orbitIndex=row[2],
-                    name=row[3],
-                    isMainWorld=True if row[4] else False,
-                    starport=row[5],
-                    worldSize=row[6],
-                    atmosphere=row[7],
-                    hydrographics=row[8],
-                    population=row[9],
-                    government=row[10],
-                    lawLevel=row[11],
-                    techLevel=row[12],
-                    resources=row[13],
-                    labour=row[14],
-                    infrastructure=row[15],
-                    efficiency=row[16],
-                    heterogeneity=row[17],
-                    acceptance=row[18],
-                    strangeness=row[19],
-                    symbols=row[20],
-                    populationMultiplier=row[21],
-                    notes=row[22],
-                    nobilities=worldNobilitiesMap.get(bodyId),
-                    bases=worldBasesMap.get(bodyId),
-                    tradeCodes=worldTradeCodesMap.get(bodyId),
-                    sophontPopulations=worldPopulationsMap.get(bodyId),
-                    rulingAllegiances=worldRulingAllegianceMap.get(bodyId),
-                    owningSystems=worldOwnersMap.get(bodyId),
-                    colonySystems=worldColoniesMap.get(bodyId),
-                    researchStations=worldResearchStationsMap.get(bodyId),
-                    customRemarks=worldRemarksMap.get(bodyId)))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load body {bodyId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return systemBodiesMap
-
-    def _insertSectorNobilities(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        rows = []
-        for system in sector.systems():
-            if not system.bodies():
-                continue
-
-            for body in system.bodies():
-                if not isinstance(body, multiverse.DbWorld):
-                    continue
-
-                if not body.nobilities():
-                    continue
-
-                for nobility in body.nobilities():
-                    rows.append({
-                        'id': nobility.id(),
-                        'world_id': nobility.worldId(),
-                        'code': nobility.code()})
-
-        if rows:
-            sql = """
-                INSERT INTO {table} (id, world_id, code)
-                VALUES (:id, :world_id, :code)
-                """.format(table=UniverseDb._NobilitiesTableName)
-            cursor.executemany(sql, rows)
-
-    def _readNobilities(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # World Id
-                typing.List[multiverse.DbNobility]]:
-        sql = """
-            SELECT t.id, t.world_id, t.code
-            FROM {nobilitiesTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id
-            JOIN {systemsTable} AS s ON s.id = b.system_id
-            {where};
-            """.format(
-                nobilitiesTable=UniverseDb._NobilitiesTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName,
-                systemsTable=UniverseDb._SystemsTableName,
-                where='WHERE s.sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        systemNobilitiesMap: typing.Dict[str, typing.List[multiverse.DbNobility]] = {}
-        for row in cursor.fetchall():
-            nobilityId = row[0]
-            worldId = row[1]
-            nobilities = systemNobilitiesMap.get(worldId)
-            if not nobilities:
-                nobilities = []
-                systemNobilitiesMap[worldId] = nobilities
-
-            try:
-                nobilities.append(multiverse.DbNobility(
-                    id=nobilityId,
-                    worldId=worldId,
-                    code=row[2]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load nobility {nobilityId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return systemNobilitiesMap
-
-    def _insertSectorBases(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        rows = []
-        for system in sector.systems():
-            if not system.bodies():
-                continue
-
-            for body in system.bodies():
-                if not isinstance(body, multiverse.DbWorld):
-                    continue
-
-                if not body.bases():
-                    continue
-
-                for base in body.bases():
-                    rows.append({
-                        'id': base.id(),
-                        'world_id': base.worldId(),
-                        'code': base.code()})
-
-        if rows:
-            sql = """
-                INSERT INTO {table} (id, world_id, code)
-                VALUES (:id, :world_id, :code);
-                """.format(table=UniverseDb._BasesTableName)
-            cursor.executemany(sql, rows)
-
-    def _readBases(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # World Id
-                typing.List[multiverse.DbBase]]:
-        sql = """
-            SELECT t.id, t.world_id, t.code
-            FROM {basesTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id
-            JOIN {systemsTable} AS s ON s.id = b.system_id
-            {where};
-            """.format(
-                basesTable=UniverseDb._BasesTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName,
-                systemsTable=UniverseDb._SystemsTableName,
-                where='WHERE s.sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        systemBasesMap: typing.Dict[str, typing.List[multiverse.DbBase]] = {}
-        for row in cursor.fetchall():
-            baseId = row[0]
-            worldId = row[1]
-            bases = systemBasesMap.get(worldId)
-            if not bases:
-                bases = []
-                systemBasesMap[worldId] = bases
-
-            try:
-                bases.append(multiverse.DbBase(
-                    id=baseId,
-                    worldId=worldId,
-                    code=row[2]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load base {baseId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return systemBasesMap
-
-    def _insertSectorTradeCodes(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        rows = []
-        for system in sector.systems():
-            if not system.bodies():
-                continue
-
-            for body in system.bodies():
-                if not isinstance(body, multiverse.DbWorld):
-                    continue
-
-                if not body.tradeCodes():
-                    continue
-
-                for code in body.tradeCodes():
-                    rows.append({
-                        'id': code.id(),
-                        'world_id': code.worldId(),
-                        'code': code.code()})
-
-        if rows:
-            sql = """
-                INSERT INTO {table} (id, world_id, code)
-                VALUES (:id, :world_id, :code)
-                """.format(table=UniverseDb._TradeCodesTableName)
-            cursor.executemany(sql, rows)
-
-    def _readTradeCodes(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # World Id
-                typing.List[multiverse.DbTradeCode]]:
-        sql = """
-            SELECT t.id, t.world_id, t.code
-            FROM {tradeTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id
-            JOIN {systemsTable} AS s ON s.id = b.system_id
-            {where};
-            """.format(
-                tradeTable=UniverseDb._TradeCodesTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName,
-                systemsTable=UniverseDb._SystemsTableName,
-                where='WHERE s.sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        systemTradeCodesMap: typing.Dict[str, typing.List[multiverse.DbTradeCode]] = {}
-        for row in cursor.fetchall():
-            tradeCodeId = row[0]
-            worldId = row[1]
-            tradeCodes = systemTradeCodesMap.get(worldId)
-            if not tradeCodes:
-                tradeCodes = []
-                systemTradeCodesMap[worldId] = tradeCodes
-
-            try:
-                tradeCodes.append(multiverse.DbTradeCode(
-                    id=tradeCodeId,
-                    worldId=worldId,
-                    code=row[2]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load trade code {tradeCodeId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return systemTradeCodesMap
-
-    def _insertSectorSophontPopulations(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        rows = []
-        for system in sector.systems():
-            if not system.bodies():
-                continue
-
-            for body in system.bodies():
-                if not isinstance(body, multiverse.DbWorld):
-                    continue
-
-                if not body.sophontPopulations():
-                    continue
-
-                for sophont in body.sophontPopulations():
-                    rows.append({
-                        'id': sophont.id(),
-                        'world_id': sophont.worldId(),
-                        'sophont_id': sophont.sophontId(),
-                        'percentage': sophont.percentage(),
-                        'is_home_world': 1 if sophont.isHomeWorld() else 0,
-                        'is_die_back': 1 if sophont.isDieBack() else 0})
-
-        if rows:
-            sql = """
-                INSERT INTO {table} (id, world_id, sophont_id, percentage, is_home_world, is_die_back)
-                VALUES (:id, :world_id, :sophont_id, :percentage, :is_home_world, :is_die_back)
-                """.format(table=UniverseDb._SophontPopulationsTableName)
-            cursor.executemany(sql, rows)
-
-    def _readSophontPopulations(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # World Id
-                typing.List[multiverse.DbSophontPopulation]]:
-        sql = """
-            SELECT t.id, t.world_id, t.sophont_id, t.percentage, t.is_home_world, t.is_die_back
-            FROM {populationsTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id
-            JOIN {systemsTable} AS s ON s.id = b.system_id
-            {where};
-            """.format(
-                populationsTable=UniverseDb._SophontPopulationsTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName,
-                systemsTable=UniverseDb._SystemsTableName,
-                where='WHERE s.sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        systemPopulationsMap: typing.Dict[str, typing.List[multiverse.DbSophontPopulation]] = {}
-        for row in cursor.fetchall():
-            populationId = row[0]
-            worldId = row[1]
-            populations = systemPopulationsMap.get(worldId)
-            if not populations:
-                populations = []
-                systemPopulationsMap[worldId] = populations
-
-            try:
-                populations.append(multiverse.DbSophontPopulation(
-                    id=populationId,
-                    worldId=worldId,
-                    sophontId=row[2],
-                    percentage=row[3],
-                    isHomeWorld=True if row[4] else False,
-                    isDieBack=True if row[5] else False))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load sophont population {populationId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return systemPopulationsMap
-
-    def _insertSectorRulingAllegiances(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        rows = []
-        for system in sector.systems():
-            if not system.bodies():
-                continue
-
-            for body in system.bodies():
-                if not isinstance(body, multiverse.DbWorld):
-                    continue
-
-                if not body.rulingAllegiances():
-                    continue
-
-                for rulingAllegiance in body.rulingAllegiances():
-                    rows.append({
-                        'id': rulingAllegiance.id(),
-                        'world_id': rulingAllegiance.worldId(),
-                        'allegiance_id': rulingAllegiance.allegianceId()})
-
-        if rows:
-            sql = """
-                INSERT INTO {table} (id, world_id, allegiance_id)
-                VALUES (:id, :world_id, :allegiance_id)
-                """.format(table=UniverseDb._RulingAllegiancesTableName)
-            cursor.executemany(sql, rows)
-
-    def _readRulingAllegiances(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # World Id
-                typing.List[multiverse.DbRulingAllegiance]]:
-        sql = """
-            SELECT t.id, t.world_id, t.allegiance_id
-            FROM {rulingTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id
-            JOIN {systemsTable} AS s ON s.id = b.system_id
-            {where};
-            """.format(
-                rulingTable=UniverseDb._RulingAllegiancesTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName,
-                systemsTable=UniverseDb._SystemsTableName,
-                where='WHERE s.sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        systemRulingAllegianceMap: typing.Dict[str, typing.List[multiverse.DbRulingAllegiance]] = {}
-        for row in cursor.fetchall():
-            rulerId = row[0]
-            worldId = row[1]
-            rulers = systemRulingAllegianceMap.get(worldId)
-            if not rulers:
-                rulers = []
-                systemRulingAllegianceMap[worldId] = rulers
-
-            try:
-                rulers.append(multiverse.DbRulingAllegiance(
-                    id=rulerId,
-                    worldId=worldId,
-                    allegianceId=row[2]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load ruling allegiance {rulerId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return systemRulingAllegianceMap
-
-    def _insertSectorOwningSystems(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        rows = []
-        for system in sector.systems():
-            if not system.bodies():
-                continue
-
-            for body in system.bodies():
-                if not isinstance(body, multiverse.DbWorld):
-                    continue
-
-                if not body.owningSystems():
-                    continue
-
-                for owningSystem in body.owningSystems():
-                    rows.append({
-                        'id': owningSystem.id(),
-                        'world_id': owningSystem.worldId(),
-                        'hex_x': owningSystem.hexX(),
-                        'hex_y': owningSystem.hexY(),
-                        'sector_abbreviation': owningSystem.sectorAbbreviation()})
-
-        if rows:
-            sql = """
-                INSERT INTO {table} (id, world_id, hex_x, hex_y, sector_abbreviation)
-                VALUES (:id, :world_id, :hex_x, :hex_y, :sector_abbreviation)
-                """.format(table=UniverseDb._OwningSystemsTableName)
-            cursor.executemany(sql, rows)
-
-    def _readOwningSystems(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # World Id
-                typing.List[multiverse.DbOwningSystem]]:
-        sql = """
-            SELECT t.id, t.world_id, t.hex_x, t.hex_y, t.sector_abbreviation
-            FROM {ownersTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id
-            JOIN {systemsTable} AS s ON s.id = b.system_id
-            {where};
-            """.format(
-                ownersTable=UniverseDb._OwningSystemsTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName,
-                systemsTable=UniverseDb._SystemsTableName,
-                where='WHERE s.sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        systemOwnersMap: typing.Dict[str, typing.List[multiverse.DbOwningSystem]] = {}
-        for row in cursor.fetchall():
-            ownerId = row[0]
-            worldId = row[1]
-            owners = systemOwnersMap.get(worldId)
-            if not owners:
-                owners = []
-                systemOwnersMap[worldId] = owners
-
-            try:
-                owners.append(multiverse.DbOwningSystem(
-                    id=ownerId,
-                    worldId=worldId,
-                    hexX=row[2],
-                    hexY=row[3],
-                    sectorAbbreviation=row[4]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load owning system {ownerId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return systemOwnersMap
-
-    def _insertSectorColonySystems(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        rows = []
-        for system in sector.systems():
-            if not system.bodies():
-                continue
-
-            for body in system.bodies():
-                if not isinstance(body, multiverse.DbWorld):
-                    continue
-
-                if not body.colonySystems():
-                    continue
-
-                for colonySystem in body.colonySystems():
-                    rows.append({
-                        'id': colonySystem.id(),
-                        'world_id': colonySystem.worldId(),
-                        'hex_x': colonySystem.hexX(),
-                        'hex_y': colonySystem.hexY(),
-                        'sector_abbreviation': colonySystem.sectorAbbreviation()})
-
-        if rows:
-            sql = """
-                INSERT INTO {table} (id, world_id, hex_x, hex_y, sector_abbreviation)
-                VALUES (:id, :world_id, :hex_x, :hex_y, :sector_abbreviation)
-                """.format(table=UniverseDb._ColonySystemsTableName)
-            cursor.executemany(sql, rows)
-
-    def _readColonySystems(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # World Id
-                typing.List[multiverse.DbColonySystem]]:
-        sql = """
-            SELECT t.id, t.world_id, t.hex_x, t.hex_y, t.sector_abbreviation
-            FROM {coloniesTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id
-            JOIN {systemsTable} AS s ON s.id = b.system_id
-            {where};
-            """.format(
-                coloniesTable=UniverseDb._ColonySystemsTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName,
-                systemsTable=UniverseDb._SystemsTableName,
-                where='WHERE s.sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        systemColoniesMap: typing.Dict[str, typing.List[multiverse.DbColonySystem]] = {}
-        for row in cursor.fetchall():
-            colonyId = row[0]
-            worldId = row[1]
-            colonies = systemColoniesMap.get(worldId)
-            if not colonies:
-                colonies = []
-                systemColoniesMap[worldId] = colonies
-
-            try:
-                colonies.append(multiverse.DbColonySystem(
-                    id=colonyId,
-                    worldId=worldId,
-                    hexX=row[2],
-                    hexY=row[3],
-                    sectorAbbreviation=row[4]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load colony system {colonyId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return systemColoniesMap
-
-    def _insertSectorResearchStations(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        rows = []
-        for system in sector.systems():
-            if not system.bodies():
-                continue
-
-            for body in system.bodies():
-                if not isinstance(body, multiverse.DbWorld):
-                    continue
-
-                if not body.researchStations():
-                    continue
-
-                for station in body.researchStations():
-                    rows.append({
-                        'id': station.id(),
-                        'world_id': station.worldId(),
-                        'code': station.code()})
-
-        if rows:
-            sql = """
-                INSERT INTO {table} (id, world_id, code)
-                VALUES (:id, :world_id, :code);
-                """.format(table=UniverseDb._ResearchStationTableName)
-            cursor.executemany(sql, rows)
-
-    def _readResearchStations(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # World Id
-                typing.List[multiverse.DbResearchStation]]:
-        sql = """
-            SELECT t.id, t.world_id, t.code
-            FROM {stationsTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id
-            JOIN {systemsTable} AS s ON s.id = b.system_id
-            {where};
-            """.format(
-                stationsTable=UniverseDb._ResearchStationTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName,
-                systemsTable=UniverseDb._SystemsTableName,
-                where='WHERE s.sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        systemResearchStationsMap: typing.Dict[str, typing.List[multiverse.DbResearchStation]] = {}
-        for row in cursor.fetchall():
-            stationId = row[0]
-            worldId = row[1]
-            stations = systemResearchStationsMap.get(worldId)
-            if not stations:
-                stations = []
-                systemResearchStationsMap[worldId] = stations
-
-            try:
-                stations.append(multiverse.DbResearchStation(
-                    id=stationId,
-                    worldId=worldId,
-                    code=row[2]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load research station {stationId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return systemResearchStationsMap
-
-    def _insertSectorCustomRemarks(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector
-            ) -> None:
-        if not sector.systems():
-            return
-
-        rows = []
-        for system in sector.systems():
-            if not system.bodies():
-                continue
-
-            for body in system.bodies():
-                if not isinstance(body, multiverse.DbWorld):
-                    continue
-
-                if not body.customRemarks():
-                    continue
-
-                for remark in body.customRemarks():
-                    rows.append({
-                        'id': remark.id(),
-                        'world_id': remark.worldId(),
-                        'remark': remark.remark()})
-
-        if rows:
-            sql = """
-                INSERT INTO {table} (id, world_id, remark)
-                VALUES (:id, :world_id, :remark)
-                """.format(table=UniverseDb._CustomRemarksTableName)
-            cursor.executemany(sql, rows)
-
-    def _readCustomRemarks(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: typing.Optional[str] = None
-            ) -> typing.Dict[
-                str, # World Id
-                typing.List[multiverse.DbCustomRemark]]:
-        sql = """
-            SELECT t.id, t.world_id, t.remark
-            FROM {remarksTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id
-            JOIN {systemsTable} AS s ON s.id = b.system_id
-            {where};
-            """.format(
-                remarksTable=UniverseDb._CustomRemarksTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName,
-                systemsTable=UniverseDb._SystemsTableName,
-                where='WHERE s.sector_id = :id' if sectorId else '')
-
-        parameters = {}
-        if sectorId:
-            parameters['id'] = sectorId
-        cursor.execute(sql, parameters)
-
-        systemRemarksMap: typing.Dict[str, typing.List[multiverse.DbCustomRemark]] = {}
-        for row in cursor.fetchall():
-            remarkId = row[0]
-            worldId = row[1]
-            remarks = systemRemarksMap.get(worldId)
-            if not remarks:
-                remarks = []
-                systemRemarksMap[worldId] = remarks
-
-            try:
-                remarks.append(multiverse.DbCustomRemark(
-                    id=remarkId,
-                    worldId=worldId,
-                    remark=row[2]))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load custom remark {remarkId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        return systemRemarksMap
-
-    def _saveSector(
-            self,
-            cursor: sqlite3.Cursor,
-            sector: multiverse.DbSector,
-            stockDataHash: typing.Optional[str] = None
-            ) -> None:
-        # Check there isn't a sector at the same position with a different id.
-        # To update a sector at a position, the new sector must have the same id.
-        # The only reason this is done is to make deleting the old sector data
-        # easier as it means we can just delete the current sector with the same
-        # id and that handles it even if the sector has changed position.
-        sql = """
-            SELECT id
-            FROM {table}
-            WHERE id != :id AND sector_x = :x AND sector_y = :y
-            LIMIT 1;
-            """.format(table=UniverseDb._SectorsTableName)
-        cursor.execute(sql, {
-            'id': sector.id(),
-            'x': sector.sectorX(),
-            'y': sector.sectorY()})
-        row = cursor.fetchone()
-        if row:
-            raise ValueError('Sector {otherId} already exists at ({x}, {y})'.format(
-                otherId=row[0],
-                x=sector.sectorX(),
-                y=sector.sectorY()))
-
-        self._deleteSector(
-            sectorId=sector.id(),
-            cursor=cursor,
-            # If a stock source data has exists for the sector, don't
-            # delete it as it will be updated below
-            updateSources=False)
-        self._insertSector(
-            sector=sector,
-            cursor=cursor)
-
-        if stockDataHash is not None:
-            # A stock data hash was provided so this save is happening
-            # because the sector is been filled with stock data. Create a
-            # mapping between the position the sector was written to and
-            # the data hash for the stock data that is being imported.
-            sql = """
-                INSERT INTO {table} (sector_x, sector_y, data_hash)
-                VALUES (:sector_x, :sector_y, :data_hash)
-                ON CONFLICT(sector_x, sector_y) DO UPDATE SET
-                    data_hash = excluded.data_hash;
-                """.format(table=UniverseDb._StockSourcesTableName)
-            cursor.execute(sql, {
-                'sector_x': sector.sectorX(),
-                'sector_y': sector.sectorY(),
-                'data_hash': stockDataHash})
-        else:
-            # No stock data has was provided so the sector is being
-            # updated with user data. If there was a stock data has
-            # for the position the sector was written to, keep the
-            # entry but set the hash to null. When importing updated
-            # stock data, this lets us detect cases where stock data
-            # was imported but has since been modified by the user so
-            # we need to prompt them to ask if they really want their
-            # chances replaced with stock data
-            sql = """
-                UPDATE {table}
-                SET data_hash = NULL
-                WHERE sector_x = :sector_x AND sector_y = :sector_y;
-                """.format(table=UniverseDb._StockSourcesTableName)
-            cursor.execute(sql, {
-                'sector_x': sector.sectorX(),
-                'sector_y': sector.sectorY()})
-
-    def _deleteSector(
-            self,
-            cursor: sqlite3.Cursor,
-            sectorId: str,
-            updateSources: bool = True
-            ) -> None:
-        if updateSources:
-            # If there is a stock data hash for the position the sector
-            # to be deleted is located, set it to null but don't delete
-            # it. When importing updated stock data, this allows us to
-            # detect that case where the data was imported but the user
-            # has since deleted the sector so we should prompt the user
-            # before re-importing the stock data
-            sql = """
-                UPDATE {sourcesTable}
-                SET data_hash = NULL
-                WHERE (sector_x, sector_y) = (
-                    SELECT sector_x, sector_y
-                    FROM {sectorsTable}
-                    WHERE id = :id
-                );
-                """.format(
-                    sourcesTable=UniverseDb._StockSourcesTableName,
-                    sectorsTable=UniverseDb._SectorsTableName)
-            cursor.execute(sql, {'id': sectorId})
-
-        sql = """
-            DELETE FROM {table}
-            WHERE id = :id;
-            """.format(
-            table=UniverseDb._SectorsTableName)
-        cursor.execute(sql, {'id': sectorId})
+    #      █████████   ████  ████                     ███
+    #     ███░░░░░███ ░░███ ░░███                    ░░░
+    #    ░███    ░███  ░███  ░███   ██████   ███████ ████   ██████   ████████    ██████   ██████   █████
+    #    ░███████████  ░███  ░███  ███░░███ ███░░███░░███  ░░░░░███ ░░███░░███  ███░░███ ███░░███ ███░░
+    #    ░███░░░░░███  ░███  ░███ ░███████ ░███ ░███ ░███   ███████  ░███ ░███ ░███ ░░░ ░███████ ░░█████
+    #    ░███    ░███  ░███  ░███ ░███░░░  ░███ ░███ ░███  ███░░███  ░███ ░███ ░███  ███░███░░░   ░░░░███
+    #    █████   █████ █████ █████░░██████ ░░███████ █████░░████████ ████ █████░░██████ ░░██████  ██████
+    #   ░░░░░   ░░░░░ ░░░░░ ░░░░░  ░░░░░░   ░░░░░███░░░░░  ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░   ░░░░░░  ░░░░░░
+    #                                       ███ ░███
+    #                                      ░░██████
+    #                                       ░░░░░░
 
     def _saveAllegiance(
             self,
@@ -3240,6 +1245,18 @@ class UniverseDb(object):
 
         return allegiances
 
+    #     █████████                     █████                           █████
+    #    ███░░░░░███                   ░░███                           ░░███
+    #   ░███    ░░░   ██████  ████████  ░███████    ██████  ████████   ███████    █████
+    #   ░░█████████  ███░░███░░███░░███ ░███░░███  ███░░███░░███░░███ ░░░███░    ███░░
+    #    ░░░░░░░░███░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███   ░███    ░░█████
+    #    ███    ░███░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███   ░███ ███ ░░░░███
+    #   ░░█████████ ░░██████  ░███████  ████ █████░░██████  ████ █████  ░░█████  ██████
+    #    ░░░░░░░░░   ░░░░░░   ░███░░░  ░░░░ ░░░░░  ░░░░░░  ░░░░ ░░░░░    ░░░░░  ░░░░░░
+    #                         ░███
+    #                         █████
+    #                        ░░░░░
+
     def _saveSophont(
             self,
             cursor: sqlite3.Cursor,
@@ -3285,6 +1302,1809 @@ class UniverseDb(object):
                     exc_info=ex)
 
         return sophonts
+
+    #     █████████                     █████
+    #    ███░░░░░███                   ░░███
+    #   ░███    ░░░   ██████   ██████  ███████    ██████  ████████   █████
+    #   ░░█████████  ███░░███ ███░░███░░░███░    ███░░███░░███░░███ ███░░
+    #    ░░░░░░░░███░███████ ░███ ░░░   ░███    ░███ ░███ ░███ ░░░ ░░█████
+    #    ███    ░███░███░░░  ░███  ███  ░███ ███░███ ░███ ░███      ░░░░███
+    #   ░░█████████ ░░██████ ░░██████   ░░█████ ░░██████  █████     ██████
+    #    ░░░░░░░░░   ░░░░░░   ░░░░░░     ░░░░░   ░░░░░░  ░░░░░     ░░░░░░
+
+    def _listSectors(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.List[SectorInfo]:
+        sql = """
+            SELECT id, name, sector_x, sector_y, abbreviation
+            FROM {sectorsTable};
+            """.format(sectorsTable=UniverseDb._SectorsTableName)
+        parameters = {}
+
+        cursor.execute(sql, parameters)
+
+        sectorList = []
+        for row in cursor.fetchall():
+            sectorList.append(SectorInfo(
+                id=row[0],
+                name=row[1],
+                sectorX=row[2],
+                sectorY=row[3],
+                abbreviation=row[4]))
+        return sectorList
+
+    def _saveSector(
+            self,
+            cursor: sqlite3.Cursor,
+            sector: multiverse.DbSector,
+            stockDataHash: typing.Optional[str] = None
+            ) -> None:
+        # Check there isn't a sector at the same position with a different id.
+        # To update a sector at a position, the new sector must have the same id.
+        # The only reason this is done is to make deleting the old sector data
+        # easier as it means we can just delete the current sector with the same
+        # id and that handles it even if the sector has changed position.
+        # TODO: I should update this to be consistent with how things like saveSystems
+        # works where it just overwrites whatever is there
+        sql = """
+            SELECT id
+            FROM {table}
+            WHERE id != :id AND sector_x = :x AND sector_y = :y
+            LIMIT 1;
+            """.format(table=UniverseDb._SectorsTableName)
+        cursor.execute(sql, {
+            'id': sector.id(),
+            'x': sector.sectorX(),
+            'y': sector.sectorY()})
+        row = cursor.fetchone()
+        if row:
+            raise ValueError('Sector {otherId} already exists at ({x}, {y})'.format(
+                otherId=row[0],
+                x=sector.sectorX(),
+                y=sector.sectorY()))
+
+        self._deleteSector(
+            sectorId=sector.id(),
+            cursor=cursor,
+            # If a stock source data has exists for the sector, don't
+            # delete it as it will be updated below
+            updateSources=False)
+        self._insertSectors(
+            sectors=[sector],
+            cursor=cursor)
+
+        if stockDataHash is not None:
+            # A stock data hash was provided so this save is happening
+            # because the sector is been filled with stock data. Create a
+            # mapping between the position the sector was written to and
+            # the data hash for the stock data that is being imported.
+            sql = """
+                INSERT INTO {table} (sector_x, sector_y, data_hash)
+                VALUES (:sector_x, :sector_y, :data_hash)
+                ON CONFLICT(sector_x, sector_y) DO UPDATE SET
+                    data_hash = excluded.data_hash;
+                """.format(table=UniverseDb._StockSourcesTableName)
+            cursor.execute(sql, {
+                'sector_x': sector.sectorX(),
+                'sector_y': sector.sectorY(),
+                'data_hash': stockDataHash})
+        else:
+            # No stock data has was provided so the sector is being
+            # updated with user data. If there was a stock data has
+            # for the position the sector was written to, keep the
+            # entry but set the hash to null. When importing updated
+            # stock data, this lets us detect cases where stock data
+            # was imported but has since been modified by the user so
+            # we need to prompt them to ask if they really want their
+            # chances replaced with stock data
+            sql = """
+                UPDATE {table}
+                SET data_hash = NULL
+                WHERE sector_x = :sector_x AND sector_y = :sector_y;
+                """.format(table=UniverseDb._StockSourcesTableName)
+            cursor.execute(sql, {
+                'sector_x': sector.sectorX(),
+                'sector_y': sector.sectorY()})
+
+    def _deleteSector(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str,
+            updateSources: bool = True
+            ) -> None:
+        if updateSources:
+            # If there is a stock data hash for the position the sector
+            # to be deleted is located, set it to null but don't delete
+            # it. When importing updated stock data, this allows us to
+            # detect that case where the data was imported but the user
+            # has since deleted the sector so we should prompt the user
+            # before re-importing the stock data
+            sql = """
+                UPDATE {sourcesTable}
+                SET data_hash = NULL
+                WHERE (sector_x, sector_y) = (
+                    SELECT sector_x, sector_y
+                    FROM {sectorsTable}
+                    WHERE id = :id
+                );
+                """.format(
+                    sourcesTable=UniverseDb._StockSourcesTableName,
+                    sectorsTable=UniverseDb._SectorsTableName)
+            cursor.execute(sql, {'id': sectorId})
+
+        sql = """
+            DELETE FROM {table}
+            WHERE id = :id;
+            """.format(
+            table=UniverseDb._SectorsTableName)
+        cursor.execute(sql, {'id': sectorId})
+
+    def _insertSectors(
+            self,
+            cursor: sqlite3.Cursor,
+            sectors: typing.Collection[multiverse.DbSector]
+            ) -> None:
+        sql = """
+            INSERT INTO {table} (id, sector_x, sector_y,
+                name, language, abbreviation, sector_label, selected,
+                credits, publication, author, publisher, reference, notes)
+            VALUES (:id, :sector_x, :sector_y,
+                :name, :language, :abbreviation, :sector_label, :selected,
+                :credits, :publication, :author, :publisher, :reference, :notes);
+            """.format(table=UniverseDb._SectorsTableName)
+        rows = []
+        names = []
+        subsectors = []
+        routes = []
+        borders = []
+        regions = []
+        labels = []
+        tags = []
+        products = []
+        for sector in sectors:
+            rows.append({
+                'id': sector.id(),
+                'sector_x': sector.sectorX(),
+                'sector_y': sector.sectorY(),
+                'name': sector.name(),
+                'language': sector.language(),
+                'abbreviation': sector.abbreviation(),
+                'sector_label': sector.sectorLabel(),
+                'selected': 1 if sector.selected() else 0,
+                'credits': sector.credits(),
+                'publication': sector.publication(),
+                'author': sector.author(),
+                'publisher': sector.publisher(),
+                'reference': sector.reference(),
+                'notes': sector.notes()})
+
+            if sector.alternateNames():
+                names.extend(sector.alternateNames())
+            if sector.subsectorNames():
+                subsectors.extend(sector.subsectorNames())
+            if sector.routes():
+                routes.extend(sector.routes())
+            if sector.borders():
+                borders.extend(sector.borders())
+            if sector.regions():
+                regions.extend(sector.regions())
+            if sector.labels():
+                labels.extend(sector.labels())
+            if sector.tags():
+                tags.extend(sector.tags())
+            if sector.products():
+                products.extend(sector.products())
+        cursor.executemany(sql, rows)
+
+        if names:
+            self._insertAlternateNames(cursor=cursor, names=names)
+        if subsectors:
+            self._insertSubsectorNames(cursor=cursor, names=subsectors)
+        if routes:
+            self._insertRoutes(cursor=cursor, routes=routes)
+        if borders:
+            self._insertBorders(cursor=cursor, borders=borders)
+        if regions:
+            self._insertRegions(cursor=cursor, regions=regions)
+        if labels:
+            self._insertSectorLabels(cursor=cursor, labels=labels)
+        if tags:
+            self._insertTags(cursor=cursor, tags=tags)
+        if products:
+            self._insertProducts(cursor=cursor, products=products)
+
+    def _loadSectors(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.List[multiverse.DbSector]:
+        sectorAlternateNamesMap = self._loadAlternateNames(
+            cursor=cursor)
+        sectorSubsectorNamesMap = self._loadSubsectorNames(
+            cursor=cursor)
+        sectorRoutesMap = self._loadRoutes(
+            cursor=cursor)
+        sectorBordersMap = self._loadBorders(
+            cursor=cursor)
+        sectorRegionsMap = self._loadRegions(
+            cursor=cursor)
+        sectorLabelsMap = self._loadSectorLabels(
+            cursor=cursor)
+        sectorTagsMap = self._loadTags(
+            cursor=cursor)
+        sectorProductsMap = self._loadProducts(
+            cursor=cursor)
+
+        sql = """
+            SELECT id, sector_x, sector_y,
+                name, language, abbreviation, sector_label, selected,
+                credits, publication, author, publisher, reference, notes
+            FROM {table};
+            """.format(table=UniverseDb._SectorsTableName)
+        cursor.execute(sql)
+        sectors = []
+        for row in cursor.fetchall():
+            sectorId = row[0]
+
+            try:
+                sectors.append(multiverse.DbSector(
+                    id=sectorId,
+                    sectorX=row[1],
+                    sectorY=row[2],
+                    name=row[3],
+                    language=row[4],
+                    abbreviation=row[5],
+                    sectorLabel=row[6],
+                    selected=True if row[7] else False,
+                    credits=row[8],
+                    publication=row[9],
+                    author=row[10],
+                    publisher=row[11],
+                    reference=row[12],
+                    notes=row[13],
+                    alternateNames=sectorAlternateNamesMap.get(sectorId),
+                    subsectorNames=sectorSubsectorNamesMap.get(sectorId),
+                    routes=sectorRoutesMap.get(sectorId),
+                    borders=sectorBordersMap.get(sectorId),
+                    regions=sectorRegionsMap.get(sectorId),
+                    labels=sectorLabelsMap.get(sectorId),
+                    tags=sectorTagsMap.get(sectorId),
+                    products=sectorProductsMap.get(sectorId)))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load sector {sectorId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return sectors
+
+    def _insertAlternateNames(
+            self,
+            cursor: sqlite3.Cursor,
+            names: typing.Collection[multiverse.DbAlternateName]
+            ) -> None:
+        if not names:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, sector_id, name, language)
+            VALUES (:id, :sector_id, :name, :language);
+            """.format(table=UniverseDb._AlternateNamesTableName)
+        rows = []
+        for alternateName in names:
+            rows.append({
+                'id': alternateName.id(),
+                'sector_id': alternateName.sectorId(),
+                'name': alternateName.name(),
+                'language': alternateName.language()})
+        cursor.executemany(sql, rows)
+
+    def _loadAlternateNames(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbAlternateName]]:
+        sql = """
+            SELECT id, sector_id, name, language
+            FROM {table};
+            """.format(
+                table=UniverseDb._AlternateNamesTableName)
+        cursor.execute(sql)
+
+        sectorNamesMap = {}
+        for row in cursor.fetchall():
+            nameId = row[0]
+            sectorId = row[1]
+            names = sectorNamesMap.get(sectorId)
+            if names is None:
+                names = []
+                sectorNamesMap[sectorId] = names
+
+            try:
+                names.append(multiverse.DbAlternateName(
+                    id=nameId,
+                    sectorId=sectorId,
+                    name=row[2],
+                    language=row[3]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load alternate name {nameId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return sectorNamesMap
+
+    def _insertSubsectorNames(
+            self,
+            cursor: sqlite3.Cursor,
+            names: typing.Collection[multiverse.DbSubsectorName]
+            ) -> None:
+        if not names:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, sector_id, code, name)
+            VALUES (:id, :sector_id, :code, :name);
+            """.format(table=UniverseDb._SubsectorNamesTableName)
+        rows = []
+        for subsectorName in names:
+            rows.append({
+                'id': subsectorName.id(),
+                'sector_id': subsectorName.sectorId(),
+                'code': subsectorName.code(),
+                'name': subsectorName.name()})
+        cursor.executemany(sql, rows)
+
+    def _loadSubsectorNames(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbSubsectorName]]:
+        sql = """
+            SELECT id, sector_id, code, name
+            FROM {table};
+            """.format(
+                table=UniverseDb._SubsectorNamesTableName)
+        cursor.execute(sql)
+
+        sectorNamesMap = {}
+        for row in cursor.fetchall():
+            nameId = row[0]
+            sectorId = row[1]
+            names = sectorNamesMap.get(sectorId)
+            if names is None:
+                names = []
+                sectorNamesMap[sectorId] = names
+
+            try:
+                names.append(multiverse.DbSubsectorName(
+                    id=nameId,
+                    sectorId=sectorId,
+                    code=row[2],
+                    name=row[3]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load subsector name {nameId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return sectorNamesMap
+
+    def _insertSectorLabels(
+            self,
+            cursor: sqlite3.Cursor,
+            labels: typing.Collection[multiverse.DbSectorLabel]
+            ) -> None:
+        if not labels:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, sector_id, text, x, y,
+                colour, size, wrap)
+            VALUES (:id, :sector_id, :text, :x, :y,
+                :colour, :size, :wrap);
+            """.format(table=UniverseDb._SectorLabelsTableName)
+        rows = []
+        for label in labels:
+            rows.append({
+                'id': label.id(),
+                'sector_id': label.sectorId(),
+                'text': label.text(),
+                'x': label.worldX(),
+                'y': label.worldY(),
+                'colour': label.colour(),
+                'size': label.size(),
+                'wrap': 1 if label.wrap() else 0})
+        cursor.executemany(sql, rows)
+
+    def _loadSectorLabels(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbSectorLabel]]:
+        sql = """
+            SELECT id, sector_id, text, x, y, colour, size, wrap
+            FROM {table};
+            """.format(
+                table=UniverseDb._SectorLabelsTableName)
+        cursor.execute(sql)
+
+        sectorLabelsMap = {}
+        for row in cursor.fetchall():
+            labelId = row[0]
+            sectorId = row[1]
+            labels = sectorLabelsMap.get(sectorId)
+            if labels is None:
+                labels = []
+                sectorLabelsMap[sectorId] = labels
+
+            try:
+                labels.append(multiverse.DbSectorLabel(
+                    id=labelId,
+                    sectorId=sectorId,
+                    text=row[2],
+                    worldX=row[3],
+                    worldY=row[4],
+                    colour=row[5],
+                    size=row[6],
+                    wrap=True if row[7] else False))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load label {labelId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return sectorLabelsMap
+
+    def _insertTags(
+            self,
+            cursor: sqlite3.Cursor,
+            tags: typing.Collection[multiverse.DbTag]
+            ) -> None:
+        if not tags:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, sector_id, tag)
+            VALUES (:id, :sector_id, :tag);
+            """.format(table=UniverseDb._SectorTagsTableName)
+        rows = []
+        for tag in tags:
+            rows.append({
+                'id': tag.id(),
+                'sector_id': tag.sectorId(),
+                'tag': tag.tag()})
+        cursor.executemany(sql, rows)
+
+    def _loadTags(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbTag]]:
+        sql = """
+            SELECT id, sector_id, tag
+            FROM {table};
+            """.format(
+                table=UniverseDb._SectorTagsTableName)
+        cursor.execute(sql)
+
+        sectorTagsMap = {}
+        for row in cursor.fetchall():
+            tagId = row[0]
+            sectorId = row[1]
+            tags = sectorTagsMap.get(sectorId)
+            if tags is None:
+                tags = []
+                sectorTagsMap[sectorId] = tags
+
+            try:
+                tags.append(multiverse.DbTag(
+                    id=tagId,
+                    sectorId=sectorId,
+                    tag=row[2]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load tag {tagId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return sectorTagsMap
+
+    def _insertProducts(
+            self,
+            cursor: sqlite3.Cursor,
+            products: typing.Collection[multiverse.DbProduct]
+            ) -> None:
+        if not products:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, sector_id, publication, author,
+                publisher, reference)
+            VALUES (:id, :sector_id, :publication, :author,
+                :publisher, :reference);
+            """.format(table=UniverseDb._ProductsTableName)
+        rows = []
+        for product in products:
+            rows.append({
+                'id': product.id(),
+                'sector_id': product.sectorId(),
+                'publication': product.publication(),
+                'author': product.author(),
+                'publisher': product.publisher(),
+                'reference': product.reference()})
+        cursor.executemany(sql, rows)
+
+    def _loadProducts(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbTag]]:
+        sql = """
+            SELECT id, sector_id, publication, author, publisher, reference
+            FROM {table};
+            """.format(
+                table=UniverseDb._ProductsTableName)
+        cursor.execute(sql)
+
+        sectorProductsMap = {}
+        for row in cursor.fetchall():
+            productId = row[0]
+            sectorId = row[1]
+            products = sectorProductsMap.get(sectorId)
+            if products is None:
+                products = []
+                sectorProductsMap[sectorId] = products
+
+            try:
+                products.append(multiverse.DbProduct(
+                    id=productId,
+                    sectorId=sectorId,
+                    publication=row[2],
+                    author=row[3],
+                    publisher=row[4],
+                    reference=row[5]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load product {productId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return sectorProductsMap
+
+    #     █████████                      █████
+    #    ███░░░░░███                    ░░███
+    #   ░███    ░░░  █████ ████  █████  ███████    ██████  █████████████    █████
+    #   ░░█████████ ░░███ ░███  ███░░  ░░░███░    ███░░███░░███░░███░░███  ███░░
+    #    ░░░░░░░░███ ░███ ░███ ░░█████   ░███    ░███████  ░███ ░███ ░███ ░░█████
+    #    ███    ░███ ░███ ░███  ░░░░███  ░███ ███░███░░░   ░███ ░███ ░███  ░░░░███
+    #   ░░█████████  ░░███████  ██████   ░░█████ ░░██████  █████░███ █████ ██████
+    #    ░░░░░░░░░    ░░░░░███ ░░░░░░     ░░░░░   ░░░░░░  ░░░░░ ░░░ ░░░░░ ░░░░░░
+    #                 ███ ░███
+    #                ░░██████
+    #                 ░░░░░░
+
+    def _saveSystems(
+            self,
+            cursor: sqlite3.Cursor,
+            systems: typing.Collection[multiverse.DbSystem]
+            ) -> None:
+        if not systems:
+            return
+
+        # Any existing systems with the same id or hex position as a system
+        # being saved should be deleted before the new systems are inserted.
+        # This handles two cases:
+        # - Existing systems that have been updated
+        # - Systems that have been moved to a location that already has a
+        #   system in it
+        sql = """
+            DELETE FROM {table}
+            WHERE id == ? OR (hex_x == ? AND hex_y == ?);
+        """.format(
+            table=UniverseDb._SystemsTableName)
+        cursor.executemany(sql, ((s.id(), s.hexX(), s.hexY()) for s in systems))
+
+        self._insertSystems(
+            systems=systems,
+            cursor=cursor)
+
+    def _deleteSystem(
+            cursor: sqlite3.Cursor,
+            systemId: str
+            ) -> None:
+        sql = """
+            DELETE FROM {table}
+            WHERE id = :id;
+            """.format(
+            table=UniverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': systemId})
+
+    def _insertSystems(
+            self,
+            cursor: sqlite3.Cursor,
+            systems: typing.Collection[multiverse.DbSystem]
+            ) -> None:
+        sql = """
+            INSERT INTO {table} (id, hex_x, hex_y, name,
+                planetoid_belt_count, gas_giant_count, world_count,
+                zone, allegiance_id, notes)
+            VALUES (:id, :hex_x, :hex_y, :name,
+                :planetoid_belt_count, :gas_giant_count, :world_count,
+                :zone, :allegiance_id, :notes);
+            """.format(table=UniverseDb._SystemsTableName)
+        rows = []
+        stars = []
+        bodies = []
+        for system in systems:
+            rows.append({
+                'id': system.id(),
+                'hex_x': system.hexX(),
+                'hex_y': system.hexY(),
+                'name': system.name(),
+                'planetoid_belt_count': system.planetoidBeltCount(),
+                'gas_giant_count': system.gasGiantCount(),
+                'world_count': system.worldCount(),
+                'zone': system.zone(),
+                'allegiance_id': system.allegianceId(),
+                'notes': system.notes()})
+
+            if system.stars():
+                stars.extend(system.stars())
+            if system.bodies():
+                bodies.extend(system.bodies())
+        cursor.executemany(sql, rows)
+
+        if stars:
+            self._insertStars(cursor=cursor, stars=stars)
+        if bodies:
+            self._insertBodies(cursor=cursor, bodies=bodies)
+
+    def _loadSystems(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.List[multiverse.DbSystem]:
+        stars = self._loadStars(cursor=cursor)
+        systemStarsMap = {}
+        for star in stars:
+            systemStars = systemStarsMap.get(star.systemId())
+            if systemStars is None:
+                systemStars = []
+                systemStarsMap[star.systemId()] = systemStars
+            systemStars.append(star)
+
+        bodies = self._loadBodies(cursor=cursor)
+        systemBodiesMap = {}
+        for body in bodies:
+            systemBodies = systemBodiesMap.get(body.systemId())
+            if systemBodies is None:
+                systemBodies = []
+                systemBodiesMap[body.systemId()] = systemBodies
+            systemBodies.append(body)
+
+        sql = """
+            SELECT id, hex_x, hex_y, name,
+                planetoid_belt_count, gas_giant_count, world_count,
+                zone, allegiance_id, notes
+            FROM {table};
+            """.format(
+                table=UniverseDb._SystemsTableName)
+        cursor.execute(sql)
+
+        systems = []
+        for row in cursor.fetchall():
+            systemId = row[0]
+
+            try:
+                systems.append(multiverse.DbSystem(
+                    id=systemId,
+                    hexX=row[1],
+                    hexY=row[2],
+                    name=row[3],
+                    planetoidBeltCount=row[4],
+                    gasGiantCount=row[5],
+                    worldCount=row[6],
+                    zone=row[7],
+                    allegianceId=row[8],
+                    notes=row[9],
+                    stars=systemStarsMap.get(systemId),
+                    bodies=systemBodiesMap.get(systemId)))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load system {systemId!r} from {self._universePath!r}',
+                    exc_info=ex)
+
+        return systems
+
+    def _insertStars(
+            self,
+            cursor: sqlite3.Cursor,
+            stars: typing.Collection[multiverse.DbStar]
+            ) -> None:
+        if not stars:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, system_id, luminosity_class, spectral_class, spectral_scale)
+            VALUES (:id, :system_id, :luminosity_class, :spectral_class, :spectral_scale);
+            """.format(table=UniverseDb._StarsTableName)
+        rows = []
+        for star in stars:
+            rows.append({
+                'id': star.id(),
+                'system_id': star.systemId(),
+                'luminosity_class': star.luminosityClass(),
+                'spectral_class': star.spectralClass(),
+                'spectral_scale': star.spectralScale()})
+        cursor.executemany(sql, rows)
+
+    def _loadStars(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.List[multiverse.DbStar]:
+        sql = """
+            SELECT id, system_id, luminosity_class, spectral_class, spectral_scale
+            FROM {table};
+            """.format(
+                table=UniverseDb._StarsTableName)
+        cursor.execute(sql)
+
+        stars = []
+        for row in cursor.fetchall():
+            starId = row[0]
+
+            try:
+                stars.append(multiverse.DbStar(
+                    id=starId,
+                    systemId=row[1],
+                    luminosityClass=row[2],
+                    spectralClass=row[3],
+                    spectralScale=row[4]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load star {starId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return stars
+
+    def _insertBodies(
+            self,
+            cursor: sqlite3.Cursor,
+            bodies: typing.Collection[multiverse.DbBody]
+            ) -> None:
+        if not bodies:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, system_id, orbit_index, name, notes)
+            VALUES (:id, :system_id, :orbit_index, :name, :notes)
+            """.format(table=UniverseDb._BodiesTableName)
+        rows = []
+        for body in bodies:
+            rows.append({
+                'id': body.id(),
+                'system_id': body.systemId(),
+                'orbit_index': body.orbitIndex(),
+                'name': body.name(),
+                'notes': body.notes()})
+        cursor.executemany(sql, rows)
+
+        sql = """
+            INSERT INTO {table} (body_id, is_main_world,
+                starport, world_size, atmosphere, hydrographics, population, government, law_level, tech_level,
+                resources, labour, infrastructure, efficiency,
+                heterogeneity, acceptance, strangeness, symbols,
+                population_multiplier)
+            VALUES (:body_id, :is_main_world,
+                :starport, :world_size, :atmosphere, :hydrographics, :population, :government, :law_level, :tech_level,
+                :resources, :labour, :infrastructure, :efficiency,
+                :heterogeneity, :acceptance, :strangeness, :symbols,
+                :population_multiplier);
+            """.format(table=UniverseDb._WorldsTableName)
+        rows = []
+        for body in bodies:
+            if not isinstance(body, multiverse.DbWorld):
+                continue
+
+            rows.append({
+                'body_id': body.id(),
+                'is_main_world': body.isMainWorld(),
+                'starport': body.starport(),
+                'world_size': body.worldSize(),
+                'atmosphere': body.atmosphere(),
+                'hydrographics': body.hydrographics(),
+                'population': body.population(),
+                'government': body.government(),
+                'law_level': body.lawLevel(),
+                'tech_level': body.techLevel(),
+                'resources': body.resources(),
+                'labour': body.labour(),
+                'infrastructure': body.infrastructure(),
+                'efficiency': body.efficiency(),
+                'heterogeneity': body.heterogeneity(),
+                'acceptance': body.acceptance(),
+                'strangeness': body.strangeness(),
+                'symbols': body.symbols(),
+                'population_multiplier': body.populationMultiplier()})
+        cursor.executemany(sql, rows)
+
+        nobilities = []
+        bases = []
+        tradeCodes = []
+        populations = []
+        rulers = []
+        owners = []
+        colonies = []
+        stations = []
+        remarks = []
+        for body in bodies:
+            if not isinstance(body, multiverse.DbWorld):
+                continue
+
+            if body.nobilities():
+                nobilities.extend(body.nobilities())
+            if body.bases():
+                bases.extend(body.bases())
+            if body.tradeCodes():
+                tradeCodes.extend(body.tradeCodes())
+            if body.sophontPopulations():
+                populations.extend(body.sophontPopulations())
+            if body.rulingAllegiances():
+                rulers.extend(body.rulingAllegiances())
+            if body.owningSystems():
+                owners.extend(body.owningSystems())
+            if body.colonySystems():
+                colonies.extend(body.colonySystems())
+            if body.researchStations():
+                stations.extend(body.researchStations())
+            if body.customRemarks():
+                remarks.extend(body.customRemarks())
+
+        if nobilities:
+            self._insertNobilities(cursor=cursor, nobilities=nobilities)
+        if bases:
+            self._insertBases(cursor=cursor, bases=bases)
+        if tradeCodes:
+            self._insertTradeCodes(cursor=cursor, codes=tradeCodes)
+        if populations:
+            self._insertSophontPopulations(cursor=cursor, populations=populations)
+        if rulers:
+            self._insertRulingAllegiances(cursor=cursor, rulers=rulers)
+        if owners:
+            self._insertOwningSystems(cursor=cursor, owners=owners)
+        if colonies:
+            self._insertColonySystems(cursor=cursor, colonies=colonies)
+        if stations:
+            self._insertResearchStations(cursor=cursor, stations=stations)
+        if remarks:
+            self._insertCustomRemarks(cursor=cursor, remarks=remarks)
+
+    def _loadBodies(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.List[multiverse.DbBody]:
+        worldNobilitiesMap = self._loadNobilities(
+            cursor=cursor)
+        worldBasesMap = self._loadBases(
+            cursor=cursor)
+        worldTradeCodesMap = self._loadTradeCodes(
+            cursor=cursor)
+        worldPopulationsMap = self._loadSophontPopulations(
+            cursor=cursor)
+        worldRulingAllegianceMap = self._loadRulingAllegiances(
+            cursor=cursor)
+        worldOwnersMap = self._loadOwningSystems(
+            cursor=cursor)
+        worldColoniesMap = self._loadColonySystems(
+            cursor=cursor)
+        worldResearchStationsMap = self._loadResearchStations(
+            cursor=cursor)
+        worldRemarksMap = self._loadCustomRemarks(
+            cursor=cursor)
+
+        sql = """
+            SELECT
+                b.id, b.system_id, b.orbit_index, b.name,
+                w.is_main_world,
+                w.starport, w.world_size, w.atmosphere, w.hydrographics, w.population, w.government, w.law_level, w.tech_level,
+                w.resources, w.labour, w.infrastructure, w.efficiency,
+                w.heterogeneity, w.acceptance, w.strangeness, w.symbols,
+                w.population_multiplier,
+                b.notes
+            FROM {worldsTable} w
+            JOIN {bodiesTable} b ON b.id = w.body_id;
+            """.format(
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName,)
+        cursor.execute(sql)
+
+        bodies = []
+        for row in cursor.fetchall():
+            bodyId = row[0]
+
+            try:
+                bodies.append(multiverse.DbWorld(
+                    id=bodyId,
+                    systemId=row[1],
+                    orbitIndex=row[2],
+                    name=row[3],
+                    isMainWorld=True if row[4] else False,
+                    starport=row[5],
+                    worldSize=row[6],
+                    atmosphere=row[7],
+                    hydrographics=row[8],
+                    population=row[9],
+                    government=row[10],
+                    lawLevel=row[11],
+                    techLevel=row[12],
+                    resources=row[13],
+                    labour=row[14],
+                    infrastructure=row[15],
+                    efficiency=row[16],
+                    heterogeneity=row[17],
+                    acceptance=row[18],
+                    strangeness=row[19],
+                    symbols=row[20],
+                    populationMultiplier=row[21],
+                    notes=row[22],
+                    nobilities=worldNobilitiesMap.get(bodyId),
+                    bases=worldBasesMap.get(bodyId),
+                    tradeCodes=worldTradeCodesMap.get(bodyId),
+                    sophontPopulations=worldPopulationsMap.get(bodyId),
+                    rulingAllegiances=worldRulingAllegianceMap.get(bodyId),
+                    owningSystems=worldOwnersMap.get(bodyId),
+                    colonySystems=worldColoniesMap.get(bodyId),
+                    researchStations=worldResearchStationsMap.get(bodyId),
+                    customRemarks=worldRemarksMap.get(bodyId)))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load body {bodyId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return bodies
+
+    def _insertNobilities(
+            self,
+            cursor: sqlite3.Cursor,
+            nobilities: typing.Collection[multiverse.DbNobility]
+            ) -> None:
+        if not nobilities:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, world_id, code)
+            VALUES (:id, :world_id, :code)
+            """.format(table=UniverseDb._NobilitiesTableName)
+        rows = []
+        for nobility in nobilities:
+            rows.append({
+                'id': nobility.id(),
+                'world_id': nobility.worldId(),
+                'code': nobility.code()})
+        cursor.executemany(sql, rows)
+
+    def _loadNobilities(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # World Id
+                typing.List[multiverse.DbNobility]]:
+        sql = """
+            SELECT t.id, t.world_id, t.code
+            FROM {nobilitiesTable} AS t
+            JOIN {worldsTable} AS w ON w.body_id = t.world_id
+            JOIN {bodiesTable} AS b ON b.id = w.body_id;
+            """.format(
+                nobilitiesTable=UniverseDb._NobilitiesTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName)
+        cursor.execute(sql)
+
+        systemNobilitiesMap: typing.Dict[str, typing.List[multiverse.DbNobility]] = {}
+        for row in cursor.fetchall():
+            nobilityId = row[0]
+            worldId = row[1]
+            nobilities = systemNobilitiesMap.get(worldId)
+            if not nobilities:
+                nobilities = []
+                systemNobilitiesMap[worldId] = nobilities
+
+            try:
+                nobilities.append(multiverse.DbNobility(
+                    id=nobilityId,
+                    worldId=worldId,
+                    code=row[2]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load nobility {nobilityId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return systemNobilitiesMap
+
+    def _insertBases(
+            self,
+            cursor: sqlite3.Cursor,
+            bases: typing.Collection[multiverse.DbBase]
+            ) -> None:
+        if not bases:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, world_id, code)
+            VALUES (:id, :world_id, :code);
+            """.format(table=UniverseDb._BasesTableName)
+        rows = []
+        for base in bases:
+            rows.append({
+                'id': base.id(),
+                'world_id': base.worldId(),
+                'code': base.code()})
+        cursor.executemany(sql, rows)
+
+    def _loadBases(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # World Id
+                typing.List[multiverse.DbBase]]:
+        sql = """
+            SELECT t.id, t.world_id, t.code
+            FROM {basesTable} AS t
+            JOIN {worldsTable} AS w ON w.body_id = t.world_id
+            JOIN {bodiesTable} AS b ON b.id = w.body_id;
+            """.format(
+                basesTable=UniverseDb._BasesTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName)
+        cursor.execute(sql)
+
+        systemBasesMap: typing.Dict[str, typing.List[multiverse.DbBase]] = {}
+        for row in cursor.fetchall():
+            baseId = row[0]
+            worldId = row[1]
+            bases = systemBasesMap.get(worldId)
+            if not bases:
+                bases = []
+                systemBasesMap[worldId] = bases
+
+            try:
+                bases.append(multiverse.DbBase(
+                    id=baseId,
+                    worldId=worldId,
+                    code=row[2]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load base {baseId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return systemBasesMap
+
+    def _insertTradeCodes(
+            self,
+            cursor: sqlite3.Cursor,
+            codes: typing.Collection[multiverse.DbTradeCode]
+            ) -> None:
+        if not codes:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, world_id, code)
+            VALUES (:id, :world_id, :code)
+            """.format(table=UniverseDb._TradeCodesTableName)
+        rows = []
+        for code in codes:
+            rows.append({
+                'id': code.id(),
+                'world_id': code.worldId(),
+                'code': code.code()})
+        cursor.executemany(sql, rows)
+
+    def _loadTradeCodes(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # World Id
+                typing.List[multiverse.DbTradeCode]]:
+        sql = """
+            SELECT t.id, t.world_id, t.code
+            FROM {tradeTable} AS t
+            JOIN {worldsTable} AS w ON w.body_id = t.world_id
+            JOIN {bodiesTable} AS b ON b.id = w.body_id;
+            """.format(
+                tradeTable=UniverseDb._TradeCodesTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName)
+        cursor.execute(sql)
+
+        systemTradeCodesMap: typing.Dict[str, typing.List[multiverse.DbTradeCode]] = {}
+        for row in cursor.fetchall():
+            tradeCodeId = row[0]
+            worldId = row[1]
+            tradeCodes = systemTradeCodesMap.get(worldId)
+            if not tradeCodes:
+                tradeCodes = []
+                systemTradeCodesMap[worldId] = tradeCodes
+
+            try:
+                tradeCodes.append(multiverse.DbTradeCode(
+                    id=tradeCodeId,
+                    worldId=worldId,
+                    code=row[2]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load trade code {tradeCodeId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return systemTradeCodesMap
+
+    def _insertSophontPopulations(
+            self,
+            cursor: sqlite3.Cursor,
+            populations: typing.Collection[multiverse.DbSophontPopulation]
+            ) -> None:
+        if not populations:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, world_id, sophont_id, percentage, is_home_world, is_die_back)
+            VALUES (:id, :world_id, :sophont_id, :percentage, :is_home_world, :is_die_back)
+            """.format(table=UniverseDb._SophontPopulationsTableName)
+        rows = []
+        for sophont in populations:
+            rows.append({
+                'id': sophont.id(),
+                'world_id': sophont.worldId(),
+                'sophont_id': sophont.sophontId(),
+                'percentage': sophont.percentage(),
+                'is_home_world': 1 if sophont.isHomeWorld() else 0,
+                'is_die_back': 1 if sophont.isDieBack() else 0})
+        cursor.executemany(sql, rows)
+
+    def _loadSophontPopulations(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # World Id
+                typing.List[multiverse.DbSophontPopulation]]:
+        sql = """
+            SELECT t.id, t.world_id, t.sophont_id, t.percentage, t.is_home_world, t.is_die_back
+            FROM {populationsTable} AS t
+            JOIN {worldsTable} AS w ON w.body_id = t.world_id
+            JOIN {bodiesTable} AS b ON b.id = w.body_id;
+            """.format(
+                populationsTable=UniverseDb._SophontPopulationsTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName)
+        cursor.execute(sql)
+
+        systemPopulationsMap: typing.Dict[str, typing.List[multiverse.DbSophontPopulation]] = {}
+        for row in cursor.fetchall():
+            populationId = row[0]
+            worldId = row[1]
+            populations = systemPopulationsMap.get(worldId)
+            if not populations:
+                populations = []
+                systemPopulationsMap[worldId] = populations
+
+            try:
+                populations.append(multiverse.DbSophontPopulation(
+                    id=populationId,
+                    worldId=worldId,
+                    sophontId=row[2],
+                    percentage=row[3],
+                    isHomeWorld=True if row[4] else False,
+                    isDieBack=True if row[5] else False))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load sophont population {populationId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return systemPopulationsMap
+
+    def _insertRulingAllegiances(
+            self,
+            cursor: sqlite3.Cursor,
+            rulers: typing.Collection[multiverse.DbRulingAllegiance]
+            ) -> None:
+        if not rulers:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, world_id, allegiance_id)
+            VALUES (:id, :world_id, :allegiance_id)
+            """.format(table=UniverseDb._RulingAllegiancesTableName)
+        rows = []
+        for rulingAllegiance in rulers:
+            rows.append({
+                'id': rulingAllegiance.id(),
+                'world_id': rulingAllegiance.worldId(),
+                'allegiance_id': rulingAllegiance.allegianceId()})
+        cursor.executemany(sql, rows)
+
+    def _loadRulingAllegiances(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # World Id
+                typing.List[multiverse.DbRulingAllegiance]]:
+        sql = """
+            SELECT t.id, t.world_id, t.allegiance_id
+            FROM {rulingTable} AS t
+            JOIN {worldsTable} AS w ON w.body_id = t.world_id
+            JOIN {bodiesTable} AS b ON b.id = w.body_id;
+            """.format(
+                rulingTable=UniverseDb._RulingAllegiancesTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName)
+        cursor.execute(sql)
+
+        systemRulingAllegianceMap: typing.Dict[str, typing.List[multiverse.DbRulingAllegiance]] = {}
+        for row in cursor.fetchall():
+            rulerId = row[0]
+            worldId = row[1]
+            rulers = systemRulingAllegianceMap.get(worldId)
+            if not rulers:
+                rulers = []
+                systemRulingAllegianceMap[worldId] = rulers
+
+            try:
+                rulers.append(multiverse.DbRulingAllegiance(
+                    id=rulerId,
+                    worldId=worldId,
+                    allegianceId=row[2]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load ruling allegiance {rulerId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return systemRulingAllegianceMap
+
+    def _insertOwningSystems(
+            self,
+            cursor: sqlite3.Cursor,
+            owners: typing.Collection[multiverse.DbOwningSystem]
+            ) -> None:
+        if not owners:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, world_id, hex_x, hex_y, sector_abbreviation)
+            VALUES (:id, :world_id, :hex_x, :hex_y, :sector_abbreviation)
+            """.format(table=UniverseDb._OwningSystemsTableName)
+        rows = []
+        for owner in owners:
+            rows.append({
+                'id': owner.id(),
+                'world_id': owner.worldId(),
+                'hex_x': owner.hexX(),
+                'hex_y': owner.hexY(),
+                'sector_abbreviation': owner.sectorAbbreviation()})
+        cursor.executemany(sql, rows)
+
+    def _loadOwningSystems(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # World Id
+                typing.List[multiverse.DbOwningSystem]]:
+        sql = """
+            SELECT t.id, t.world_id, t.hex_x, t.hex_y, t.sector_abbreviation
+            FROM {ownersTable} AS t
+            JOIN {worldsTable} AS w ON w.body_id = t.world_id
+            JOIN {bodiesTable} AS b ON b.id = w.body_id;
+            """.format(
+                ownersTable=UniverseDb._OwningSystemsTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName)
+        cursor.execute(sql)
+
+        systemOwnersMap: typing.Dict[str, typing.List[multiverse.DbOwningSystem]] = {}
+        for row in cursor.fetchall():
+            ownerId = row[0]
+            worldId = row[1]
+            owners = systemOwnersMap.get(worldId)
+            if not owners:
+                owners = []
+                systemOwnersMap[worldId] = owners
+
+            try:
+                owners.append(multiverse.DbOwningSystem(
+                    id=ownerId,
+                    worldId=worldId,
+                    hexX=row[2],
+                    hexY=row[3],
+                    sectorAbbreviation=row[4]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load owning system {ownerId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return systemOwnersMap
+
+    def _insertColonySystems(
+            self,
+            cursor: sqlite3.Cursor,
+            colonies: typing.Collection[multiverse.DbColonySystem]
+            ) -> None:
+        if not colonies:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, world_id, hex_x, hex_y, sector_abbreviation)
+            VALUES (:id, :world_id, :hex_x, :hex_y, :sector_abbreviation)
+            """.format(table=UniverseDb._ColonySystemsTableName)
+        rows = []
+        for colony in colonies:
+            rows.append({
+                'id': colony.id(),
+                'world_id': colony.worldId(),
+                'hex_x': colony.hexX(),
+                'hex_y': colony.hexY(),
+                'sector_abbreviation': colony.sectorAbbreviation()})
+        cursor.executemany(sql, rows)
+
+    def _loadColonySystems(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # World Id
+                typing.List[multiverse.DbColonySystem]]:
+        sql = """
+            SELECT t.id, t.world_id, t.hex_x, t.hex_y, t.sector_abbreviation
+            FROM {coloniesTable} AS t
+            JOIN {worldsTable} AS w ON w.body_id = t.world_id
+            JOIN {bodiesTable} AS b ON b.id = w.body_id;
+            """.format(
+                coloniesTable=UniverseDb._ColonySystemsTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName)
+        cursor.execute(sql)
+
+        systemColoniesMap: typing.Dict[str, typing.List[multiverse.DbColonySystem]] = {}
+        for row in cursor.fetchall():
+            colonyId = row[0]
+            worldId = row[1]
+            colonies = systemColoniesMap.get(worldId)
+            if not colonies:
+                colonies = []
+                systemColoniesMap[worldId] = colonies
+
+            try:
+                colonies.append(multiverse.DbColonySystem(
+                    id=colonyId,
+                    worldId=worldId,
+                    hexX=row[2],
+                    hexY=row[3],
+                    sectorAbbreviation=row[4]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load colony system {colonyId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return systemColoniesMap
+
+    def _insertResearchStations(
+            self,
+            cursor: sqlite3.Cursor,
+            stations: typing.Collection[multiverse.DbResearchStation]
+            ) -> None:
+        if not stations:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, world_id, code)
+            VALUES (:id, :world_id, :code);
+            """.format(table=UniverseDb._ResearchStationTableName)
+        rows = []
+        for station in stations:
+            rows.append({
+                'id': station.id(),
+                'world_id': station.worldId(),
+                'code': station.code()})
+        cursor.executemany(sql, rows)
+
+    def _loadResearchStations(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # World Id
+                typing.List[multiverse.DbResearchStation]]:
+        sql = """
+            SELECT t.id, t.world_id, t.code
+            FROM {stationsTable} AS t
+            JOIN {worldsTable} AS w ON w.body_id = t.world_id
+            JOIN {bodiesTable} AS b ON b.id = w.body_id;
+            """.format(
+                stationsTable=UniverseDb._ResearchStationTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName)
+        cursor.execute(sql)
+
+        systemResearchStationsMap: typing.Dict[str, typing.List[multiverse.DbResearchStation]] = {}
+        for row in cursor.fetchall():
+            stationId = row[0]
+            worldId = row[1]
+            stations = systemResearchStationsMap.get(worldId)
+            if not stations:
+                stations = []
+                systemResearchStationsMap[worldId] = stations
+
+            try:
+                stations.append(multiverse.DbResearchStation(
+                    id=stationId,
+                    worldId=worldId,
+                    code=row[2]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load research station {stationId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return systemResearchStationsMap
+
+    def _insertCustomRemarks(
+            self,
+            cursor: sqlite3.Cursor,
+            remarks: typing.Collection[multiverse.DbCustomRemark]
+            ) -> None:
+        if not remarks:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, world_id, remark)
+            VALUES (:id, :world_id, :remark)
+            """.format(table=UniverseDb._CustomRemarksTableName)
+        rows = []
+        for remark in remarks:
+            rows.append({
+                'id': remark.id(),
+                'world_id': remark.worldId(),
+                'remark': remark.remark()})
+        cursor.executemany(sql, rows)
+
+    def _loadCustomRemarks(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # World Id
+                typing.List[multiverse.DbCustomRemark]]:
+        sql = """
+            SELECT t.id, t.world_id, t.remark
+            FROM {remarksTable} AS t
+            JOIN {worldsTable} AS w ON w.body_id = t.world_id
+            JOIN {bodiesTable} AS b ON b.id = w.body_id;
+            """.format(
+                remarksTable=UniverseDb._CustomRemarksTableName,
+                worldsTable=UniverseDb._WorldsTableName,
+                bodiesTable=UniverseDb._BodiesTableName)
+        cursor.execute(sql)
+
+        systemRemarksMap: typing.Dict[str, typing.List[multiverse.DbCustomRemark]] = {}
+        for row in cursor.fetchall():
+            remarkId = row[0]
+            worldId = row[1]
+            remarks = systemRemarksMap.get(worldId)
+            if not remarks:
+                remarks = []
+                systemRemarksMap[worldId] = remarks
+
+            try:
+                remarks.append(multiverse.DbCustomRemark(
+                    id=remarkId,
+                    worldId=worldId,
+                    remark=row[2]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load custom remark {remarkId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return systemRemarksMap
+
+
+    #    ███████████                        █████
+    #   ░░███░░░░░███                      ░░███
+    #    ░███    ░███   ██████  █████ ████ ███████    ██████   █████
+    #    ░██████████   ███░░███░░███ ░███ ░░░███░    ███░░███ ███░░
+    #    ░███░░░░░███ ░███ ░███ ░███ ░███   ░███    ░███████ ░░█████
+    #    ░███    ░███ ░███ ░███ ░███ ░███   ░███ ███░███░░░   ░░░░███
+    #    █████   █████░░██████  ░░████████  ░░█████ ░░██████  ██████
+    #   ░░░░░   ░░░░░  ░░░░░░    ░░░░░░░░    ░░░░░   ░░░░░░  ░░░░░░
+
+    def _insertRoutes(
+            self,
+            cursor: sqlite3.Cursor,
+            routes: typing.Collection[multiverse.DbRoute]
+            ) -> None:
+        if not routes:
+            return
+
+        sql = """
+            INSERT INTO {table} (id, sector_id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
+                start_offset_x, start_offset_y, end_offset_x, end_offset_y, type, style,
+                colour, width, allegiance_id)
+            VALUES (:id, :sector_id, :start_hex_x, :start_hex_y, :end_hex_x, :end_hex_y,
+                :start_offset_x, :start_offset_y, :end_offset_x, :end_offset_y, :type, :style,
+                :colour, :width, :allegiance_id);
+            """.format(table=UniverseDb._RoutesTableName)
+        rows = []
+        for route in routes:
+            rows.append({
+                'id': route.id(),
+                'sector_id': route.sectorId(),
+                'start_hex_x': route.startHexX(),
+                'start_hex_y': route.startHexY(),
+                'end_hex_x': route.endHexX(),
+                'end_hex_y': route.endHexY(),
+                'start_offset_x': route.startOffsetX(),
+                'start_offset_y': route.startOffsetY(),
+                'end_offset_x': route.endOffsetX(),
+                'end_offset_y': route.endOffsetY(),
+                'type': route.type(),
+                'style': route.style(),
+                'colour': route.colour(),
+                'width': route.width(),
+                'allegiance_id': route.allegianceId()})
+        cursor.executemany(sql, rows)
+
+    def _loadRoutes(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbRoute]]:
+        sql = """
+            SELECT id, sector_id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
+                start_offset_x, start_offset_y, end_offset_x, end_offset_y,
+                type, style, colour, width, allegiance_id
+            FROM {table};
+            """.format(
+                table=UniverseDb._RoutesTableName)
+        cursor.execute(sql)
+
+        sectorRoutesMap = {}
+        for row in cursor.fetchall():
+            routeId = row[0]
+            sectorId = row[1]
+            routes = sectorRoutesMap.get(sectorId)
+            if routes is None:
+                routes = []
+                sectorRoutesMap[sectorId] = routes
+
+            try:
+                routes.append(multiverse.DbRoute(
+                    id=routeId,
+                    sectorId=sectorId,
+                    startHexX=row[2],
+                    startHexY=row[3],
+                    endHexX=row[4],
+                    endHexY=row[5],
+                    startOffsetX=row[6],
+                    startOffsetY=row[7],
+                    endOffsetX=row[8],
+                    endOffsetY=row[9],
+                    type=row[10],
+                    style=row[11],
+                    colour=row[12],
+                    width=row[13],
+                    allegianceId=row[14]))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load route {routeId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return sectorRoutesMap
+
+    #    ███████████                         █████
+    #   ░░███░░░░░███                       ░░███
+    #    ░███    ░███  ██████  ████████   ███████   ██████  ████████   █████
+    #    ░██████████  ███░░███░░███░░███ ███░░███  ███░░███░░███░░███ ███░░
+    #    ░███░░░░░███░███ ░███ ░███ ░░░ ░███ ░███ ░███████  ░███ ░░░ ░░█████
+    #    ░███    ░███░███ ░███ ░███     ░███ ░███ ░███░░░   ░███      ░░░░███
+    #    ███████████ ░░██████  █████    ░░████████░░██████  █████     ██████
+    #   ░░░░░░░░░░░   ░░░░░░  ░░░░░      ░░░░░░░░  ░░░░░░  ░░░░░     ░░░░░░
+
+    def _insertBorders(
+            self,
+            cursor: sqlite3.Cursor,
+            borders: typing.Collection[multiverse.DbBorder]
+            ) -> None:
+        if not borders:
+            return
+
+        bordersSql = """
+            INSERT INTO {table} (id, sector_id, allegiance_id, style, colour,
+                label, label_x, label_y, show_label, wrap_label)
+            VALUES (:id, :sector_id, :allegiance_id, :style, :colour,
+                :label, :label_x, :label_y, :show_label, :wrap_label);
+            """.format(table=UniverseDb._BordersTableName)
+        hexesSql =  """
+            INSERT INTO {table} (border_id, hex_x, hex_y)
+            VALUES (:border_id, :hex_x, :hex_y);
+            """.format(table=UniverseDb._BorderHexesTableName)
+        borderRows = []
+        hexRows = []
+        for border in borders:
+            borderRows.append({
+                'id': border.id(),
+                'sector_id': border.sectorId(),
+                'allegiance_id': border.allegianceId(),
+                'style': border.style(),
+                'colour': border.colour(),
+                'label': border.label(),
+                'label_x': border.labelWorldX(),
+                'label_y': border.labelWorldY(),
+                'show_label': 1 if border.showLabel() else 0,
+                'wrap_label': 1 if border.wrapLabel() else 0})
+            for hexX, hexY in border.hexes():
+                hexRows.append({
+                    'border_id': border.id(),
+                    'hex_x': hexX,
+                    'hex_y': hexY})
+        cursor.executemany(bordersSql, borderRows)
+        cursor.executemany(hexesSql, hexRows)
+
+    def _loadBorders(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbBorder]]:
+        sql = """
+            SELECT id, sector_id, allegiance_id, style, colour, label,
+                label_x, label_y, show_label, wrap_label
+            FROM {table};
+            """.format(
+                table=UniverseDb._BordersTableName)
+        cursor.execute(sql)
+
+        sql = """
+            SELECT hex_x, hex_y
+            FROM {table}
+            WHERE border_id = :id;
+            """.format(table=UniverseDb._BorderHexesTableName)
+        sectorBordersMap = {}
+        for row in cursor.fetchall():
+            borderId = row[0]
+            sectorId = row[1]
+            borders = sectorBordersMap.get(sectorId)
+            if borders is None:
+                borders = []
+                sectorBordersMap[sectorId] = borders
+
+            cursor.execute(sql, {'id': borderId})
+            hexes = []
+            for hexRow in cursor.fetchall():
+                hexes.append((hexRow[0], hexRow[1]))
+
+            try:
+                borders.append(multiverse.DbBorder(
+                    id=borderId,
+                    sectorId=sectorId,
+                    allegianceId=row[2],
+                    style=row[3],
+                    colour=row[4],
+                    label=row[5],
+                    labelWorldX=row[6],
+                    labelWorldY=row[7],
+                    showLabel=True if row[8] else False,
+                    wrapLabel=True if row[9] else False,
+                    hexes=hexes))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load border {borderId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return sectorBordersMap
+
+    #    ███████████                      ███
+    #   ░░███░░░░░███                    ░░░
+    #    ░███    ░███   ██████   ███████ ████   ██████  ████████    █████
+    #    ░██████████   ███░░███ ███░░███░░███  ███░░███░░███░░███  ███░░
+    #    ░███░░░░░███ ░███████ ░███ ░███ ░███ ░███ ░███ ░███ ░███ ░░█████
+    #    ░███    ░███ ░███░░░  ░███ ░███ ░███ ░███ ░███ ░███ ░███  ░░░░███
+    #    █████   █████░░██████ ░░███████ █████░░██████  ████ █████ ██████
+    #   ░░░░░   ░░░░░  ░░░░░░   ░░░░░███░░░░░  ░░░░░░  ░░░░ ░░░░░ ░░░░░░
+    #                           ███ ░███
+    #                          ░░██████
+    #                           ░░░░░░
+
+    def _insertRegions(
+            self,
+            cursor: sqlite3.Cursor,
+            regions: typing.Collection[multiverse.DbRegion]
+            ) -> None:
+        if not regions:
+            return
+
+        regionsSql = """
+            INSERT INTO {table} (id, sector_id, colour, label,
+                label_x, label_y, show_label, wrap_label)
+            VALUES (:id, :sector_id, :colour, :label,
+                :label_x, :label_y, :show_label, :wrap_label);
+            """.format(table=UniverseDb._RegionsTableName)
+        hexesSql =  """
+            INSERT INTO {table} (region_id, hex_x, hex_y)
+            VALUES (:region_id, :hex_x, :hex_y);
+            """.format(table=UniverseDb._RegionHexesTableName)
+        regionsRows = []
+        hexRows = []
+        for region in regions:
+            regionsRows.append({
+                'id': region.id(),
+                'sector_id': region.sectorId(),
+                'colour': region.colour(),
+                'label': region.label(),
+                'label_x': region.labelWorldX(),
+                'label_y': region.labelWorldY(),
+                'show_label': 1 if region.showLabel() else 0,
+                'wrap_label': 1 if region.wrapLabel() else 0})
+            for hexX, hexY in region.hexes():
+                hexRows.append({
+                    'region_id': region.id(),
+                    'hex_x': hexX,
+                    'hex_y': hexY})
+        cursor.executemany(regionsSql, regionsRows)
+        cursor.executemany(hexesSql, hexRows)
+
+    def _loadRegions(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Dict[
+                str, # Sector Id
+                typing.List[multiverse.DbRegion]]:
+        sql = """
+            SELECT id, sector_id, colour, label, label_x, label_y, show_label, wrap_label
+            FROM {table};
+            """.format(
+                table=UniverseDb._RegionsTableName)
+        cursor.execute(sql)
+
+        sql = """
+            SELECT hex_x, hex_y
+            FROM {table}
+            WHERE region_id = :id;
+            """.format(table=UniverseDb._RegionHexesTableName)
+        sectorRegionsMap = {}
+        for row in cursor.fetchall():
+            regionId = row[0]
+            sectorId = row[1]
+            regions = sectorRegionsMap.get(sectorId)
+            if regions is None:
+                regions = []
+                sectorRegionsMap[sectorId] = regions
+
+            cursor.execute(sql, {'id': regionId})
+            hexes = []
+            for hexRow in cursor.fetchall():
+                hexes.append((hexRow[0], hexRow[1]))
+
+            try:
+                regions.append(multiverse.DbRegion(
+                    id=regionId,
+                    sectorId=sectorId,
+                    colour=row[2],
+                    label=row[3],
+                    labelWorldX=row[4],
+                    labelWorldY=row[5],
+                    showLabel=True if row[6] else False,
+                    wrapLabel=True if row[7] else False,
+                    hexes=hexes))
+            except Exception as ex:
+                logging.error(
+                    f'UniverseDb failed to load region {regionId!r} from universe {self._universePath!r}',
+                    exc_info=ex)
+
+        return sectorRegionsMap
+
+    #    ██████   ██████                        █████                 █████              ████
+    #   ░░██████ ██████                        ░░███                 ░░███              ░░███
+    #    ░███░█████░███   ██████   ████████     ░███         ██████   ░███████   ██████  ░███   █████
+    #    ░███░░███ ░███  ░░░░░███ ░░███░░███    ░███        ░░░░░███  ░███░░███ ███░░███ ░███  ███░░
+    #    ░███ ░░░  ░███   ███████  ░███ ░███    ░███         ███████  ░███ ░███░███████  ░███ ░░█████
+    #    ░███      ░███  ███░░███  ░███ ░███    ░███      █ ███░░███  ░███ ░███░███░░░   ░███  ░░░░███
+    #    █████     █████░░████████ ░███████     ███████████░░████████ ████████ ░░██████  █████ ██████
+    #   ░░░░░     ░░░░░  ░░░░░░░░  ░███░░░     ░░░░░░░░░░░  ░░░░░░░░ ░░░░░░░░   ░░░░░░  ░░░░░ ░░░░░░
+    #                              ░███
+    #                              █████
+    #                             ░░░░░
 
     def _saveMapLabel(
             self,
@@ -3349,6 +3169,18 @@ class UniverseDb(object):
                     exc_info=ex)
 
         return labels
+
+    #    ██████   ██████                        █████   █████                    █████
+    #   ░░██████ ██████                        ░░███   ░░███                    ░░███
+    #    ░███░█████░███   ██████   ████████     ░███    ░███   ██████   ██████  ███████    ██████  ████████   █████
+    #    ░███░░███ ░███  ░░░░░███ ░░███░░███    ░███    ░███  ███░░███ ███░░███░░░███░    ███░░███░░███░░███ ███░░
+    #    ░███ ░░░  ░███   ███████  ░███ ░███    ░░███   ███  ░███████ ░███ ░░░   ░███    ░███ ░███ ░███ ░░░ ░░█████
+    #    ░███      ░███  ███░░███  ░███ ░███     ░░░█████░   ░███░░░  ░███  ███  ░███ ███░███ ░███ ░███      ░░░░███
+    #    █████     █████░░████████ ░███████        ░░███     ░░██████ ░░██████   ░░█████ ░░██████  █████     ██████
+    #   ░░░░░     ░░░░░  ░░░░░░░░  ░███░░░          ░░░       ░░░░░░   ░░░░░░     ░░░░░   ░░░░░░  ░░░░░     ░░░░░░
+    #                              ░███
+    #                              █████
+    #                             ░░░░░
 
     def _saveMapVector(
             self,

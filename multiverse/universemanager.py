@@ -126,9 +126,9 @@ class UniverseManager(object):
         if not name.strip():
             raise ValueError(f'Universe name can\'t be empty')
 
-        dbAllegiances = dbSophonts = dbSectors = dbMapLabels = dbMapVectors = None
+        dbAllegiances = dbSophonts = dbSectors = dbSystems = dbMapLabels = dbMapVectors = None
         if importTravellerMap:
-            dbAllegiances, dbSophonts, dbSectors, dbMapLabels, dbMapVectors = \
+            dbAllegiances, dbSophonts, dbSectors, dbSystems, dbMapLabels, dbMapVectors = \
                 multiverse.convertStockUniverseToDbUniverse(
                     milieu=milieu,
                     progressCallback=progressCallback,
@@ -153,6 +153,8 @@ class UniverseManager(object):
             universeDb.setMilieu(milieu=milieu, transaction=transaction)
             universeDb.setDescription(description=description, transaction=transaction)
 
+            # TODO: The way I'm saving allegiances, sophonts etc individually is really
+            # inefficient. I should do it as a group so it can be a single transaction
             if dbAllegiances:
                 for dbAllegiance in dbAllegiances:
                     universeDb.saveAllegiance(
@@ -182,6 +184,9 @@ class UniverseManager(object):
                         # TODO: Need to re-add support for data hash
                         #stockDataHash=dataHash,
                         transaction=transaction)
+
+            if dbSystems:
+                universeDb.saveSystems(systems=dbSystems, transaction=transaction)
 
             if dbMapLabels:
                 for dbLabel in dbMapLabels:
@@ -353,69 +358,6 @@ class UniverseManager(object):
         universeDb = multiverse.UniverseDb(universePath=dbPath)
         universeDb.setDescription(description=description)
 
-    def sectorInfos(
-            self,
-            id: str
-            ) -> typing.List[multiverse.SectorInfo]:
-        universeInfo = UniverseManager._registry.universeById(id=id)
-        if not universeInfo:
-            raise ValueError(f'Unknown universe {id!r}')
-
-        dbPath = UniverseManager._universeDbFilePath(id=id)
-        universeDb = multiverse.UniverseDb(universePath=dbPath)
-
-        return universeDb.listSectors()
-
-    def sectors(
-            self,
-            id: str,
-            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
-            ) -> typing.List[multiverse.DbSector]:
-        return list(self.yieldSectors(id=id, progressCallback=progressCallback))
-
-    def yieldSectors(
-            self,
-            id: str,
-            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], int, int], typing.Any]] = None
-            ) -> typing.Generator[multiverse.DbSector, None, None]:
-        universeInfo = UniverseManager._registry.universeById(id=id)
-        if not universeInfo:
-            raise ValueError(f'Unknown universe {id!r}')
-
-        dbPath = UniverseManager._universeDbFilePath(id=id)
-        universeDb = multiverse.UniverseDb(universePath=dbPath)
-
-        with universeDb.createTransaction() as transaction:
-            sectorInfos = universeDb.listSectors(transaction=transaction)
-            sectorCount = len(sectorInfos)
-            for progressCount, sectorInfo in enumerate(sectorInfos):
-                if progressCallback:
-                    try:
-                        progressCallback(
-                            f'Loading: {sectorInfo.name()}',
-                            progressCount,
-                            sectorCount)
-                    except Exception as ex:
-                        logging.warning('UniverseManager universe read progress callback threw an exception', exc_info=ex)
-
-                try:
-                    sector = universeDb.loadSector(
-                        sectorId=sectorInfo.id(),
-                        transaction=transaction)
-                    yield sector
-                except Exception as ex:
-                    # Log error but continue loading
-                    logging.error(f'UniverseManager failed to read sector {sectorInfo.id()!r}', exc_info=ex)
-
-            if progressCallback:
-                try:
-                    progressCallback(
-                        f'Loading: Complete!',
-                        sectorCount,
-                        sectorCount)
-                except Exception as ex:
-                    logging.warning('UniverseManager universe read progress callback threw an exception', exc_info=ex)
-
     def allegiances(self, id: str) -> typing.List[multiverse.DbAllegiance]:
         universeInfo = UniverseManager._registry.universeById(id=id)
         if not universeInfo:
@@ -437,6 +379,43 @@ class UniverseManager(object):
 
         with universeDb.createTransaction() as transaction:
             return universeDb.loadSophonts(transaction=transaction)
+
+    def sectorInfos(
+            self,
+            id: str
+            ) -> typing.List[multiverse.SectorInfo]:
+        universeInfo = UniverseManager._registry.universeById(id=id)
+        if not universeInfo:
+            raise ValueError(f'Unknown universe {id!r}')
+
+        dbPath = UniverseManager._universeDbFilePath(id=id)
+        universeDb = multiverse.UniverseDb(universePath=dbPath)
+
+        return universeDb.listSectors()
+
+    def sectors(
+            self,
+            id: str
+            ) -> typing.List[multiverse.DbSector]:
+        universeInfo = UniverseManager._registry.universeById(id=id)
+        if not universeInfo:
+            raise ValueError(f'Unknown universe {id!r}')
+
+        dbPath = UniverseManager._universeDbFilePath(id=id)
+        universeDb = multiverse.UniverseDb(universePath=dbPath)
+
+        return universeDb.loadSectors()
+
+    def systems(self, id: str) -> typing.List[multiverse.DbSystem]:
+        universeInfo = UniverseManager._registry.universeById(id=id)
+        if not universeInfo:
+            raise ValueError(f'Unknown universe {id!r}')
+
+        dbPath = UniverseManager._universeDbFilePath(id=id)
+        universeDb = multiverse.UniverseDb(universePath=dbPath)
+
+        with universeDb.createTransaction() as transaction:
+            return universeDb.loadSystems(transaction=transaction)
 
     def mapLabels(self, id: str) -> typing.List[multiverse.DbMapLabel]:
         universeInfo = UniverseManager._registry.universeById(id=id)
