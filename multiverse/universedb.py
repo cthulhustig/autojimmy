@@ -933,6 +933,7 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    # TODO: This should be converted to absolute space hex As part of the changes to move things to the universe label
                     database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     # NOTE: This intentionally stores the abbreviation rather
@@ -956,6 +957,7 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    # TODO: This should be converted to absolute space hex As part of the changes to move things to the universe label
                     database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     # NOTE: See comment on owning systems as to why this is the
@@ -1010,6 +1012,7 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    # TODO: These hexes should be converted to absolute space hex As part of the changes to move things to the universe label
                     database.ColumnDef(columnName='start_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='start_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='end_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
@@ -1045,6 +1048,7 @@ class UniverseDb(object):
                     # origin of the sector (top, left). An offset is used rather than storing
                     # world space coordinates to keep sector data relative to the sector. It
                     # will make it easier if we ever want to move a sector
+                    # TODO: This should be converted to world space as part of the changes to move things to the universe label
                     database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
                     database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
                     database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False),
@@ -1058,6 +1062,7 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='border_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._BordersTableName, foreignColumnName='id',
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    # TODO: These hexes should be converted to absolute space hex as part of the changes to move things to the universe label
                     database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
 
@@ -1073,6 +1078,7 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     # NOTE: See note on borders about coordinate space used for world x/y
+                    # TODO: This should be converted to world space as part of the changes to move things to the universe label
                     database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
                     database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
                     database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Boolean, isNullable=False),
@@ -1086,6 +1092,7 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='region_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=UniverseDb._RegionsTableName, foreignColumnName='id',
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    # TODO: These hexes should be converted to absolute space hex as part of the changes to move things to the universe label
                     database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                     database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
 
@@ -1099,6 +1106,7 @@ class UniverseDb(object):
                               foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
                     database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    # TODO: This should be converted to world space as part of the changes to move things to the universe label
                     database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
                     database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
                     database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
@@ -2289,14 +2297,9 @@ class UniverseDb(object):
                 str, # World Id
                 typing.List[multiverse.DbNobility]]:
         sql = """
-            SELECT t.id, t.world_id, t.code
-            FROM {nobilitiesTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id;
-            """.format(
-                nobilitiesTable=UniverseDb._NobilitiesTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName)
+            SELECT id, world_id, code
+            FROM {table};
+            """.format(table=UniverseDb._NobilitiesTableName)
         cursor.execute(sql)
 
         systemNobilitiesMap: typing.Dict[str, typing.List[multiverse.DbNobility]] = {}
@@ -2347,14 +2350,9 @@ class UniverseDb(object):
                 str, # World Id
                 typing.List[multiverse.DbBase]]:
         sql = """
-            SELECT t.id, t.world_id, t.code
-            FROM {basesTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id;
-            """.format(
-                basesTable=UniverseDb._BasesTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName)
+            SELECT id, world_id, code
+            FROM {table};
+            """.format(table=UniverseDb._BasesTableName)
         cursor.execute(sql)
 
         systemBasesMap: typing.Dict[str, typing.List[multiverse.DbBase]] = {}
@@ -2405,14 +2403,9 @@ class UniverseDb(object):
                 str, # World Id
                 typing.List[multiverse.DbTradeCode]]:
         sql = """
-            SELECT t.id, t.world_id, t.code
-            FROM {tradeTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id;
-            """.format(
-                tradeTable=UniverseDb._TradeCodesTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName)
+            SELECT id, world_id, code
+            FROM {table};
+            """.format(table=UniverseDb._TradeCodesTableName)
         cursor.execute(sql)
 
         systemTradeCodesMap: typing.Dict[str, typing.List[multiverse.DbTradeCode]] = {}
@@ -2466,14 +2459,9 @@ class UniverseDb(object):
                 str, # World Id
                 typing.List[multiverse.DbSophontPopulation]]:
         sql = """
-            SELECT t.id, t.world_id, t.sophont_id, t.percentage, t.is_home_world, t.is_die_back
-            FROM {populationsTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id;
-            """.format(
-                populationsTable=UniverseDb._SophontPopulationsTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName)
+            SELECT id, world_id, sophont_id, percentage, is_home_world, is_die_back
+            FROM {table};
+            """.format(table=UniverseDb._SophontPopulationsTableName)
         cursor.execute(sql)
 
         systemPopulationsMap: typing.Dict[str, typing.List[multiverse.DbSophontPopulation]] = {}
@@ -2527,14 +2515,9 @@ class UniverseDb(object):
                 str, # World Id
                 typing.List[multiverse.DbRulingAllegiance]]:
         sql = """
-            SELECT t.id, t.world_id, t.allegiance_id
-            FROM {rulingTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id;
-            """.format(
-                rulingTable=UniverseDb._RulingAllegiancesTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName)
+            SELECT id, world_id, allegiance_id
+            FROM {table};
+            """.format(table=UniverseDb._RulingAllegiancesTableName)
         cursor.execute(sql)
 
         systemRulingAllegianceMap: typing.Dict[str, typing.List[multiverse.DbRulingAllegiance]] = {}
@@ -2587,14 +2570,9 @@ class UniverseDb(object):
                 str, # World Id
                 typing.List[multiverse.DbOwningSystem]]:
         sql = """
-            SELECT t.id, t.world_id, t.hex_x, t.hex_y, t.sector_abbreviation
-            FROM {ownersTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id;
-            """.format(
-                ownersTable=UniverseDb._OwningSystemsTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName)
+            SELECT id, world_id, hex_x, hex_y, sector_abbreviation
+            FROM {table};
+            """.format(table=UniverseDb._OwningSystemsTableName)
         cursor.execute(sql)
 
         systemOwnersMap: typing.Dict[str, typing.List[multiverse.DbOwningSystem]] = {}
@@ -2649,14 +2627,9 @@ class UniverseDb(object):
                 str, # World Id
                 typing.List[multiverse.DbColonySystem]]:
         sql = """
-            SELECT t.id, t.world_id, t.hex_x, t.hex_y, t.sector_abbreviation
-            FROM {coloniesTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id;
-            """.format(
-                coloniesTable=UniverseDb._ColonySystemsTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName)
+            SELECT id, world_id, hex_x, hex_y, sector_abbreviation
+            FROM {table};
+            """.format(table=UniverseDb._ColonySystemsTableName)
         cursor.execute(sql)
 
         systemColoniesMap: typing.Dict[str, typing.List[multiverse.DbColonySystem]] = {}
@@ -2709,14 +2682,9 @@ class UniverseDb(object):
                 str, # World Id
                 typing.List[multiverse.DbResearchStation]]:
         sql = """
-            SELECT t.id, t.world_id, t.code
-            FROM {stationsTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id;
-            """.format(
-                stationsTable=UniverseDb._ResearchStationTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName)
+            SELECT id, world_id, code
+            FROM {table};
+            """.format(table=UniverseDb._ResearchStationTableName)
         cursor.execute(sql)
 
         systemResearchStationsMap: typing.Dict[str, typing.List[multiverse.DbResearchStation]] = {}
@@ -2767,14 +2735,9 @@ class UniverseDb(object):
                 str, # World Id
                 typing.List[multiverse.DbCustomRemark]]:
         sql = """
-            SELECT t.id, t.world_id, t.remark
-            FROM {remarksTable} AS t
-            JOIN {worldsTable} AS w ON w.body_id = t.world_id
-            JOIN {bodiesTable} AS b ON b.id = w.body_id;
-            """.format(
-                remarksTable=UniverseDb._CustomRemarksTableName,
-                worldsTable=UniverseDb._WorldsTableName,
-                bodiesTable=UniverseDb._BodiesTableName)
+            SELECT id, world_id, remark
+            FROM {table};
+            """.format(table=UniverseDb._CustomRemarksTableName)
         cursor.execute(sql)
 
         systemRemarksMap: typing.Dict[str, typing.List[multiverse.DbCustomRemark]] = {}
