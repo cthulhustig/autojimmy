@@ -1,3 +1,4 @@
+import collections.abc
 import database
 import enum
 import logging
@@ -9,7 +10,6 @@ class ColumnDef(object):
         Text = 0
         Integer = 1
         Real = 2
-        Boolean = 3
 
     class ForeignKeyDeleteOp(enum.Enum):
         Cascade = 0
@@ -27,7 +27,8 @@ class ColumnDef(object):
             foreignColumnName: typing.Optional[str] = None,
             foreignDeleteOp: typing.Optional[ForeignKeyDeleteOp] = None,
             minValue: typing.Optional[typing.Union[str, int, float]] = None,
-            maxValue: typing.Optional[typing.Union[str, int, float]] = None
+            maxValue: typing.Optional[typing.Union[str, int, float]] = None,
+            allowedValues: typing.Optional[typing.Collection[typing.Union[str, int, float]]] = None
             ) -> None:
         if not columnName:
             raise ValueError('Column name can\'t be empty')
@@ -52,8 +53,6 @@ class ColumnDef(object):
             elif columnType is ColumnDef.ColumnType.Real:
                 if not isinstance(minValue, (float, int)):
                     raise ValueError('Min value for Float column must be of type float or int')
-            elif columnType is ColumnDef.ColumnType.Boolean:
-                raise ValueError('Min value for is not allowed for Boolean columns')
 
         if maxValue is not None:
             if columnType is ColumnDef.ColumnType.Text:
@@ -65,8 +64,19 @@ class ColumnDef(object):
             elif columnType is ColumnDef.ColumnType.Real:
                 if not isinstance(maxValue, (float, int)):
                     raise ValueError('Max value for Float column must be of type float or int')
-            elif columnType is ColumnDef.ColumnType.Boolean:
-                raise ValueError('Max value for is not allowed for Boolean columns')
+
+        if allowedValues is not None:
+            for allowedValue in allowedValues:
+                if columnType is ColumnDef.ColumnType.Text:
+                    if not isinstance(allowedValue, str):
+                        raise ValueError('Allowed value for Text column must be of type str')
+                elif columnType is ColumnDef.ColumnType.Integer:
+                    if not isinstance(allowedValue, int):
+                        raise ValueError('Allowed value for Integer column must be of type int')
+                elif columnType is ColumnDef.ColumnType.Real:
+                    if not isinstance(allowedValue, (float, int)):
+                        raise ValueError('Allowed value for Float column must be of type float or int')
+
 
         hasForeignKey = foreignTableName and foreignColumnName and foreignDeleteOp
 
@@ -81,11 +91,12 @@ class ColumnDef(object):
         self._foreignDeleteOp = foreignDeleteOp
         self._minValue = minValue
         self._maxValue = maxValue
+        self._allowedValues = list(allowedValues) if allowedValues else None
 
     def columnName(self) -> str:
         return self._columnName
 
-    def columnType(self) -> typing.Union[typing.Type[str], typing.Type[int], typing.Type[float], typing.Type[bool]]:
+    def columnType(self) -> ColumnType:
         return self._columnType
 
     def isPrimaryKey(self) -> bool:
@@ -117,6 +128,9 @@ class ColumnDef(object):
 
     def maxValue(self) -> typing.Optional[typing.Union[str, int, float]]:
         return self._maxValue
+
+    def allowedValues(self) -> typing.Optional[typing.Collection[typing.Union[str, int, float]]]:
+        return self._allowedValues
 
 class UniqueConstraintDef(object):
     def __init__(
@@ -282,14 +296,20 @@ class SchemaDb(object):
 
     _TableSchemaTableName = 'table_schemas'
 
-    def __init__(self, dbPath: str) -> None:
-        self._dbPath = dbPath
+    def __init__(self, path: str) -> None:
+        self._path = path
+        self._tableNameToColumns: typing.Dict[
+            str, # Table Name
+            typing.Dict[
+                str, # Column Name
+                ColumnDef]
+            ] = {}
 
-        self._initTables()
+        self._initSchemaTable()
 
     def createConnection(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self._dbPath)
-        logging.debug(f'SchemaDb created new connection {connection} to \'{self._dbPath}\'')
+        connection = sqlite3.connect(self._path)
+        logging.debug(f'SchemaDb created new connection {connection} to \'{self._path}\'')
         connection.executescript(SchemaDb._PragmaScript)
         # Uncomment this to have sqlite print the SQL that it executes
         #connection.set_trace_callback(print)
@@ -332,10 +352,11 @@ class SchemaDb(object):
             if currentSchemaVersion is None or currentSchemaVersion != requiredSchemaVersion:
                 raise TableVersionException(
                     table=tableName,
-                    path=self._dbPath,
+                    path=self._path,
                     required=requiredSchemaVersion,
                     current=currentSchemaVersion)
 
+            self._tableNameToColumns[tableName] = {c.columnName(): c for c in columns}
             return # Table exists with correct version
 
         sql = f'CREATE TABLE {tableName} (\n'
@@ -350,14 +371,12 @@ class SchemaDb(object):
                 sql += ' INTEGER'
             elif column.columnType() == ColumnDef.ColumnType.Real:
                 sql += ' REAL'
-            elif column.columnType() == ColumnDef.ColumnType.Boolean:
-                sql += ' INTEGER'
             else:
                 raise RuntimeError('Unsupported column type {type} for column \'{column}\' when creating table \'{table}\' in \'{path}\''.format(
                     type=column.columnType(),
                     column=column.columnName(),
                     table=tableName,
-                    path=self._dbPath))
+                    path=self._path))
 
             if column.isPrimaryKey():
                 sql += ' PRIMARY KEY'
@@ -385,7 +404,7 @@ class SchemaDb(object):
                         type=column.foreignDeleteOp(),
                         column=column.columnName(),
                         table=tableName,
-                        path=self._dbPath))
+                        path=self._path))
 
                 sql += '  FOREIGN KEY({column}) REFERENCES {foreignTable}({foreignColumn}) ON DELETE {deleteOp},\n'.format(
                     column=column.columnName(),
@@ -394,27 +413,29 @@ class SchemaDb(object):
                     deleteOp=deleteOp)
 
         for column in columns:
-            if column.columnType() is ColumnDef.ColumnType.Boolean:
+            allowedValues = column.allowedValues()
+            if allowedValues:
                 # Add constraint that boolean columns can only have value 0 or 1
-                sql += '  CHECK ({column} IN (0, 1)),\n'.format(
-                    column=column.columnName())
-            else:
-                minValue = column.minValue()
-                maxValue = column.maxValue()
-                isText = column.columnType() is ColumnDef.ColumnType.Text
-                if minValue is not None and maxValue is not None:
-                    sql += '  CHECK ({column} BETWEEN {min} AND {max}),\n'.format(
-                        column=column.columnName(),
-                        min=f'\'{minValue}\'' if isText else minValue,
-                        max=f'\'{maxValue}\'' if isText else maxValue)
-                elif minValue is not None:
-                    sql += '  CHECK ({column} >= {min}),\n'.format(
-                        column=column.columnName(),
-                        min=f'\'{minValue}\'' if isText else minValue)
-                elif maxValue is not None:
-                    sql += '  CHECK ({column} <= {max}),\n'.format(
-                        column=column.columnName(),
-                        max=f'\'{maxValue}\'' if isText else maxValue)
+                sql += '  CHECK ({column} IN ({values})),\n'.format(
+                    column=column.columnName(),
+                    values=', '.join([str(v) for v in allowedValues]))
+
+            minValue = column.minValue()
+            maxValue = column.maxValue()
+            isText = column.columnType() is ColumnDef.ColumnType.Text
+            if minValue is not None and maxValue is not None:
+                sql += '  CHECK ({column} BETWEEN {min} AND {max}),\n'.format(
+                    column=column.columnName(),
+                    min=f'\'{minValue}\'' if isText else minValue,
+                    max=f'\'{maxValue}\'' if isText else maxValue)
+            elif minValue is not None:
+                sql += '  CHECK ({column} >= {min}),\n'.format(
+                    column=column.columnName(),
+                    min=f'\'{minValue}\'' if isText else minValue)
+            elif maxValue is not None:
+                sql += '  CHECK ({column} <= {max}),\n'.format(
+                    column=column.columnName(),
+                    max=f'\'{maxValue}\'' if isText else maxValue)
 
         # Add any unique constraints
         if uniqueConstraints:
@@ -424,7 +445,7 @@ class SchemaDb(object):
         sql = sql.rstrip(',\n')
         sql += '\n);'
 
-        logging.info(f'SchemaDb creating table \'{tableName}\' in \'{self._dbPath}\'')
+        logging.info(f'SchemaDb creating table \'{tableName}\' in \'{self._path}\'')
         cursor.execute(sql)
 
         # Create index on foreign key columns and columns where an index has explicitly
@@ -463,8 +484,136 @@ class SchemaDb(object):
             version=requiredSchemaVersion,
             cursor=cursor)
 
+        self._tableNameToColumns[tableName] = {c.columnName(): c for c in columns}
+
+    def select(
+            self,
+            cursor: sqlite3.Cursor,
+            tableName: str,
+            columns: typing.Optional[typing.Collection[str]] = None,
+            where: typing.Optional[str] = None,
+            parameters: typing.Optional[typing.Union[
+                typing.Mapping[str, typing.Optional[typing.Union[str, int, float, bool]]],
+                typing.Collection[typing.Optional[typing.Union[str, int, float, bool]]]]] = None,
+            limit: typing.Optional[int] = None,
+            offset: typing.Optional[int] = None
+            ) -> typing.List[typing.Dict[str, typing.Optional[typing.Union[str, int, float, bool]]]]:
+        columnNameToColumnDef = self._tableNameToColumns.get(tableName)
+        if columnNameToColumnDef is None:
+            raise ValueError(f'Unknown table {tableName!r}')
+
+        if columns is None:
+            columnDefs = columnNameToColumnDef.values()
+        else:
+            columnDefs = []
+            for columnName in columns:
+                columnDef = columnNameToColumnDef.get(columnName)
+                if columnDefs is None:
+                    raise ValueError(f'Unknown column {columnName}')
+                columnDefs.append(columnDef)
+
+        sql = self._formatSelectSql(
+            tableName=tableName,
+            columnDefs=columnDefs,
+            where=where,
+            limit=limit,
+            offset=offset)
+        if parameters:
+            cursor.execute(sql, parameters)
+        else:
+            cursor.execute(sql)
+
+        rows = []
+        for row in cursor.fetchall():
+            values = {}
+            rows.append(values)
+            for index, columnDef in enumerate(columnDefs):
+                value = row[index]
+                values[columnDef.columnName()] = value
+
+        return rows
+
+    def insert(
+            self,
+            cursor: sqlite3.Cursor,
+            tableName: str,
+            values: typing.Union[
+                typing.Mapping[str, typing.Optional[typing.Union[str, int, float, bool]]],
+                typing.Collection[typing.Optional[typing.Union[str, int, float, bool]]]],
+            replaceIfExists: bool = True
+            ) -> None:
+        columnNameToColumnDef = self._tableNameToColumns.get(tableName)
+        if columnNameToColumnDef is None:
+            raise ValueError(f'Unknown table {tableName!r}')
+
+        sql = self._formatInsertSql(
+            tableName=tableName,
+            columnDefs=columnNameToColumnDef.values(),
+            replaceIfExists=replaceIfExists)
+        cursor.execute(sql, values)
+
+    def insertMany(
+            self,
+            cursor: sqlite3.Cursor,
+            tableName: str,
+            rows: typing.Union[
+                typing.Collection[typing.Mapping[str, typing.Optional[typing.Union[str, int, float, bool]]]],
+                typing.Collection[typing.Collection[typing.Optional[typing.Union[str, int, float, bool]]]]],
+            replaceIfExists: bool = True
+            ) -> None:
+        columnNameToColumnDef = self._tableNameToColumns.get(tableName)
+        if columnNameToColumnDef is None:
+            raise ValueError(f'Unknown table {tableName!r}')
+
+        if not rows:
+            return
+
+        sql = self._formatInsertSql(
+            tableName=tableName,
+            columnDefs=columnNameToColumnDef.values(),
+            replaceIfExists=replaceIfExists)
+        cursor.executemany(sql, rows)
+
+    def delete(
+            self,
+            cursor: sqlite3.Cursor,
+            tableName: str,
+            where: typing.Optional[str] = None,
+            parameters: typing.Optional[typing.Union[
+                typing.Mapping[str, typing.Optional[typing.Union[str, int, float, bool]]],
+                typing.Collection[typing.Optional[typing.Union[str, int, float, bool]]]]] = None
+            ) -> None:
+        columnNameToColumnDef = self._tableNameToColumns.get(tableName)
+        if columnNameToColumnDef is None:
+            raise ValueError(f'Unknown table {tableName!r}')
+
+        sql = self._formatDeleteSql(tableName=tableName, where=where)
+        if parameters:
+            cursor.execute(sql, parameters)
+        else:
+            cursor.execute(sql)
+
+    def deleteMany(
+            self,
+            cursor: sqlite3.Cursor,
+            tableName: str,
+            where: typing.Optional[str] = None,
+            parameters: typing.Optional[typing.Union[
+                typing.Collection[typing.Mapping[str, typing.Optional[typing.Union[str, int, float, bool]]]],
+                typing.Collection[typing.Collection[typing.Optional[typing.Union[str, int, float, bool]]]]]] = None,
+            ) -> None:
+        columnNameToColumnDef = self._tableNameToColumns.get(tableName)
+        if columnNameToColumnDef is None:
+            raise ValueError(f'Unknown table {tableName!r}')
+
+        if not parameters:
+            return
+
+        sql = self._formatDeleteSql(tableName=tableName, where=where)
+        cursor.executemany(sql, parameters)
+
     def vacuum(self) -> None:
-        logging.debug(f'SchemaDb vacuuming database \'{self._dbPath}\'')
+        logging.debug(f'SchemaDb vacuuming database \'{self._path}\'')
 
         # NOTE: VACUUM can't be performed inside a transaction
         connection = self.createConnection()
@@ -481,7 +630,7 @@ class SchemaDb(object):
         finally:
             srcConnection.close()
 
-    def _initTables(self) -> None:
+    def _initSchemaTable(self) -> None:
         with self.createTransaction() as transaction:
             connection = transaction.connection()
             cursor = connection.cursor()
@@ -496,8 +645,71 @@ class SchemaDb(object):
                         version INTEGER NOT NULL
                     );
                     """.format(table=SchemaDb._TableSchemaTableName)
-                logging.info(f'SchemaDb creating \'{SchemaDb._TableSchemaTableName}\' table in \'{self._dbPath}\'')
+                logging.info(f'SchemaDb creating \'{SchemaDb._TableSchemaTableName}\' table in \'{self._path}\'')
                 cursor.execute(sql)
+
+    def _formatSelectSql(
+            self,
+            tableName: str,
+            columnDefs: typing.Iterable[ColumnDef],
+            where: typing.Optional[str] = None,
+            limit: typing.Optional[int] = None,
+            offset: typing.Optional[int] = None
+            ) -> str:
+        sql = 'SELECT {columns} FROM {table}'.format(
+            columns=', '.join([c.columnName() for c in columnDefs]),
+            table=tableName)
+
+        if where is not None:
+            sql += '\nWHERE {where}'.format(where=where)
+
+        if limit is not None:
+            sql += '\nLIMIT {limit}'.format(limit=limit)
+
+        if offset is not None:
+            sql += '\nOFFSET {offset}'.format(offset=offset)
+
+        sql += ';'
+        return sql
+
+    def _formatInsertSql(
+            self,
+            tableName: str,
+            columnDefs: typing.Iterable[ColumnDef],
+            replaceIfExists: bool
+            ) -> str:
+        sql = 'INSERT INTO {table} ({columns}) VALUES ({values})' .format(
+                table=tableName,
+                columns=', '.join([c.columnName() for c in columnDefs]),
+                values=', '.join([':' + c.columnName() for c in columnDefs]))
+
+        # TODO: Check this stuff is working properly once I've implemented
+        # saving after modifying the universe
+        if replaceIfExists:
+            primaryKeyDef = None
+            for columnDef in columnDefs:
+                if columnDef.isPrimaryKey():
+                    primaryKeyDef = columnDef
+                    break
+            if primaryKeyDef:
+                sql += '\nON CONFLICT({column}) DO UPDATE SET'.format(column=primaryKeyDef.columnName())
+                for columnDef in columnDefs:
+                    if columnDef != primaryKeyDef:
+                        sql += '\n  {column} = excluded.{column},'.format(column=columnDef.columnName())
+                sql = sql.strip(',')
+
+        sql += ';'
+        return sql
+
+    def _formatDeleteSql(
+            self,
+            tableName: str,
+            where: typing.Optional[str] = None,
+            ) -> str:
+        if where is None:
+            return 'DELETE FROM {table};'.format(table=tableName)
+
+        return 'DELETE FROM {table} WHERE {where};'.format(table=tableName, where=where)
 
     def _writeSchemaVersion(
             self,
@@ -505,7 +717,7 @@ class SchemaDb(object):
             table: str,
             version: int
             ) -> None:
-        logging.debug(f'SchemaDb setting schema for \'{table}\' table in \'{self._dbPath}\' to {version}')
+        logging.debug(f'SchemaDb setting schema for \'{table}\' table in \'{self._path}\' to {version}')
         sql = """
             INSERT INTO {table} (name, version)
             VALUES (:name, :version)
@@ -522,7 +734,7 @@ class SchemaDb(object):
             cursor: sqlite3.Cursor,
             table: str
             ) -> typing.Optional[int]:
-        logging.debug(f'SchemaDb reading schema for \'{table}\' table from \'{self._dbPath}\'')
+        logging.debug(f'SchemaDb reading schema for \'{table}\' table from \'{self._path}\'')
         sql = """
             SELECT version
             FROM {table}
@@ -540,7 +752,7 @@ class SchemaDb(object):
             column: str,
             unique: bool
             ) -> None:
-        logging.debug(f'SchemaDb creating index for \'{column}\' in table \'{table}\' in \'{self._dbPath}\'')
+        logging.debug(f'SchemaDb creating index for \'{column}\' in table \'{table}\' in \'{self._path}\'')
         database.createColumnIndex(table=table, column=column, unique=unique, cursor=cursor)
 
     def _createMultiColumnIndex(
@@ -550,5 +762,5 @@ class SchemaDb(object):
             columns: typing.Collection[str],
             unique: bool
             ) -> None:
-        logging.debug(f'SchemaDb creating index for \'{','.join(columns)}\' in table \'{table}\' in \'{self._dbPath}\'')
+        logging.debug(f'SchemaDb creating index for \'{','.join(columns)}\' in table \'{table}\' in \'{self._path}\'')
         database.createMultiColumnIndex(table=table, columns=columns, unique=unique, cursor=cursor)

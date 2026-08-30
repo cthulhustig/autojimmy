@@ -28,7 +28,7 @@ class UniverseRegistry(object):
     _UniversesTableSchema = 1
 
     def __init__(self, registryPath: str) -> None:
-        self._database = database.SchemaDb(dbPath=registryPath)
+        self._database = database.SchemaDb(path=registryPath)
         self._initDatabase()
 
     def createTransaction(self) -> database.Transaction:

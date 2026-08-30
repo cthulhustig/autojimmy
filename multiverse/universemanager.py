@@ -156,49 +156,22 @@ class UniverseManager(object):
             # TODO: The way I'm saving allegiances, sophonts etc individually is really
             # inefficient. I should do it as a group so it can be a single transaction
             if dbAllegiances:
-                for dbAllegiance in dbAllegiances:
-                    universeDb.saveAllegiance(
-                        allegiance=dbAllegiance,
-                        transaction=transaction)
+                universeDb.saveAllegiances(allegiances=dbAllegiances, transaction=transaction)
 
             if dbSophonts:
-                for dbSophont in dbSophonts:
-                    universeDb.saveSophont(
-                        sophont=dbSophont,
-                        transaction=transaction)
+                universeDb.saveSophonts(sophonts=dbSophonts, transaction=transaction)
 
             if dbSectors:
-                sectorCount = len(dbSectors)
-                for progressCount, dbSector in enumerate(dbSectors):
-                    if progressCallback:
-                        try:
-                            progressCallback(
-                                f'Creating: {dbSector.name()}',
-                                progressCount,
-                                sectorCount)
-                        except Exception as ex:
-                            logging.warning('UniverseManager custom universe creation progress callback threw an exception', exc_info=ex)
-
-                    universeDb.saveSector(
-                        sector=dbSector,
-                        # TODO: Need to re-add support for data hash
-                        #stockDataHash=dataHash,
-                        transaction=transaction)
+                universeDb.saveSectors(sectors=dbSectors, transaction=transaction)
 
             if dbSystems:
                 universeDb.saveSystems(systems=dbSystems, transaction=transaction)
 
             if dbMapLabels:
-                for dbLabel in dbMapLabels:
-                    universeDb.saveMapLabel(
-                        label=dbLabel,
-                        transaction=transaction)
+                universeDb.saveMapLabels(labels=dbMapLabels, transaction=transaction)
 
             if dbMapVectors:
-                for dbVector in dbMapVectors:
-                    universeDb.saveMapVector(
-                        vector=dbVector,
-                        transaction=transaction)
+                universeDb.saveMapVectors(vectors=dbMapVectors, transaction=transaction)
 
         # Only add the universe to the registry after the database has been
         # created to avoid dangling entries if creating the database fails
@@ -256,7 +229,7 @@ class UniverseManager(object):
                         except Exception as ex:
                             logging.warning('UniverseManager sector update progress callback threw an exception', exc_info=ex)
 
-                    universeDb.saveSector(sector=sector, transaction=transaction)
+                    universeDb.saveSectors(sectors=[sector], transaction=transaction)
 
             if progressCallback:
                 try:

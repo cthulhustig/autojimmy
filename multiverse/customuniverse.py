@@ -27,6 +27,10 @@ def importLegacyCustomSectors(
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
         reporter: typing.Optional[common.Reporter] = None
         ) -> None:
+    # TODO: Legacy custom sectors are currently broken as systems (and anything else
+    # I moved from the sector to the universe) won't be deleted
+    return
+
     if reporter:
         reporter.pushPrefix('Stock Allegiances: ')
     try:
