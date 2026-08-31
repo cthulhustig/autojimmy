@@ -331,7 +331,11 @@ class UniverseManager(object):
         universeDb = multiverse.UniverseDb(universePath=dbPath)
         universeDb.setDescription(description=description)
 
-    def allegiances(self, id: str) -> typing.List[multiverse.DbAllegiance]:
+    def allegiances(
+            self,
+            id: str,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[multiverse.DbAllegiance]:
         universeInfo = UniverseManager._registry.universeById(id=id)
         if not universeInfo:
             raise ValueError(f'Unknown universe {id!r}')
@@ -339,10 +343,13 @@ class UniverseManager(object):
         dbPath = UniverseManager._universeDbFilePath(id=id)
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
-        with universeDb.createTransaction() as transaction:
-            return universeDb.loadAllegiances(transaction=transaction)
+        return universeDb.loadAllegiances(progress=progress)
 
-    def sophonts(self, id: str) -> typing.List[multiverse.DbSophont]:
+    def sophonts(
+            self,
+            id: str,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[multiverse.DbSophont]:
         universeInfo = UniverseManager._registry.universeById(id=id)
         if not universeInfo:
             raise ValueError(f'Unknown universe {id!r}')
@@ -350,8 +357,7 @@ class UniverseManager(object):
         dbPath = UniverseManager._universeDbFilePath(id=id)
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
-        with universeDb.createTransaction() as transaction:
-            return universeDb.loadSophonts(transaction=transaction)
+        return universeDb.loadSophonts(progress=progress)
 
     def sectorInfos(
             self,
@@ -368,7 +374,8 @@ class UniverseManager(object):
 
     def sectors(
             self,
-            id: str
+            id: str,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbSector]:
         universeInfo = UniverseManager._registry.universeById(id=id)
         if not universeInfo:
@@ -377,9 +384,13 @@ class UniverseManager(object):
         dbPath = UniverseManager._universeDbFilePath(id=id)
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
-        return universeDb.loadSectors()
+        return universeDb.loadSectors(progress=progress)
 
-    def systems(self, id: str) -> typing.List[multiverse.DbSystem]:
+    def systems(
+            self,
+            id: str,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[multiverse.DbSystem]:
         universeInfo = UniverseManager._registry.universeById(id=id)
         if not universeInfo:
             raise ValueError(f'Unknown universe {id!r}')
@@ -387,10 +398,13 @@ class UniverseManager(object):
         dbPath = UniverseManager._universeDbFilePath(id=id)
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
-        with universeDb.createTransaction() as transaction:
-            return universeDb.loadSystems(transaction=transaction)
+        return universeDb.loadSystems(progress=progress)
 
-    def mapLabels(self, id: str) -> typing.List[multiverse.DbMapLabel]:
+    def mapLabels(
+            self,
+            id: str,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[multiverse.DbMapLabel]:
         universeInfo = UniverseManager._registry.universeById(id=id)
         if not universeInfo:
             raise ValueError(f'Unknown universe {id!r}')
@@ -398,10 +412,13 @@ class UniverseManager(object):
         dbPath = UniverseManager._universeDbFilePath(id=id)
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
-        with universeDb.createTransaction() as transaction:
-            return universeDb.loadMapLabels(transaction=transaction)
+        return universeDb.loadMapLabels(progress=progress)
 
-    def mapVectors(self, id: str) -> typing.List[multiverse.DbMapVector]:
+    def mapVectors(
+            self,
+            id: str,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[multiverse.DbMapVector]:
         universeInfo = UniverseManager._registry.universeById(id=id)
         if not universeInfo:
             raise ValueError(f'Unknown universe {id!r}')
@@ -409,8 +426,7 @@ class UniverseManager(object):
         dbPath = UniverseManager._universeDbFilePath(id=id)
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
-        with universeDb.createTransaction() as transaction:
-            return universeDb.loadMapVectors(transaction=transaction)
+        return universeDb.loadMapVectors(progress=progress)
 
     @staticmethod
     def _registryDbFilePath() -> str:

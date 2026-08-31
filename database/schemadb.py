@@ -612,6 +612,19 @@ class SchemaDb(object):
         sql = self._formatDeleteSql(tableName=tableName, where=where)
         cursor.executemany(sql, parameters)
 
+    def rowCount(
+            self,
+            cursor: sqlite3.Cursor,
+            tableName: str
+            ) -> int:
+        columnNameToColumnDef = self._tableNameToColumns.get(tableName)
+        if columnNameToColumnDef is None:
+            raise ValueError(f'Unknown table {tableName!r}')
+
+        sql = 'SELECT COUNT(*) FROM {table};'.format(table=tableName)
+        cursor.execute(sql)
+        return cursor.fetchone()[0]
+
     def vacuum(self) -> None:
         logging.debug(f'SchemaDb vacuuming database \'{self._path}\'')
 

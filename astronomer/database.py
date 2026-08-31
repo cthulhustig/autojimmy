@@ -1,4 +1,5 @@
 import astronomer
+import common
 import logging
 import multiverse
 import typing
@@ -28,62 +29,60 @@ def loadUniverseFromDatabase(
     except:
         raise ValueError(f'Universe {universeId!r} has unknown milieu {milieu!r}')
 
+    # TODO: Progress tracker should be passed in and child trackers created
+    # for each task
+    taskCount = 6
+    taskWeight = 1 / taskCount
+    progress = None
+    progressSteps = 1000
     progressStage = None
     progressCount = 0
     if progressCallback:
+        progress = common.ProgressTracker(
+            weight=1,
+            updateCallback=lambda progress: progressCallback(progressStage, int(progress * progressSteps), progressSteps))
+
         progressStage = 'Loading Universe {name!r}:'.format(name=universeInfo.name())
         progressCallback(progressStage, progressCount, _ProgressStageCount)
 
     allegiances = astronomer.convertDbAllegiancesToAstronomerAllegiances(
-        dbAllegiances=multiverse.UniverseManager.instance().allegiances(id=universeId),
+        dbAllegiances=multiverse.UniverseManager.instance().allegiances(
+            id=universeId,
+            progress=progress.createChild(weight=taskWeight)),
         entityFactory=entityFactory)
-
-    if progressCallback:
-        progressCount += 1
-        progressCallback(progressStage, progressCount, _ProgressStageCount)
 
     sophonts = astronomer.convertDbSophontsToAstronomerSophonts(
-        dbSophonts=multiverse.UniverseManager.instance().sophonts(id=universeId),
+        dbSophonts=multiverse.UniverseManager.instance().sophonts(
+            id=universeId,
+            progress=progress.createChild(weight=taskWeight)),
         entityFactory=entityFactory)
 
-    if progressCallback:
-        progressCount += 1
-        progressCallback(progressStage, progressCount, _ProgressStageCount)
-
     sectors = astronomer.convertDbSectorsToAstronomerSectors(
-        dbSectors=multiverse.UniverseManager.instance().sectors(id=universeId),
+        dbSectors=multiverse.UniverseManager.instance().sectors(
+            id=universeId,
+            progress=progress.createChild(weight=taskWeight)),
         astroAllegiances=allegiances,
         entityFactory=entityFactory)
 
-    if progressCallback:
-        progressCount += 1
-        progressCallback(progressStage, progressCount, _ProgressStageCount)
-
     worlds = astronomer.convertDbSystemsToAstronomerWorlds(
-        dbSystems=multiverse.UniverseManager.instance().systems(id=universeId),
+        dbSystems=multiverse.UniverseManager.instance().systems(
+            id=universeId,
+            progress=progress.createChild(weight=taskWeight)),
         astroAllegiances=allegiances,
         astroSophonts=sophonts,
         entityFactory=entityFactory)
 
-    if progressCallback:
-        progressCount += 1
-        progressCallback(progressStage, progressCount, _ProgressStageCount)
-
     labels = astronomer.convertDbMapLabelsToAstronomerMapLabels(
-        dbLabels=multiverse.UniverseManager.instance().mapLabels(id=universeId),
+        dbLabels=multiverse.UniverseManager.instance().mapLabels(
+            id=universeId,
+            progress=progress.createChild(weight=taskWeight)),
         entityFactory=entityFactory)
-
-    if progressCallback:
-        progressCount += 1
-        progressCallback(progressStage, progressCount, _ProgressStageCount)
 
     vectors = astronomer.convertDbMapVectorsToAstronomerMapVectors(
-        dbVectors=multiverse.UniverseManager.instance().mapVectors(id=universeId),
+        dbVectors=multiverse.UniverseManager.instance().mapVectors(
+            id=universeId,
+            progress=progress.createChild(weight=taskWeight)),
         entityFactory=entityFactory)
-
-    if progressCallback:
-        progressCount += 1
-        progressCallback(progressStage, _ProgressStageCount, _ProgressStageCount)
 
     logging.debug('Universe {name!r} ({id}) contains:'.format(
         name=universeInfo.name(),

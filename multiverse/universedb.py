@@ -383,12 +383,14 @@ class UniverseDb(object):
 
     def loadAllegiances(
             self,
-            transaction: typing.Optional[database.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbAllegiance]:
         if transaction != None:
             connection = transaction.connection()
             return self._loadAllegiances(
-                cursor=connection.cursor())
+                cursor=connection.cursor(),
+                progress=progress)
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
@@ -414,17 +416,20 @@ class UniverseDb(object):
 
     def loadSophonts(
             self,
-            transaction: typing.Optional[database.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbSophont]:
         if transaction != None:
             connection = transaction.connection()
             return self._loadSophonts(
-                cursor=connection.cursor())
+                cursor=connection.cursor(),
+                progress=progress)
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
                 return self._loadSophonts(
-                    cursor=connection.cursor())
+                    cursor=connection.cursor(),
+                    progress=progress)
 
     def saveSophonts(
             self,
@@ -449,11 +454,13 @@ class UniverseDb(object):
             ) -> typing.List[SectorInfo]:
         if transaction != None:
             connection = transaction.connection()
-            return self._listSectors(cursor=connection.cursor())
+            return self._listSectors(
+                cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
-                return self._listSectors(cursor=connection.cursor())
+                return self._listSectors(
+                    cursor=connection.cursor())
 
     def saveSectors(
             self,
@@ -472,17 +479,20 @@ class UniverseDb(object):
 
     def loadSectors(
             self,
-            transaction: typing.Optional[database.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbSector]:
         if transaction != None:
             connection = transaction.connection()
             return self._loadSectors(
-                cursor=connection.cursor())
+                cursor=connection.cursor(),
+                progress=progress)
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
                 return self._loadSectors(
-                    cursor=connection.cursor())
+                    cursor=connection.cursor(),
+                    progress=progress)
 
     def deleteSectors(
             self,
@@ -503,17 +513,20 @@ class UniverseDb(object):
 
     def loadSystems(
             self,
-            transaction: typing.Optional[database.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbSystem]:
         if transaction != None:
             connection = transaction.connection()
             return self._loadSystems(
-                cursor=connection.cursor())
+                cursor=connection.cursor(),
+                progress=progress)
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
                 return self._loadSystems(
-                    cursor=connection.cursor())
+                    cursor=connection.cursor(),
+                    progress=progress)
 
     def saveSystems(
             self,
@@ -568,17 +581,20 @@ class UniverseDb(object):
 
     def loadMapLabels(
             self,
-            transaction: typing.Optional[database.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbMapLabel]:
         if transaction != None:
             connection = transaction.connection()
             return self._loadMapLabels(
-                cursor=connection.cursor())
+                cursor=connection.cursor(),
+                progress=progress)
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
                 return self._loadMapLabels(
-                    cursor=connection.cursor())
+                    cursor=connection.cursor(),
+                    progress=progress)
 
     def saveMapVectors(
             self,
@@ -599,17 +615,20 @@ class UniverseDb(object):
 
     def loadMapVectors(
             self,
-            transaction: typing.Optional[database.Transaction] = None
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbMapLabel]:
         if transaction != None:
             connection = transaction.connection()
             return self._loadMapVectors(
-                cursor=connection.cursor())
+                cursor=connection.cursor(),
+                progress=progress)
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
                 return self._loadMapVectors(
-                    cursor=connection.cursor())
+                    cursor=connection.cursor(),
+                    progress=progress)
 
     def copyTo(self, targetPath: str) -> None:
         self._database.copyTo(targetPath=targetPath)
@@ -1187,9 +1206,15 @@ class UniverseDb(object):
 
     def _loadAllegiances(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbAllegiance]:
         logging.debug(f'UniverseDb loading allegiances from universe {self._universePath!r}')
+
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._AllegiancesTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
 
         allegiances = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._AllegiancesTableName):
@@ -1210,6 +1235,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load allegiance {allegianceId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return allegiances
 
@@ -1269,9 +1298,15 @@ class UniverseDb(object):
 
     def _loadSophonts(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbSophont]:
         logging.debug(f'UniverseDb loading sophonts from universe {self._universePath!r}')
+
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SophontsTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
 
         sophonts = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._SophontsTableName):
@@ -1286,6 +1321,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load sophont {sophontId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return sophonts
 
@@ -1423,74 +1462,106 @@ class UniverseDb(object):
 
     def _loadSectors(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbSector]:
         logging.debug(f'UniverseDb loading sectors from universe {self._universePath!r}')
 
-        sectorAlternateNamesMap = {}
-        for name in self._loadAlternateNames(cursor=cursor):
-            names = sectorAlternateNamesMap.get(name.sectorId())
+        taskCount = 9
+        taskWeight = 1 / taskCount
+
+        alternateNamesProgress = None
+        if progress:
+            alternateNamesProgress = progress.createChild(weight=taskWeight)
+        alternateNamesMap = {}
+        for name in self._loadAlternateNames(cursor=cursor, progress=alternateNamesProgress):
+            names = alternateNamesMap.get(name.sectorId())
             if names is None:
                 names = []
-                sectorAlternateNamesMap[name.sectorId()] = names
+                alternateNamesMap[name.sectorId()] = names
             names.append(name)
 
-        sectorSubsectorNamesMap = {}
-        for name in self._loadSubsectorNames(cursor=cursor):
-            names = sectorSubsectorNamesMap.get(name.sectorId())
+        subsectorNamesProgress = None
+        if progress:
+            subsectorNamesProgress = progress.createChild(weight=taskWeight)
+        subsectorNamesMap = {}
+        for name in self._loadSubsectorNames(cursor=cursor, progress=subsectorNamesProgress):
+            names = subsectorNamesMap.get(name.sectorId())
             if names is None:
                 names = []
-                sectorSubsectorNamesMap[name.sectorId()] = names
+                subsectorNamesMap[name.sectorId()] = names
             names.append(name)
 
-        sectorRoutesMap = {}
-        for route in self._loadRoutes(cursor=cursor):
-            routes = sectorRoutesMap.get(route.sectorId())
+        routesProgress = None
+        if progress:
+            routesProgress = progress.createChild(weight=taskWeight)
+        routesMap = {}
+        for route in self._loadRoutes(cursor=cursor, progress=routesProgress):
+            routes = routesMap.get(route.sectorId())
             if routes is None:
                 routes = []
-                sectorRoutesMap[route.sectorId()] = routes
+                routesMap[route.sectorId()] = routes
             routes.append(route)
 
-        sectorBordersMap = {}
-        for border in self._loadBorders(cursor=cursor):
-            borders = sectorBordersMap.get(border.sectorId())
+        bordersProgress = None
+        if progress:
+            bordersProgress = progress.createChild(weight=taskWeight)
+        bordersMap = {}
+        for border in self._loadBorders(cursor=cursor, progress=bordersProgress):
+            borders = bordersMap.get(border.sectorId())
             if borders is None:
                 borders = []
-                sectorBordersMap[border.sectorId()] = borders
+                bordersMap[border.sectorId()] = borders
             borders.append(border)
 
-        sectorRegionsMap = {}
-        for region in self._loadRegions(cursor=cursor):
-            regions = sectorRegionsMap.get(region.sectorId())
+        regionsProgress = None
+        if progress:
+            regionsProgress = progress.createChild(weight=taskWeight)
+        regionsMap = {}
+        for region in self._loadRegions(cursor=cursor, progress=regionsProgress):
+            regions = regionsMap.get(region.sectorId())
             if regions is None:
                 regions = []
-                sectorRegionsMap[region.sectorId()] = regions
+                regionsMap[region.sectorId()] = regions
             regions.append(region)
 
-        sectorLabelsMap = {}
-        for label in self._loadSectorLabels(cursor=cursor):
-            labels = sectorLabelsMap.get(label.sectorId())
+        labelsProgress = None
+        if progress:
+            labelsProgress = progress.createChild(weight=taskWeight)
+        labelsMap = {}
+        for label in self._loadSectorLabels(cursor=cursor, progress=labelsProgress):
+            labels = labelsMap.get(label.sectorId())
             if labels is None:
                 labels = []
-                sectorLabelsMap[label.sectorId()] = labels
+                labelsMap[label.sectorId()] = labels
             labels.append(label)
 
-        sectorTagsMap = {}
-        for tag in self._loadTags(cursor=cursor):
-            tags = sectorTagsMap.get(tag.sectorId())
+        tagsProgress = None
+        if progress:
+            tagsProgress = progress.createChild(weight=taskWeight)
+        tagsMap = {}
+        for tag in self._loadTags(cursor=cursor, progress=tagsProgress):
+            tags = tagsMap.get(tag.sectorId())
             if tags is None:
                 tags = []
-                sectorTagsMap[tag.sectorId()] = tags
+                tagsMap[tag.sectorId()] = tags
             tags.append(tag)
 
-        sectorProductsMap = {}
-        for product in self._loadProducts(cursor=cursor):
-            products = sectorProductsMap.get(product.sectorId())
+        productsProgress = None
+        if progress:
+            productsProgress = progress.createChild(weight=taskWeight)
+        productsMap = {}
+        for product in self._loadProducts(cursor=cursor, progress=productsProgress):
+            products = productsMap.get(product.sectorId())
             if products is None:
                 products = []
-                sectorProductsMap[product.sectorId()] = products
+                productsMap[product.sectorId()] = products
             products.append(product)
 
+        sectorCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SectorsTableName)
+        sectorsProgress = None
+        if progress:
+            sectorsProgress = progress.createChild(weight=taskWeight, steps=sectorCount)
         sectors = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._SectorsTableName):
             sectorId = row['id']
@@ -1511,18 +1582,22 @@ class UniverseDb(object):
                     publisher=row['publisher'],
                     reference=row['reference'],
                     notes=row['notes'],
-                    alternateNames=sectorAlternateNamesMap.get(sectorId),
-                    subsectorNames=sectorSubsectorNamesMap.get(sectorId),
-                    routes=sectorRoutesMap.get(sectorId),
-                    borders=sectorBordersMap.get(sectorId),
-                    regions=sectorRegionsMap.get(sectorId),
-                    labels=sectorLabelsMap.get(sectorId),
-                    tags=sectorTagsMap.get(sectorId),
-                    products=sectorProductsMap.get(sectorId)))
+                    alternateNames=alternateNamesMap.get(sectorId),
+                    subsectorNames=subsectorNamesMap.get(sectorId),
+                    routes=routesMap.get(sectorId),
+                    borders=bordersMap.get(sectorId),
+                    regions=regionsMap.get(sectorId),
+                    labels=labelsMap.get(sectorId),
+                    tags=tagsMap.get(sectorId),
+                    products=productsMap.get(sectorId)))
             except Exception as ex:
                 logging.error(
                     f'UniverseDb failed to load sector {sectorId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if sectorsProgress:
+            sectorsProgress.advance(increment=sectorCount)
 
         return sectors
 
@@ -1564,8 +1639,14 @@ class UniverseDb(object):
 
     def _loadAlternateNames(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbAlternateName]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._AlternateNamesTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         names = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._AlternateNamesTableName):
             nameId = row['id']
@@ -1580,6 +1661,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load alternate name {nameId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return names
 
@@ -1605,8 +1690,14 @@ class UniverseDb(object):
 
     def _loadSubsectorNames(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbSubsectorName]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SubsectorNamesTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         names = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._SubsectorNamesTableName):
             nameId = row['id']
@@ -1621,6 +1712,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load subsector name {nameId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return names
 
@@ -1650,8 +1745,14 @@ class UniverseDb(object):
 
     def _loadSectorLabels(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbSectorLabel]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SectorLabelsTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         labels = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._SectorLabelsTableName):
             labelId = row['id']
@@ -1670,6 +1771,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load label {labelId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return labels
 
@@ -1694,8 +1799,14 @@ class UniverseDb(object):
 
     def _loadTags(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbTag]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SectorTagsTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         tags = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._SectorTagsTableName):
             tagId = row['id']
@@ -1709,6 +1820,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load tag {tagId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return tags
 
@@ -1736,8 +1851,14 @@ class UniverseDb(object):
 
     def _loadProducts(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbTag]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._ProductsTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         products = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._ProductsTableName):
             productId = row['id']
@@ -1754,6 +1875,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load product {productId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return products
 
@@ -1822,11 +1947,17 @@ class UniverseDb(object):
 
     def _loadSystems(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbSystem]:
         logging.debug(f'UniverseDb loading systems from universe {self._universePath!r}')
 
-        stars = self._loadStars(cursor=cursor)
+        taskCount = 3
+        taskWeight = 1 / taskCount
+
+        stars = self._loadStars(
+            cursor=cursor,
+            progress=progress.createChild(weight=taskWeight) if progress is not None else None)
         systemStarsMap = {}
         for star in stars:
             systemStars = systemStarsMap.get(star.systemId())
@@ -1835,7 +1966,9 @@ class UniverseDb(object):
                 systemStarsMap[star.systemId()] = systemStars
             systemStars.append(star)
 
-        bodies = self._loadBodies(cursor=cursor)
+        bodies = self._loadBodies(
+            cursor=cursor,
+            progress=progress.createChild(weight=taskWeight) if progress is not None else None)
         systemBodiesMap = {}
         for body in bodies:
             systemBodies = systemBodiesMap.get(body.systemId())
@@ -1908,8 +2041,14 @@ class UniverseDb(object):
 
     def _loadStars(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbStar]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._StarsTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         stars = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._StarsTableName):
             starId = row['id']
@@ -1925,6 +2064,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load star {starId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return stars
 
@@ -2033,84 +2176,127 @@ class UniverseDb(object):
 
     def _loadBodies(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbBody]:
+        taskCount = 11
+        taskWeight = 1 / taskCount
+
+        nobilitiesProgress = None
+        if progress:
+            nobilitiesProgress = progress.createChild(weight=taskWeight)
         worldNobilitiesMap = {}
-        for nobility in self._loadNobilities(cursor=cursor):
+        for nobility in self._loadNobilities(cursor=cursor, progress=nobilitiesProgress):
             nobilities = worldNobilitiesMap.get(nobility.worldId())
             if nobilities is None:
                 nobilities = []
                 worldNobilitiesMap[nobility.worldId()] = nobilities
             nobilities.append(nobility)
 
-        worldBasesMap = {}
-        for base in self._loadBases(cursor=cursor):
-            bases = worldBasesMap.get(base.worldId())
+        basesProgress = None
+        if progress:
+            basesProgress = progress.createChild(weight=taskWeight)
+        basesMap = {}
+        for base in self._loadBases(cursor=cursor, progress=basesProgress):
+            bases = basesMap.get(base.worldId())
             if bases is None:
                 bases = []
-                worldBasesMap[base.worldId()] = bases
+                basesMap[base.worldId()] = bases
             bases.append(base)
 
-        worldTradeCodesMap = {}
-        for tradeCode in self._loadTradeCodes(cursor=cursor):
-            tradeCodes = worldTradeCodesMap.get(tradeCode.worldId())
+        tradeCodesProgress = None
+        if progress:
+            tradeCodesProgress = progress.createChild(weight=taskWeight)
+        tradeCodesMap = {}
+        for tradeCode in self._loadTradeCodes(cursor=cursor, progress=tradeCodesProgress):
+            tradeCodes = tradeCodesMap.get(tradeCode.worldId())
             if tradeCodes is None:
                 tradeCodes = []
-                worldTradeCodesMap[tradeCode.worldId()] = tradeCodes
+                tradeCodesMap[tradeCode.worldId()] = tradeCodes
             tradeCodes.append(tradeCode)
 
-        worldPopulationsMap = {}
-        for population in self._loadSophontPopulations(cursor=cursor):
-            populations = worldPopulationsMap.get(population.worldId())
+        populationsProgress = None
+        if progress:
+            populationsProgress = progress.createChild(weight=taskWeight)
+        populationsMap = {}
+        for population in self._loadSophontPopulations(cursor=cursor, progress=populationsProgress):
+            populations = populationsMap.get(population.worldId())
             if populations is None:
                 populations = []
-                worldPopulationsMap[population.worldId()] = populations
+                populationsMap[population.worldId()] = populations
             populations.append(population)
 
-        worldRulingAllegianceMap = {}
-        for ruler in self._loadRulingAllegiances(cursor=cursor):
-            rulers = worldRulingAllegianceMap.get(ruler.worldId())
+        rulersProgress = None
+        if progress:
+            rulersProgress = progress.createChild(weight=taskWeight)
+        rulersMap = {}
+        for ruler in self._loadRulingAllegiances(cursor=cursor, progress=rulersProgress):
+            rulers = rulersMap.get(ruler.worldId())
             if rulers is None:
                 rulers = []
-                worldRulingAllegianceMap[ruler.worldId()] = rulers
+                rulersMap[ruler.worldId()] = rulers
             rulers.append(ruler)
 
-        worldOwnersMap = {}
-        for owner in self._loadOwningSystems(cursor=cursor):
-            owners = worldOwnersMap.get(owner.worldId())
+        ownersProgress = None
+        if progress:
+            ownersProgress = progress.createChild(weight=taskWeight)
+        ownersMap = {}
+        for owner in self._loadOwningSystems(cursor=cursor, progress=ownersProgress):
+            owners = ownersMap.get(owner.worldId())
             if owners is None:
                 owners = []
-                worldOwnersMap[owner.worldId()] = owners
+                ownersMap[owner.worldId()] = owners
             owners.append(owner)
 
-        worldColoniesMap = {}
-        for colony in self._loadColonySystems(cursor=cursor):
-            colonies = worldColoniesMap.get(colony.worldId())
+        coloniesProgress = None
+        if progress:
+            coloniesProgress = progress.createChild(weight=taskWeight)
+        coloniesMap = {}
+        for colony in self._loadColonySystems(cursor=cursor, progress=coloniesProgress):
+            colonies = coloniesMap.get(colony.worldId())
             if colonies is None:
                 colonies = []
-                worldColoniesMap[colony.worldId()] = colonies
+                coloniesMap[colony.worldId()] = colonies
             colonies.append(colony)
 
-        worldResearchStationsMap = {}
-        for station in self._loadResearchStations(cursor=cursor):
-            stations = worldResearchStationsMap.get(station.worldId())
+        stationsProgress = None
+        if progress:
+            stationsProgress = progress.createChild(weight=taskWeight)
+        stationsMap = {}
+        for station in self._loadResearchStations(cursor=cursor, progress=stationsProgress):
+            stations = stationsMap.get(station.worldId())
             if stations is None:
                 stations = []
-                worldResearchStationsMap[station.worldId()] = stations
+                stationsMap[station.worldId()] = stations
             stations.append(station)
 
-        worldRemarksMap = {}
-        for remark in self._loadCustomRemarks(cursor=cursor):
-            remarks = worldRemarksMap.get(remark.worldId())
+        remarksProgress = None
+        if progress:
+            remarksProgress = progress.createChild(weight=taskWeight)
+        remarksMap = {}
+        for remark in self._loadCustomRemarks(cursor=cursor, progress=remarksProgress):
+            remarks = remarksMap.get(remark.worldId())
             if remarks is None:
                 remarks = []
-                worldRemarksMap[remark.worldId()] = remarks
+                remarksMap[remark.worldId()] = remarks
             remarks.append(remark)
 
+        bodyCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._BodiesTableName)
+        bodiesProgress = None
+        if progress:
+            bodiesProgress = progress.createChild(weight=taskWeight, steps=bodyCount)
         bodyIdToRow = {}
         for worldRow in self._database.select(cursor=cursor, tableName=UniverseDb._BodiesTableName):
             bodyIdToRow[worldRow['id']] = worldRow
 
+        # TODO: Should chunk the inserts and do more granular advancing
+        if bodiesProgress:
+            bodiesProgress.advance(increment=bodyCount)
+
+        worldCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._WorldsTableName)
+        worldsProgress = None
+        if progress:
+            worldsProgress = progress.createChild(weight=taskWeight, steps=worldCount)
         bodies = []
         for worldRow in self._database.select(cursor=cursor, tableName=UniverseDb._WorldsTableName):
             bodyId = worldRow['body_id']
@@ -2142,18 +2328,22 @@ class UniverseDb(object):
                     populationMultiplier=worldRow['population_multiplier'],
                     notes=bodyRow['notes'],
                     nobilities=worldNobilitiesMap.get(bodyId),
-                    bases=worldBasesMap.get(bodyId),
-                    tradeCodes=worldTradeCodesMap.get(bodyId),
-                    sophontPopulations=worldPopulationsMap.get(bodyId),
-                    rulingAllegiances=worldRulingAllegianceMap.get(bodyId),
-                    owningSystems=worldOwnersMap.get(bodyId),
-                    colonySystems=worldColoniesMap.get(bodyId),
-                    researchStations=worldResearchStationsMap.get(bodyId),
-                    customRemarks=worldRemarksMap.get(bodyId)))
+                    bases=basesMap.get(bodyId),
+                    tradeCodes=tradeCodesMap.get(bodyId),
+                    sophontPopulations=populationsMap.get(bodyId),
+                    rulingAllegiances=rulersMap.get(bodyId),
+                    owningSystems=ownersMap.get(bodyId),
+                    colonySystems=coloniesMap.get(bodyId),
+                    researchStations=stationsMap.get(bodyId),
+                    customRemarks=remarksMap.get(bodyId)))
             except Exception as ex:
                 logging.error(
                     f'UniverseDb failed to load body {bodyId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if worldsProgress:
+            worldsProgress.advance(increment=worldCount)
 
         return bodies
 
@@ -2178,8 +2368,14 @@ class UniverseDb(object):
 
     def _loadNobilities(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbNobility]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._NobilitiesTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         nobilities = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._NobilitiesTableName):
             nobilityId = row['id']
@@ -2193,6 +2389,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load nobility {nobilityId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return nobilities
 
@@ -2217,8 +2417,14 @@ class UniverseDb(object):
 
     def _loadBases(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbBase]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._BasesTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         bases = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._BasesTableName):
             baseId = row['id']
@@ -2232,6 +2438,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load base {baseId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return bases
 
@@ -2256,8 +2466,14 @@ class UniverseDb(object):
 
     def _loadTradeCodes(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbTradeCode]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._TradeCodesTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         tradeCodes = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._TradeCodesTableName):
             tradeCodeId = row['id']
@@ -2271,6 +2487,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load trade code {tradeCodeId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return tradeCodes
 
@@ -2298,8 +2518,14 @@ class UniverseDb(object):
 
     def _loadSophontPopulations(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbSophontPopulation]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SophontPopulationsTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         populations = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._SophontPopulationsTableName):
             populationId = row['id']
@@ -2316,6 +2542,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load sophont population {populationId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return populations
 
@@ -2340,8 +2570,14 @@ class UniverseDb(object):
 
     def _loadRulingAllegiances(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbRulingAllegiance]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SophontPopulationsTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         rulers = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._RulingAllegiancesTableName):
             rulerId = row['id']
@@ -2355,6 +2591,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load ruling allegiance {rulerId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return rulers
 
@@ -2381,8 +2621,14 @@ class UniverseDb(object):
 
     def _loadOwningSystems(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbOwningSystem]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._OwningSystemsTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         owners = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._OwningSystemsTableName):
             ownerId = row['id']
@@ -2398,6 +2644,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load owning system {ownerId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return owners
 
@@ -2424,8 +2674,14 @@ class UniverseDb(object):
 
     def _loadColonySystems(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbColonySystem]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._ColonySystemsTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         colonies = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._ColonySystemsTableName):
             colonyId = row['id']
@@ -2441,6 +2697,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load colony system {colonyId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return colonies
 
@@ -2465,8 +2725,14 @@ class UniverseDb(object):
 
     def _loadResearchStations(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbResearchStation]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._ResearchStationTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         stations = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._ResearchStationTableName):
             stationId = row['id']
@@ -2480,6 +2746,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load research station {stationId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return stations
 
@@ -2504,8 +2774,14 @@ class UniverseDb(object):
 
     def _loadCustomRemarks(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbCustomRemark]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._CustomRemarksTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         remarks = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._CustomRemarksTableName):
             remarkId = row['id']
@@ -2519,6 +2795,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load custom remark {remarkId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return remarks
 
@@ -2565,8 +2845,14 @@ class UniverseDb(object):
 
     def _loadRoutes(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbRoute]:
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._RoutesTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
+
         routes = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._RoutesTableName):
             routeId = row['id']
@@ -2592,6 +2878,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load route {routeId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return routes
 
@@ -2642,8 +2932,16 @@ class UniverseDb(object):
 
     def _loadBorders(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbBorder]:
+        taskCount = 2
+        taskWeight = 1 / taskCount
+
+        hexCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._BorderHexesTableName)
+        hexProgress = None
+        if progress:
+            hexProgress = progress.createChild(weight=taskWeight, steps=hexCount)
         borderHexMap = {}
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._BorderHexesTableName):
             borderId = row['border_id']
@@ -2653,6 +2951,14 @@ class UniverseDb(object):
                 borderHexMap[borderId] = hexes
             hexes.append((row['hex_x'], row['hex_y']))
 
+        # TODO: Should chunk the inserts and do more granular advancing
+        if hexProgress:
+            hexProgress.advance(increment=hexCount)
+
+        borderCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._BordersTableName)
+        bordersProgress = None
+        if progress:
+            bordersProgress = progress.createChild(weight=taskWeight, steps=borderCount)
         borders = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._BordersTableName):
             borderId = row['id']
@@ -2674,6 +2980,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load border {borderId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if bordersProgress:
+            bordersProgress.advance(increment=borderCount)
 
         return borders
 
@@ -2725,8 +3035,16 @@ class UniverseDb(object):
 
     def _loadRegions(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbRegion]:
+        taskCount = 2
+        taskWeight = 1 / taskCount
+
+        hexCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._RegionHexesTableName)
+        hexProgress = None
+        if progress:
+            hexProgress = progress.createChild(weight=taskWeight, steps=hexCount)
         regionHexMap = {}
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._RegionHexesTableName):
             regionId = row['region_id']
@@ -2736,6 +3054,14 @@ class UniverseDb(object):
                 regionHexMap[regionId] = hexes
             hexes.append((row['hex_x'], row['hex_y']))
 
+        # TODO: Should chunk the inserts and do more granular advancing
+        if hexProgress:
+            hexProgress.advance(increment=hexCount)
+
+        regionsCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._RegionsTableName)
+        regionsProgress = None
+        if progress:
+            regionsProgress = progress.createChild(weight=taskWeight, steps=regionsCount)
         regions = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._RegionsTableName):
             regionId = row['id']
@@ -2755,6 +3081,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load region {regionId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if regionsProgress:
+            regionsProgress.advance(increment=regionsCount)
 
         return regions
 
@@ -2799,9 +3129,15 @@ class UniverseDb(object):
 
     def _loadMapLabels(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbMapLabel]:
         logging.debug(f'UniverseDb loading map labels from universe {self._universePath!r}')
+
+        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._MapLabelsTableName)
+        taskProgress = None
+        if progress:
+            taskProgress = progress.createChild(weight=1.0, steps=count)
 
         labels: typing.List[multiverse.DbMapLabel] = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._MapLabelsTableName):
@@ -2822,6 +3158,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load map label {labelId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if taskProgress:
+            taskProgress.advance(increment=count)
 
         return labels
 
@@ -2893,10 +3233,18 @@ class UniverseDb(object):
 
     def _loadMapVectors(
             self,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbMapVector]:
         logging.debug(f'UniverseDb loading map vectors from universe {self._universePath!r}')
 
+        taskCount = 2
+        taskWeight = 1 / taskCount
+
+        pointCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._MapVectorPointsTableName)
+        pointsProgress = None
+        if progress:
+            pointsProgress = progress.createChild(weight=taskWeight, steps=pointCount)
         vectorPointsMap: typing.Dict[str, typing.List[typing.Tuple[float, float]]] = {}
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._MapVectorPointsTableName):
             vectorId = row['vector_id']
@@ -2906,6 +3254,14 @@ class UniverseDb(object):
                 vectorPointsMap[vectorId] = points
             points.append((row['x'], row['y']))
 
+        # TODO: Should chunk the inserts and do more granular advancing
+        if pointsProgress:
+            pointsProgress.advance(increment=pointCount)
+
+        vectorCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._MapVectorsTableName)
+        vectorsProgress = None
+        if progress:
+            vectorsProgress = progress.createChild(weight=taskWeight, steps=vectorCount)
         vectors: typing.List[multiverse.DbMapVector] = []
         for row in self._database.select(cursor=cursor, tableName=UniverseDb._MapVectorsTableName):
             vectorId = row['id']
@@ -2920,6 +3276,10 @@ class UniverseDb(object):
                 logging.error(
                     f'UniverseDb failed to load map vector {vectorId!r} from universe {self._universePath!r}',
                     exc_info=ex)
+
+        # TODO: Should chunk the inserts and do more granular advancing
+        if vectorsProgress:
+            vectorsProgress.advance(increment=vectorCount)
 
         return vectors
 
