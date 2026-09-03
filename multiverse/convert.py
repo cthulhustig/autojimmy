@@ -1948,7 +1948,7 @@ def _convertRawVectorToDbMapVectors(
         dbVectors.append(multiverse.DbMapVector(
             points=sectionPoints,
             layer=layer,
-            closed=False))
+            isClosed=False))
     else:
         finishIndex = len(vectorPoints) - 1
         sectionPoints = []
@@ -1967,7 +1967,7 @@ def _convertRawVectorToDbMapVectors(
                 dbVectors.append(multiverse.DbMapVector(
                     points=sectionPoints,
                     layer=layer,
-                    closed=isClosed))
+                    isClosed=isClosed))
                 sectionPoints.clear()
 
             sectionPoints.append((

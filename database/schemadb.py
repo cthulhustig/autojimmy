@@ -523,6 +523,8 @@ class SchemaDb(object):
         else:
             cursor.execute(sql)
 
+        # TODO: I think I can have it so sqlite returns a mapping rather
+        # than me having to create one
         rows = []
         for row in cursor.fetchall():
             values = {}

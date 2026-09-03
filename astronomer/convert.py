@@ -244,7 +244,7 @@ def convertDbSystemsToAstronomerWorlds(
                 # dialog for worlds that have no name (but have a non ? UWP).
                 # TODO: This is EVEN WORSE now that it's just using the absolute hex rather than
                 # a sector hex string with the sector name
-                systemName = f'{dbSystem.hexX():02d}{dbSystem.hexY():02d}'
+                systemName = f'Hex {dbSystem.hexX():02d}, {dbSystem.hexY():02d}'
                 isNameGenerated = True
 
             allegianceId = dbSystem.allegianceId()
@@ -1559,7 +1559,7 @@ def convertDbMapVectorsToAstronomerMapVectors(
                 entityId=dbVector.id(),
                 points=dbVector.points(),
                 layer=_mapDbVectorLayerToAstronomerVectorLayer(dbVector.layer()),
-                closed=dbVector.closed()))
+                closed=dbVector.isClosed()))
         except Exception as ex:
             logging.warning('Failed to convert database map vector {id!r} to astro map vector'.format(
                     id=dbVector.id()),
@@ -1574,4 +1574,4 @@ def convertAstronomerMapVectorToDbMapVector(
         id=astroVector.entityId(),
         points=astroVector.points(),
         layer=_mapAstronomerVectorLayerToDbVectorLayer(astroVector.layer()),
-        closed=astroVector.closed())
+        isClosed=astroVector.closed())

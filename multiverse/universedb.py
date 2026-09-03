@@ -1,7 +1,9 @@
 import common
 import database
-import datetime
+import enum
+import inspect
 import logging
+import math
 import multiverse
 import os
 import sqlite3
@@ -73,6 +75,193 @@ import typing
 # the number of object types that will support notes will grow when I add support for gas
 # giants etc
 
+# TODO: Add progress to save & delete
+
+# TODO: Chunk large loads/saves/deletes for more granular progress
+# - I think this needs a way to generalise the load/save/delete code so I don't need to add
+# chunking to multiple places
+# - Needs structures to describe conversion similar to what I've done for columns/tables
+#   - Need to handle mapping between column and DbObject constructor parameters/getter functions
+#       - Need to have constructor parameters and getter functions in the mapping so saves can be handled as well as loads
+#   - This mapping is likely to be fragile if I rename/restructure things
+#       - It might be possible to assert check things at the point the definitions are being made (I think I did something similar in ObjectDb)
+#       - I think checking that the target object type has the specified setter should be possible, might even be possible to check the typing annotation for the return type
+#       - I __think__ the inspect library lets you list the input parameters for a function so it could be possible to verify the constructor arguments
+#   - Most mappings will be simple map this column to this parameter
+#       - This mapping would need to allow you to specify
+#           - The column name
+#           - The column type (so bool can be converted to int when saving)
+#           - The DbObject constructor parameter
+#           - The DbObject getter function
+#           - The DbObject type (so int can be converted to bool when loading)
+#       - Would need to specify the type of the DbObject parameter so it can map int to bool
+#   - There would be more complex mappings where one of the DbObject properties comes from another table
+#       - This would be things like subsector names or border hexes
+#       - These currently look like they all look in a similar manor
+#           - The entire sub-table is loaded into a list of sub-objects
+#           - The list of sub-objects is converted to a dict that maps the id of the primary table to a list of objects from the su-table for that primary object
+#           - The dict is used to retrieve the sub-objects when constructing the primary object
+#       - This mapping definition would need to allow you to specify the following
+#           - The sub-table name
+#           - The primary DbObject constructor parameter
+#           - The primary DbObject getter function
+#           - The column from the sub-table that contains the id of the primary object
+#               - NOTE: Specifying the column name (rather than the sub-object getter function) would mean the mapping
+#                 of primary id to list of sub-objects would need to be created while the sub-objects were being created
+#                 rather than creating them all in a list the creating the dict afterwards
+
+class ParameterMapping(object):
+    def __init__(
+            self,
+            initParam: str,
+            getterFunc: typing.Optional[str] = None # Use init param if not specified
+            ) -> None:
+        self._initParam = initParam
+        self._getterFunc = getterFunc if getterFunc else initParam
+
+    def initParam(self) -> str:
+        return self._initParam
+
+    def getterFunc(self) -> str:
+        return self._getterFunc
+
+class ColumnParameterMapping(ParameterMapping):
+    class ParamType(enum.Enum):
+        String = 0
+        Integer = 1
+        Float = 2
+        Boolean = 3
+
+    def __init__(
+            self,
+            columnName: str,
+            paramType: ParamType,
+            initParam: str,
+            getterFunc: typing.Optional[str] = None # Use init param if not specified
+            ) -> None:
+        super().__init__(initParam=initParam, getterFunc=getterFunc)
+        self._columnName = columnName
+        self._paramType = paramType
+
+    def columnName(self) -> str:
+        return self._columnName
+
+    def paramType(self) -> ParamType:
+        return self._paramType
+
+class SubTableParameterMapping(ParameterMapping):
+    def __init__(
+            self,
+            table: 'TableMapping',
+            parentColumnName: str,
+            initParam: str,
+            getterFunc: typing.Optional[str] = None # Use init param if not specified
+            ) -> None:
+        super().__init__(initParam=initParam, getterFunc=getterFunc)
+        self._table = table
+        self._parentColumnName = parentColumnName
+
+    def table(self) -> 'TableMapping':
+        return self._table
+
+    def parentColumnName(self) -> str:
+        return self._parentColumnName
+
+class DerivedObjectMapping(object):
+    def __init__(
+            self,
+            tableName: str,
+            baseColumnName: str,
+            objectType: typing.Type[multiverse.DbObject],
+            parameters: typing.Collection[ParameterMapping],
+            ) -> None:
+        self._tableName = tableName
+        self._baseColumnName = baseColumnName
+        self._objectType = objectType
+        self._parameters = list(parameters)
+
+        initSignature = inspect.signature(objectType.__init__)
+        seenInitParams = set()
+        for paramMapping in self._parameters:
+            initParam = paramMapping.initParam()
+            if paramMapping.initParam() not in initSignature.parameters:
+                raise ValueError(f'{objectType}.__init__ doesn\'t have a {initParam!r} parameter')
+            seenInitParams.add(initParam)
+
+            getterFunc = paramMapping.getterFunc()
+            if not callable(getattr(objectType, getterFunc, None)):
+                raise ValueError(f'{objectType} doesn\'t have getter function named {getterFunc!r}')
+
+    def tableName(self) -> str:
+        return self._tableName
+
+    def baseColumnName(self) -> str:
+        return self._baseColumnName
+
+    def objectType(self) -> typing.Type[multiverse.DbObject]:
+        return self._objectType
+
+    def parameters(self) -> typing.Collection[ParameterMapping]:
+        return common.ConstCollectionRef(self._parameters)
+
+class TableMapping(object):
+    def __init__(
+            self,
+            tableName: str
+            ) -> None:
+        self._tableName = tableName
+
+    def tableName(self) -> str:
+        return self._tableName
+
+class ObjectTableMapping(TableMapping):
+    def __init__(
+            self,
+            tableName: str,
+            objectType: typing.Type[multiverse.DbObject],
+            parameters: typing.Collection[ParameterMapping],
+            deriveObjects: typing.Optional[typing.Collection[DerivedObjectMapping]] = None
+            ) -> None:
+        super().__init__(tableName=tableName)
+        self._objectType = objectType
+        self._parameters = list(parameters)
+        self._deriveObjects = list(deriveObjects) if deriveObjects is not None else None
+
+        initSignature = inspect.signature(objectType.__init__)
+        seenInitParams = set()
+        for paramMapping in self._parameters:
+            initParam = paramMapping.initParam()
+            if paramMapping.initParam() not in initSignature.parameters:
+                raise ValueError(f'{objectType}.__init__ doesn\'t have a {initParam!r} parameter')
+            seenInitParams.add(initParam)
+
+            getterFunc = paramMapping.getterFunc()
+            if not callable(getattr(objectType, getterFunc, None)):
+                raise ValueError(f'{objectType} doesn\'t have getter function named {getterFunc!r}')
+
+    def objectType(self) -> typing.Type[multiverse.DbObject]:
+        return self._objectType
+
+    def parameters(self) -> typing.Collection[ParameterMapping]:
+        return common.ConstCollectionRef(self._parameters)
+
+    def deriveObjects(self) -> typing.Optional[typing.Collection[DerivedObjectMapping]]:
+        return common.ConstCollectionRef(self._deriveObjects) if self._deriveObjects is not None else None
+
+class RawTableMapping(TableMapping):
+    def __init__(
+            self,
+            tableName: str,
+            columnNames: typing.Sequence[str],
+            ) -> None:
+        super().__init__(tableName=tableName)
+        self._columnNames = list(columnNames)
+
+    def columnNames(self) -> typing.Sequence[str]:
+        return common.ConstSequenceRef(self._columnNames)
+
+# TODO: I'm not sure this existing will make logical sense once I've
+# finished moving stuff to the universe
 class SectorInfo(object):
     def __init__(
             self,
@@ -257,6 +446,10 @@ class UniverseDb(object):
                 raise ValueError(f'File {universePath!r} is not a universe database')
 
         self._database = database.SchemaDb(path=universePath)
+        self._objectTypeToTableMapping: typing.Dict[
+            typing.Type[multiverse.DbObject]
+            ] = {}
+
         self._initTables()
 
     @staticmethod
@@ -395,7 +588,8 @@ class UniverseDb(object):
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
                 return self._loadAllegiances(
-                    cursor=connection.cursor())
+                    cursor=connection.cursor(),
+                    progress=progress)
 
     def saveAllegiances(
             self,
@@ -638,6 +832,19 @@ class UniverseDb(object):
             connection = transaction.connection()
             cursor = connection.cursor()
 
+            self._createMetadataTable(cursor=cursor)
+            self._createAllegianceTables(cursor=cursor)
+            self._createSophontTables(cursor=cursor)
+            self._createSectorTables(cursor=cursor)
+            self._createSystemTables(cursor=cursor)
+            # TODO: These should be called from here rather than _createSystemTables as I move them to the universe
+            #self._createRouteTables(cursor=cursor)
+            #self._createBorderTables(cursor=cursor)
+            #self._createRegionTables(cursor=cursor)
+            self._createMapLabelTables(cursor=cursor)
+            self._createMapVectorTables(cursor=cursor)
+
+    def _createMetadataTable(self, cursor: sqlite3.Cursor) -> None:
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._MetadataTableName,
@@ -650,6 +857,59 @@ class UniverseDb(object):
                 key=UniverseDb._MetadataFormatKey,
                 value=UniverseDb._FormatString)
 
+    def _createAllegianceTables(self, cursor: sqlite3.Cursor) -> None:
+            self._database.createTable(
+                cursor=cursor,
+                tableName=UniverseDb._AllegiancesTableName,
+                requiredSchemaVersion=UniverseDb._AllegiancesTableSchema,
+                columns=[
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='legacy', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='base', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='route_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='route_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='route_width', columnType=database.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
+                    database.ColumnDef(columnName='border_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='border_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+
+            self._objectTypeToTableMapping[multiverse.DbAllegiance] = ObjectTableMapping(
+                tableName=UniverseDb._AllegiancesTableName,
+                objectType=multiverse.DbAllegiance,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, initParam='name'),
+                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, initParam='code'),
+                    ColumnParameterMapping(columnName='legacy', paramType=ColumnParameterMapping.ParamType.String, initParam='legacy'),
+                    ColumnParameterMapping(columnName='base', paramType=ColumnParameterMapping.ParamType.String, initParam='base'),
+                    ColumnParameterMapping(columnName='route_colour', paramType=ColumnParameterMapping.ParamType.String, initParam='routeColour'),
+                    ColumnParameterMapping(columnName='route_style', paramType=ColumnParameterMapping.ParamType.String, initParam='routeStyle'),
+                    ColumnParameterMapping(columnName='route_width', paramType=ColumnParameterMapping.ParamType.Float, initParam='routeWidth'),
+                    ColumnParameterMapping(columnName='border_colour', paramType=ColumnParameterMapping.ParamType.String, initParam='borderColour'),
+                    ColumnParameterMapping(columnName='border_style', paramType=ColumnParameterMapping.ParamType.String, initParam='borderStyle')])
+
+    def _createSophontTables(self, cursor: sqlite3.Cursor) -> None:
+            self._database.createTable(
+                cursor=cursor,
+                tableName=UniverseDb._SophontsTableName,
+                requiredSchemaVersion=UniverseDb._SophontsTableSchema,
+                columns=[
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    database.ColumnDef(columnName='is_major', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+
+            self._objectTypeToTableMapping[multiverse.DbSophont] = ObjectTableMapping(
+                tableName=UniverseDb._SophontsTableName,
+                objectType=multiverse.DbSophont,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, initParam='name'),
+                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, initParam='code'),
+                    ColumnParameterMapping(columnName='is_major', paramType=ColumnParameterMapping.ParamType.Boolean, initParam='isMajor')])
+
+    def _createSectorTables(self, cursor: sqlite3.Cursor) -> None:
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._SectorsTableName,
@@ -671,56 +931,6 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
                     database.UniqueConstraintDef(columnNames=['sector_x', 'sector_y'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._MapLabelsTableName,
-                requiredSchemaVersion=UniverseDb._MapLabelsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                    database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                    database.ColumnDef(columnName='layer', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='alignment', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='rotation', columnType=database.ColumnDef.ColumnType.Real, isNullable=True)])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._MapVectorsTableName,
-                requiredSchemaVersion=UniverseDb._MapVectorsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='layer', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    # TODO: Can I get rid of the closed flag? Can't I just make sure the first point is also
-                    # the last point for closed polygons?
-                    database.ColumnDef(columnName='closed', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._MapVectorPointsTableName,
-                requiredSchemaVersion=UniverseDb._MapVectorPointsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='vector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._MapVectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                    database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False)])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._StockSourcesTableName,
-                requiredSchemaVersion=UniverseDb._StockSourcesTableSchema,
-                columns=[
-                    # NOTE: It's very important that if I ever add anything to this table I also
-                    # update _saveSector so, it's maintained when the old sector data is deleted
-                    # and the new sector data is added.
-                    database.ColumnDef(columnName='sector_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='sector_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='data_hash', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
-                primaryKeyDef=database.PrimaryKeyDef(columnNames=['sector_x', 'sector_y']))
 
             self._database.createTable(
                 cursor=cursor,
@@ -751,30 +961,131 @@ class UniverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=UniverseDb._AllegiancesTableName,
-                requiredSchemaVersion=UniverseDb._AllegiancesTableSchema,
+                tableName=UniverseDb._SectorLabelsTableName,
+                requiredSchemaVersion=UniverseDb._SectorLabelsTableSchema,
                 columns=[
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='legacy', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='base', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='route_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='route_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='route_width', columnType=database.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
-                    database.ColumnDef(columnName='border_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='border_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                    # TODO: This should be converted to world space as part of the changes to move things to the universe label
+                    database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                    database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='wrap', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=UniverseDb._SophontsTableName,
-                requiredSchemaVersion=UniverseDb._SophontsTableSchema,
+                tableName=UniverseDb._SectorTagsTableName,
+                requiredSchemaVersion=UniverseDb._SectorTagsTableSchema,
                 columns=[
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='is_major', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='tag', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
+                uniqueConstraints=[
+                    database.UniqueConstraintDef(columnNames=['sector_id', 'tag'])])
 
+            self._database.createTable(
+                cursor=cursor,
+                tableName=UniverseDb._ProductsTableName,
+                requiredSchemaVersion=UniverseDb._ProductsTableSchema,
+                columns=[
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='publication', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='author', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+
+            # TODO: These should be called from _initTables as I move them to the universe
+            self._createRouteTables(cursor=cursor)
+            self._createBorderTables(cursor=cursor)
+            self._createRegionTables(cursor=cursor)
+
+            self._objectTypeToTableMapping[multiverse.DbAlternateName] = ObjectTableMapping(
+                tableName=UniverseDb._AlternateNamesTableName,
+                objectType=multiverse.DbAlternateName,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, initParam='sectorId'),
+                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, initParam='name'),
+                    ColumnParameterMapping(columnName='language', paramType=ColumnParameterMapping.ParamType.String, initParam='language')])
+
+            self._objectTypeToTableMapping[multiverse.DbSubsectorName] = ObjectTableMapping(
+                tableName=UniverseDb._SubsectorNamesTableName,
+                objectType=multiverse.DbSubsectorName,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, initParam='sectorId'),
+                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, initParam='code'),
+                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, initParam='name')])
+
+            self._objectTypeToTableMapping[multiverse.DbSectorLabel] = ObjectTableMapping(
+                tableName=UniverseDb._SectorLabelsTableName,
+                objectType=multiverse.DbSectorLabel,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, initParam='sectorId'),
+                    ColumnParameterMapping(columnName='text', paramType=ColumnParameterMapping.ParamType.String, initParam='text'),
+                    ColumnParameterMapping(columnName='x', paramType=ColumnParameterMapping.ParamType.Float, initParam='worldX'),
+                    ColumnParameterMapping(columnName='y', paramType=ColumnParameterMapping.ParamType.Float, initParam='worldY'),
+                    ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, initParam='colour'),
+                    ColumnParameterMapping(columnName='size', paramType=ColumnParameterMapping.ParamType.String, initParam='size'),
+                    ColumnParameterMapping(columnName='wrap', paramType=ColumnParameterMapping.ParamType.Boolean, initParam='wrap')])
+
+            self._objectTypeToTableMapping[multiverse.DbTag] = ObjectTableMapping(
+                tableName=UniverseDb._SectorTagsTableName,
+                objectType=multiverse.DbTag,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, initParam='sectorId'),
+                    ColumnParameterMapping(columnName='tag', paramType=ColumnParameterMapping.ParamType.String, initParam='tag')])
+
+            self._objectTypeToTableMapping[multiverse.DbProduct] = ObjectTableMapping(
+                tableName=UniverseDb._ProductsTableName,
+                objectType=multiverse.DbProduct,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, initParam='sectorId'),
+                    ColumnParameterMapping(columnName='publication', paramType=ColumnParameterMapping.ParamType.String, initParam='publication'),
+                    ColumnParameterMapping(columnName='author', paramType=ColumnParameterMapping.ParamType.String, initParam='author'),
+                    ColumnParameterMapping(columnName='publisher', paramType=ColumnParameterMapping.ParamType.String, initParam='publisher'),
+                    ColumnParameterMapping(columnName='reference', paramType=ColumnParameterMapping.ParamType.String, initParam='reference')])
+
+            self._objectTypeToTableMapping[multiverse.DbSector] = ObjectTableMapping(
+                tableName=UniverseDb._SectorsTableName,
+                objectType=multiverse.DbSector,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='sector_x', paramType=ColumnParameterMapping.ParamType.Integer, initParam='sectorX'),
+                    ColumnParameterMapping(columnName='sector_y', paramType=ColumnParameterMapping.ParamType.Integer, initParam='sectorY'),
+                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, initParam='name'),
+                    ColumnParameterMapping(columnName='language', paramType=ColumnParameterMapping.ParamType.String, initParam='language'),
+                    ColumnParameterMapping(columnName='abbreviation', paramType=ColumnParameterMapping.ParamType.String, initParam='abbreviation'),
+                    ColumnParameterMapping(columnName='sector_label', paramType=ColumnParameterMapping.ParamType.String, initParam='sectorLabel'),
+                    ColumnParameterMapping(columnName='selected', paramType=ColumnParameterMapping.ParamType.Boolean, initParam='selected'),
+                    ColumnParameterMapping(columnName='credits', paramType=ColumnParameterMapping.ParamType.String, initParam='credits'),
+                    ColumnParameterMapping(columnName='publication', paramType=ColumnParameterMapping.ParamType.String, initParam='publication'),
+                    ColumnParameterMapping(columnName='author', paramType=ColumnParameterMapping.ParamType.String, initParam='author'),
+                    ColumnParameterMapping(columnName='publisher', paramType=ColumnParameterMapping.ParamType.String, initParam='publisher'),
+                    ColumnParameterMapping(columnName='reference', paramType=ColumnParameterMapping.ParamType.String, initParam='reference'),
+                    ColumnParameterMapping(columnName='notes', paramType=ColumnParameterMapping.ParamType.String, initParam='notes'),
+                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbAlternateName], parentColumnName='sector_id', initParam='alternateNames'),
+                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSubsectorName], parentColumnName='sector_id', initParam='subsectorNames'),
+                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSectorLabel], parentColumnName='sector_id', initParam='labels'),
+                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbTag], parentColumnName='sector_id', initParam='tags'),
+                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbProduct], parentColumnName='sector_id', initParam='products'),
+                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbRoute], parentColumnName='sector_id', initParam='routes'),
+                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbBorder], parentColumnName='sector_id', initParam='borders'),
+                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbRegion], parentColumnName='sector_id', initParam='regions')])
+
+    def _createSystemTables(self, cursor: sqlite3.Cursor) -> None:
             self._database.createTable(
                 cursor=cursor,
                 tableName=UniverseDb._SystemsTableName,
@@ -801,19 +1112,6 @@ class UniverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=UniverseDb._BodiesTableName,
-                requiredSchemaVersion=UniverseDb._BodiesTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='system_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SystemsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='orbit_index', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
-
-            self._database.createTable(
-                cursor=cursor,
                 tableName=UniverseDb._StarsTableName,
                 requiredSchemaVersion=UniverseDb._StarsTableSchema,
                 columns=[
@@ -824,6 +1122,19 @@ class UniverseDb(object):
                     database.ColumnDef(columnName='luminosity_class', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
                     database.ColumnDef(columnName='spectral_class', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                     database.ColumnDef(columnName='spectral_scale', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+
+            self._database.createTable(
+                cursor=cursor,
+                tableName=UniverseDb._BodiesTableName,
+                requiredSchemaVersion=UniverseDb._BodiesTableSchema,
+                columns=[
+                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    database.ColumnDef(columnName='system_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=UniverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    database.ColumnDef(columnName='orbit_index', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
             # TODO: Also create giants and belts tables. Even if they don't have any extra data I need
             # to store the body_id so in the future when the user can create them, the code knows which
@@ -973,17 +1284,6 @@ class UniverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=UniverseDb._CustomRemarksTableName,
-                requiredSchemaVersion=UniverseDb._CustomRemarksTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='remark', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)])
-
-            self._database.createTable(
-                cursor=cursor,
                 tableName=UniverseDb._BasesTableName,
                 requiredSchemaVersion=UniverseDb._BasesTableSchema,
                 columns=[
@@ -997,140 +1297,380 @@ class UniverseDb(object):
 
             self._database.createTable(
                 cursor=cursor,
-                tableName=UniverseDb._RoutesTableName,
-                requiredSchemaVersion=UniverseDb._RoutesTableSchema,
+                tableName=UniverseDb._CustomRemarksTableName,
+                requiredSchemaVersion=UniverseDb._CustomRemarksTableSchema,
                 columns=[
                     database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
                               foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    # TODO: These hexes should be converted to absolute space hex As part of the changes to move things to the universe label
-                    database.ColumnDef(columnName='start_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='start_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='end_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='end_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='start_offset_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='start_offset_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='end_offset_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='end_offset_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='type', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='width', columnType=database.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
-                    database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
-                              foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull)])
+                    database.ColumnDef(columnName='remark', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)])
 
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._BordersTableName,
-                requiredSchemaVersion=UniverseDb._BordersTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
-                              foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
-                    database.ColumnDef(columnName='style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    # NOTE: The label position is stored as an offset in world space from the
-                    # origin of the sector (top, left). An offset is used rather than storing
-                    # world space coordinates to keep sector data relative to the sector. It
-                    # will make it easier if we ever want to move a sector
-                    # TODO: This should be converted to world space as part of the changes to move things to the universe label
-                    database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                    database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                    database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
-                    database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+            self._objectTypeToTableMapping[multiverse.DbStar] = ObjectTableMapping(
+                tableName=UniverseDb._StarsTableName,
+                objectType=multiverse.DbStar,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='system_id', paramType=ColumnParameterMapping.ParamType.String, initParam='systemId'),
+                    ColumnParameterMapping(columnName='luminosity_class', paramType=ColumnParameterMapping.ParamType.String, initParam='luminosityClass'),
+                    ColumnParameterMapping(columnName='spectral_class', paramType=ColumnParameterMapping.ParamType.String, initParam='spectralClass'),
+                    ColumnParameterMapping(columnName='spectral_scale', paramType=ColumnParameterMapping.ParamType.String, initParam='spectralScale')])
 
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._BorderHexesTableName,
-                requiredSchemaVersion=UniverseDb._BorderHexesTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='border_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._BordersTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    # TODO: These hexes should be converted to absolute space hex as part of the changes to move things to the universe label
-                    database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
+            self._objectTypeToTableMapping[multiverse.DbNobility] = ObjectTableMapping(
+                tableName=UniverseDb._NobilitiesTableName,
+                objectType=multiverse.DbNobility,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, initParam='worldId'),
+                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, initParam='code')])
 
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._RegionsTableName,
-                requiredSchemaVersion=UniverseDb._RegionsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    # NOTE: See note on borders about coordinate space used for world x/y
-                    # TODO: This should be converted to world space as part of the changes to move things to the universe label
-                    database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                    database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                    database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
-                    database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+            self._objectTypeToTableMapping[multiverse.DbTradeCode] = ObjectTableMapping(
+                tableName=UniverseDb._TradeCodesTableName,
+                objectType=multiverse.DbTradeCode,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, initParam='worldId'),
+                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, initParam='code')])
 
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._RegionHexesTableName,
-                requiredSchemaVersion=UniverseDb._RegionHexesTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='region_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._RegionsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    # TODO: These hexes should be converted to absolute space hex as part of the changes to move things to the universe label
-                    database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
+            self._objectTypeToTableMapping[multiverse.DbSophontPopulation] = ObjectTableMapping(
+                tableName=UniverseDb._SophontPopulationsTableName,
+                objectType=multiverse.DbSophontPopulation,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, initParam='worldId'),
+                    ColumnParameterMapping(columnName='sophont_id', paramType=ColumnParameterMapping.ParamType.String, initParam='sophontId'),
+                    ColumnParameterMapping(columnName='percentage', paramType=ColumnParameterMapping.ParamType.Integer, initParam='percentage'),
+                    ColumnParameterMapping(columnName='is_home_world', paramType=ColumnParameterMapping.ParamType.Boolean, initParam='isHomeWorld'),
+                    ColumnParameterMapping(columnName='is_die_back', paramType=ColumnParameterMapping.ParamType.Boolean, initParam='isDieBack')])
 
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._SectorLabelsTableName,
-                requiredSchemaVersion=UniverseDb._SectorLabelsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    # TODO: This should be converted to world space as part of the changes to move things to the universe label
-                    database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                    database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='wrap', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+            self._objectTypeToTableMapping[multiverse.DbRulingAllegiance] = ObjectTableMapping(
+                tableName=UniverseDb._RulingAllegiancesTableName,
+                objectType=multiverse.DbRulingAllegiance,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, initParam='worldId'),
+                    ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, initParam='allegianceId')])
 
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._SectorTagsTableName,
-                requiredSchemaVersion=UniverseDb._SectorTagsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='tag', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['sector_id', 'tag'])])
+            self._objectTypeToTableMapping[multiverse.DbOwningSystem] = ObjectTableMapping(
+                tableName=UniverseDb._OwningSystemsTableName,
+                objectType=multiverse.DbOwningSystem,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, initParam='worldId'),
+                    ColumnParameterMapping(columnName='hex_x', paramType=ColumnParameterMapping.ParamType.Integer, initParam='hexX'),
+                    ColumnParameterMapping(columnName='hex_y', paramType=ColumnParameterMapping.ParamType.Integer, initParam='hexY'),
+                    ColumnParameterMapping(columnName='sector_abbreviation', paramType=ColumnParameterMapping.ParamType.String, initParam='sectorAbbreviation')])
 
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._ProductsTableName,
-                requiredSchemaVersion=UniverseDb._ProductsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='publication', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='author', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+            self._objectTypeToTableMapping[multiverse.DbColonySystem] = ObjectTableMapping(
+                tableName=UniverseDb._ColonySystemsTableName,
+                objectType=multiverse.DbColonySystem,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, initParam='worldId'),
+                    ColumnParameterMapping(columnName='hex_x', paramType=ColumnParameterMapping.ParamType.Integer, initParam='hexX'),
+                    ColumnParameterMapping(columnName='hex_y', paramType=ColumnParameterMapping.ParamType.Integer, initParam='hexY'),
+                    ColumnParameterMapping(columnName='sector_abbreviation', paramType=ColumnParameterMapping.ParamType.String, initParam='sectorAbbreviation')])
+
+            self._objectTypeToTableMapping[multiverse.DbBase] = ObjectTableMapping(
+                tableName=UniverseDb._BasesTableName,
+                objectType=multiverse.DbBase,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, initParam='worldId'),
+                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, initParam='code')])
+
+            self._objectTypeToTableMapping[multiverse.DbResearchStation] = ObjectTableMapping(
+                tableName=UniverseDb._ResearchStationTableName,
+                objectType=multiverse.DbResearchStation,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, initParam='worldId'),
+                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, initParam='code')])
+
+            self._objectTypeToTableMapping[multiverse.DbCustomRemark] = ObjectTableMapping(
+                tableName=UniverseDb._CustomRemarksTableName,
+                objectType=multiverse.DbCustomRemark,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, initParam='worldId'),
+                    ColumnParameterMapping(columnName='remark', paramType=ColumnParameterMapping.ParamType.String, initParam='remark')])
+
+            self._objectTypeToTableMapping[multiverse.DbBody] = ObjectTableMapping(
+                tableName=UniverseDb._BodiesTableName,
+                objectType=multiverse.DbBody,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='system_id', paramType=ColumnParameterMapping.ParamType.String, initParam='systemId'),
+                    ColumnParameterMapping(columnName='orbit_index', paramType=ColumnParameterMapping.ParamType.Integer, initParam='orbitIndex'),
+                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, initParam='name'),
+                    ColumnParameterMapping(columnName='notes', paramType=ColumnParameterMapping.ParamType.String, initParam='notes')],
+                deriveObjects=[
+                    DerivedObjectMapping(
+                        tableName=self._WorldsTableName,
+                        baseColumnName='body_id',
+                        objectType=multiverse.DbWorld,
+                        parameters=[
+                            ColumnParameterMapping(columnName='is_main_world', paramType=ColumnParameterMapping.ParamType.Boolean, initParam='isMainWorld'),
+                            ColumnParameterMapping(columnName='starport', paramType=ColumnParameterMapping.ParamType.String, initParam='starport'),
+                            ColumnParameterMapping(columnName='world_size', paramType=ColumnParameterMapping.ParamType.String, initParam='worldSize'),
+                            ColumnParameterMapping(columnName='atmosphere', paramType=ColumnParameterMapping.ParamType.String, initParam='atmosphere'),
+                            ColumnParameterMapping(columnName='hydrographics', paramType=ColumnParameterMapping.ParamType.String, initParam='hydrographics'),
+                            ColumnParameterMapping(columnName='population', paramType=ColumnParameterMapping.ParamType.String, initParam='population'),
+                            ColumnParameterMapping(columnName='government', paramType=ColumnParameterMapping.ParamType.String, initParam='government'),
+                            ColumnParameterMapping(columnName='law_level', paramType=ColumnParameterMapping.ParamType.String, initParam='lawLevel'),
+                            ColumnParameterMapping(columnName='tech_level', paramType=ColumnParameterMapping.ParamType.String, initParam='techLevel'),
+                            ColumnParameterMapping(columnName='resources', paramType=ColumnParameterMapping.ParamType.String, initParam='resources'),
+                            ColumnParameterMapping(columnName='labour', paramType=ColumnParameterMapping.ParamType.String, initParam='labour'),
+                            ColumnParameterMapping(columnName='infrastructure', paramType=ColumnParameterMapping.ParamType.String, initParam='infrastructure'),
+                            ColumnParameterMapping(columnName='efficiency', paramType=ColumnParameterMapping.ParamType.String, initParam='efficiency'),
+                            ColumnParameterMapping(columnName='heterogeneity', paramType=ColumnParameterMapping.ParamType.String, initParam='heterogeneity'),
+                            ColumnParameterMapping(columnName='acceptance', paramType=ColumnParameterMapping.ParamType.String, initParam='acceptance'),
+                            ColumnParameterMapping(columnName='strangeness', paramType=ColumnParameterMapping.ParamType.String, initParam='strangeness'),
+                            ColumnParameterMapping(columnName='symbols', paramType=ColumnParameterMapping.ParamType.String, initParam='symbols'),
+                            ColumnParameterMapping(columnName='population_multiplier', paramType=ColumnParameterMapping.ParamType.String, initParam='populationMultiplier'),
+                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbNobility], parentColumnName='world_id', initParam='nobilities'),
+                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbBase], parentColumnName='world_id', initParam='bases'),
+                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbTradeCode], parentColumnName='world_id', initParam='tradeCodes'),
+                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSophontPopulation], parentColumnName='world_id', initParam='sophontPopulations'),
+                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbRulingAllegiance], parentColumnName='world_id', initParam='rulingAllegiances'),
+                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbOwningSystem], parentColumnName='world_id', initParam='owningSystems'),
+                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbColonySystem], parentColumnName='world_id', initParam='colonySystems'),
+                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbResearchStation], parentColumnName='world_id', initParam='researchStations'),
+                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbCustomRemark], parentColumnName='world_id', initParam='customRemarks')])])
+
+            self._objectTypeToTableMapping[multiverse.DbSystem] = ObjectTableMapping(
+                tableName=UniverseDb._SystemsTableName,
+                objectType=multiverse.DbSystem,
+                parameters=[
+                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                    ColumnParameterMapping(columnName='hex_x', paramType=ColumnParameterMapping.ParamType.Integer, initParam='hexX'),
+                    ColumnParameterMapping(columnName='hex_y', paramType=ColumnParameterMapping.ParamType.Integer, initParam='hexY'),
+                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, initParam='name'),
+                    ColumnParameterMapping(columnName='planetoid_belt_count', paramType=ColumnParameterMapping.ParamType.Integer, initParam='planetoidBeltCount'),
+                    ColumnParameterMapping(columnName='gas_giant_count', paramType=ColumnParameterMapping.ParamType.Integer, initParam='gasGiantCount'),
+                    ColumnParameterMapping(columnName='world_count', paramType=ColumnParameterMapping.ParamType.Integer, initParam='worldCount'),
+                    ColumnParameterMapping(columnName='zone', paramType=ColumnParameterMapping.ParamType.String, initParam='zone'),
+                    ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, initParam='allegianceId'),
+                    ColumnParameterMapping(columnName='notes', paramType=ColumnParameterMapping.ParamType.String, initParam='notes'),
+                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbStar], parentColumnName='system_id', initParam='stars'),
+                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbBody], parentColumnName='system_id', initParam='bodies')])
+
+    def _createRouteTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._RoutesTableName,
+            requiredSchemaVersion=UniverseDb._RoutesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                # TODO: These hexes should be converted to absolute space hex As part of the changes to move things to the universe label
+                database.ColumnDef(columnName='start_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='start_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='end_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='end_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='start_offset_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='start_offset_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='end_offset_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='end_offset_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='type', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='width', columnType=database.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
+                database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
+                            foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull)])
+
+        self._objectTypeToTableMapping[multiverse.DbRoute] = ObjectTableMapping(
+            tableName=UniverseDb._RoutesTableName,
+            objectType=multiverse.DbRoute,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, initParam='sectorId'),
+                ColumnParameterMapping(columnName='start_hex_x', paramType=ColumnParameterMapping.ParamType.Integer, initParam='startHexX'),
+                ColumnParameterMapping(columnName='start_hex_y', paramType=ColumnParameterMapping.ParamType.Integer, initParam='startHexY'),
+                ColumnParameterMapping(columnName='end_hex_x', paramType=ColumnParameterMapping.ParamType.Integer, initParam='endHexX'),
+                ColumnParameterMapping(columnName='end_hex_y', paramType=ColumnParameterMapping.ParamType.Integer, initParam='endHexY'),
+                ColumnParameterMapping(columnName='start_offset_x', paramType=ColumnParameterMapping.ParamType.Integer, initParam='startOffsetX'),
+                ColumnParameterMapping(columnName='start_offset_y', paramType=ColumnParameterMapping.ParamType.Integer, initParam='startOffsetY'),
+                ColumnParameterMapping(columnName='end_offset_x', paramType=ColumnParameterMapping.ParamType.Integer, initParam='endOffsetX'),
+                ColumnParameterMapping(columnName='end_offset_y', paramType=ColumnParameterMapping.ParamType.Integer, initParam='endOffsetY'),
+                ColumnParameterMapping(columnName='type', paramType=ColumnParameterMapping.ParamType.String, initParam='type'),
+                ColumnParameterMapping(columnName='style', paramType=ColumnParameterMapping.ParamType.String, initParam='style'),
+                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, initParam='colour'),
+                ColumnParameterMapping(columnName='width', paramType=ColumnParameterMapping.ParamType.Float, initParam='width'),
+                ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, initParam='allegianceId')])
+
+    def _createBorderTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._BordersTableName,
+            requiredSchemaVersion=UniverseDb._BordersTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
+                            foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
+                database.ColumnDef(columnName='style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                # NOTE: The label position is stored as an offset in world space from the
+                # origin of the sector (top, left). An offset is used rather than storing
+                # world space coordinates to keep sector data relative to the sector. It
+                # will make it easier if we ever want to move a sector
+                # TODO: This should be converted to world space as part of the changes to move things to the universe label
+                database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
+                database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._BorderHexesTableName,
+            requiredSchemaVersion=UniverseDb._BorderHexesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='border_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BordersTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                # TODO: These hexes should be converted to absolute space hex as part of the changes to move things to the universe label
+                database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
+
+        hexesMapping = RawTableMapping(
+            tableName=UniverseDb._BorderHexesTableName,
+            columnNames=['hex_x', 'hex_y'])
+        self._objectTypeToTableMapping[multiverse.DbBorder] = ObjectTableMapping(
+            tableName=UniverseDb._BordersTableName,
+            objectType=multiverse.DbBorder,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, initParam='sectorId'),
+                SubTableParameterMapping(table=hexesMapping, parentColumnName='border_id', initParam='hexes'),
+                ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, initParam='allegianceId'),
+                ColumnParameterMapping(columnName='style', paramType=ColumnParameterMapping.ParamType.String, initParam='style'),
+                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, initParam='colour'),
+                ColumnParameterMapping(columnName='label', paramType=ColumnParameterMapping.ParamType.String, initParam='label'),
+                ColumnParameterMapping(columnName='label_x', paramType=ColumnParameterMapping.ParamType.Float, initParam='labelWorldX'),
+                ColumnParameterMapping(columnName='label_y', paramType=ColumnParameterMapping.ParamType.Float, initParam='labelWorldY'),
+                ColumnParameterMapping(columnName='show_label', paramType=ColumnParameterMapping.ParamType.Boolean, initParam='showLabel'),
+                ColumnParameterMapping(columnName='wrap_label', paramType=ColumnParameterMapping.ParamType.Boolean, initParam='wrapLabel')])
+
+    def _createRegionTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._RegionsTableName,
+            requiredSchemaVersion=UniverseDb._RegionsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                # NOTE: See note on borders about coordinate space used for world x/y
+                # TODO: This should be converted to world space as part of the changes to move things to the universe label
+                database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
+                database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._RegionHexesTableName,
+            requiredSchemaVersion=UniverseDb._RegionHexesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='region_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._RegionsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                # TODO: These hexes should be converted to absolute space hex as part of the changes to move things to the universe label
+                database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
+
+        hexesMapping = RawTableMapping(
+            tableName=UniverseDb._RegionHexesTableName,
+            columnNames=['hex_x', 'hex_y'])
+        self._objectTypeToTableMapping[multiverse.DbRegion] = ObjectTableMapping(
+            tableName=UniverseDb._RegionsTableName,
+            objectType=multiverse.DbRegion,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, initParam='sectorId'),
+                SubTableParameterMapping(table=hexesMapping, parentColumnName='region_id', initParam='hexes'),
+                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, initParam='colour'),
+                ColumnParameterMapping(columnName='label', paramType=ColumnParameterMapping.ParamType.String, initParam='label'),
+                ColumnParameterMapping(columnName='label_x', paramType=ColumnParameterMapping.ParamType.Float, initParam='labelWorldX'),
+                ColumnParameterMapping(columnName='label_y', paramType=ColumnParameterMapping.ParamType.Float, initParam='labelWorldY'),
+                ColumnParameterMapping(columnName='show_label', paramType=ColumnParameterMapping.ParamType.Boolean, initParam='showLabel'),
+                ColumnParameterMapping(columnName='wrap_label', paramType=ColumnParameterMapping.ParamType.Boolean, initParam='wrapLabel')])
+
+    def _createMapLabelTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._MapLabelsTableName,
+            requiredSchemaVersion=UniverseDb._MapLabelsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                database.ColumnDef(columnName='layer', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                database.ColumnDef(columnName='alignment', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='rotation', columnType=database.ColumnDef.ColumnType.Real, isNullable=True)])
+
+        self._objectTypeToTableMapping[multiverse.DbMapLabel] = ObjectTableMapping(
+            tableName=UniverseDb._MapLabelsTableName,
+            objectType=multiverse.DbMapLabel,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                ColumnParameterMapping(columnName='text', paramType=ColumnParameterMapping.ParamType.String, initParam='text'),
+                ColumnParameterMapping(columnName='x', paramType=ColumnParameterMapping.ParamType.Float, initParam='worldX'),
+                ColumnParameterMapping(columnName='y', paramType=ColumnParameterMapping.ParamType.Float, initParam='worldY'),
+                ColumnParameterMapping(columnName='layer', paramType=ColumnParameterMapping.ParamType.String, initParam='layer'),
+                ColumnParameterMapping(columnName='alignment', paramType=ColumnParameterMapping.ParamType.String, initParam='alignment'),
+                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, initParam='colour'),
+                ColumnParameterMapping(columnName='size', paramType=ColumnParameterMapping.ParamType.String, initParam='size'),
+                ColumnParameterMapping(columnName='rotation', paramType=ColumnParameterMapping.ParamType.Float, initParam='rotation')])
+
+    def _createMapVectorTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._MapVectorsTableName,
+            requiredSchemaVersion=UniverseDb._MapVectorsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='layer', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                # TODO: Can I get rid of the closed flag? Can't I just make sure the first point is also
+                # the last point for closed polygons?
+                database.ColumnDef(columnName='closed', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._MapVectorPointsTableName,
+            requiredSchemaVersion=UniverseDb._MapVectorPointsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='vector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._MapVectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False)])
+
+        pointsMapping = RawTableMapping(
+            tableName=UniverseDb._MapVectorPointsTableName,
+            columnNames=['x', 'y'])
+        self._objectTypeToTableMapping[multiverse.DbMapVector] = ObjectTableMapping(
+            tableName=UniverseDb._MapVectorsTableName,
+            objectType=multiverse.DbMapVector,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, initParam='id'),
+                SubTableParameterMapping(table=pointsMapping, parentColumnName='vector_id', initParam='points'),
+                ColumnParameterMapping(columnName='layer', paramType=ColumnParameterMapping.ParamType.String, initParam='layer'),
+                ColumnParameterMapping(columnName='closed', paramType=ColumnParameterMapping.ParamType.Boolean, initParam='isClosed')])
 
     def _readMetadata(
             self,
@@ -1159,6 +1699,480 @@ class UniverseDb(object):
             tableName=UniverseDb._MetadataTableName,
             values={'key': key, 'value': value},
             replaceIfExists=True)
+
+    def _findUsedTables(
+            self,
+            tableMapping: TableMapping
+            ) -> typing.Set[str]:
+        usedTables: typing.Set[str] = set()
+        usedTables.add(tableMapping.tableName())
+        if isinstance(tableMapping, ObjectTableMapping):
+            for paramMapping in tableMapping.parameters():
+                if isinstance(paramMapping, SubTableParameterMapping):
+                    usedTables.update(self._findUsedTables(tableMapping=paramMapping.table()))
+
+            if tableMapping.deriveObjects():
+                for derivedMapping in tableMapping.deriveObjects():
+                    usedTables.add(derivedMapping.tableName())
+
+                    for paramMapping in derivedMapping.parameters():
+                        if isinstance(paramMapping, SubTableParameterMapping):
+                            usedTables.update(self._findUsedTables(tableMapping=paramMapping.table()))
+
+        return usedTables
+
+    def _loadTable(
+            self,
+            cursor: sqlite3.Cursor,
+            tableName: str,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[typing.Dict[
+                str, # Column Name
+                typing.Any
+                ]]:
+        if progress is None:
+            return self._database.select(
+                cursor=cursor,
+                tableName=tableName)
+
+        count = self._database.rowCount(
+            cursor=cursor,
+            tableName=tableName)
+
+        chunkSize = 10000
+        chunks = math.ceil(count / chunkSize)
+
+        localProgress = progress.createChild(weight=1, steps=chunks)
+
+        rows = []
+        for chunk in range(chunks):
+            rows.extend(self._database.select(
+                cursor=cursor,
+                tableName=tableName,
+                limit=chunkSize,
+                offset=chunk * chunkSize))
+
+            localProgress.advance()
+
+        return rows
+
+    @typing.overload
+    def _mapObjectTable(
+            self,
+            tableMapping: ObjectTableMapping,
+            parentColumnName: typing.Literal[None],
+            tableNameToRows: typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]],
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[multiverse.DbObject]: ...
+    @typing.overload
+    def _mapObjectTable(
+            self,
+            tableMapping: ObjectTableMapping,
+            parentColumnName: str,
+            tableNameToRows: typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]],
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.Dict[
+                    str, # Parent column value
+                    typing.List[multiverse.DbObject]]: ...
+
+    def _mapObjectTable(
+            self,
+            tableMapping: ObjectTableMapping,
+            # If parentColumnName not None a dict is returned mapping this value to lists of the object type
+            parentColumnName: typing.Optional[str],
+            tableNameToRows: typing.Optional[typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]] ] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.Union[
+                typing.List[multiverse.DbObject],
+                typing.Dict[
+                    str, # Parent id
+                    typing.List[multiverse.DbObject]]]:
+        taskCount = 1
+        for paramMapping in tableMapping.parameters():
+            if isinstance(paramMapping, SubTableParameterMapping):
+                taskCount += 1
+
+        if tableMapping.deriveObjects():
+            for derivedMapping in tableMapping.deriveObjects():
+                for paramMapping in derivedMapping.parameters():
+                    if isinstance(paramMapping, SubTableParameterMapping):
+                        taskCount += 1
+        taskWeight = 1 / taskCount
+
+        initParamNameToParentRows: typing.Dict[
+            str, # __init__ param name
+            typing.Union[
+                typing.Dict[
+                    str, # Parent id
+                    typing.List[typing.List[multiverse.DbObject]]],
+                typing.Dict[
+                    str, # Parent id
+                    typing.List[typing.Tuple[typing.Any, ...]]]
+            ]]= {}
+        for paramMapping in tableMapping.parameters():
+            if not isinstance(paramMapping, SubTableParameterMapping):
+                continue
+
+            if isinstance(paramMapping.table(), ObjectTableMapping):
+                initParamNameToParentRows[paramMapping.initParam()] = self._mapObjectTable(
+                    tableMapping=paramMapping.table(),
+                    parentColumnName=paramMapping.parentColumnName(),
+                    tableNameToRows=tableNameToRows,
+                    progress=progress.createChild(weight=taskWeight) if progress is not None else None)
+            elif isinstance(paramMapping.table(), RawTableMapping):
+                initParamNameToParentRows[paramMapping.initParam()] = self._mapRawTable(
+                    tableMapping=paramMapping.table(),
+                    parentColumnName=paramMapping.parentColumnName(),
+                    tableNameToRows=tableNameToRows,
+                    progress=progress.createChild(weight=taskWeight) if progress is not None else None)
+            else:
+                # TODO: Do something
+                pass
+
+        baseIdToDerivedObjectRows: typing.Optional[typing.Dict[
+            str, # Base Id
+            typing.Tuple[
+                DerivedObjectMapping,
+                typing.Dict[
+                    str, # Column Name
+                    typing.Any]]]] = None
+        derivedObjectToInitParams: typing.Optional[typing.Dict[
+            typing.Type[multiverse.DbObject],
+            typing.Dict[
+                str, # __init__ param name
+                typing.Union[
+                    typing.Dict[
+                        str, # Parent id
+                        typing.List[typing.List[multiverse.DbObject]]],
+                    typing.Dict[
+                        str, # Parent id
+                        typing.List[typing.Tuple[typing.Any, ...]]]
+                ]]]] = None
+        if tableMapping.deriveObjects():
+            baseIdToDerivedObjectRows = {}
+            derivedObjectToInitParams = {}
+            for derivedMapping in tableMapping.deriveObjects():
+                derivedRows = tableNameToRows[derivedMapping.tableName()]
+                for row in derivedRows:
+                    baseId = row[derivedMapping.baseColumnName()]
+                    baseIdToDerivedObjectRows[baseId] = (derivedMapping, row)
+
+                derivedInitParams: typing.Dict[
+                    str, # __init__ param name
+                    typing.Union[
+                        typing.Dict[
+                            str, # Parent id
+                            typing.List[typing.List[multiverse.DbObject]]],
+                        typing.Dict[
+                            str, # Parent id
+                            typing.List[typing.Tuple[typing.Any, ...]]]
+                    ]] = {}
+                derivedObjectToInitParams[derivedMapping.objectType()] = derivedInitParams
+                for paramMapping in derivedMapping.parameters():
+                    if not isinstance(paramMapping, SubTableParameterMapping):
+                        continue
+
+                    if isinstance(paramMapping.table(), ObjectTableMapping):
+                        derivedInitParams[paramMapping.initParam()] = self._mapObjectTable(
+                            tableMapping=paramMapping.table(),
+                            parentColumnName=paramMapping.parentColumnName(),
+                            tableNameToRows=tableNameToRows,
+                            progress=progress.createChild(weight=taskWeight) if progress is not None else None)
+                    elif isinstance(paramMapping.table(), RawTableMapping):
+                        derivedInitParams[paramMapping.initParam()] = self._mapRawTable(
+                            tableMapping=paramMapping.table(),
+                            parentColumnName=paramMapping.parentColumnName(),
+                            tableNameToRows=tableNameToRows,
+                            progress=progress.createChild(weight=taskWeight) if progress is not None else None)
+                    else:
+                        # TODO: Do something
+                        pass
+
+        tableRows = tableNameToRows[tableMapping.tableName()]
+        chunkSize = 1000
+        chunkCount = math.ceil(len(tableRows) / chunkSize)
+        localProgress = progress.createChild(weight=taskWeight, steps=chunkCount) if progress is not None else None
+
+        objects: typing.Union[
+            typing.List[multiverse.DbObject],
+            typing.Dict[
+                str, # Parent id
+                typing.List[multiverse.DbObject]]] = [] if parentColumnName is None else {}
+        for chunk in range(chunkCount):
+            index = chunk * chunkSize
+            limit = min(index + chunkSize, len(tableRows))
+            while index < limit:
+                row = tableRows[index]
+                index += 1
+
+                objectId = row['id']
+                objectType = tableMapping.objectType()
+                initParams: typing.Mapping[
+                    str, # __init__ parameter name
+                    typing.Any # __init__ parameter value
+                    ] = {}
+                for paramMapping in tableMapping.parameters():
+                    if isinstance(paramMapping, ColumnParameterMapping):
+                        value = row[paramMapping.columnName()]
+                        if paramMapping.paramType() is ColumnParameterMapping.ParamType.Boolean:
+                            value = bool(value)
+                        initParams[paramMapping.initParam()] = value
+                    elif isinstance(paramMapping, SubTableParameterMapping):
+                        if paramMapping.parentColumnName() is None:
+                            initParams[paramMapping.initParam()] = initParamNameToParentRows[paramMapping.initParam()]
+                        else:
+                            initParams[paramMapping.initParam()] = initParamNameToParentRows[paramMapping.initParam()].get(objectId)
+
+                if tableMapping.deriveObjects():
+                    derivedMapping, derivedRow = baseIdToDerivedObjectRows[objectId]
+                    objectType = derivedMapping.objectType()
+
+                    derivedInitParamNameToParentRows = derivedObjectToInitParams[objectType]
+                    for paramMapping in derivedMapping.parameters():
+                        if isinstance(paramMapping, ColumnParameterMapping):
+                            value = derivedRow[paramMapping.columnName()]
+                            if paramMapping.paramType() is ColumnParameterMapping.ParamType.Boolean:
+                                value = bool(value)
+                            initParams[paramMapping.initParam()] = value
+                        elif isinstance(paramMapping, SubTableParameterMapping):
+                            if paramMapping.parentColumnName() is None:
+                                initParams[paramMapping.initParam()] = derivedInitParamNameToParentRows[paramMapping.initParam()]
+                            else:
+                                initParams[paramMapping.initParam()] = derivedInitParamNameToParentRows[paramMapping.initParam()].get(objectId)
+
+                obj = objectType(**initParams)
+                if parentColumnName is None:
+                    objects.append(obj)
+                else:
+                    parentId = row[parentColumnName]
+                    objectList = objects.get(parentId)
+                    if objectList is None:
+                        objectList = []
+                        objects[parentId] = objectList
+                    objectList.append(obj)
+
+            if localProgress is not None:
+                localProgress.advance()
+
+        return objects
+
+    @typing.overload
+    def _mapRawTable(
+            self,
+            tableMapping: RawTableMapping,
+            parentColumnName: typing.Literal[None],
+            tableNameToRows: typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]],
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[typing.Tuple[typing.Any, ...]]: ...
+    @typing.overload
+    def _mapRawTable(
+            self,
+            tableMapping: RawTableMapping,
+            parentColumnName: str,
+            tableNameToRows: typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]],
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.Dict[
+                    str, # Parent column value
+                    typing.List[typing.Tuple[typing.Any, ...]]]: ...
+
+    def _mapRawTable(
+            self,
+            tableMapping: RawTableMapping,
+            # If parentColumnName not None a dict is returned mapping this value to lists of the object type
+            parentColumnName: typing.Optional[str],
+            tableNameToRows: typing.Optional[typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]] ] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.Union[
+                typing.List[typing.Tuple[typing.Any, ...]],
+                typing.Dict[
+                    str, # Parent id
+                    typing.List[typing.Tuple[typing.Any, ...]]]]:
+        tableRows = tableNameToRows[tableMapping.tableName()]
+        chunkSize = 1000
+        chunkCount = math.ceil(len(tableRows) / chunkSize)
+        localProgress = progress.createChild(weight=1, steps=chunkCount) if progress is not None else None
+
+        tuples: typing.Union[
+            typing.List[typing.Tuple[typing.Any, ...]],
+            typing.Dict[
+                str, # Parent Id
+                typing.List[typing.Tuple[typing.Any, ...]]]] = [] if parentColumnName is None else {}
+
+        for chunk in range(chunkCount):
+            index = chunk * chunkSize
+            limit = min(index + chunkSize, len(tableRows))
+            while index < limit:
+                row = tableRows[index]
+                index += 1
+
+                if parentColumnName is None:
+                    tuples.append(tuple(row[n] for n in tableMapping.columnNames()))
+                else:
+                    parentId = row[parentColumnName]
+                    tupleList = tuples.get(parentId)
+                    if tupleList is None:
+                        tupleList = []
+                        tuples[parentId] = tupleList
+                    tupleList.append(tuple(row[n] for n in tableMapping.columnNames()))
+
+            if localProgress is not None:
+                localProgress.advance()
+
+        return tuples
+
+    @typing.overload
+    def _mapTable(
+            self,
+            cursor: sqlite3.Cursor,
+            tableMapping: ObjectTableMapping,
+            tableNameToRows: typing.Optional[typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]] ] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[multiverse.DbObject]: ...
+    @typing.overload
+    def _mapTable(
+            self,
+            cursor: sqlite3.Cursor,
+            tableMapping: ObjectTableMapping,
+            parentColumnName: typing.Literal[None],
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[multiverse.DbObject]: ...
+    @typing.overload
+    def _mapTable(
+            self,
+            cursor: sqlite3.Cursor,
+            tableMapping: ObjectTableMapping,
+            parentColumnName: str,
+            tableNameToRows: typing.Optional[typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]] ] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.Dict[
+                    str, # Parent column value
+                    typing.List[multiverse.DbObject]]: ...
+    @typing.overload
+    def _mapTable(
+            self,
+            cursor: sqlite3.Cursor,
+            tableMapping: RawTableMapping,
+            tableNameToRows: typing.Optional[typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]] ] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[typing.Tuple[typing.Any, ...]]: ...
+    @typing.overload
+    def _mapTable(
+            self,
+            cursor: sqlite3.Cursor,
+            tableMapping: RawTableMapping,
+            parentColumnName: typing.Literal[None],
+            tableNameToRows: typing.Optional[typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]] ] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[typing.Tuple[typing.Any, ...]]: ...
+    @typing.overload
+    def _mapTable(
+            self,
+            cursor: sqlite3.Cursor,
+            tableMapping: RawTableMapping,
+            parentColumnName: str,
+            tableNameToRows: typing.Optional[typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]] ] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.Dict[
+                    str, # Parent column value
+                    typing.List[typing.Tuple[typing.Any, ...]]]: ...
+
+    def _mapTable(
+            self,
+            cursor: sqlite3.Cursor,
+            tableMapping: TableMapping,
+            # If parentColumnName not None a dict is returned mapping this value to lists of the object type
+            parentColumnName: typing.Optional[str] = None,
+            tableNameToRows: typing.Optional[typing.Dict[
+                str, # Table Name
+                typing.List[typing.Dict[
+                    str, # Column Name
+                    typing.Any]]] ] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.Union[
+                typing.List[multiverse.DbObject],
+                typing.List[typing.Tuple[typing.Any, ...]],
+                typing.Dict[
+                    str, # Parent id
+                    typing.List[multiverse.DbObject]],
+                typing.Dict[
+                    str, # Parent id
+                    typing.List[typing.Tuple[typing.Any, ...]]]]:
+        tablesToLoad = None
+        if tableNameToRows is None:
+            tablesToLoad = self._findUsedTables(tableMapping=tableMapping)
+
+        taskCount = 1
+        if tablesToLoad:
+            taskCount += len(tablesToLoad)
+        taskWeight = 1 / taskCount if taskCount else 1
+
+        if tablesToLoad:
+            tableNameToRows = {}
+            for tableName in tablesToLoad:
+                tableNameToRows[tableName] = self._loadTable(
+                    cursor=cursor,
+                    tableName=tableName,
+                    progress=progress.createChild(weight=taskWeight) if progress is not None else None)
+
+        if isinstance(tableMapping, ObjectTableMapping):
+            return self._mapObjectTable(
+                tableMapping=tableMapping,
+                parentColumnName=parentColumnName,
+                tableNameToRows=tableNameToRows,
+                progress=progress.createChild(weight=taskWeight) if progress is not None else None)
+        elif isinstance(tableMapping, RawTableMapping):
+            return self._mapRawTable(
+                tableMapping=tableMapping,
+                parentColumnName=parentColumnName,
+                tableNameToRows=tableNameToRows,
+                progress=progress.createChild(weight=taskWeight) if progress is not None else None)
+        else:
+            # TODO: Log something
+            pass
 
     #      █████████   ████  ████                     ███
     #     ███░░░░░███ ░░███ ░░███                    ░░░
@@ -1211,36 +2225,10 @@ class UniverseDb(object):
             ) -> typing.List[multiverse.DbAllegiance]:
         logging.debug(f'UniverseDb loading allegiances from universe {self._universePath!r}')
 
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._AllegiancesTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        allegiances = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._AllegiancesTableName):
-            allegianceId = row['id']
-            try:
-                allegiances.append(multiverse.DbAllegiance(
-                    id=allegianceId,
-                    name=row['name'],
-                    code=row['code'],
-                    legacy=row['legacy'],
-                    base=row['base'],
-                    routeColour=row['route_colour'],
-                    routeStyle=row['route_style'],
-                    routeWidth=row['route_width'],
-                    borderColour=row['border_colour'],
-                    borderStyle=row['border_style']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load allegiance {allegianceId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return allegiances
+        return self._mapTable(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbAllegiance],
+            progress=progress)
 
     def _deleteAllegiances(
             self,
@@ -1303,30 +2291,10 @@ class UniverseDb(object):
             ) -> typing.List[multiverse.DbSophont]:
         logging.debug(f'UniverseDb loading sophonts from universe {self._universePath!r}')
 
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SophontsTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        sophonts = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._SophontsTableName):
-            sophontId = row['id']
-            try:
-                sophonts.append(multiverse.DbSophont(
-                    id=sophontId,
-                    name=row['name'],
-                    code=row['code'],
-                    isMajor=bool(row['is_major'])))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load sophont {sophontId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return sophonts
+        return self._mapTable(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbSophont],
+            progress=progress)
 
     def _deleteSophonts(
             self,
@@ -1467,139 +2435,10 @@ class UniverseDb(object):
             ) -> typing.List[multiverse.DbSector]:
         logging.debug(f'UniverseDb loading sectors from universe {self._universePath!r}')
 
-        taskCount = 9
-        taskWeight = 1 / taskCount
-
-        alternateNamesProgress = None
-        if progress:
-            alternateNamesProgress = progress.createChild(weight=taskWeight)
-        alternateNamesMap = {}
-        for name in self._loadAlternateNames(cursor=cursor, progress=alternateNamesProgress):
-            names = alternateNamesMap.get(name.sectorId())
-            if names is None:
-                names = []
-                alternateNamesMap[name.sectorId()] = names
-            names.append(name)
-
-        subsectorNamesProgress = None
-        if progress:
-            subsectorNamesProgress = progress.createChild(weight=taskWeight)
-        subsectorNamesMap = {}
-        for name in self._loadSubsectorNames(cursor=cursor, progress=subsectorNamesProgress):
-            names = subsectorNamesMap.get(name.sectorId())
-            if names is None:
-                names = []
-                subsectorNamesMap[name.sectorId()] = names
-            names.append(name)
-
-        routesProgress = None
-        if progress:
-            routesProgress = progress.createChild(weight=taskWeight)
-        routesMap = {}
-        for route in self._loadRoutes(cursor=cursor, progress=routesProgress):
-            routes = routesMap.get(route.sectorId())
-            if routes is None:
-                routes = []
-                routesMap[route.sectorId()] = routes
-            routes.append(route)
-
-        bordersProgress = None
-        if progress:
-            bordersProgress = progress.createChild(weight=taskWeight)
-        bordersMap = {}
-        for border in self._loadBorders(cursor=cursor, progress=bordersProgress):
-            borders = bordersMap.get(border.sectorId())
-            if borders is None:
-                borders = []
-                bordersMap[border.sectorId()] = borders
-            borders.append(border)
-
-        regionsProgress = None
-        if progress:
-            regionsProgress = progress.createChild(weight=taskWeight)
-        regionsMap = {}
-        for region in self._loadRegions(cursor=cursor, progress=regionsProgress):
-            regions = regionsMap.get(region.sectorId())
-            if regions is None:
-                regions = []
-                regionsMap[region.sectorId()] = regions
-            regions.append(region)
-
-        labelsProgress = None
-        if progress:
-            labelsProgress = progress.createChild(weight=taskWeight)
-        labelsMap = {}
-        for label in self._loadSectorLabels(cursor=cursor, progress=labelsProgress):
-            labels = labelsMap.get(label.sectorId())
-            if labels is None:
-                labels = []
-                labelsMap[label.sectorId()] = labels
-            labels.append(label)
-
-        tagsProgress = None
-        if progress:
-            tagsProgress = progress.createChild(weight=taskWeight)
-        tagsMap = {}
-        for tag in self._loadTags(cursor=cursor, progress=tagsProgress):
-            tags = tagsMap.get(tag.sectorId())
-            if tags is None:
-                tags = []
-                tagsMap[tag.sectorId()] = tags
-            tags.append(tag)
-
-        productsProgress = None
-        if progress:
-            productsProgress = progress.createChild(weight=taskWeight)
-        productsMap = {}
-        for product in self._loadProducts(cursor=cursor, progress=productsProgress):
-            products = productsMap.get(product.sectorId())
-            if products is None:
-                products = []
-                productsMap[product.sectorId()] = products
-            products.append(product)
-
-        sectorCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SectorsTableName)
-        sectorsProgress = None
-        if progress:
-            sectorsProgress = progress.createChild(weight=taskWeight, steps=sectorCount)
-        sectors = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._SectorsTableName):
-            sectorId = row['id']
-
-            try:
-                sectors.append(multiverse.DbSector(
-                    id=sectorId,
-                    sectorX=row['sector_x'],
-                    sectorY=row['sector_y'],
-                    name=row['name'],
-                    language=row['language'],
-                    abbreviation=row['abbreviation'],
-                    sectorLabel=row['sector_label'],
-                    selected=bool(row['selected']),
-                    credits=row['credits'],
-                    publication=row['publication'],
-                    author=row['author'],
-                    publisher=row['publisher'],
-                    reference=row['reference'],
-                    notes=row['notes'],
-                    alternateNames=alternateNamesMap.get(sectorId),
-                    subsectorNames=subsectorNamesMap.get(sectorId),
-                    routes=routesMap.get(sectorId),
-                    borders=bordersMap.get(sectorId),
-                    regions=regionsMap.get(sectorId),
-                    labels=labelsMap.get(sectorId),
-                    tags=tagsMap.get(sectorId),
-                    products=productsMap.get(sectorId)))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load sector {sectorId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if sectorsProgress:
-            sectorsProgress.advance(increment=sectorCount)
-
-        return sectors
+        return self._mapTable(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbSector],
+            progress=progress)
 
     def _deleteSectors(
             self,
@@ -1637,37 +2476,6 @@ class UniverseDb(object):
             tableName=UniverseDb._AlternateNamesTableName,
             rows=rows)
 
-    def _loadAlternateNames(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbAlternateName]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._AlternateNamesTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        names = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._AlternateNamesTableName):
-            nameId = row['id']
-
-            try:
-                names.append(multiverse.DbAlternateName(
-                    id=nameId,
-                    sectorId=row['sector_id'],
-                    name=row['name'],
-                    language=row['language']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load alternate name {nameId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return names
-
     def _insertSubsectorNames(
             self,
             cursor: sqlite3.Cursor,
@@ -1687,37 +2495,6 @@ class UniverseDb(object):
             cursor=cursor,
             tableName=UniverseDb._SubsectorNamesTableName,
             rows=rows)
-
-    def _loadSubsectorNames(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbSubsectorName]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SubsectorNamesTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        names = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._SubsectorNamesTableName):
-            nameId = row['id']
-
-            try:
-                names.append(multiverse.DbSubsectorName(
-                    id=nameId,
-                    sectorId=row['sector_id'],
-                    code=row['code'],
-                    name=row['name']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load subsector name {nameId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return names
 
     def _insertSectorLabels(
             self,
@@ -1743,41 +2520,6 @@ class UniverseDb(object):
             tableName=UniverseDb._SectorLabelsTableName,
             rows=rows)
 
-    def _loadSectorLabels(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbSectorLabel]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SectorLabelsTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        labels = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._SectorLabelsTableName):
-            labelId = row['id']
-
-            try:
-                labels.append(multiverse.DbSectorLabel(
-                    id=labelId,
-                    sectorId=row['sector_id'],
-                    text=row['text'],
-                    worldX=row['x'],
-                    worldY=row['y'],
-                    colour=row['colour'],
-                    size=row['size'],
-                    wrap=bool(row['wrap'])))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load label {labelId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return labels
-
     def _insertTags(
             self,
             cursor: sqlite3.Cursor,
@@ -1796,36 +2538,6 @@ class UniverseDb(object):
             cursor=cursor,
             tableName=UniverseDb._SectorTagsTableName,
             rows=rows)
-
-    def _loadTags(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbTag]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SectorTagsTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        tags = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._SectorTagsTableName):
-            tagId = row['id']
-
-            try:
-                tags.append(multiverse.DbTag(
-                    id=tagId,
-                    sectorId=row['sector_id'],
-                    tag=row['tag']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load tag {tagId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return tags
 
     def _insertProducts(
             self,
@@ -1848,39 +2560,6 @@ class UniverseDb(object):
             cursor=cursor,
             tableName=UniverseDb._ProductsTableName,
             rows=rows)
-
-    def _loadProducts(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbTag]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._ProductsTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        products = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._ProductsTableName):
-            productId = row['id']
-
-            try:
-                products.append(multiverse.DbProduct(
-                    id=productId,
-                    sectorId=row['sector_id'],
-                    publication=row['publication'],
-                    author=row['author'],
-                    publisher=row['publisher'],
-                    reference=row['reference']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load product {productId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return products
 
     #     █████████                      █████
     #    ███░░░░░███                    ░░███
@@ -1952,55 +2631,10 @@ class UniverseDb(object):
             ) -> typing.List[multiverse.DbSystem]:
         logging.debug(f'UniverseDb loading systems from universe {self._universePath!r}')
 
-        taskCount = 3
-        taskWeight = 1 / taskCount
-
-        stars = self._loadStars(
+        return self._mapTable(
             cursor=cursor,
-            progress=progress.createChild(weight=taskWeight) if progress is not None else None)
-        systemStarsMap = {}
-        for star in stars:
-            systemStars = systemStarsMap.get(star.systemId())
-            if systemStars is None:
-                systemStars = []
-                systemStarsMap[star.systemId()] = systemStars
-            systemStars.append(star)
-
-        bodies = self._loadBodies(
-            cursor=cursor,
-            progress=progress.createChild(weight=taskWeight) if progress is not None else None)
-        systemBodiesMap = {}
-        for body in bodies:
-            systemBodies = systemBodiesMap.get(body.systemId())
-            if systemBodies is None:
-                systemBodies = []
-                systemBodiesMap[body.systemId()] = systemBodies
-            systemBodies.append(body)
-
-        systems = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._SystemsTableName):
-            systemId = row['id']
-
-            try:
-                systems.append(multiverse.DbSystem(
-                    id=systemId,
-                    hexX=row['hex_x'],
-                    hexY=row['hex_y'],
-                    name=row['name'],
-                    planetoidBeltCount=row['planetoid_belt_count'],
-                    gasGiantCount=row['gas_giant_count'],
-                    worldCount=row['world_count'],
-                    zone=row['zone'],
-                    allegianceId=row['allegiance_id'],
-                    notes=row['notes'],
-                    stars=systemStarsMap.get(systemId),
-                    bodies=systemBodiesMap.get(systemId)))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load system {systemId!r} from {self._universePath!r}',
-                    exc_info=ex)
-
-        return systems
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbSystem],
+            progress=progress)
 
     def _deleteSystems(
             self,
@@ -2038,38 +2672,6 @@ class UniverseDb(object):
             cursor=cursor,
             tableName=UniverseDb._StarsTableName,
             rows=rows)
-
-    def _loadStars(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbStar]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._StarsTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        stars = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._StarsTableName):
-            starId = row['id']
-
-            try:
-                stars.append(multiverse.DbStar(
-                    id=starId,
-                    systemId=row['system_id'],
-                    luminosityClass=row['luminosity_class'],
-                    spectralClass=row['spectral_class'],
-                    spectralScale=row['spectral_scale']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load star {starId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return stars
 
     def _insertBodies(
             self,
@@ -2174,179 +2776,6 @@ class UniverseDb(object):
         if remarks:
             self._insertCustomRemarks(cursor=cursor, remarks=remarks)
 
-    def _loadBodies(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbBody]:
-        taskCount = 11
-        taskWeight = 1 / taskCount
-
-        nobilitiesProgress = None
-        if progress:
-            nobilitiesProgress = progress.createChild(weight=taskWeight)
-        worldNobilitiesMap = {}
-        for nobility in self._loadNobilities(cursor=cursor, progress=nobilitiesProgress):
-            nobilities = worldNobilitiesMap.get(nobility.worldId())
-            if nobilities is None:
-                nobilities = []
-                worldNobilitiesMap[nobility.worldId()] = nobilities
-            nobilities.append(nobility)
-
-        basesProgress = None
-        if progress:
-            basesProgress = progress.createChild(weight=taskWeight)
-        basesMap = {}
-        for base in self._loadBases(cursor=cursor, progress=basesProgress):
-            bases = basesMap.get(base.worldId())
-            if bases is None:
-                bases = []
-                basesMap[base.worldId()] = bases
-            bases.append(base)
-
-        tradeCodesProgress = None
-        if progress:
-            tradeCodesProgress = progress.createChild(weight=taskWeight)
-        tradeCodesMap = {}
-        for tradeCode in self._loadTradeCodes(cursor=cursor, progress=tradeCodesProgress):
-            tradeCodes = tradeCodesMap.get(tradeCode.worldId())
-            if tradeCodes is None:
-                tradeCodes = []
-                tradeCodesMap[tradeCode.worldId()] = tradeCodes
-            tradeCodes.append(tradeCode)
-
-        populationsProgress = None
-        if progress:
-            populationsProgress = progress.createChild(weight=taskWeight)
-        populationsMap = {}
-        for population in self._loadSophontPopulations(cursor=cursor, progress=populationsProgress):
-            populations = populationsMap.get(population.worldId())
-            if populations is None:
-                populations = []
-                populationsMap[population.worldId()] = populations
-            populations.append(population)
-
-        rulersProgress = None
-        if progress:
-            rulersProgress = progress.createChild(weight=taskWeight)
-        rulersMap = {}
-        for ruler in self._loadRulingAllegiances(cursor=cursor, progress=rulersProgress):
-            rulers = rulersMap.get(ruler.worldId())
-            if rulers is None:
-                rulers = []
-                rulersMap[ruler.worldId()] = rulers
-            rulers.append(ruler)
-
-        ownersProgress = None
-        if progress:
-            ownersProgress = progress.createChild(weight=taskWeight)
-        ownersMap = {}
-        for owner in self._loadOwningSystems(cursor=cursor, progress=ownersProgress):
-            owners = ownersMap.get(owner.worldId())
-            if owners is None:
-                owners = []
-                ownersMap[owner.worldId()] = owners
-            owners.append(owner)
-
-        coloniesProgress = None
-        if progress:
-            coloniesProgress = progress.createChild(weight=taskWeight)
-        coloniesMap = {}
-        for colony in self._loadColonySystems(cursor=cursor, progress=coloniesProgress):
-            colonies = coloniesMap.get(colony.worldId())
-            if colonies is None:
-                colonies = []
-                coloniesMap[colony.worldId()] = colonies
-            colonies.append(colony)
-
-        stationsProgress = None
-        if progress:
-            stationsProgress = progress.createChild(weight=taskWeight)
-        stationsMap = {}
-        for station in self._loadResearchStations(cursor=cursor, progress=stationsProgress):
-            stations = stationsMap.get(station.worldId())
-            if stations is None:
-                stations = []
-                stationsMap[station.worldId()] = stations
-            stations.append(station)
-
-        remarksProgress = None
-        if progress:
-            remarksProgress = progress.createChild(weight=taskWeight)
-        remarksMap = {}
-        for remark in self._loadCustomRemarks(cursor=cursor, progress=remarksProgress):
-            remarks = remarksMap.get(remark.worldId())
-            if remarks is None:
-                remarks = []
-                remarksMap[remark.worldId()] = remarks
-            remarks.append(remark)
-
-        bodyCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._BodiesTableName)
-        bodiesProgress = None
-        if progress:
-            bodiesProgress = progress.createChild(weight=taskWeight, steps=bodyCount)
-        bodyIdToRow = {}
-        for worldRow in self._database.select(cursor=cursor, tableName=UniverseDb._BodiesTableName):
-            bodyIdToRow[worldRow['id']] = worldRow
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if bodiesProgress:
-            bodiesProgress.advance(increment=bodyCount)
-
-        worldCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._WorldsTableName)
-        worldsProgress = None
-        if progress:
-            worldsProgress = progress.createChild(weight=taskWeight, steps=worldCount)
-        bodies = []
-        for worldRow in self._database.select(cursor=cursor, tableName=UniverseDb._WorldsTableName):
-            bodyId = worldRow['body_id']
-            bodyRow = bodyIdToRow[bodyId]
-
-            try:
-                bodies.append(multiverse.DbWorld(
-                    id=bodyId,
-                    systemId=bodyRow['system_id'],
-                    orbitIndex=bodyRow['orbit_index'],
-                    name=bodyRow['name'],
-                    isMainWorld=bool(worldRow['is_main_world']),
-                    starport=worldRow['starport'],
-                    worldSize=worldRow['world_size'],
-                    atmosphere=worldRow['atmosphere'],
-                    hydrographics=worldRow['hydrographics'],
-                    population=worldRow['population'],
-                    government=worldRow['government'],
-                    lawLevel=worldRow['law_level'],
-                    techLevel=worldRow['tech_level'],
-                    resources=worldRow['resources'],
-                    labour=worldRow['labour'],
-                    infrastructure=worldRow['infrastructure'],
-                    efficiency=worldRow['efficiency'],
-                    heterogeneity=worldRow['heterogeneity'],
-                    acceptance=worldRow['acceptance'],
-                    strangeness=worldRow['strangeness'],
-                    symbols=worldRow['symbols'],
-                    populationMultiplier=worldRow['population_multiplier'],
-                    notes=bodyRow['notes'],
-                    nobilities=worldNobilitiesMap.get(bodyId),
-                    bases=basesMap.get(bodyId),
-                    tradeCodes=tradeCodesMap.get(bodyId),
-                    sophontPopulations=populationsMap.get(bodyId),
-                    rulingAllegiances=rulersMap.get(bodyId),
-                    owningSystems=ownersMap.get(bodyId),
-                    colonySystems=coloniesMap.get(bodyId),
-                    researchStations=stationsMap.get(bodyId),
-                    customRemarks=remarksMap.get(bodyId)))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load body {bodyId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if worldsProgress:
-            worldsProgress.advance(increment=worldCount)
-
-        return bodies
-
     def _insertNobilities(
             self,
             cursor: sqlite3.Cursor,
@@ -2365,36 +2794,6 @@ class UniverseDb(object):
             cursor=cursor,
             tableName=UniverseDb._NobilitiesTableName,
             rows=rows)
-
-    def _loadNobilities(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbNobility]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._NobilitiesTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        nobilities = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._NobilitiesTableName):
-            nobilityId = row['id']
-
-            try:
-                nobilities.append(multiverse.DbNobility(
-                    id=nobilityId,
-                    worldId=row['world_id'],
-                    code=row['code']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load nobility {nobilityId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return nobilities
 
     def _insertBases(
             self,
@@ -2415,36 +2814,6 @@ class UniverseDb(object):
             tableName=UniverseDb._BasesTableName,
             rows=rows)
 
-    def _loadBases(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbBase]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._BasesTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        bases = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._BasesTableName):
-            baseId = row['id']
-
-            try:
-                bases.append(multiverse.DbBase(
-                    id=baseId,
-                    worldId=row['world_id'],
-                    code=row['code']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load base {baseId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return bases
-
     def _insertTradeCodes(
             self,
             cursor: sqlite3.Cursor,
@@ -2463,36 +2832,6 @@ class UniverseDb(object):
             cursor=cursor,
             tableName=UniverseDb._TradeCodesTableName,
             rows=rows)
-
-    def _loadTradeCodes(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbTradeCode]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._TradeCodesTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        tradeCodes = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._TradeCodesTableName):
-            tradeCodeId = row['id']
-
-            try:
-                tradeCodes.append(multiverse.DbTradeCode(
-                    id=tradeCodeId,
-                    worldId=row['world_id'],
-                    code=row['code']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load trade code {tradeCodeId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return tradeCodes
 
     def _insertSophontPopulations(
             self,
@@ -2516,39 +2855,6 @@ class UniverseDb(object):
             tableName=UniverseDb._SophontPopulationsTableName,
             rows=rows)
 
-    def _loadSophontPopulations(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbSophontPopulation]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SophontPopulationsTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        populations = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._SophontPopulationsTableName):
-            populationId = row['id']
-
-            try:
-                populations.append(multiverse.DbSophontPopulation(
-                    id=populationId,
-                    worldId=row['world_id'],
-                    sophontId=row['sophont_id'],
-                    percentage=row['percentage'],
-                    isHomeWorld=bool(row['is_home_world']),
-                    isDieBack=bool(row['is_die_back'])))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load sophont population {populationId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return populations
-
     def _insertRulingAllegiances(
             self,
             cursor: sqlite3.Cursor,
@@ -2567,36 +2873,6 @@ class UniverseDb(object):
             cursor=cursor,
             tableName=UniverseDb._RulingAllegiancesTableName,
             rows=rows)
-
-    def _loadRulingAllegiances(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbRulingAllegiance]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._SophontPopulationsTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        rulers = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._RulingAllegiancesTableName):
-            rulerId = row['id']
-
-            try:
-                rulers.append(multiverse.DbRulingAllegiance(
-                    id=rulerId,
-                    worldId=row['world_id'],
-                    allegianceId=row['allegiance_id']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load ruling allegiance {rulerId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return rulers
 
     def _insertOwningSystems(
             self,
@@ -2619,38 +2895,6 @@ class UniverseDb(object):
             tableName=UniverseDb._OwningSystemsTableName,
             rows=rows)
 
-    def _loadOwningSystems(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbOwningSystem]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._OwningSystemsTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        owners = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._OwningSystemsTableName):
-            ownerId = row['id']
-
-            try:
-                owners.append(multiverse.DbOwningSystem(
-                    id=ownerId,
-                    worldId=row['world_id'],
-                    hexX=row['hex_x'],
-                    hexY=row['hex_y'],
-                    sectorAbbreviation=row['sector_abbreviation']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load owning system {ownerId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return owners
-
     def _insertColonySystems(
             self,
             cursor: sqlite3.Cursor,
@@ -2672,38 +2916,6 @@ class UniverseDb(object):
             tableName=UniverseDb._ColonySystemsTableName,
             rows=rows)
 
-    def _loadColonySystems(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbColonySystem]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._ColonySystemsTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        colonies = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._ColonySystemsTableName):
-            colonyId = row['id']
-
-            try:
-                colonies.append(multiverse.DbColonySystem(
-                    id=colonyId,
-                    worldId=row['world_id'],
-                    hexX=row['hex_x'],
-                    hexY=row['hex_y'],
-                    sectorAbbreviation=row['sector_abbreviation']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load colony system {colonyId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return colonies
-
     def _insertResearchStations(
             self,
             cursor: sqlite3.Cursor,
@@ -2723,36 +2935,6 @@ class UniverseDb(object):
             tableName=UniverseDb._ResearchStationTableName,
             rows=rows)
 
-    def _loadResearchStations(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbResearchStation]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._ResearchStationTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        stations = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._ResearchStationTableName):
-            stationId = row['id']
-
-            try:
-                stations.append(multiverse.DbResearchStation(
-                    id=stationId,
-                    worldId=row['world_id'],
-                    code=row['code']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load research station {stationId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return stations
-
     def _insertCustomRemarks(
             self,
             cursor: sqlite3.Cursor,
@@ -2771,37 +2953,6 @@ class UniverseDb(object):
             cursor=cursor,
             tableName=UniverseDb._CustomRemarksTableName,
             rows=rows)
-
-    def _loadCustomRemarks(
-            self,
-            cursor: sqlite3.Cursor,
-            progress: typing.Optional[common.ProgressTracker] = None
-            ) -> typing.List[multiverse.DbCustomRemark]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._CustomRemarksTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        remarks = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._CustomRemarksTableName):
-            remarkId = row['id']
-
-            try:
-                remarks.append(multiverse.DbCustomRemark(
-                    id=remarkId,
-                    worldId=row['world_id'],
-                    remark=row['remark']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load custom remark {remarkId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return remarks
-
 
     #    ███████████                        █████
     #   ░░███░░░░░███                      ░░███
@@ -2848,42 +2999,12 @@ class UniverseDb(object):
             cursor: sqlite3.Cursor,
             progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbRoute]:
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._RoutesTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
+        logging.debug(f'UniverseDb loading routes from universe {self._universePath!r}')
 
-        routes = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._RoutesTableName):
-            routeId = row['id']
-
-            try:
-                routes.append(multiverse.DbRoute(
-                    id=routeId,
-                    sectorId=row['sector_id'],
-                    startHexX=row['start_hex_x'],
-                    startHexY=row['start_hex_y'],
-                    endHexX=row['end_hex_x'],
-                    endHexY=row['end_hex_y'],
-                    startOffsetX=row['start_offset_x'],
-                    startOffsetY=row['start_offset_y'],
-                    endOffsetX=row['end_offset_x'],
-                    endOffsetY=row['end_offset_y'],
-                    type=row['type'],
-                    style=row['style'],
-                    colour=row['colour'],
-                    width=row['width'],
-                    allegianceId=row['allegiance_id']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load route {routeId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return routes
+        return self._mapTable(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbRoute],
+            progress=progress)
 
     #    ███████████                         █████
     #   ░░███░░░░░███                       ░░███
@@ -2935,57 +3056,12 @@ class UniverseDb(object):
             cursor: sqlite3.Cursor,
             progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbBorder]:
-        taskCount = 2
-        taskWeight = 1 / taskCount
+        logging.debug(f'UniverseDb loading borders from universe {self._universePath!r}')
 
-        hexCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._BorderHexesTableName)
-        hexProgress = None
-        if progress:
-            hexProgress = progress.createChild(weight=taskWeight, steps=hexCount)
-        borderHexMap = {}
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._BorderHexesTableName):
-            borderId = row['border_id']
-            hexes = borderHexMap.get(borderId)
-            if hexes is None:
-                hexes = []
-                borderHexMap[borderId] = hexes
-            hexes.append((row['hex_x'], row['hex_y']))
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if hexProgress:
-            hexProgress.advance(increment=hexCount)
-
-        borderCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._BordersTableName)
-        bordersProgress = None
-        if progress:
-            bordersProgress = progress.createChild(weight=taskWeight, steps=borderCount)
-        borders = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._BordersTableName):
-            borderId = row['id']
-
-            try:
-                borders.append(multiverse.DbBorder(
-                    id=borderId,
-                    sectorId=row['sector_id'],
-                    allegianceId=row['allegiance_id'],
-                    style=row['style'],
-                    colour=row['colour'],
-                    label=row['label'],
-                    labelWorldX=row['label_x'],
-                    labelWorldY=row['label_y'],
-                    showLabel=bool(row['show_label']),
-                    wrapLabel=bool(row['wrap_label']),
-                    hexes=borderHexMap.get(borderId)))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load border {borderId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if bordersProgress:
-            bordersProgress.advance(increment=borderCount)
-
-        return borders
+        return self._mapTable(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbBorder],
+            progress=progress)
 
     #    ███████████                      ███
     #   ░░███░░░░░███                    ░░░
@@ -3038,55 +3114,12 @@ class UniverseDb(object):
             cursor: sqlite3.Cursor,
             progress: typing.Optional[common.ProgressTracker] = None
             ) -> typing.List[multiverse.DbRegion]:
-        taskCount = 2
-        taskWeight = 1 / taskCount
+        logging.debug(f'UniverseDb loading regions from universe {self._universePath!r}')
 
-        hexCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._RegionHexesTableName)
-        hexProgress = None
-        if progress:
-            hexProgress = progress.createChild(weight=taskWeight, steps=hexCount)
-        regionHexMap = {}
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._RegionHexesTableName):
-            regionId = row['region_id']
-            hexes = regionHexMap.get(regionId)
-            if hexes is None:
-                hexes = []
-                regionHexMap[regionId] = hexes
-            hexes.append((row['hex_x'], row['hex_y']))
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if hexProgress:
-            hexProgress.advance(increment=hexCount)
-
-        regionsCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._RegionsTableName)
-        regionsProgress = None
-        if progress:
-            regionsProgress = progress.createChild(weight=taskWeight, steps=regionsCount)
-        regions = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._RegionsTableName):
-            regionId = row['id']
-
-            try:
-                regions.append(multiverse.DbRegion(
-                    id=regionId,
-                    sectorId=row['sector_id'],
-                    colour=row['colour'],
-                    label=row['label'],
-                    labelWorldX=row['label_x'],
-                    labelWorldY=row['label_y'],
-                    showLabel=bool(row['show_label']),
-                    wrapLabel=bool(row['wrap_label']),
-                    hexes=regionHexMap.get(regionId)))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load region {regionId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if regionsProgress:
-            regionsProgress.advance(increment=regionsCount)
-
-        return regions
+        return self._mapTable(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbRegion],
+            progress=progress)
 
     #    ██████   ██████                        █████                 █████              ████
     #   ░░██████ ██████                        ░░███                 ░░███              ░░███
@@ -3134,36 +3167,10 @@ class UniverseDb(object):
             ) -> typing.List[multiverse.DbMapLabel]:
         logging.debug(f'UniverseDb loading map labels from universe {self._universePath!r}')
 
-        count = self._database.rowCount(cursor=cursor, tableName=UniverseDb._MapLabelsTableName)
-        taskProgress = None
-        if progress:
-            taskProgress = progress.createChild(weight=1.0, steps=count)
-
-        labels: typing.List[multiverse.DbMapLabel] = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._MapLabelsTableName):
-            labelId = row['id']
-
-            try:
-                labels.append(multiverse.DbMapLabel(
-                    id=labelId,
-                    text=row['text'],
-                    worldX=row['x'],
-                    worldY=row['y'],
-                    layer=row['layer'],
-                    alignment=row['alignment'],
-                    colour=row['colour'],
-                    size=row['size'],
-                    rotation=row['rotation']))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load map label {labelId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if taskProgress:
-            taskProgress.advance(increment=count)
-
-        return labels
+        return self._mapTable(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbMapLabel],
+            progress=progress)
 
     def _deleteMapLabels(
             self,
@@ -3213,7 +3220,7 @@ class UniverseDb(object):
             rows.append({
                 'id': vector.id(),
                 'layer': vector.layer(),
-                'closed': int(vector.closed())})
+                'closed': int(vector.isClosed())})
         self._database.insertMany(
             cursor=cursor,
             tableName=UniverseDb._MapVectorsTableName,
@@ -3238,50 +3245,10 @@ class UniverseDb(object):
             ) -> typing.List[multiverse.DbMapVector]:
         logging.debug(f'UniverseDb loading map vectors from universe {self._universePath!r}')
 
-        taskCount = 2
-        taskWeight = 1 / taskCount
-
-        pointCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._MapVectorPointsTableName)
-        pointsProgress = None
-        if progress:
-            pointsProgress = progress.createChild(weight=taskWeight, steps=pointCount)
-        vectorPointsMap: typing.Dict[str, typing.List[typing.Tuple[float, float]]] = {}
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._MapVectorPointsTableName):
-            vectorId = row['vector_id']
-            points = vectorPointsMap.get(vectorId)
-            if points is None:
-                points = []
-                vectorPointsMap[vectorId] = points
-            points.append((row['x'], row['y']))
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if pointsProgress:
-            pointsProgress.advance(increment=pointCount)
-
-        vectorCount = self._database.rowCount(cursor=cursor, tableName=UniverseDb._MapVectorsTableName)
-        vectorsProgress = None
-        if progress:
-            vectorsProgress = progress.createChild(weight=taskWeight, steps=vectorCount)
-        vectors: typing.List[multiverse.DbMapVector] = []
-        for row in self._database.select(cursor=cursor, tableName=UniverseDb._MapVectorsTableName):
-            vectorId = row['id']
-
-            try:
-                vectors.append(multiverse.DbMapVector(
-                    id=vectorId,
-                    points=vectorPointsMap.get(vectorId),
-                    layer=row['layer'],
-                    closed=bool(row['closed'])))
-            except Exception as ex:
-                logging.error(
-                    f'UniverseDb failed to load map vector {vectorId!r} from universe {self._universePath!r}',
-                    exc_info=ex)
-
-        # TODO: Should chunk the inserts and do more granular advancing
-        if vectorsProgress:
-            vectorsProgress.advance(increment=vectorCount)
-
-        return vectors
+        return self._mapTable(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbMapVector],
+            progress=progress)
 
     def _deleteMapLabels(
             self,
@@ -3298,20 +3265,3 @@ class UniverseDb(object):
             tableName=UniverseDb._MapVectorsTableName,
             where='id = ?',
             parameters=parameters)
-
-    @staticmethod
-    def _parseTimestampString(content: typing.Optional[str]) -> typing.Optional[datetime.datetime]:
-        if content is None:
-            return None
-
-        return datetime.datetime.fromisoformat(content)
-
-    @staticmethod
-    def _formatTimestampString(timestamp: typing.Optional[datetime.datetime]) -> typing.Optional[str]:
-        if timestamp is None:
-            return None
-
-        if timestamp.tzinfo is None:
-            # Assume timestamps without a timezone are in UTC
-            timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
-        return timestamp.astimezone(datetime.timezone.utc).isoformat()

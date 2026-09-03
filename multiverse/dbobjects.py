@@ -869,16 +869,15 @@ class DbAllegiance(DbUniverseObject):
     def borderStyle(self) -> typing.Optional[str]:
         return self._borderStyle
 
-class DbSophont(DbSectorObject):
+class DbSophont(DbUniverseObject):
     def __init__(
             self,
             name: str,
             code: str,
             isMajor: bool,
-            id: typing.Optional[str] = None, # None means allocate an id
-            sectorId: typing.Optional[str] = None
+            id: typing.Optional[str] = None # None means allocate an id
             ) -> None:
-        super().__init__(id=id, sectorId=sectorId)
+        super().__init__(id=id)
 
         survey.validateSophontCode(name='code', value=code)
         survey.validateSophontName(name='name', value=name)
@@ -1768,18 +1767,18 @@ class DbMapVector(DbUniverseObject):
             self,
             points: typing.Sequence[typing.Tuple[float, float]],
             layer: str,
-            closed: bool,
+            isClosed: bool,
             id: typing.Optional[str] = None # None means allocate an id
             ) -> None:
         super().__init__(id=id)
 
         common.validateSequence(name='points', value=points, allowEmpty=False, validationFn=_validateWorldSpacePointElement)
         common.validateStr(name='layer', value=layer, validationFn=lambda n, v: _validateStrNoCase(n, v, _ValidVectorLayer))
-        common.validateBool(name='closed', value=closed)
+        common.validateBool(name='isClosed', value=isClosed)
 
         self._points = list(points)
         self._layer = layer
-        self._closed = closed
+        self._isClosed = isClosed
 
     def points(self) -> typing.Sequence[typing.Tuple[float, float]]:
         return common.ConstSequenceRef(self._points)
@@ -1787,5 +1786,5 @@ class DbMapVector(DbUniverseObject):
     def layer(self) -> str:
         return self._layer
 
-    def closed(self) -> bool:
-        return self._closed
+    def isClosed(self) -> bool:
+        return self._isClosed
