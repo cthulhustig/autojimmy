@@ -1982,22 +1982,22 @@ class UniverseDb(object):
                         # TODO: Do something
                         pass
 
-        chunkSize = 1000
-        chunkCount = math.ceil(rowCount / chunkSize)
-        localProgress = progress.createChild(weight=taskWeight, steps=chunkCount) if progress is not None else None
+        chunkSize = rowCount
+        localProgress = None
+        if progress is not None:
+            chunkSize = 10000
+            localProgress = progress.createChild(
+                weight=taskWeight,
+                steps=math.ceil(rowCount / chunkSize))
 
         objects: typing.Union[
             typing.List[multiverse.DbObject],
             typing.Dict[
                 str, # Parent id
                 typing.List[multiverse.DbObject]]] = [] if parentColumnName is None else {}
-        for chunk in range(chunkCount):
-            index = chunk * chunkSize
-            limit = min(index + chunkSize, rowCount)
-            while index < limit:
-                row = tableRows[index]
-                index += 1
-
+        for chunkStart in range(0, rowCount, chunkSize):
+            chunkRows = itertools.islice(tableRows, chunkStart, chunkStart + chunkSize)
+            for row in chunkRows:
                 objectId = row['id']
                 objectType = tableMapping.objectType()
                 initParams: typing.Mapping[
@@ -2110,23 +2110,23 @@ class UniverseDb(object):
                 progress.complete()
             return
 
-        chunkSize = 1000
-        chunkCount = math.ceil(rowCount / chunkSize)
-        localProgress = progress.createChild(weight=1, steps=chunkCount) if progress is not None else None
+        chunkSize = rowCount
+        localProgress = None
+        if progress is not None:
+            chunkSize = 10000
+            chunkCount = math.ceil(rowCount / chunkSize)
+            localProgress = progress.createChild(
+                weight=1,
+                steps=chunkCount)
 
         tuples: typing.Union[
             typing.List[typing.Tuple[typing.Any, ...]],
             typing.Dict[
                 str, # Parent Id
                 typing.List[typing.Tuple[typing.Any, ...]]]] = [] if parentColumnName is None else {}
-
-        for chunk in range(chunkCount):
-            index = chunk * chunkSize
-            limit = min(index + chunkSize, rowCount)
-            while index < limit:
-                row = tableRows[index]
-                index += 1
-
+        for chunkStart in range(0, rowCount, chunkSize):
+            chunkRows = itertools.islice(tableRows, chunkStart, chunkStart + chunkSize)
+            for row in chunkRows:
                 if parentColumnName is None:
                     tuples.append(tuple(row[n] for n in tableMapping.columnNames()))
                 else:
@@ -2322,15 +2322,6 @@ class UniverseDb(object):
                 progress.complete()
             return
 
-        if progress is None:
-            # If progress reporting is not required, just write all rows as single operation
-            self._database.insertMany(
-                cursor=cursor,
-                tableName=tableName,
-                rows=rows,
-                replaceIfExists=True)
-            return
-
         rowCount = len(rows)
         chunkSize = rowCount
         if progress is not None:
@@ -2371,8 +2362,9 @@ class UniverseDb(object):
         localProgress = None
         if progress is not None:
             chunkSize = 10000
-            chunkCount = math.ceil(objectCount / chunkSize)
-            localProgress = progress.createChild(weight=taskWeight, steps=chunkCount)
+            localProgress = progress.createChild(
+                weight=taskWeight,
+                steps=math.ceil(objectCount / chunkSize))
 
         # NOTE: It's important tableNameToRows is an ordered dict as the code adds
         # the tables in dependency order (parents before children) so rows can be
