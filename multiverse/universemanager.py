@@ -149,29 +149,37 @@ class UniverseManager(object):
         # to be created on disk
         universeDb = multiverse.UniverseDb(universePath=universePath)
 
+        tasks = (
+            (dbAllegiances, universeDb.saveAllegiances),
+            (dbSophonts, universeDb.saveSophonts),
+            (dbSectors, universeDb.saveSectors),
+            (dbSystems, universeDb.saveSystems),
+            (dbMapLabels, universeDb.saveMapLabels),
+            (dbMapVectors, universeDb.saveMapVectors))
+
+        # TODO: A ProgressTracker should be passed in but that requires updating convertStockUniverseToDbUniverse
+        progress = None
+        taskWeight = None
+        if progressCallback:
+            taskCount = len(tasks)
+            taskWeight = 1 / taskCount
+            progressSteps = 1000
+            progressWrapper = lambda p: progressCallback('Creating', int(progressSteps * p), progressSteps)
+            progress = common.ProgressTracker(weight=1, updateCallback=progressWrapper)
+
         with universeDb.createTransaction() as transaction:
             universeDb.setMilieu(milieu=milieu, transaction=transaction)
             universeDb.setDescription(description=description, transaction=transaction)
 
-            # TODO: The way I'm saving allegiances, sophonts etc individually is really
-            # inefficient. I should do it as a group so it can be a single transaction
-            if dbAllegiances:
-                universeDb.saveAllegiances(allegiances=dbAllegiances, transaction=transaction)
-
-            if dbSophonts:
-                universeDb.saveSophonts(sophonts=dbSophonts, transaction=transaction)
-
-            if dbSectors:
-                universeDb.saveSectors(sectors=dbSectors, transaction=transaction)
-
-            if dbSystems:
-                universeDb.saveSystems(systems=dbSystems, transaction=transaction)
-
-            if dbMapLabels:
-                universeDb.saveMapLabels(labels=dbMapLabels, transaction=transaction)
-
-            if dbMapVectors:
-                universeDb.saveMapVectors(vectors=dbMapVectors, transaction=transaction)
+            for objects, function in tasks:
+                taskProgress = progress.createChild(weight=taskWeight) if progress is not None else None
+                if objects:
+                    function(
+                        objects,
+                        transaction=transaction,
+                        progress=taskProgress)
+                elif taskProgress is not None:
+                    taskProgress.complete()
 
         # Only add the universe to the registry after the database has been
         # created to avoid dangling entries if creating the database fails

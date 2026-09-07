@@ -31,6 +31,7 @@ def loadUniverseFromDatabase(
 
     # TODO: Progress tracker should be passed in and child trackers created
     # for each task
+    # TODO: The convertDB* functions should take a a progress tracker as well
     taskCount = 6
     taskWeight = 1 / taskCount
     progress = None

@@ -20,6 +20,10 @@ class ProgressTracker(object):
         self._children: typing.List['ProgressTracker'] = []
         self._weakParent: typing.Optional[weakref.ReferenceType['ProgressTracker']] = None
 
+        # Avoid a lot of repeated recursion by marking nodes as complete once
+        # they AND their children have completed
+        self._complete = False
+
         self._lock = threading.RLock()
 
     def weight(self) -> float:
@@ -27,14 +31,20 @@ class ProgressTracker(object):
 
     def progress(self) -> float:  # In the range 0.0 -> 1.0
         with self._lock:
+            if self._complete:
+                return 1.0
+
             if not self._children:
-                if self._progress == 0:
+                if self._steps == 0:
                     return 0
                 return common.clamp(self._progress / self._steps, 0.0, 1.0)
 
             totalProgress = 0
             for child in self._children:
                 totalProgress += child.progress() * child.weight()
+            totalProgress = common.clamp(totalProgress, 0.0, 1.0)
+            if totalProgress == 1.0:
+                self._complete = True
             return common.clamp(totalProgress, 0.0, 1.0)
 
     def advance(self, increment: int = 1) -> None:
@@ -46,6 +56,9 @@ class ProgressTracker(object):
             self._progress += increment
             self._progress = min(self._progress, self._steps)
         self._doChangeNotification()
+
+    def complete(self) -> None:
+        self._complete = True
 
     def createChild(
             self,
@@ -80,7 +93,8 @@ class ProgressTracker(object):
         # Call our callback with current percentage if set
         if self._updateCallback:
             try:
-                self._updateCallback(self.progress())
+                progress = self.progress()
+                self._updateCallback(progress)
             except Exception:
                 # callbacks should not raise to avoid breaking callers
                 # TODO: Should probably log something
