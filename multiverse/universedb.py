@@ -1803,7 +1803,7 @@ class UniverseDb(object):
                 progress.complete()
             return
 
-        chunkSize = 10000
+        chunkSize = 50000
         chunkCount = math.ceil(rowCount / chunkSize)
 
         localProgress = progress.createChild(weight=1, steps=chunkCount)
@@ -2204,12 +2204,9 @@ class UniverseDb(object):
                     str, # Column Name
                     typing.Any]]], # Column value
             parentColumnName: typing.Optional[str] = None,
-            parentColumnValue: typing.Optional[str] = None,
-            progress: typing.Optional[common.ProgressTracker] = None
+            parentColumnValue: typing.Optional[str] = None
             ) -> None:
         if not objects:
-            if progress is not None:
-                progress.complete()
             return
 
         # NOTE: Add the rows to the table mapping before mapping any sub tables
@@ -2234,76 +2231,42 @@ class UniverseDb(object):
                     derivedObjectTypeToObjects[objectType] = derivedObjects
                 derivedObjects.append(obj)
 
-        objectCount = len(objects)
-        chunkSize = objectCount
-        taskWeight = None
-        localProgress = None
-        if progress is not None:
-            taskCount = 1
-            if derivedObjectTypeToObjects is not None:
-                taskCount += len(derivedObjectTypeToObjects)
-
-            subTableParams = 0
-            for paramMapping in tableMapping.parameters():
-                if isinstance(paramMapping, SubTableParameterMapping):
-                    subTableParams += 1
-            taskCount += objectCount * subTableParams
-
-            taskWeight = 1 / taskCount
-
-            chunkSize = 10000
-            chunkCount = math.ceil(objectCount / chunkSize)
-            localProgress = progress.createChild(weight=taskWeight, steps=chunkCount)
-
         isDerivedObject = isinstance(tableMapping, DerivedObjectMapping)
-        for chunkStart in range(0, objectCount, chunkSize):
-            chunkObjects = itertools.islice(objects, chunkStart, chunkStart + chunkSize)
-            for obj in chunkObjects:
-                row = {}
-                if isDerivedObject:
-                    row[tableMapping.baseColumnName()] = obj.id()
-                if parentColumnName is not None:
-                    row[parentColumnName] = parentColumnValue
-                for paramMapping in tableMapping.parameters():
-                    function = getattr(obj, paramMapping.paramName())
-                    value = function()
+        for obj in objects:
+            row = {}
+            if isDerivedObject:
+                row[tableMapping.baseColumnName()] = obj.id()
+            if parentColumnName is not None:
+                row[parentColumnName] = parentColumnValue
+            for paramMapping in tableMapping.parameters():
+                function = getattr(obj, paramMapping.paramName())
+                value = function()
 
-                    if isinstance(paramMapping, ColumnParameterMapping):
-                        if value is not None and paramMapping.paramType() is ColumnParameterMapping.ParamType.Boolean:
-                            value = 1 if value else 0
-                        row[paramMapping.columnName()] = value
-                    elif isinstance(paramMapping, SubTableParameterMapping):
-                        subProgress = progress.createChild(weight=taskWeight) if progress is not None else None
-                        if not value:
-                            if subProgress is not None:
-                                subProgress.complete()
-                            continue
+                if isinstance(paramMapping, ColumnParameterMapping):
+                    if value is not None and paramMapping.paramType() is ColumnParameterMapping.ParamType.Boolean:
+                        value = 1 if value else 0
+                    row[paramMapping.columnName()] = value
+                elif isinstance(paramMapping, SubTableParameterMapping):
+                    subTableMapping = paramMapping.table()
+                    if isinstance(subTableMapping, ObjectTableMapping):
+                        self._mapObjectsToTable(
+                            tableMapping=subTableMapping,
+                            objects=value,
+                            tableNameToRows=tableNameToRows,
+                            parentColumnName=paramMapping.parentColumnName(),
+                            parentColumnValue=obj.id())
+                    elif isinstance(subTableMapping, RawTableMapping):
+                        self._mapRawToTable(
+                            tableMapping=subTableMapping,
+                            objects=value,
+                            tableNameToRows=tableNameToRows,
+                            parentColumnName=paramMapping.parentColumnName(),
+                            parentColumnValue=obj.id())
+                    else:
+                        # TODO: Better exception message
+                        raise RuntimeError('Unknown sub table mapping type')
 
-                        subTableMapping = paramMapping.table()
-                        if isinstance(subTableMapping, ObjectTableMapping):
-                            self._mapObjectsToTable(
-                                tableMapping=subTableMapping,
-                                objects=value,
-                                tableNameToRows=tableNameToRows,
-                                parentColumnName=paramMapping.parentColumnName(),
-                                parentColumnValue=obj.id(),
-                                progress=subProgress)
-                        elif isinstance(subTableMapping, RawTableMapping):
-                            self._mapRawToTable(
-                                tableMapping=subTableMapping,
-                                objects=value,
-                                tableNameToRows=tableNameToRows,
-                                parentColumnName=paramMapping.parentColumnName(),
-                                parentColumnValue=obj.id(),
-                                progress=subProgress)
-                        else:
-                            # TODO: Better exception message
-                            raise RuntimeError('Unknown sub table mapping type')
-
-                objectRows.append(row)
-
-            if localProgress is not None:
-                localProgress.advance()
+            objectRows.append(row)
 
         if derivedObjectTypeToObjects:
             objectTypeToDerivedMapping = {m.objectType(): m for m in derivedObjectMappings}
@@ -2312,8 +2275,7 @@ class UniverseDb(object):
                 self._mapObjectsToTable(
                     tableMapping=derivedMapping,
                     objects=derivedObjects,
-                    tableNameToRows=tableNameToRows,
-                    progress=progress.createChild(weight=taskWeight) if progress is not None else None)
+                    tableNameToRows=tableNameToRows)
 
     def _mapRawToTable(
             self,
@@ -2325,9 +2287,11 @@ class UniverseDb(object):
                     str, # Column Name
                     typing.Any]]], # Column value
             parentColumnName: typing.Optional[str] = None,
-            parentColumnValue: typing.Optional[str] = None,
-            progress: typing.Optional[common.ProgressTracker] = None
+            parentColumnValue: typing.Optional[str] = None
             ) -> None:
+        if not objects:
+            return
+
         # NOTE: Add the rows to the table mapping before mapping any sub tables
         # as we want the the tables to be added to tableNameToRows so parents
         # are before children.
@@ -2336,28 +2300,13 @@ class UniverseDb(object):
             tableRows = []
             tableNameToRows[tableMapping.tableName()] = tableRows
 
-        objectCount = len(objects)
-        chunkSize = objectCount
-        localProgress = None
-        if progress is not None:
-            chunkSize = 10000
-
-            localProgress = progress.createChild(
-                weight=1,
-                steps=math.ceil(objectCount / chunkSize))
-
-        for chunkStart in range(0, objectCount, chunkSize):
-            chunkObjects = itertools.islice(objects, chunkStart, chunkStart + chunkSize)
-            for obj in chunkObjects:
-                row = {}
-                if parentColumnName is not None:
-                    row[parentColumnName] = parentColumnValue
-                for index, columnName in enumerate(tableMapping.columnNames()):
-                    row[columnName] = obj[index]
-                tableRows.append(row)
-
-            if localProgress is not None:
-                localProgress.advance()
+        for obj in objects:
+            row = {}
+            if parentColumnName is not None:
+                row[parentColumnName] = parentColumnValue
+            for index, columnName in enumerate(tableMapping.columnNames()):
+                row[columnName] = obj[index]
+            tableRows.append(row)
 
     def _saveTableRows(
             self,
@@ -2383,10 +2332,12 @@ class UniverseDb(object):
             return
 
         rowCount = len(rows)
-        chunkSize = 10000
-        localProgress = progress.createChild(
-            weight=1,
-            steps=math.ceil(rowCount / chunkSize))
+        chunkSize = rowCount
+        if progress is not None:
+            chunkSize = 50000
+            localProgress = progress.createChild(
+                weight=1,
+                steps=math.ceil(rowCount / chunkSize))
 
         for chunkStart in range(0, rowCount, chunkSize):
             chunkRows = itertools.islice(rows, chunkStart, chunkStart + chunkSize)
