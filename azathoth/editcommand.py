@@ -1,0 +1,18 @@
+import azathoth
+
+class EditCommandInterface(object):
+    def applyEvent(self) -> azathoth.ChangeEvent:
+        raise NotImplementedError(f'{type(self)} is derived from CommandInterface so must implement applyEvent')
+
+    def applyChanges(
+            self
+            ) -> None:
+        raise NotImplementedError(f'{type(self)} is derived from CommandInterface so must implement applyChanges')
+
+    def revertEvent(self) -> azathoth.ChangeEvent:
+        raise NotImplementedError(f'{type(self)} is derived from CommandInterface so must implement revertEvent')
+
+    def revertChanges(
+            self
+            ) -> None:
+        raise NotImplementedError(f'{type(self)} is derived from CommandInterface so must implement revertChanges')

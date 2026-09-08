@@ -1,11 +1,12 @@
 import app
+import astronomer
+import azathoth
 import cartographer
 import common
 import gui
 import logging
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -54,31 +55,35 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
 
     def _filterTradeGoods(
             self,
-            tradeGood: traveller.TradeGood
+            tradeGood: logic.TradeGood
             ) -> bool:
         # Don't include exotics in the table as they're not like other trade
         # goods and don't affect the trade score
-        exotics = traveller.tradeGoodFromId(
+        exotics = logic.tradeGoodFromId(
             ruleSystem=self._rules.system(),
-            tradeGoodId=traveller.TradeGoodIds.Exotics)
+            tradeGoodId=logic.TradeGoodIds.Exotics)
         return tradeGood is not exotics
 
 class _RegionSelectWidget(QtWidgets.QWidget):
-    _StateVersion = '_RegionSelectWidget_v1'
+    # v1: Initial version
+    # v2: Switched from storing sector & subsector name to sector position and
+    # subsector code to account for sector & subsector names no longer being
+    # treated as unique
+    _StateVersion = '_RegionSelectWidget_v2'
     _AllSubsectorsText = '<All Subsectors>'
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
-        self._milieu = milieu
+        self._universe = universe
 
-        self._sectorComboBox = QtWidgets.QComboBox()
+        self._sectorComboBox = gui.ComboBoxEx()
         self._sectorComboBox.currentIndexChanged.connect(self._loadSubsectorNames)
-        self._subsectorComboBox = QtWidgets.QComboBox()
+        self._subsectorComboBox = gui.ComboBoxEx()
 
         layout = gui.FormLayoutEx()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -87,34 +92,43 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-        self._syncToMilieu()
+        self._syncContent()
 
-    def milieu(self) -> multiverse.Milieu:
-        return self._milieu
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
-        if milieu is self._milieu:
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
+
+    def universe(self) -> astronomer.Universe:
+        return self._universe
+
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        if universe is self._universe:
             return
 
-        self._milieu = milieu
-        self._syncToMilieu()
+        self._universe = universe
+        self._syncContent()
 
-    def sectorName(self) -> str:
-        return self._sectorComboBox.currentText()
+    def sectorPos(self) -> astronomer.SectorPosition:
+        return self._sectorComboBox.currentUserData()
 
-    def subsectorName(self) -> typing.Optional[str]:
-        subsectorName = self._subsectorComboBox.currentText()
-        return subsectorName if subsectorName != self._AllSubsectorsText else None
+    def subsectorCode(self) -> typing.Optional[str]:
+        return self._subsectorComboBox.currentUserData()
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(_RegionSelectWidget._StateVersion)
-        stream.writeQString(self.sectorName())
-        subsectorName = self.subsectorName()
-        stream.writeBool(subsectorName != None)
-        if subsectorName:
-            stream.writeQString(subsectorName)
+
+        sectorPos = self.sectorPos()
+        sectorCode = self.subsectorCode()
+
+        stream.writeInt(sectorPos.sectorX())
+        stream.writeInt(sectorPos.sectorY())
+        stream.writeBool(sectorCode != None)
+        if sectorCode:
+            stream.writeQString(sectorCode)
+
         return state
 
     def restoreState(
@@ -128,51 +142,89 @@ class _RegionSelectWidget(QtWidgets.QWidget):
             logging.debug(f'Failed to restore _RegionSelectWidget state (Incorrect version)')
             return False
 
-        self._sectorComboBox.setCurrentText(stream.readQString())
+        sectorPos = astronomer.SectorPosition(
+            stream.readInt(),
+            stream.readInt())
+        subsectorCode = None
         if stream.readBool():
-            self._subsectorComboBox.setCurrentText(stream.readQString())
+            subsectorCode = stream.readQString()
+
+        index = self._sectorComboBox.findUserData(sectorPos)
+        if index >= 0:
+            self._sectorComboBox.setCurrentIndex(index)
+
+        index = self._subsectorComboBox.findUserData(subsectorCode)
+        if index >= 0:
+            self._subsectorComboBox.setCurrentIndex(index)
 
         return True
 
     def _loadSectorNames(self) -> None:
         self._sectorComboBox.clear()
 
-        sectorNames = sorted(
-            multiverse.WorldManager.instance().sectorNames(milieu=self._milieu),
-            key=str.casefold)
-        self._sectorComboBox.addItems(sectorNames)
+        sectorData: typing.List[typing.Tuple[str, astronomer.HexPosition]] = []
+        for sector in self._universe.sectors():
+            sectorData.append((sector.name(), sector.position()))
+
+        sectorData = sorted(
+            sectorData,
+            key=lambda data: data[0].lower())
+
+        for name, pos in sectorData:
+            self._sectorComboBox.addItem(name, pos)
 
     def _loadSubsectorNames(self) -> None:
         self._subsectorComboBox.clear()
-        self._subsectorComboBox.addItem(self._AllSubsectorsText)
+        self._subsectorComboBox.addItem(self._AllSubsectorsText, None)
 
-        sector = multiverse.WorldManager.instance().sectorByName(
-            milieu=self._milieu,
-            name=self._sectorComboBox.currentText())
+        currentSectorPos: typing.Optional[astronomer.SectorPosition] = \
+            self._sectorComboBox.currentUserData()
+        if not currentSectorPos:
+            return
+
+        sector = self._universe.sectorByPosition(currentSectorPos)
         if not sector:
             return
-        subsectorNames = sorted(
-            sector.subsectorNames(),
-            key=str.casefold)
-        self._subsectorComboBox.addItems(subsectorNames)
 
-    def _syncToMilieu(self) -> None:
-        currentSector = self._sectorComboBox.currentText()
-        currentSubsector = self._subsectorComboBox.currentText()
+        subsectorData: typing.List[typing.Tuple[str, str]] = []
+        for code in astronomer.SubsectorCodes:
+            subsectorName = sector.subsectorName(code)
+            subsectorData.append((subsectorName, code))
+
+        subsectorData = sorted(
+            subsectorData,
+            key=lambda data: data[0].lower())
+
+        for name, code in subsectorData:
+            self._subsectorComboBox.addItem(name, code)
+
+    def _syncContent(self) -> None:
+        sectorPos = self._sectorComboBox.currentUserData()
+        subsectorCode = self._subsectorComboBox.currentUserData()
 
         with gui.SignalBlocker(self):
             self._loadSectorNames()
-            index = self._sectorComboBox.findText(currentSector)
+            index = self._sectorComboBox.findUserData(sectorPos)
             if index >= 0:
                 self._sectorComboBox.setCurrentIndex(index)
 
             self._loadSubsectorNames()
-            index = self._subsectorComboBox.findText(currentSubsector)
+            index = self._subsectorComboBox.findUserData(subsectorCode)
             if index >= 0:
                 self._subsectorComboBox.setCurrentIndex(index)
 
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != self._universe.id():
+            return
+
+        self._syncContent()
+
 class _HexSearchRadiusWidget(QtWidgets.QWidget):
-    showCenterHex = QtCore.pyqtSignal(multiverse.HexPosition)
+    showCenterHex = QtCore.pyqtSignal(astronomer.HexPosition)
 
     _StateVersion = '_HexSearchRadiusWidget_v1'
 
@@ -180,7 +232,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Iterable[app.MapOption],
@@ -193,7 +245,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
         super().__init__(parent)
 
         self._hexWidget = gui.HexSelectToolWidget(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -237,8 +289,8 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
-        self._hexWidget.setMilieu(milieu=milieu)
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        self._hexWidget.setUniverse(universe=universe)
 
     def setRules(self, rules: traveller.Rules) -> None:
         self._hexWidget.setRules(rules=rules)
@@ -261,7 +313,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
     def setTaggingColours(self, colours: typing.Optional[app.TaggingColours]) -> None:
         self._hexWidget.setTaggingColours(colours=colours)
 
-    def centerHex(self) -> typing.Optional[multiverse.HexPosition]:
+    def centerHex(self) -> typing.Optional[astronomer.HexPosition]:
         return self._hexWidget.selectedHex()
 
     def searchRadius(self) -> int:
@@ -325,7 +377,7 @@ class WorldSearchWindow(gui.WindowWidget):
         self._scoreRecalculationTimer = None
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            universe=astronomer.WorldManager.instance().universe(),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
@@ -360,6 +412,11 @@ class WorldSearchWindow(gui.WindowWidget):
         self.setLayout(windowLayout)
 
         app.Config.instance().configChanged.connect(self._appConfigChanged)
+
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -493,7 +550,7 @@ class WorldSearchWindow(gui.WindowWidget):
         return super().firstShowEvent(e)
 
     def _setupAreaControls(self) -> None:
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        universe = astronomer.WorldManager.instance().universe()
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -503,7 +560,7 @@ class WorldSearchWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._worldRadiusSearchWidget = _HexSearchRadiusWidget(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -518,7 +575,7 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldRadiusSearchRadioButton.toggled.connect(self._worldRadiusSearchToggled)
         self._worldRadiusSearchRadioButton.setChecked(True)
 
-        self._regionSearchSelectWidget = _RegionSelectWidget(milieu=milieu)
+        self._regionSearchSelectWidget = _RegionSelectWidget(universe=universe)
         self._regionSearchSelectWidget.setDisabled(True)
         self._regionSearchRadioButton = gui.RadioButtonEx()
         self._regionSearchRadioButton.setToolTip('Search for worlds in the selected sector/subsector.')
@@ -613,7 +670,7 @@ class WorldSearchWindow(gui.WindowWidget):
         self._scoredGoodGroupBox.setLayout(layout)
 
     def _setupFoundWorldsControls(self) -> None:
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        universe = astronomer.WorldManager.instance().universe()
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -631,7 +688,7 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTableDisplayModeTabs.currentChanged.connect(self._updateWorldTableColumns)
 
         self._worldTable = gui.WorldTradeScoreTable(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -666,8 +723,7 @@ class WorldSearchWindow(gui.WindowWidget):
         tableLayoutWidget.setLayout(tableLayout)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=multiverse.WorldManager.instance().universe(),
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             style=mapStyle,
             options=mapOptions,
@@ -680,6 +736,12 @@ class WorldSearchWindow(gui.WindowWidget):
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
         self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
+
+        self._searchResultsOverlay = gui.HexPointsMapOverlay(
+            radius=0.5,
+            colour=QtGui.QColor('#7F8080FF'),
+            depth=gui.MapWidgetEx.userOverlayMinDepth())
+        self._mapWidget.addOverlay(overlay=self._searchResultsOverlay)
 
         # HACK: This wrapper widget for the map is a hacky fix for what looks
         # like a bug in QTabWidget that is triggered if you make one of the
@@ -754,7 +816,7 @@ class WorldSearchWindow(gui.WindowWidget):
     def _worldRadiusSearchToggled(self, selected: bool) -> None:
         self._worldRadiusSearchWidget.setDisabled(not selected)
 
-    def _showCenterHexOnMapClicked(self, hex: multiverse.HexPosition) -> None:
+    def _showCenterHexOnMapClicked(self, hex: astronomer.HexPosition) -> None:
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(
                 self._mapWrapperWidget)
@@ -779,18 +841,21 @@ class WorldSearchWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
-            self._hexTooltipProvider.setMilieu(milieu=newValue)
-            self._worldRadiusSearchWidget.setMilieu(milieu=newValue)
-            self._regionSearchSelectWidget.setMilieu(milieu=newValue)
-            self._worldTable.setMilieu(milieu=newValue)
-            self._mapWidget.setMilieu(milieu=newValue)
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._hexTooltipProvider.setUniverse(universe=universe)
+            self._worldRadiusSearchWidget.setUniverse(universe=universe)
+            self._regionSearchSelectWidget.setUniverse(universe=universe)
+            self._worldTable.setUniverse(universe=universe)
+            self._mapWidget.setUniverse(universe=universe)
+            self._clearResults()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._worldRadiusSearchWidget.setRules(rules=newValue)
             self._tradeGoodTable.setRules(rules=newValue)
             self._worldTable.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)
+            self._clearResults()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._worldRadiusSearchWidget.setMapStyle(style=newValue)
@@ -854,7 +919,8 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTable.setTradeGoods(
             tradeGoods=self._tradeGoodTable.checkedTradeGoods())
         self._resultsCountLabel.setText(common.formatNumber(0))
-        self._mapWidget.clearHexHighlights()
+        self._searchResultsOverlay.clearHexes()
+        self._mapWidget.update()
 
         foundWorlds = None
         try:
@@ -862,23 +928,23 @@ class WorldSearchWindow(gui.WindowWidget):
             worldFilter.setFilterLogic(filterLogic=self._filterWidget.filterLogic())
             worldFilter.setFilters(filters=self._filterWidget.filters())
 
-            milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+            universe = astronomer.WorldManager.instance().universe()
             rules = app.Config.instance().value(option=app.ConfigOption.Rules)
             tagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
 
             if self._universeSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.search(
-                    milieu=milieu,
+                    universe=universe,
                     rules=rules,
                     tagging=tagging,
                     maxResults=self._MaxSearchResults)
             elif self._regionSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.searchRegion(
-                    milieu=milieu,
+                    universe=universe,
                     rules=rules,
                     tagging=tagging,
-                    sectorName=self._regionSearchSelectWidget.sectorName(),
-                    subsectorName=self._regionSearchSelectWidget.subsectorName(),
+                    sectorPos=self._regionSearchSelectWidget.sectorPos(),
+                    subsectorCode=self._regionSearchSelectWidget.subsectorCode(),
                     maxResults=self._MaxSearchResults)
             elif self._worldRadiusSearchRadioButton.isChecked():
                 hex = self._worldRadiusSearchWidget.centerHex()
@@ -888,7 +954,7 @@ class WorldSearchWindow(gui.WindowWidget):
                         text='Select a hex to center the search radius around')
                     return
                 foundWorlds = worldFilter.searchRadius(
-                    milieu=milieu,
+                    universe=universe,
                     rules=rules,
                     tagging=tagging,
                     centerHex=hex,
@@ -928,7 +994,8 @@ class WorldSearchWindow(gui.WindowWidget):
     def _clearResults(self) -> None:
         self._worldTable.removeAllRows()
         self._resultsCountLabel.clear()
-        self._mapWidget.clearHexHighlights()
+        self._searchResultsOverlay.clearHexes()
+        self._mapWidget.update()
 
     def _updateWorldTableColumns(self, index: int) -> None:
         self._worldTable.setActiveColumns(self._worldColumns())
@@ -962,7 +1029,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _findTradeOptions(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         try:
             traderWindow = gui.WindowManager.instance().showMultiWorldTradeOptionsWindow()
@@ -979,7 +1046,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=[world.hex() for world in worlds])
@@ -1006,7 +1073,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _showHexesOnMap(
             self,
-            hexes: typing.Iterable[multiverse.World],
+            hexes: typing.Iterable[astronomer.World],
             highlightHexes: bool = False,
             switchTab: bool = True
             ) -> None:
@@ -1016,9 +1083,8 @@ class WorldSearchWindow(gui.WindowWidget):
                     self._mapWrapperWidget)
 
             if highlightHexes:
-                # Clear old highlight when highlighting new worlds
-                self._mapWidget.clearHexHighlights()
-                self._mapWidget.highlightHexes(hexes=hexes)
+                self._searchResultsOverlay.setHexes(hexes=hexes)
+                self._mapWidget.update()
             self._mapWidget.centerOnHexes(hexes=hexes)
         except Exception as ex:
             message = 'Failed to show world(s) on map'
@@ -1041,3 +1107,13 @@ class WorldSearchWindow(gui.WindowWidget):
             html=_WelcomeMessage,
             noShowAgainId='WorldSearchWelcome')
         message.exec()
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != astronomer.WorldManager.instance().universe().id():
+            return
+
+        self._clearResults()

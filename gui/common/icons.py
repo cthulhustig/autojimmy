@@ -6,18 +6,18 @@ import typing
 from PyQt5 import QtGui, QtCore, QtWidgets, QtSvg, QtXml
 
 class Icon(enum.Enum):
-    FrozenColumn = 'frozen_column.svg'
-    UnfrozenColumn = 'unfrozen_column.svg'
-    CloseTab = 'close_tab.svg'
-    NewFile = 'new_file.svg'
-    NewList = 'new_list.svg'
-    NewGrid = 'new_grid.svg'
-    SaveFile = 'save_file.svg'
-    DeleteFile = 'delete_file.svg'
-    CopyFile = 'copy_file.svg'
-    RenameFile = 'rename_file.svg'
-    ImportFile = 'import_file.svg'
-    ExportFile = 'export_file.svg'
+    ColumnLocked = 'lock_closed.svg'
+    ColumnUnlocked = 'lock_open.svg'
+    Cross = 'cross.svg'
+    FileNew = 'file_new.svg'
+    FileSave = 'file_save.svg'
+    FileDelete = 'file_delete.svg'
+    FileCopy = 'file_copy.svg'
+    FileRename = 'file_rename.svg'
+    FileImport = 'file_import.svg'
+    FileExport = 'file_export.svg'
+    ListNew = 'list_new.svg'
+    GridNew = 'grid_new.svg'
     Search = 'search.svg'
     Info = 'info.svg'
     ZoomIn = 'zoom_in.svg'
@@ -31,12 +31,19 @@ class Icon(enum.Enum):
     Home = 'home.svg'
     ArrowsMaximize = 'arrows_maximize.svg'
     ArrowsMinimize = 'arrows_minimize.svg'
+    DatabaseNew = 'database_new.svg'
+    DatabaseDelete = 'database_delete.svg'
+    DatabaseRename = 'database_rename.svg'
+    DatabaseStar = 'database_star.svg'
+    DatabaseImport = 'database_import.svg'
+    DatabaseExport = 'database_export.svg'
+    Star = 'star.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override
 # is specified, WindowText colour is used
 _IconColourMap: typing.Dict[Icon, QtGui.QColor] = {
-    Icon.FrozenColumn: QtGui.QColor('#1084FE')
+    Icon.ColumnLocked: QtGui.QColor('#1084FE')
 }
 
 _IconMap: typing.Dict[str, QtGui.QIcon] = {}

@@ -1,16 +1,15 @@
+import astronomer
 import common
 import logic
-import traveller
-import multiverse
 import typing
 
 class TradeOption(object):
     def __init__(
             self,
             cargoRecord: logic.CargoRecord,
-            purchaseWorld: multiverse.World,
+            purchaseWorld: astronomer.World,
             purchasePricePerTon: typing.Union[common.ScalarCalculation, common.RangeCalculation],
-            saleWorld: multiverse.World,
+            saleWorld: astronomer.World,
             salePricePerTon: typing.Union[common.ScalarCalculation, common.RangeCalculation],
             cargoQuantity: typing.Union[common.ScalarCalculation, common.RangeCalculation],
             alreadyOwned: bool,
@@ -65,13 +64,13 @@ class TradeOption(object):
     def originalCargoRecord(self) -> logic.CargoRecord:
         return self._cargoRecord
 
-    def tradeGood(self) -> traveller.TradeGood:
+    def tradeGood(self) -> logic.TradeGood:
         return self._cargoRecord.tradeGood()
 
-    def purchaseWorld(self) -> multiverse.World:
+    def purchaseWorld(self) -> astronomer.World:
         return self._purchaseWorld
 
-    def saleWorld(self) -> multiverse.World:
+    def saleWorld(self) -> astronomer.World:
         return self._saleWorld
 
     def purchasePricePerTon(self) -> typing.Union[common.ScalarCalculation, common.RangeCalculation]:

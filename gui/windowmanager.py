@@ -1,23 +1,26 @@
 import gui
 import threading
+import typing
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 class WindowManager(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
-    _worldComparisonWindow = None
-    _worldSearchWindow = None
-    _jumpRouteWindow = None
-    _purchaseCalculatorWindow = None
-    _saleCalculatorWindow = None
-    _worldTradeOptionsWindow = None
-    _multiWorldTradeOptionsWindow = None
-    _simulatorWindow = None
-    _hexDetailsWindow = None
-    _calculationWindow = None
-    _universeMapWindow = None
-    _gunsmithWindow = None
-    _robotBuilderWindow = None
-    _diceRollerWindow = None
+    _universeEditorWindow: typing.Optional[gui.CustomUniverseWindow] = None
+    _worldComparisonWindow: typing.Optional[gui.WorldComparisonWindow] = None
+    _worldSearchWindow: typing.Optional[gui.WorldSearchWindow] = None
+    _jumpRouteWindow: typing.Optional[gui.JumpRouteWindow] = None
+    _purchaseCalculatorWindow: typing.Optional[gui.PurchaseCalculatorWindow] = None
+    _saleCalculatorWindow: typing.Optional[gui.SaleCalculatorWindow] = None
+    _worldTradeOptionsWindow: typing.Optional[gui.WorldTraderWindow] = None
+    _multiWorldTradeOptionsWindow: typing.Optional[gui.MultiWorldTraderWindow] = None
+    _simulatorWindow: typing.Optional[gui.SimulatorWindow] = None
+    _hexDetailsWindow: typing.Optional[gui.HexDetailsWindow] = None
+    _calculationWindow: typing.Optional[gui.CalculationWindow] = None
+    _gunsmithWindow: typing.Optional[gui.GunsmithWindow] = None
+    _robotBuilderWindow: typing.Optional[gui.RobotBuilderWindow] = None
+    _diceRollerWindow: typing.Optional[gui.DiceRollerWindow] = None
+    _dynamicWindows: typing.Set[QtWidgets.QWidget] = set()
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -33,6 +36,8 @@ class WindowManager(object):
         return cls._instance
 
     def closeWindows(self) -> None:
+        if self._universeEditorWindow:
+            self._universeEditorWindow.close()
         if self._worldComparisonWindow:
             self._worldComparisonWindow.close()
         if self._worldSearchWindow:
@@ -53,14 +58,22 @@ class WindowManager(object):
             self._hexDetailsWindow.close()
         if self._calculationWindow:
             self._calculationWindow.close()
-        if self._universeMapWindow:
-            self._universeMapWindow.close()
         if self._gunsmithWindow:
             self._gunsmithWindow.close()
         if self._robotBuilderWindow:
             self._robotBuilderWindow.close()
         if self._diceRollerWindow:
             self._diceRollerWindow.close()
+
+        for window in self._dynamicWindows:
+            window.close()
+        self._dynamicWindows.clear()
+
+    def showUniverseEditorWindow(self) -> 'gui.CustomUniverseWindow':
+        if not self._universeEditorWindow:
+            self._universeEditorWindow = gui.CustomUniverseWindow()
+        self._universeEditorWindow.bringToFront()
+        return self._universeEditorWindow
 
     def showWorldComparisonWindow(self) -> 'gui.WorldComparisonWindow':
         if not self._worldComparisonWindow:
@@ -122,12 +135,6 @@ class WindowManager(object):
         self._calculationWindow.bringToFront()
         return self._calculationWindow
 
-    def showUniverseMapWindow(self) -> 'gui.MapWindow':
-        if not self._universeMapWindow:
-            self._universeMapWindow = gui.MapWindow()
-        self._universeMapWindow.bringToFront()
-        return self._universeMapWindow
-
     def showGunsmithWindow(self) -> 'gui.GunsmithWindow':
         if not self._gunsmithWindow:
             self._gunsmithWindow = gui.GunsmithWindow()
@@ -145,3 +152,9 @@ class WindowManager(object):
             self._diceRollerWindow = gui.DiceRollerWindow()
         self._diceRollerWindow.bringToFront()
         return self._diceRollerWindow
+
+    def manageWindow(self, window: QtWidgets.QWidget) -> None:
+        window.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
+        window.show()
+        WindowManager._dynamicWindows.add(window)
+        window.destroyed.connect(lambda: WindowManager._dynamicWindows.discard(window))

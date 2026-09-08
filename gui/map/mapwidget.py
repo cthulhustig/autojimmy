@@ -1,23 +1,25 @@
 import app
+import astronomer
+import azathoth
 import cartographer
 import common
 import gui
-import logic
 import logging
 import math
-import multiverse
 import typing
-import uuid
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-class _MapOverlay(object):
-    def __init__(self, enabled: bool = True):
+class MapOverlay(object):
+    def __init__(self, depth: int, enabled: bool = True):
         super().__init__()
-        self._handle = str(uuid.uuid4())
+        self._depth = depth
         self._enabled = enabled
 
-    def handle(self) -> str:
-        return self._handle
+    def depth(self) -> int:
+        return self._depth
+
+    def setDepth(self, depth: int) -> None:
+        self._depth = depth
 
     def isEnabled(self) -> bool:
         return self._enabled
@@ -44,397 +46,25 @@ class _MapOverlay(object):
             ) -> bool: # True if anything was draw
         raise RuntimeError(f'{type(self)} is derived from _MapOverlay so must implement draw')
 
-class _JumpRouteOverlay(_MapOverlay):
-    _JumpRouteColour = QtGui.QColor('#7F048104')
-    _PitStopColour = QtGui.QColor('#7F8080FF')
-    _PitStopRadius = 0.4 # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._jumpRoutePath = None
-        self._pitStopPoints = None
-
-        self._jumpRoutePen = QtGui.QPen(
-            _JumpRouteOverlay._JumpRouteColour,
-            1, # Width will be set when rendering as it's dependant on scale
-            QtCore.Qt.PenStyle.SolidLine,
-            QtCore.Qt.PenCapStyle.FlatCap)
-        self._jumpNodePen = QtGui.QPen(
-            _JumpRouteOverlay._JumpRouteColour,
-            1, # Width will be set when rendering as it's dependant on scale
-            QtCore.Qt.PenStyle.SolidLine,
-            QtCore.Qt.PenCapStyle.RoundCap)
-        self._pitStopPen = QtGui.QPen(
-            _JumpRouteOverlay._PitStopColour,
-            _JumpRouteOverlay._PitStopRadius * 2,
-            QtCore.Qt.PenStyle.SolidLine,
-            QtCore.Qt.PenCapStyle.RoundCap)
-
-    def hasJumpRoute(self) -> bool:
-        return self._jumpRoutePath is not None
-
-    def setRoute(
-            self,
-            jumpRoute: typing.Optional[logic.JumpRoute],
-            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
-            ) -> None:
-        if not jumpRoute:
-            self._jumpRoutePath = self._pitStopPoints = None
-            return
-
-        self._jumpRoutePath = QtGui.QPolygonF()
-        for hex in jumpRoute:
-            centerX, centerY = hex.worldCenter()
-            self._jumpRoutePath.append(QtCore.QPointF(
-                centerX * multiverse.ParsecScaleX,
-                centerY * multiverse.ParsecScaleY))
-
-        self._pitStopPoints = None
-        if refuellingPlan:
-            self._pitStopPoints = QtGui.QPolygonF()
-            for pitStop in refuellingPlan:
-                centerX, centerY = pitStop.hex().worldCenter()
-                self._pitStopPoints.append(QtCore.QPointF(
-                    centerX * multiverse.ParsecScaleX,
-                    centerY * multiverse.ParsecScaleY))
-
-    def draw(
-            self,
-            painter: QtGui.QPainter,
-            currentScale: gui.MapScale
-            ) -> None:
-        if not self.isEnabled() or not self._jumpRoutePath:
-            return False
-
-        lowDetail = currentScale.log < 7
-        routeLineWidth = 0.25 if not lowDetail else (15 / currentScale.linear)
-
-        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
-
-        self._jumpRoutePen.setWidthF(routeLineWidth)
-        painter.setPen(self._jumpRoutePen)
-        painter.drawPolyline(self._jumpRoutePath)
-
-        self._jumpNodePen.setWidthF(routeLineWidth * 2)
-        painter.setPen(self._jumpNodePen)
-        if not lowDetail:
-            painter.drawPoints(self._jumpRoutePath)
-        else:
-            painter.drawPoint(self._jumpRoutePath.at(0))
-            painter.drawPoint(self._jumpRoutePath.at(self._jumpRoutePath.count() - 1))
-
-        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
-        if self._pitStopPoints:
-            painter.setPen(self._pitStopPen)
-            painter.drawPoints(self._pitStopPoints)
-
-        return True # Something was drawn
-
-class _HexHighlightOverlay(_MapOverlay):
-    _HexPolygon = QtGui.QPolygonF([
-        # Upper left
-        QtCore.QPointF(
-            (-0.5 + multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            -0.5 * multiverse.ParsecScaleY),
-        # Upper right
-        QtCore.QPointF(
-            (+0.5 - multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            -0.5 * multiverse.ParsecScaleY),
-        # Center right
-        QtCore.QPointF(
-            (+0.5 + multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            0 * multiverse.ParsecScaleY) ,
-        # Lower right
-        QtCore.QPointF(
-            (+0.5 - multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            +0.5 * multiverse.ParsecScaleY),
-        # Lower Left
-        QtCore.QPointF(
-            (-0.5 + multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            +0.5 * multiverse.ParsecScaleY),
-        # Center left
-        QtCore.QPointF(
-            (-0.5 - multiverse.HexWidthOffset) * multiverse.ParsecScaleX,
-            0 * multiverse.ParsecScaleY),
-    ])
-
-    def __init__(self):
-        super().__init__()
-
-        # NOTE: The radius is stored as an integer in 100ths of a parsec to avoid
-        # floating point inaccuracies causing values that are effectively but not
-        # exactly equal causing multiple highlights to be created. It means there
-        # is limited precision to the radius but it should be good enough that it
-        # doesn't actually mater.
-        # In theory all this should be redundant at the moment as all the radii
-        # that I'm currently using are hard coded values so comparisons would
-        # always guarantee an exact match. However, doing it now prevents bugs in
-        # the future if I ever end having calculations that determine the radius
-        self._styleMap: typing.Dict[
-            typing.Tuple[
-                gui.MapPrimitiveType,
-                typing.Tuple[int, int, int, int], # Colour
-                # Integer radius in 100ths of a parsec for Circle primitive type
-                # or 0 for Hex
-                int],
-            typing.Tuple[
-                QtGui.QPolygonF,
-                # QPen for Circle primitive type or QBrush for hex
-                typing.Union[QtGui.QPen, QtGui.QBrush]]
-            ] = {}
-
-        self._hexMap: typing.Dict[
-            multiverse.HexPosition,
-            typing.Set[typing.Tuple[
-                gui.MapPrimitiveType,
-                typing.Tuple[int, int, int, int], # Colour
-                # Integer radius in 100ths of a parsec for Circle primitive type
-                # or 0 for Hex
-                int]],
-            ] = {}
-
-    def addHex(
-            self,
-            hex: multiverse.HexPosition,
-            type: gui.MapPrimitiveType,
-            colour: QtGui.QColor,
-            radius: float = 0.0 # Only valid if primitive type is Circle
-            ) -> None:
-        radius = int(round(radius * 100))
-        styleKey = (type, colour.getRgb(), radius)
-
-        hexStyleKeys = self._hexMap.get(hex)
-        if hexStyleKeys and styleKey in hexStyleKeys:
-            # This hex already has a highlight with this style
-            return
-
-        renderData = self._styleMap.get(styleKey)
-        if renderData is None:
-            renderData = (
-                QtGui.QPolygonF(),
-                _HexHighlightOverlay._createTool(
-                    type=type,
-                    colour=colour,
-                    radius=radius / 100))
-            self._styleMap[styleKey] = renderData
-
-        centerX, centerY = hex.worldCenter()
-        polygon = renderData[0]
-        polygon.append(QtCore.QPointF(
-            centerX * multiverse.ParsecScaleX,
-            centerY * multiverse.ParsecScaleY))
-
-        if not hexStyleKeys:
-            hexStyleKeys = set()
-            self._hexMap[hex] = hexStyleKeys
-        hexStyleKeys.add(styleKey)
-
-    def addHexes(
-            self,
-            hexes: typing.Iterable[multiverse.HexPosition],
-            type: gui.MapPrimitiveType,
-            colour: typing.Optional[QtGui.QColor],
-            colourMap: typing.Optional[typing.Mapping[multiverse.HexPosition, QtGui.QColor]] = None,
-            radius: float = 0.0 # Only valid if primitive type is Circle
-            ) -> None:
-        radius = int(round(radius * 100)) if type is gui.MapPrimitiveType.Circle else 0
-
-        styleKey = None
-        renderData = None
-        if colourMap:
-            # There is a colour map so the style needs to be checked
-            # for each hex
-            styleKey = None
-        else:
-            # There is no colour map so all hexes are going to have
-            # the same style. Do the lookup once rather than for
-            # every hex
-            styleKey = (type, colour.getRgb(), radius)
-            renderData = self._styleMap.get(styleKey)
-            if renderData is None:
-                renderData = (
-                    QtGui.QPolygonF(),
-                    _HexHighlightOverlay._createTool(
-                        type=type,
-                        colour=colour,
-                        radius=radius / 100))
-                self._styleMap[styleKey] = renderData
-
-        for hex in hexes:
-            if colourMap:
-                hexColour = colourMap.get(hex, colour)
-                if not hexColour:
-                    # No specific colour for this hex and no default so nothing
-                    # to draw
-                    continue
-                styleKey = (type, hexColour.getRgb(), radius)
-                renderData = self._styleMap.get(styleKey)
-                if renderData is None:
-                    renderData = (
-                        QtGui.QPolygonF(),
-                        _HexHighlightOverlay._createTool(
-                            type=type,
-                            colour=hexColour,
-                            radius=radius / 100))
-                    self._styleMap[styleKey] = renderData
-
-            hexStyleKeys = self._hexMap.get(hex)
-            if hexStyleKeys and styleKey in hexStyleKeys:
-                # This hex already has a highlight with this style
-                continue
-
-            centerX, centerY = hex.worldCenter()
-            polygon = renderData[0]
-            polygon.append(QtCore.QPointF(
-                centerX * multiverse.ParsecScaleX,
-                centerY * multiverse.ParsecScaleY))
-
-            if not hexStyleKeys:
-                hexStyleKeys = set()
-                self._hexMap[hex] = hexStyleKeys
-            hexStyleKeys.add(styleKey)
-
-    def removeHex(
-            self,
-            hex: multiverse.HexPosition
-            ) -> None:
-        hexStyleKeys = self._hexMap.get(hex)
-        if not hexStyleKeys:
-            return # The hex has no highlight to remove
-
-        centerX, centerY = hex.worldCenter()
-        for styleKey in hexStyleKeys:
-            polygon, _ = self._styleMap[styleKey]
-            for i in range(polygon.count() - 1, -1, -1):
-                point = polygon.at(i)
-                if math.isclose(point.x(), centerX) and math.isclose(point.y(), centerY):
-                    polygon.remove(i)
-            if polygon.isEmpty():
-                # There are no more highlights with this style so remove it from
-                # the map
-                del self._styleMap[styleKey]
-
-        del self._hexMap[hex]
-
-    def clear(self) -> None:
-        self._styleMap.clear()
-        self._hexMap.clear()
-
-    def draw(
-            self,
-            painter: QtGui.QPainter,
-            currentScale: gui.MapScale
-            ) -> None:
-        if not self.isEnabled() or not self._styleMap:
-            return False
-
-        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
-        for (type, _, _), (points, tool) in self._styleMap.items():
-            if type is gui.MapPrimitiveType.Circle:
-                painter.setPen(tool)
-                painter.drawPoints(points)
-            elif type is gui.MapPrimitiveType.Hex:
-                painter.setBrush(tool)
-                painter.setPen(QtCore.Qt.PenStyle.NoPen)
-
-                for i in range(points.count()):
-                    point = points.at(i)
-
-                    with gui.PainterStateGuard(painter):
-                        transform = painter.transform()
-                        transform.translate(point.x(), point.y())
-                        painter.setTransform(transform)
-                        painter.drawPolygon(_HexHighlightOverlay._HexPolygon)
-
-        return True # Something was drawn
-
-    @staticmethod
-    def _createTool(
-            type: gui.MapPrimitiveType,
-            colour: QtGui.QColor,
-            radius: float
-            ) -> typing.Union[QtGui.QPen, QtGui.QBrush]:
-        if type is gui.MapPrimitiveType.Circle:
-            return QtGui.QPen(
-                colour,
-                radius * 2,
-                QtCore.Qt.PenStyle.SolidLine,
-                QtCore.Qt.PenCapStyle.RoundCap)
-        elif type is gui.MapPrimitiveType.Hex:
-            return QtGui.QBrush(colour)
-        else:
-            raise RuntimeError(f'Invalid map primitive type {type}')
-
-class _HexBorderOverlay(_MapOverlay):
-    def __init__(
-            self,
-            hexes: typing.Iterable[multiverse.HexPosition],
-            lineColour: typing.Optional[QtGui.QColor] = None,
-            lineWidth: typing.Optional[int] = None, # In pixels
-            fillColour: typing.Optional[QtGui.QColor] = None,
-            includeInterior: bool = True,
-            ) -> None:
-        super().__init__()
-
-        if includeInterior:
-            outlines = logic.calculateCompleteHexOutlines(hexes=hexes)
-        else:
-            outlines = logic.calculateOuterHexOutlines(hexes=hexes)
-        self._polygons: typing.List[QtGui.QPolygonF] = []
-        for outline in outlines:
-            polygon = QtGui.QPolygonF()
-            for x, y in outline:
-                polygon.append(QtCore.QPointF(x, y))
-            self._polygons.append(polygon)
-
-        self._pen = self._brush = None
-        if lineColour:
-            self._pen = QtGui.QPen(
-                lineColour,
-                0) # Line width set at draw time as it's dependent on scale
-            self._lineWidth = lineWidth
-        if fillColour:
-            self._brush = QtGui.QBrush(fillColour)
-
-    def draw(
-            self,
-            painter: QtGui.QPainter,
-            currentScale: gui.MapScale
-            ) -> None:
-        if not self.isEnabled():
-            return False
-
-        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
-
-        if self._pen:
-            self._pen.setWidthF(self._lineWidth / currentScale.linear)
-        painter.setPen(self._pen if self._pen else QtCore.Qt.PenStyle.NoPen)
-
-        painter.setBrush(self._brush if self._brush else QtCore.Qt.BrushStyle.NoBrush)
-
-        for polygon in self._polygons:
-            painter.drawPolygon(polygon)
-
-        return True # Something was drawn
-
-class _EmpressWaveOverlay(_MapOverlay):
+class _EmpressWaveOverlay(MapOverlay):
     # The origin is taken from Traveller Map where it's 0, 10000 in its map space
-    _WaveOriginHex = multiverse.HexPosition(0, -10000)
+    _WaveOriginHex = astronomer.HexPosition(0, -10000)
     _WaveColour = QtGui.QColor('#4CFFCC00')
     _WaveVelocity = math.pi / 3.26 # Velocity of effect is light speed (so 1 ly/y)
 
     def __init__(
             self,
-            milieu: multiverse.Milieu
+            universe: astronomer.Universe,
+            depth: int
             ) -> None:
-        super().__init__()
-        self._milieu = milieu
+        super().__init__(depth=depth)
+        self._universe = universe
         self._pen = QtGui.QPen(
             _EmpressWaveOverlay._WaveColour,
             0) # Width will be set at render time
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
-        self._milieu = milieu
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        self._universe = universe
 
     # This code is based on the Traveller Map drawWave code (map.js)
     def draw(
@@ -445,14 +75,14 @@ class _EmpressWaveOverlay(_MapOverlay):
         if not self.isEnabled():
             return False
 
-        year = multiverse.milieuToYear(milieu=self._milieu)
+        year = astronomer.milieuToYear(milieu=self._universe.milieu())
 
         w = 1 #pc
 
         # Per MWM: center is 10000pc coreward
         x, y = _EmpressWaveOverlay._WaveOriginHex.absolute()
-        x *= multiverse.ParsecScaleX
-        y *= multiverse.ParsecScaleY
+        x *= astronomer.ParsecScaleX
+        y *= astronomer.ParsecScaleY
 
         # Per MWM: Wave crosses Ring 10,000 [Reference] on 045-1281
         radius = (year - (1281 + (45 - 1) / 365)) * _EmpressWaveOverlay._WaveVelocity - y
@@ -474,14 +104,14 @@ class _EmpressWaveOverlay(_MapOverlay):
 
         return True # Something was drawn
 
-class _QrekrshaZoneOverlay(_MapOverlay):
+class _QrekrshaZoneOverlay(MapOverlay):
     # This center position was taken from Traveller Map where it's
     # -179.4, 131 in its map space
-    _CenterHex = multiverse.HexPosition(-207,  -131)
+    _CenterHex = astronomer.HexPosition(-207,  -131)
     _ZoneColour = QtGui.QColor('#4CFFCC00')
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, depth: int) -> None:
+        super().__init__(depth=depth)
         self._pen = QtGui.QPen(
             _QrekrshaZoneOverlay._ZoneColour,
             0) # Width will be set at render time
@@ -496,10 +126,10 @@ class _QrekrshaZoneOverlay(_MapOverlay):
             return False
 
         x, y = _QrekrshaZoneOverlay._CenterHex.absolute()
-        x *= multiverse.ParsecScaleX
-        y *= multiverse.ParsecScaleY
+        x *= astronomer.ParsecScaleX
+        y *= astronomer.ParsecScaleY
 
-        radius = 30 * multiverse.ParsecScaleX
+        radius = 30 * astronomer.ParsecScaleX
 
         rect = QtCore.QRectF(
             (x - radius) + 0.5,
@@ -513,22 +143,23 @@ class _QrekrshaZoneOverlay(_MapOverlay):
 
         return True # Something was drawn
 
-class _AntaresSupernovaOverlay(_MapOverlay):
+class _AntaresSupernovaOverlay(MapOverlay):
     _SupernovaColour = QtGui.QColor('#26FFCC00')
-    _SupernovaCenter = multiverse.HexPosition(55, -59) # Antares
+    _SupernovaCenter = astronomer.HexPosition(55, -59) # Antares
     _SupernovaVelocity = 1 / 3.26 # Velocity of effect is light speed (so 1 ly/y)
 
     def __init__(
             self,
-            milieu: multiverse.Milieu
+            universe: astronomer.Universe,
+            depth: int
             ) -> None:
-        super().__init__()
-        self._milieu = milieu
+        super().__init__(depth=depth)
+        self._universe = universe
         self._brush = QtGui.QBrush(
             _AntaresSupernovaOverlay._SupernovaColour)
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
-        self._milieu = milieu
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        self._universe = universe
 
     # This code is based on the Traveller Map drawAS code (map.js)
     def draw(
@@ -539,15 +170,15 @@ class _AntaresSupernovaOverlay(_MapOverlay):
         if not self.isEnabled():
             return False
 
-        year = multiverse.milieuToYear(milieu=self._milieu)
+        year = astronomer.milieuToYear(milieu=self._universe.milieu())
         yearRadius = (year - 1270) * _AntaresSupernovaOverlay._SupernovaVelocity
         if yearRadius < 0:
             return False
 
         # Center is Antares (ANT 2421)
         x, y = _AntaresSupernovaOverlay._SupernovaCenter.worldCenter()
-        x *= multiverse.ParsecScaleX
-        y *= multiverse.ParsecScaleY
+        x *= astronomer.ParsecScaleX
+        y *= astronomer.ParsecScaleY
 
         for section, sectionRadius in enumerate([0.5, 4, 8, 12]):
             # Date of supernova: 1270
@@ -563,32 +194,33 @@ class _AntaresSupernovaOverlay(_MapOverlay):
 
         return True # Something was drawn
 
-class _MainsOverlay(_MapOverlay):
+class _MainsOverlay(MapOverlay):
     _SmallMainColour = QtGui.QColor('#3FFFC0CB')
     _MediumMainColour = QtGui.QColor('#3FFFCC00')
     _LargeMainColour = QtGui.QColor('#3F00FFFF')
     _PointSize = 1.15
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, depth: int) -> None:
+        super().__init__(depth=depth)
         self._points = None
         self._pen = None
 
-    def setMain(self, main: typing.Optional[multiverse.Main]) -> None:
+    def setMain(self, main: typing.Optional[astronomer.Main]) -> None:
         if not main:
             self._points = self._pen = None
             return
 
         self._points = QtGui.QPolygonF()
-        for world in main:
-            centerX, centerY = world.hex().worldCenter()
+        for hex in main.hexes():
+            centerX, centerY = hex.worldCenter()
             self._points.append(QtCore.QPointF(
-                centerX * multiverse.ParsecScaleX,
-                centerY * multiverse.ParsecScaleY))
+                centerX * astronomer.ParsecScaleX,
+                centerY * astronomer.ParsecScaleY))
 
-        if len(main) <= 10:
+        hexCount = main.hexCount()
+        if hexCount <= 10:
             colour = _MainsOverlay._SmallMainColour
-        elif len(main) < 50:
+        elif hexCount < 50:
             colour = _MainsOverlay._MediumMainColour
         else:
             colour = _MainsOverlay._LargeMainColour
@@ -652,7 +284,9 @@ class _MoveKeyTracker(object):
 
     def keyDown(self, event: QtGui.QKeyEvent) -> bool:
         key = event.key()
-        if key in _MoveKeyTracker._TrackedKeys:
+        # NOTE: Only start tracking on unmodified keys. This prevents it
+        # incorrectly swallowing keyboard shortcuts
+        if key in _MoveKeyTracker._TrackedKeys and event.modifiers() == QtCore.Qt.KeyboardModifier.NoModifier:
             if not event.isAutoRepeat():
                 self._trackedKeys.add(key)
             return True
@@ -660,6 +294,8 @@ class _MoveKeyTracker(object):
 
     def keyUp(self, event: QtGui.QKeyEvent) -> bool:
         key = event.key()
+        # NOTE: We intentionally don't check modifiers here as we want to stop
+        # tracking the key as soon as it's released
         if key in _MoveKeyTracker._TrackedKeys:
             if not event.isAutoRepeat():
                 if key in self._trackedKeys:
@@ -730,11 +366,163 @@ class _MoveAnimationEasingCurve(QtCore.QEasingCurve):
             pd = tdec / ddec
             return r * (duration - dacc / 2 - ddec + tdec * (2 - pd) / 2)
 
+class _MapTile(object):
+    def __init__(
+            self,
+            worldRect: cartographer.RectangleF,
+            image: QtGui.QImage
+            ) -> None:
+        self._worldRect = cartographer.RectangleF(worldRect)
+        self._image = image
+
+    def worldRect(self) -> cartographer.RectangleF:
+        return self._worldRect
+
+    def image(self) -> QtGui.QImage:
+        return self._image
+
+class _TileCache(object):
+    def __init__(
+            self,
+            capacity: int
+            ) -> None:
+        self._tiles = common.LRUCache[
+            typing.Tuple[
+                str, # Universe id
+                int, # Tile Center X (World Space)
+                int, # Tile Center Y (World Space)
+                int, # Tile Scale (Log scale rounded down)
+                cartographer.MapStyle,
+                int], # MapOptions as an int
+            _MapTile](capacity=capacity)
+
+        azathoth.UniverseEditor.instance().addPreUpdateObserver(self._handleUniversePreUpdate)
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._handleUniversePostUpdate)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._handleUniversePreUpdate)
+        azathoth.UniverseEditor.instance().removeObserver(self._handleUniversePostUpdate)
+
+    def insert(
+            self,
+            universeId: str,
+            tileX: int,
+            tileY: int,
+            tileScale: int, # Log scale rounded down
+            mapStyle: cartographer.MapStyle,
+            mapOptions: cartographer.RenderOptions,
+            worldRect: cartographer.RectangleF,
+            image: QtGui.QImage
+            ) -> None:
+        tileKey = (universeId, tileX, tileY, tileScale, mapStyle, int(mapOptions))
+        self._tiles[tileKey] = _MapTile(worldRect=worldRect, image=image)
+
+    def get(
+            self,
+            universeId: str,
+            tileX: int,
+            tileY: int,
+            tileScale: int, # Log scale rounded down
+            mapStyle: cartographer.MapStyle,
+            mapOptions: cartographer.RenderOptions
+            ) -> QtGui.QImage:
+        tileKey = (universeId, tileX, tileY, tileScale, mapStyle, int(mapOptions))
+        tile = self._tiles.get(tileKey)
+        return tile.image() if tile is not None else None
+
+    # This removes the least recently used tile from the cache and returns
+    # the image associated with it
+    def pop(self) -> QtGui.QImage:
+        _, marker = self._tiles.pop()
+        return marker.image()
+
+    def isFull(self) -> bool:
+        return self._tiles.isFull()
+
+    def clear(self) -> None:
+        self._tiles.clear()
+
+    def _handleUniversePreUpdate(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        objects = []
+        objects.extend(changeEvent.deleted())
+        objects.extend(changeEvent.modified())
+        if objects:
+            self._invalidateTiles(universe=universe, objects=objects)
+
+    def _handleUniversePostUpdate(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        objects = []
+        objects.extend(changeEvent.added())
+        objects.extend(changeEvent.modified())
+        if objects:
+            self._invalidateTiles(universe=universe, objects=objects)
+
+    def _invalidateTiles(
+            self,
+            universe: astronomer.Universe,
+            objects: typing.Collection[typing.Union[astronomer.Sector, astronomer.World]]
+            ) -> None:
+        sizeParamsToTileListMap: typing.Dict[
+            typing.Tuple[
+                cartographer.MapStyle,
+                int], # MapOptions as an int
+            typing.List[typing.Tuple[
+                str, # Universe id
+                int, # Tile X
+                int, # Tile Y
+                int, # Tile Scale
+                cartographer.MapStyle,
+                int # MapOptions as an int
+                ]]] = {}
+        for tileKey in list(self._tiles.keys()):
+            universeId, _, _, _, mapStyle, mapOptions = tileKey
+            if universeId != universe.id():
+                continue # Ignore tiles from another universe
+
+            sizerKey = (mapStyle, mapOptions)
+            tileList = sizeParamsToTileListMap.get(sizerKey)
+            if tileList is None:
+                tileList = []
+                sizeParamsToTileListMap[sizerKey] = tileList
+            tileList.append(tileKey)
+
+        for (mapStyle, mapOptions), tileList in sizeParamsToTileListMap.items():
+            sizer = gui.RenderBoundsCalculator(
+                universe=universe,
+                style=mapStyle,
+                options=cartographer.RenderOptions(mapOptions))
+
+            scaleToInvalidRectMap: typing.Dict[int, cartographer.RectangleF] = {}
+            for tileKey in tileList:
+                _, _, _, tileScale, _, _ = tileKey
+
+                # NOTE: Use -1 as default to differentiate between a scale that
+                # hasn't had the bounds calculated and one where it has been
+                # calculated but the result was None
+                invalidRect = scaleToInvalidRectMap.get(tileScale, -1)
+                if invalidRect == -1:
+                    invalidRect = sizer.calculateBounds(
+                        objects=objects,
+                        linearScale=gui.logScaleToLinearScale(tileScale))
+                    scaleToInvalidRectMap[tileScale] = invalidRect
+
+                if invalidRect:
+                    tile = self._tiles.get(tileKey)
+                    if invalidRect.intersects(tile.worldRect()):
+                        self._tiles.remove(tileKey)
+
 class MapWidget(QtWidgets.QWidget):
     centerChanged = QtCore.pyqtSignal(QtCore.QPointF)
     scaleChanged = QtCore.pyqtSignal(gui.MapScale)
-    leftClicked = QtCore.pyqtSignal(multiverse.HexPosition)
-    rightClicked = QtCore.pyqtSignal(multiverse.HexPosition)
+    leftClicked = QtCore.pyqtSignal(astronomer.HexPosition)
+    rightClicked = QtCore.pyqtSignal(astronomer.HexPosition)
 
     _MinLogScale = -5
     _MaxLogScale = 10
@@ -753,6 +541,7 @@ class MapWidget(QtWidgets.QWidget):
 
     _MoveAnimationTimeMs = 1000
 
+    # TODO: Need to do some profiling to see if larger tile sizes are better
     _TileSize = 256 # Pixels
     _TileCacheSize = 1000 # Number of tiles
     _TileRenderTimerMs = 1
@@ -777,29 +566,20 @@ class MapWidget(QtWidgets.QWidget):
     # missed
     _LeftClickMoveThreshold = 3
 
+    # When creating overlays the owner is responsible for checking the user overlay min
+    # depth value and not creating overlays with a depth under that value
+    _UserOverlayMinDepth = 100
+
+    _BoxZoomLineAlpha = 0.9
+    _BoxZoomLineWidth = 3
+    _BoxZoomFillAlpha = 0.3
+
     # NOTE: This is LocalMapWidget for legacy reasons. The class was renamed as
     # part of the work to remove the legacy web map widget but the state
     # structure didn't change
     _StateVersion = 'LocalMapWidget_v1'
 
-    # NOTE: Using the universe as part of the key isn't ideal as it means the
-    # tile cache can keep old universes in memory until all tiles for it have
-    # been evicted from the cache. I don't think it's really an issue at the
-    # moment but could become more of a problem depending on how I end up
-    # implementing universe editing. Solutions could be
-    # - Give each universe a unique id and use that in the key
-    # - Use a weakref.WeakKeyDictionary to map weak references to the universe
-    # to a LRUCache per universe
-    _sharedTileCache = common.LRUCache[
-        typing.Tuple[
-            int, # Tile X
-            int, # Tile Y
-            int,
-            multiverse.Universe,
-            multiverse.Milieu,
-            cartographer.MapStyle,
-            int], # MapOptions as an int
-        QtGui.QImage](capacity=_TileCacheSize)
+    _sharedTileCache = _TileCache(capacity=_TileCacheSize)
 
     # PyQt5 has a limitation of 10 custom easing curve functions being
     # registered over the lifetime of the application (i.e. setCustomType) and
@@ -821,8 +601,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            universe: multiverse.Universe,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
             style: cartographer.MapStyle,
             options: typing.Collection[app.MapOption],
             rendering: app.MapRendering,
@@ -837,7 +616,6 @@ class MapWidget(QtWidgets.QWidget):
                 MapWidget._sharedEasingCurves.append(_MoveAnimationEasingCurve())
 
         self._universe = universe
-        self._milieu = milieu
         self._style = style
         self._options = set(options)
         self._rendering = rendering
@@ -860,13 +638,14 @@ class MapWidget(QtWidgets.QWidget):
 
         self._mapGraphics = gui.MapGraphics()
         self._imageStore = cartographer.ImageStore(graphics=self._mapGraphics)
-        self._vectorStore = cartographer.VectorStore(graphics=self._mapGraphics)
-        self._labelStore = cartographer.LabelStore(universe=self._universe)
-        self._styleStore = cartographer.StyleStore()
-        self._renderer = self._newRenderer()
 
-        self._worldDragAnchor: typing.Optional[QtCore.QPointF] = None
-        self._pixelDragStart: typing.Optional[QtCore.QPoint] = None
+        self._renderer = None
+        self._createNewRenderer()
+
+        self._leftMouseDownPosition: typing.Optional[QtCore.QPoint] = None
+
+        self._mapDragWorldAnchor: typing.Optional[QtCore.QPointF] = None
+        self._boxZoomWorldAnchor: typing.Optional[QtCore.QPointF] = None
 
         # Off screen buffer used when not using tile rendering to prevent
         # Windows font scaling messing up the size of rendered text on a
@@ -912,37 +691,31 @@ class MapWidget(QtWidgets.QWidget):
         # of the final image with the alpha value required by the overlay.
         self._overlayStagingImage: typing.Optional[QtGui.QImage] = None
 
-        self._overlayMap: typing.Dict[
-            str, # Overlay handle
-            _MapOverlay] = {}
+        self._overlays: typing.Set[MapOverlay] = set()
 
-        self._jumpRoute = None
-        self._refuellingPlan = None
-        self._jumpRouteOverlay = _JumpRouteOverlay()
-        self._overlayMap[self._jumpRouteOverlay.handle()] = self._jumpRouteOverlay
-
-        self._hexHighlightOverlay = _HexHighlightOverlay()
-        self._overlayMap[self._hexHighlightOverlay.handle()] = self._hexHighlightOverlay
-
-        self._empressWaveOverlay = _EmpressWaveOverlay(milieu=self._milieu)
+        self._empressWaveOverlay = _EmpressWaveOverlay(
+            universe=self._universe,
+            depth=0)
         self._empressWaveOverlay.setEnabled(
             enabled=app.MapOption.EmpressWaveOverlay in self._options)
-        self._overlayMap[self._empressWaveOverlay.handle()] = self._empressWaveOverlay
+        self._overlays.add(self._empressWaveOverlay)
 
-        self._qrekrshaZoneOverlay = _QrekrshaZoneOverlay()
+        self._qrekrshaZoneOverlay = _QrekrshaZoneOverlay(depth=1)
         self._qrekrshaZoneOverlay.setEnabled(
             enabled=app.MapOption.QrekrshaZoneOverlay in self._options)
-        self._overlayMap[self._qrekrshaZoneOverlay.handle()] = self._qrekrshaZoneOverlay
+        self._overlays.add(self._qrekrshaZoneOverlay)
 
-        self._antaresSupernovaOverlay = _AntaresSupernovaOverlay(milieu=self._milieu)
+        self._antaresSupernovaOverlay = _AntaresSupernovaOverlay(
+            universe=self._universe,
+            depth=2)
         self._antaresSupernovaOverlay.setEnabled(
             enabled=app.MapOption.AntaresSupernovaOverlay in self._options)
-        self._overlayMap[self._antaresSupernovaOverlay.handle()] = self._antaresSupernovaOverlay
+        self._overlays.add(self._antaresSupernovaOverlay)
 
-        self._mainsOverlay = _MainsOverlay()
+        self._mainsOverlay = _MainsOverlay(depth=3)
         self._mainsOverlay.setEnabled(
             enabled=app.MapOption.MainsOverlay in self._options)
-        self._overlayMap[self._mainsOverlay.handle()] = self._mainsOverlay
+        self._overlays.add(self._mainsOverlay)
 
         # NOTE: It looks like Qt has a hard limitation fo 10 easing curve
         # objects for the entire app so need to create them when needed
@@ -971,41 +744,29 @@ class MapWidget(QtWidgets.QWidget):
 
         self._updateView()
 
-    def universe(self) -> multiverse.Universe:
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._handleUniversePostUpdate)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._handleUniversePostUpdate)
+
+    def universe(self) -> astronomer.Universe:
         return self._universe
 
     def setUniverse(
             self,
-            universe: multiverse.Universe
+            universe: astronomer.Universe
             ) -> None:
         if universe is self._universe:
             return
 
         self._universe = universe
-        self._labelStore = cartographer.LabelStore(universe=self._universe)
 
-        self._renderer = self._newRenderer()
+        self._empressWaveOverlay.setUniverse(universe=self._universe)
+        self._antaresSupernovaOverlay.setUniverse(universe=self._universe)
+
+        self._createNewRenderer()
 
         # Clear the main when the universe changes as the main may have
-        # changed
-        self._mainsOverlay.setMain(main=None)
-
-        self.update() # Force redraw
-
-    def milieu(self) -> multiverse.Milieu:
-        return self._milieu
-
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
-        if milieu is self._milieu:
-            return
-
-        self._milieu = milieu
-        self._renderer = self._newRenderer()
-
-        self._empressWaveOverlay.setMilieu(milieu=self._milieu)
-        self._antaresSupernovaOverlay.setMilieu(milieu=self._milieu)
-
-        # Clear the main when the milieu changes as the main may have
         # changed
         self._mainsOverlay.setMain(main=None)
 
@@ -1019,7 +780,7 @@ class MapWidget(QtWidgets.QWidget):
             return
 
         self._style = style
-        self._renderer = self._newRenderer()
+        self._createNewRenderer()
 
         self.update() # Force redraw
 
@@ -1032,7 +793,7 @@ class MapWidget(QtWidgets.QWidget):
             return
 
         self._options = options
-        self._renderer = self._newRenderer()
+        self._createNewRenderer()
 
         self._empressWaveOverlay.setEnabled(
             enabled=app.MapOption.EmpressWaveOverlay in self._options)
@@ -1101,7 +862,9 @@ class MapWidget(QtWidgets.QWidget):
 
         self._locked = locked
         if self._locked:
-            self._pixelDragStart = self._worldDragAnchor = None
+            self._leftMouseDownPosition = None
+            self._mapDragWorldAnchor = None
+            self._boxZoomWorldAnchor = None
             self._keyboardMovementTracker.clear()
 
     def setView(
@@ -1153,9 +916,20 @@ class MapWidget(QtWidgets.QWidget):
             ) -> None:
         self.setView(scale=scale, immediate=immediate)
 
+    def viewRect(self) -> QtCore.QRectF: # Rect in World coordinates
+        linearScale = self._viewScale.linear
+        worldOutputWidth = self.width() / (linearScale * astronomer.ParsecScaleX)
+        worldOutputHeight = self.height() / (linearScale * astronomer.ParsecScaleY)
+
+        return QtCore.QRectF(
+            self._viewCenter.x() - (worldOutputWidth / 2),
+            self._viewCenter.y() - (worldOutputHeight / 2),
+            worldOutputWidth,
+            worldOutputHeight)
+
     def viewAreaLimits(self) -> typing.Tuple[
-            typing.Optional[QtCore.QPointF], # Upper Left
-            typing.Optional[QtCore.QPointF]]: # Lower Right
+            typing.Optional[QtCore.QPointF], # Upper Left in World coordinates
+            typing.Optional[QtCore.QPointF]]: # Lower Right in World coordinates
         return (
             QtCore.QPointF(self._upperLeftViewLimit) if self._upperLeftViewLimit else None,
             QtCore.QPointF(self._lowerRightViewLimit) if self._lowerRightViewLimit else None)
@@ -1211,21 +985,19 @@ class MapWidget(QtWidgets.QWidget):
     def hexAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
-            ) -> multiverse.HexPosition:
+            ) -> astronomer.HexPosition:
         return self._pixelSpaceToHex(pixelPos=pos)
 
-    def worldAt(
+    def sectorAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
-            ) -> typing.Optional[multiverse.World]:
+            ) -> astronomer.SectorPosition:
         hex = self._pixelSpaceToHex(pixelPos=pos)
-        return self._universe.worldByPosition(
-            milieu=self._milieu,
-            hex=hex)
+        return hex.sectorPosition()
 
     def centerOnHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=64), # None keeps current scale
             immediate: bool = False
             ) -> None:
@@ -1236,7 +1008,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def centerOnHexes(
             self,
-            hexes: typing.Collection[multiverse.HexPosition],
+            hexes: typing.Collection[astronomer.HexPosition],
             immediate: bool = False
             ) -> None:
         self._stopMoveAnimation()
@@ -1273,123 +1045,56 @@ class MapWidget(QtWidgets.QWidget):
             scale=gui.MapScale(log=logScale),
             immediate=immediate)
 
-    def hasJumpRoute(self) -> bool:
-        return self._jumpRoute is not None
-
-    def setJumpRoute(
+    def centerOnSector(
             self,
-            jumpRoute: typing.Optional[logic.JumpRoute],
-            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
-            ) -> None:
-        self._jumpRoute = jumpRoute
-        self._refuellingPlan = refuellingPlan
-        self._jumpRouteOverlay.setRoute(
-            jumpRoute=jumpRoute,
-            refuellingPlan=refuellingPlan)
-        self.update()
-
-    def clearJumpRoute(self) -> None:
-        self._jumpRoute = self._refuellingPlan = None
-        self._jumpRouteOverlay.setRoute(jumpRoute=None)
-        self.update()
-
-    def centerOnJumpRoute(
-            self,
+            position: astronomer.SectorPosition,
+            scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=16), # None keeps current scale
             immediate: bool = False
             ) -> None:
-        if not self._jumpRoute:
-            return
-        self.centerOnHexes(
-            hexes=self._jumpRoute.nodes(),
+        self.setView(
+            center=QtCore.QPointF(*position.worldCenter()),
+            scale=scale,
             immediate=immediate)
 
-    def highlightHex(
+    def zoomToArea(
             self,
-            hex: multiverse.HexPosition,
-            radius: float = 0.5,
-            colour: str = QtGui.QColor('#7F8080FF')
+            worldRect: QtCore.QRectF
             ) -> None:
-        self._hexHighlightOverlay.addHex(
-            hex=hex,
-            type=gui.MapPrimitiveType.Circle,
-            colour=colour,
-            radius=radius)
+        if self.width() == 0 or self.height() == 0:
+            return
+
+        newViewCenter = worldRect.center()
+
+        worldPerPixel = max(
+            worldRect.width() / self.width(),
+            worldRect.height() / self.height())
+        if worldPerPixel > 0:
+            newViewScale = gui.MapScale(linear=1 / worldPerPixel)
+        else:
+            newViewScale = gui.MapScale(log=MapWidget._MinLogScale)
+
+        self.setView(center=newViewCenter, scale=newViewScale)
+
+    @staticmethod
+    def userOverlayMinDepth() -> int:
+        return MapWidget._UserOverlayMinDepth
+
+    # TODO: Should I make the MapWidgetOverlay QtObjects so they could have an
+    # event that MapWidget subscribes to and triggers when they're updated.
+    # causes the map widget to redraw.
+    def addOverlay(self, overlay: MapOverlay) -> None:
+        if overlay in self._overlays:
+            return
+        self._overlays.add(overlay)
         self.update() # Trigger redraw
-
-    def highlightHexes(
-            self,
-            hexes: typing.Iterable[multiverse.HexPosition],
-            radius: float = 0.5,
-            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
-            ) -> None:
-        self._hexHighlightOverlay.addHexes(
-            hexes=hexes,
-            type=gui.MapPrimitiveType.Circle,
-            colour=colour,
-            radius=radius)
-        self.update() # Trigger redraw
-
-    def clearHexHighlight(
-            self,
-            hex: multiverse.HexPosition
-            ) -> None:
-        self._hexHighlightOverlay.removeHex(hex)
-        self.update() # Trigger redraw
-
-    def clearHexHighlights(self) -> None:
-        self._hexHighlightOverlay.clear()
-        self.update() # Trigger redraw
-
-    # Create an overlay with a primitive at each hex
-    def createHexOverlay(
-            self,
-            hexes: typing.Iterable[multiverse.HexPosition],
-            primitive: gui.MapPrimitiveType,
-            fillColour: typing.Optional[QtGui.QColor] = None,
-            fillMap: typing.Optional[typing.Mapping[
-                multiverse.HexPosition,
-                QtGui.QColor
-            ]] = None,
-            radius: float = 0.5 # Only used for circle primitive
-            ) -> str:
-        overlay = _HexHighlightOverlay()
-        overlay.addHexes(
-            hexes=hexes,
-            type=primitive,
-            colour=fillColour,
-            colourMap=fillMap,
-            radius=radius)
-        self._overlayMap[overlay.handle()] = overlay
-
-        self.update() # Trigger redraw
-        return overlay.handle()
-
-    def createHexBordersOverlay(
-            self,
-            hexes: typing.Iterable[multiverse.HexPosition],
-            lineColour: typing.Optional[QtGui.QColor] = None,
-            lineWidth: typing.Optional[int] = None, # In pixels
-            fillColour: typing.Optional[QtGui.QColor] = None,
-            includeInterior: bool = True
-            ) -> str:
-        overlay = _HexBorderOverlay(
-            hexes=hexes,
-            lineColour=lineColour,
-            lineWidth=lineWidth,
-            fillColour=fillColour,
-            includeInterior=includeInterior)
-        self._overlayMap[overlay.handle()] = overlay
-
-        self.update() # Trigger redraw
-        return overlay.handle()
 
     def removeOverlay(
             self,
-            handle: str
+            overlay: MapOverlay
             ) -> None:
-        if handle not in self._overlayMap:
+        if overlay not in self._overlays:
             return
-        del self._overlayMap[handle]
+        self._overlays.remove(overlay)
         self.update() # Trigger redraw
 
     def createPixmap(self) -> QtGui.QPixmap:
@@ -1451,8 +1156,11 @@ class MapWidget(QtWidgets.QWidget):
 
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             if not self._locked:
-                self._pixelDragStart = event.pos()
-                self._worldDragAnchor = self._pixelSpaceToWorldSpace(self._pixelDragStart)
+                self._leftMouseDownPosition = event.pos()
+                if gui.isCtrlKeyDown():
+                    self._boxZoomWorldAnchor = self._pixelSpaceToWorldSpace(self._leftMouseDownPosition)
+                else:
+                    self._mapDragWorldAnchor = self._pixelSpaceToWorldSpace(self._leftMouseDownPosition)
 
             event.accept()
             return
@@ -1460,15 +1168,18 @@ class MapWidget(QtWidgets.QWidget):
         #super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
-        if not self._locked and self._worldDragAnchor:
-            worldCurrentPos = self._pixelSpaceToWorldSpace(event.pos())
-            worldDeltaX = worldCurrentPos.x() - self._worldDragAnchor.x()
-            worldDeltaY = worldCurrentPos.y() - self._worldDragAnchor.y()
+        if not self._locked:
+            if self._boxZoomWorldAnchor is not None:
+                self.update() # Trigger a redraw
+            elif self._mapDragWorldAnchor is not None:
+                worldCurrentPos = self._pixelSpaceToWorldSpace(event.pos())
+                worldDeltaX = worldCurrentPos.x() - self._mapDragWorldAnchor.x()
+                worldDeltaY = worldCurrentPos.y() - self._mapDragWorldAnchor.y()
 
-            newViewCenter = QtCore.QPointF(
-                self._viewCenter.x() - worldDeltaX,
-                self._viewCenter.y() - worldDeltaY)
-            self._updateView(center=newViewCenter)
+                newViewCenter = QtCore.QPointF(
+                    self._viewCenter.x() - worldDeltaX,
+                    self._viewCenter.y() - worldDeltaY)
+                self._updateView(center=newViewCenter)
 
         event.accept()
 
@@ -1478,37 +1189,69 @@ class MapWidget(QtWidgets.QWidget):
         leftRelease = event.button() == QtCore.Qt.MouseButton.LeftButton
         rightRelease = event.button() == QtCore.Qt.MouseButton.RightButton
 
-        if leftRelease or rightRelease:
-            if not self._locked:
-                pixelReleasePos = QtCore.QPointF(event.x(), event.y())
-
-                if leftRelease and self._pixelDragStart:
-                    clickRect = QtCore.QRectF(
-                        self._pixelDragStart.x() - self._LeftClickMoveThreshold,
-                        self._pixelDragStart.y() - self._LeftClickMoveThreshold,
-                        self._LeftClickMoveThreshold * 2,
-                        self._LeftClickMoveThreshold * 2)
-
-                    self._worldDragAnchor = self._pixelDragStart = None
-
-                    if not clickRect.contains(pixelReleasePos):
-                        event.accept()
-                        return # A drag was performed so it doesn't count as a click
-
-                hex = self._pixelSpaceToHex(pixelReleasePos)
-                if leftRelease:
-                    self._handleLeftClickEvent(hex)
-                else:
-                    self._handleRightClickEvent(hex)
-
-            event.accept()
+        if not leftRelease and not rightRelease:
+            super().mouseReleaseEvent(event)
             return
 
-        super().mouseReleaseEvent(event)
+        try:
+            if not self._locked and self.hasFocus():
+                pixelCursorPos = event.pos()
+
+                if leftRelease and self._leftMouseDownPosition is not None:
+                    if self._boxZoomWorldAnchor is not None:
+                        # Perform box zoom
+                        boxZoomWorldCursor = self._pixelSpaceToWorldSpace(pixelCursorPos)
+                        boxZoomMinX, boxZoomMaxX = common.minmax(self._boxZoomWorldAnchor.x(), boxZoomWorldCursor.x())
+                        boxZoomMinY, boxZoomMaxY = common.minmax(self._boxZoomWorldAnchor.y(), boxZoomWorldCursor.y())
+                        boxZoomRect = QtCore.QRectF(
+                            boxZoomMinX,
+                            boxZoomMinY,
+                            boxZoomMaxX - boxZoomMinX,
+                            boxZoomMaxY - boxZoomMinY)
+                        boxZoomRect = boxZoomRect.intersected(self.viewRect())
+
+                        if boxZoomRect.isValid():
+                            self.zoomToArea(worldRect=boxZoomRect)
+
+                        self.update() # Trigger redraw
+                        return # A zoom was performed so it doesn't count as a click
+                    elif self._mapDragWorldAnchor is not None:
+                        # Don't generate a mouse click of the the user was intentionally
+                        # dragging the map. Allow for small accidental movements between
+                        # the down and up events, in these cases a click event should
+                        # still be generated.
+                        clickRect = QtCore.QRectF(
+                            self._leftMouseDownPosition.x() - self._LeftClickMoveThreshold,
+                            self._leftMouseDownPosition.y() - self._LeftClickMoveThreshold,
+                            self._LeftClickMoveThreshold * 2,
+                            self._LeftClickMoveThreshold * 2)
+                        if not clickRect.contains(pixelCursorPos):
+                            return # A drag was performed so it doesn't count as a click
+
+                hex = self._pixelSpaceToHex(pixelCursorPos)
+                if leftRelease:
+                    # For left click, only generate an event if there is a mouse
+                    # down position. It may have been cleared if for example a
+                    # box zoom was cancelled with Esc. In those kind of cases,
+                    # the release shouldn't be counted as a click, even though
+                    # no action was performed
+                    if self._leftMouseDownPosition is not None:
+                        self._sendLeftClickEvent(hex)
+                elif rightRelease:
+                    self._sendRightClickEvent(hex)
+        finally:
+            if leftRelease:
+                self._leftMouseDownPosition = None
+                self._boxZoomWorldAnchor = None
+                self._mapDragWorldAnchor = None
+
+            event.accept()
 
     def focusOutEvent(self, event: QtGui.QFocusEvent) -> None:
         super().focusOutEvent(event)
-        self._worldDragAnchor = self._pixelDragStart = None
+        self._leftMouseDownPosition = None
+        self._mapDragWorldAnchor = None
+        self._boxZoomWorldAnchor = None
         self._keyboardMovementTracker.clear()
         self._keyboardMovementTimer.stop()
 
@@ -1527,19 +1270,32 @@ class MapWidget(QtWidgets.QWidget):
                     self._keyboardMovementTimer.start()
                 event.accept()
                 return
-            elif event.key() == QtCore.Qt.Key.Key_Z:
-                self._zoomView(
-                    step=MapWidget._KeyboardZoomDelta if not gui.isShiftKeyDown() else -MapWidget._KeyboardZoomDelta)
-                event.accept()
-                return
-            elif event.key() == QtCore.Qt.Key.Key_Plus or event.key() == QtCore.Qt.Key.Key_Equal:
-                self._zoomView(step=MapWidget._KeyboardZoomDelta)
-                event.accept()
-                return
-            elif event.key() == QtCore.Qt.Key.Key_Minus:
-                self._zoomView(step=-MapWidget._KeyboardZoomDelta)
-                event.accept()
-                return
+            elif event.modifiers() == QtCore.Qt.KeyboardModifier.NoModifier:
+                if event.key() == QtCore.Qt.Key.Key_Z:
+                    self._zoomView(step=MapWidget._KeyboardZoomDelta)
+                    event.accept()
+                    return
+                elif event.key() == QtCore.Qt.Key.Key_Plus or event.key() == QtCore.Qt.Key.Key_Equal:
+                    self._zoomView(step=MapWidget._KeyboardZoomDelta)
+                    event.accept()
+                    return
+                elif event.key() == QtCore.Qt.Key.Key_Minus:
+                    self._zoomView(step=-MapWidget._KeyboardZoomDelta)
+                    event.accept()
+                    return
+                elif event.key() == QtCore.Qt.Key.Key_Escape:
+                    if self._boxZoomWorldAnchor is not None:
+                        # Cancel box zoom
+                        self._boxZoomWorldAnchor = None
+                        self._leftMouseDownPosition = None # Mouse release shouldn't be counted as a click
+                        self.update() # Trigger redraw
+                        event.accept()
+                        return
+            elif event.modifiers() == QtCore.Qt.KeyboardModifier.ShiftModifier:
+                if event.key() == QtCore.Qt.Key.Key_Z:
+                    self._zoomView(step=-MapWidget._KeyboardZoomDelta)
+                    event.accept()
+                    return
 
         super().keyPressEvent(event)
 
@@ -1621,6 +1377,9 @@ class MapWidget(QtWidgets.QWidget):
                     self._offscreenRenderImage,
                     viewRect)
 
+        if self._boxZoomWorldAnchor is not None:
+            self._drawBoxZoomRect()
+
         self._forceAtomicRedraw = False
 
     def _clampCenter(self, center: QtCore.QPointF) -> QtCore.QPointF:
@@ -1638,6 +1397,11 @@ class MapWidget(QtWidgets.QWidget):
         return center
 
     def _clampScale(self, scale: gui.MapScale) -> gui.MapScale:
+        if scale.log < MapWidget._MinLogScale:
+            scale.log = MapWidget._MinLogScale
+        if scale.log > MapWidget._MaxLogScale:
+            scale.log = MapWidget._MaxLogScale
+
         if self._minViewScale and scale < self._minViewScale:
             scale = self._minViewScale
         if self._maxViewScale and scale > self._maxViewScale:
@@ -1706,14 +1470,13 @@ class MapWidget(QtWidgets.QWidget):
 
             self._mapGraphics.setPainter(painter=painter)
             try:
-                self._renderer.setView(
+                self._renderer.renderArea(
                     worldCenterX=self._viewCenter.x(),
                     worldCenterY=self._viewCenter.y(),
-                    scale=self._viewScale.linear,
+                    linearScale=self._viewScale.linear,
                     outputPixelWidth=self.width(),
                     outputPixelHeight=self.height(),
                     clipRect=clipRect)
-                self._renderer.render()
             finally:
                 self._mapGraphics.setPainter(painter=None)
 
@@ -1729,7 +1492,11 @@ class MapWidget(QtWidgets.QWidget):
                 self.height(),
                 QtGui.QImage.Format.Format_ARGB32_Premultiplied)
 
-        for overlay in self._overlayMap.values():
+        overlays = sorted(self._overlays, key=lambda o: o.depth())
+        for overlay in overlays:
+            if not overlay.isEnabled():
+                continue
+
             self._overlayStagingImage.fill(QtCore.Qt.GlobalColor.transparent)
 
             try:
@@ -1747,7 +1514,8 @@ class MapWidget(QtWidgets.QWidget):
                         painter.drawImage(
                             QtCore.QRectF(0, 0, self.width(), self.height()),
                             self._overlayStagingImage)
-            except:
+            except Exception as ex:
+                logging.debug('Map overlay threw exception when drawing', exc_info=ex)
                 continue
 
     def _drawScale(
@@ -1845,23 +1613,47 @@ class MapWidget(QtWidgets.QWidget):
                         QtCore.Qt.AlignmentFlag.AlignCenter,
                         text)
 
-    def _handleLeftClickEvent(
+    def _drawBoxZoomRect(self) -> None:
+        if self._boxZoomWorldAnchor is None:
+            return
+
+        boxZoomPixelAnchor = self._worldSpaceToPixelSpace(self._boxZoomWorldAnchor)
+        boxZoomPixelCurrent = self.mapFromGlobal(QtGui.QCursor.pos())
+        boxZoomMinX, boxZoomMaxX = common.minmax(boxZoomPixelAnchor.x(), boxZoomPixelCurrent.x())
+        boxZoomMinY, boxZoomMaxY = common.minmax(boxZoomPixelAnchor.y(), boxZoomPixelCurrent.y())
+        boxZoomRect = QtCore.QRect(
+            int(boxZoomMinX),
+            int(boxZoomMinY),
+            int(boxZoomMaxX - boxZoomMinX),
+            int(boxZoomMaxY - boxZoomMinY))
+        boxZoomRect = boxZoomRect.intersected(self.rect())
+
+        painter = QtGui.QPainter()
+        with gui.PainterDrawGuard(painter, self):
+            boxZoomColour = QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Highlight)
+            painter.setPen(QtGui.QPen(
+                gui.createAlphaColour(base=boxZoomColour, alpha=MapWidget._BoxZoomLineAlpha),
+                MapWidget._BoxZoomLineWidth * gui.interfaceScale(),
+                QtCore.Qt.PenStyle.SolidLine))
+            painter.setBrush(QtGui.QBrush(
+                gui.createAlphaColour(base=boxZoomColour, alpha=MapWidget._BoxZoomFillAlpha)))
+            painter.drawRect(boxZoomRect)
+
+    def _sendLeftClickEvent(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         if hex and self.isEnabled():
             if app.MapOption.MainsOverlay in self._options:
-                main = self._universe.mainByPosition(
-                    milieu=self._milieu,
-                    hex=hex)
+                main = self._universe.mainByPosition(hex=hex)
                 self._mainsOverlay.setMain(main)
                 self.update() # Trigger redraw
 
             self.leftClicked.emit(hex)
 
-    def _handleRightClickEvent(
+    def _sendRightClickEvent(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         if hex and self.isEnabled():
             self.rightClicked.emit(hex)
@@ -1870,8 +1662,8 @@ class MapWidget(QtWidgets.QWidget):
             self,
             pixelPos: typing.Union[QtCore.QPointF, QtCore.QPoint]
             ) -> QtCore.QPointF:
-        scaleX = (self._viewScale.linear * multiverse.ParsecScaleX)
-        scaleY = (self._viewScale.linear * multiverse.ParsecScaleY)
+        scaleX = (self._viewScale.linear * astronomer.ParsecScaleX)
+        scaleY = (self._viewScale.linear * astronomer.ParsecScaleY)
 
         width = self.width() / scaleX
         height = self.height() / scaleY
@@ -1887,8 +1679,8 @@ class MapWidget(QtWidgets.QWidget):
             self,
             worldPos: typing.Union[QtCore.QPointF, QtCore.QPoint]
             ) -> QtCore.QPointF:
-        scaleX = (self._viewScale.linear * multiverse.ParsecScaleX)
-        scaleY = (self._viewScale.linear * multiverse.ParsecScaleY)
+        scaleX = (self._viewScale.linear * astronomer.ParsecScaleX)
+        scaleY = (self._viewScale.linear * astronomer.ParsecScaleY)
 
         width = self.width() / scaleX
         height = self.height() / scaleY
@@ -1903,36 +1695,29 @@ class MapWidget(QtWidgets.QWidget):
     def _pixelSpaceToHex(
             self,
             pixelPos: typing.Union[QtCore.QPointF, QtCore.QPoint]
-            ) -> multiverse.HexPosition:
+            ) -> astronomer.HexPosition:
         return self._worldSpaceToHex(self._pixelSpaceToWorldSpace(pixelPos))
 
     def _worldSpaceToHex(
             self,
             worldPos: typing.Union[QtCore.QPointF, QtCore.QPoint]
-            ) -> multiverse.HexPosition:
+            ) -> astronomer.HexPosition:
         absoluteX = int(round(worldPos.x() + 0.5))
         absoluteY = int(round(worldPos.y() + (0.5 if (absoluteX % 2 == 0) else 0)))
 
-        return multiverse.HexPosition(
+        return astronomer.HexPosition(
             absoluteX=absoluteX,
             absoluteY=absoluteY)
 
-    def _newRenderer(self) -> cartographer.RenderContext:
-        return cartographer.RenderContext(
+    def _createNewRenderer(self) -> None:
+        options = gui.mapOptionsToRenderOptions(self._options)
+
+        self._renderer = cartographer.RenderContext(
             universe=self._universe,
             graphics=self._mapGraphics,
-            worldCenterX=self._viewCenter.x(),
-            worldCenterY=self._viewCenter.y(),
-            scale=self._viewScale.linear,
-            outputPixelX=self.width(),
-            outputPixelY=self.height(),
-            milieu=self._milieu,
             style=self._style,
-            options=gui.mapOptionsToRenderOptions(self._options),
-            imageStore=self._imageStore,
-            styleStore=self._styleStore,
-            vectorStore=self._vectorStore,
-            labelStore=self._labelStore)
+            options=options,
+            imageStore=self._imageStore)
 
     def _updateView(
             self,
@@ -1948,23 +1733,23 @@ class MapWidget(QtWidgets.QWidget):
         scaleChanged = scale != self._viewScale
         self._viewScale = scale
 
-        worldWidth = self.width() / (self._viewScale.linear * multiverse.ParsecScaleX)
-        worldHeight = self.height() / (self._viewScale.linear * multiverse.ParsecScaleY)
+        worldWidth = self.width() / (self._viewScale.linear * astronomer.ParsecScaleX)
+        worldHeight = self.height() / (self._viewScale.linear * astronomer.ParsecScaleY)
         worldLeft = self._viewCenter.x() - (worldWidth / 2)
         worldTop = self._viewCenter.y() - (worldHeight / 2)
 
         self._imageSpaceToWorldSpace = QtGui.QTransform()
         self._imageSpaceToWorldSpace.scale(
-            self._viewScale.linear * multiverse.ParsecScaleX,
-            self._viewScale.linear * multiverse.ParsecScaleY)
+            self._viewScale.linear * astronomer.ParsecScaleX,
+            self._viewScale.linear * astronomer.ParsecScaleY)
         self._imageSpaceToWorldSpace.translate(
             -worldLeft,
             -worldTop)
 
         scaleMatrix = QtGui.QTransform()
         scaleMatrix.scale(
-            1 / multiverse.ParsecScaleX,
-            1 / multiverse.ParsecScaleY)
+            1 / astronomer.ParsecScaleX,
+            1 / astronomer.ParsecScaleY)
         self._imageSpaceToOverlaySpace = scaleMatrix * self._imageSpaceToWorldSpace
 
         # Clear the tile queue as the render view/style map have
@@ -2003,8 +1788,8 @@ class MapWidget(QtWidgets.QWidget):
             # This code is just doing _pixelSpaceToWorldSpace except it's
             # using the scale that we are going to apply rather than the
             # current scale
-            scaleX = (newViewScale.linear * multiverse.ParsecScaleX)
-            scaleY = (newViewScale.linear * multiverse.ParsecScaleY)
+            scaleX = (newViewScale.linear * astronomer.ParsecScaleX)
+            scaleY = (newViewScale.linear * astronomer.ParsecScaleY)
 
             width = self.width() / scaleX
             height = self.height() / scaleY
@@ -2041,8 +1826,8 @@ class MapWidget(QtWidgets.QWidget):
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
         tileSize = MapWidget._TileSize * tileMultiplier
 
-        scaleX = (self._viewScale.linear * multiverse.ParsecScaleX)
-        scaleY = (self._viewScale.linear * multiverse.ParsecScaleY)
+        scaleX = (self._viewScale.linear * astronomer.ParsecScaleX)
+        scaleY = (self._viewScale.linear * astronomer.ParsecScaleY)
 
         worldWidgetWidth = self.width() / scaleX
         worldWidgetHeight = self.height() / scaleY
@@ -2077,7 +1862,7 @@ class MapWidget(QtWidgets.QWidget):
                     ((y - topTile) * tileSize) - offsetY,
                     tileSize,
                     tileSize)
-                if image:
+                if image is not None:
                     tiles.append((image, renderRect, None))
                 else:
                     placeholders = self._gatherPlaceholderTiles(
@@ -2122,8 +1907,8 @@ class MapWidget(QtWidgets.QWidget):
         tileScale = int(math.floor(self._viewScale.log + 0.5))
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
         tilePixelSize = MapWidget._TileSize * tileMultiplier
-        tileWorldWidth = tilePixelSize / (self._viewScale.linear * multiverse.ParsecScaleX)
-        tileWorldHeight = tilePixelSize / (self._viewScale.linear * multiverse.ParsecScaleY)
+        tileWorldWidth = tilePixelSize / (self._viewScale.linear * astronomer.ParsecScaleX)
+        tileWorldHeight = tilePixelSize / (self._viewScale.linear * astronomer.ParsecScaleY)
         targetTileX = int(math.floor(targetWorld.x() / tileWorldWidth))
         targetTileY = int(math.floor(targetWorld.y() / tileWorldHeight))
 
@@ -2165,8 +1950,8 @@ class MapWidget(QtWidgets.QWidget):
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
         tileSize = MapWidget._TileSize * tileMultiplier
 
-        scaleX = (self._viewScale.linear * multiverse.ParsecScaleX)
-        scaleY = (self._viewScale.linear * multiverse.ParsecScaleY)
+        scaleX = (self._viewScale.linear * astronomer.ParsecScaleX)
+        scaleY = (self._viewScale.linear * astronomer.ParsecScaleY)
         worldViewWidth = self.width() / scaleX
         worldViewHeight = self.height() / scaleY
         worldViewLeft = self._viewCenter.x() - (worldViewWidth / 2)
@@ -2219,16 +2004,14 @@ class MapWidget(QtWidgets.QWidget):
             tileScale: int, # Log scale rounded down,
             createMissing: bool
             ) -> typing.Optional[QtGui.QImage]:
-        tileCacheKey = (
-            tileX,
-            tileY,
-            tileScale,
-            self._universe,
-            self._milieu,
-            self._renderer.style(),
-            int(self._renderer.options()))
-        image = self._sharedTileCache.get(tileCacheKey)
-        if not image:
+        image = MapWidget._sharedTileCache.get(
+            universeId=self._universe.id(),
+            tileX=tileX,
+            tileY=tileY,
+            tileScale=tileScale,
+            mapStyle=self._renderer.style(),
+            mapOptions=self._renderer.options())
+        if image is None:
             if not createMissing:
                 # Add the tile to the queue of tiles to be created in the background
                 requiredTile = (tileX, tileY, tileScale)
@@ -2236,12 +2019,28 @@ class MapWidget(QtWidgets.QWidget):
                     self._tileRenderQueue.append(requiredTile)
             else:
                 # Render the tile
-                image = None
-                if self._sharedTileCache.isFull():
+                if MapWidget._sharedTileCache.isFull():
                     # Reuse oldest cached tile
-                    _, image = self._sharedTileCache.pop()
-                image = self._renderTile(tileX, tileY, tileScale, image)
-                self._sharedTileCache[tileCacheKey] = image
+                    image = MapWidget._sharedTileCache.pop()
+                else:
+                    image = self._createTile()
+
+                worldRect = self._renderTile(
+                    tileX=tileX,
+                    tileY=tileY,
+                    tileScale=tileScale,
+                    image=image)
+
+                MapWidget._sharedTileCache.insert(
+                    universeId=self._universe.id(),
+                    tileX=tileX,
+                    tileY=tileY,
+                    tileScale=tileScale,
+                    mapStyle=self._renderer.style(),
+                    mapOptions=self._renderer.options(),
+                    worldRect=worldRect,
+                    image=image)
+
         return image
 
     def _gatherPlaceholderTiles(
@@ -2294,8 +2093,8 @@ class MapWidget(QtWidgets.QWidget):
         tileMultiplier = math.pow(2, self._viewScale.log - placeholderScale)
         tileSize = MapWidget._TileSize * tileMultiplier
 
-        scaleX = (self._viewScale.linear * multiverse.ParsecScaleX)
-        scaleY = (self._viewScale.linear * multiverse.ParsecScaleY)
+        scaleX = (self._viewScale.linear * astronomer.ParsecScaleX)
+        scaleY = (self._viewScale.linear * astronomer.ParsecScaleY)
 
         worldWidgetWidth = self.width() / scaleX
         worldWidgetHeight = self.height() / scaleY
@@ -2319,15 +2118,6 @@ class MapWidget(QtWidgets.QWidget):
         missing = []
         for x in range(leftTile, rightTile + 1):
             for y in range(topTile, bottomTile + 1):
-                key = (
-                    x,
-                    y,
-                    placeholderScale,
-                    self._universe,
-                    self._milieu,
-                    self._renderer.style(),
-                    int(self._renderer.options()))
-
                 placeholderRenderRect = QtCore.QRectF(
                     ((x - leftTile) * tileSize) - offsetX,
                     ((y - topTile) * tileSize) - offsetY,
@@ -2339,8 +2129,14 @@ class MapWidget(QtWidgets.QWidget):
 
                 # NOTE: Don't use _lookupTile as we don't want to create
                 # this tile if it doesn't exist
-                image = self._sharedTileCache.get(key)
-                if image:
+                image = MapWidget._sharedTileCache.get(
+                    universeId=self._universe.id(),
+                    tileX=x,
+                    tileY=y,
+                    tileScale=placeholderScale,
+                    mapStyle=self._renderer.style(),
+                    mapOptions=self._renderer.options())
+                if image is not None:
                     placeholders.append((image, placeholderRenderRect, placeholderClipRect))
                 else:
                     if lookLower:
@@ -2363,70 +2159,74 @@ class MapWidget(QtWidgets.QWidget):
         return placeholders
 
     def _clearTileCache(self) -> None:
-        self._sharedTileCache.clear()
+        MapWidget._sharedTileCache.clear()
         self._tileRenderQueue.clear()
         self._tileRenderTimer.stop()
         self.update() # Force redraw
+
+    def _createTile(self) -> QtGui.QImage:
+        return QtGui.QImage(
+            MapWidget._TileSize,
+            MapWidget._TileSize,
+            QtGui.QImage.Format.Format_ARGB32)
 
     def _renderTile(
             self,
             tileX: int,
             tileY: int,
             tileScale: int, # Log scale rounded down
-            image: typing.Optional[QtGui.QImage]
-            ) -> QtGui.QImage:
+            image: QtGui.QImage # Tile to render to
+            ) -> cartographer.RectangleF:
         tileScale = gui.logScaleToLinearScale(tileScale)
-        scaleX = (tileScale * multiverse.ParsecScaleX)
-        scaleY = (tileScale * multiverse.ParsecScaleY)
+        scaleX = (tileScale * astronomer.ParsecScaleX)
+        scaleY = (tileScale * astronomer.ParsecScaleY)
         worldTileWidth = MapWidget._TileSize / scaleX
         worldTileHeight = MapWidget._TileSize / scaleY
 
         worldTileCenterX = ((tileX * MapWidget._TileSize) / scaleX) + (worldTileWidth / 2)
         worldTileCenterY = ((tileY * MapWidget._TileSize) / scaleY) + (worldTileHeight / 2)
 
-        if not image:
-            image = QtGui.QImage(
-                MapWidget._TileSize,
-                MapWidget._TileSize,
-                QtGui.QImage.Format.Format_ARGB32)
         painter = QtGui.QPainter()
         painter.begin(image)
         try:
             self._mapGraphics.setPainter(painter=painter)
-            self._renderer.setView(
+            worldRect = self._renderer.renderArea(
                 worldCenterX=worldTileCenterX,
                 worldCenterY=worldTileCenterY,
-                scale=tileScale,
+                linearScale=tileScale,
                 outputPixelWidth=MapWidget._TileSize,
                 outputPixelHeight=MapWidget._TileSize)
-            self._renderer.render()
         finally:
             self._mapGraphics.setPainter(painter=None)
             painter.end()
 
-        return image
+        return worldRect
 
     def _handleRenderTileTimer(self) -> None:
         tileX, tileY, tileScale = self._tileRenderQueue.pop(0)
-        image = None
-        if self._sharedTileCache.isFull():
+
+        if MapWidget._sharedTileCache.isFull():
             # Reuse oldest cached tile
-            _, image = self._sharedTileCache.pop()
-        tileCacheKey = (
-            tileX,
-            tileY,
-            tileScale,
-            self._universe,
-            self._milieu,
-            # Use the settings for the renderer that is going to render the
-            # tile to make sure the key is accurate
-            self._renderer.style(),
-            int(self._renderer.options()))
-        self._sharedTileCache[tileCacheKey] = self._renderTile(
+            image = MapWidget._sharedTileCache.pop()
+        else:
+            image = self._createTile()
+
+        worldRect = self._renderTile(
             tileX=tileX,
             tileY=tileY,
             tileScale=tileScale,
             image=image)
+
+        MapWidget._sharedTileCache.insert(
+            universeId=self._universe.id(),
+            tileX=tileX,
+            tileY=tileY,
+            tileScale=tileScale,
+            mapStyle=self._renderer.style(),
+            mapOptions=self._renderer.options(),
+            worldRect=worldRect,
+            image=image)
+
         if self._tileRenderQueue:
             self._tileRenderTimer.start()
         self.update()
@@ -2437,8 +2237,8 @@ class MapWidget(QtWidgets.QWidget):
             # Normalize the delta and translate it to world space
             length = math.sqrt((deltaX * deltaX) + (deltaY * deltaY))
             if length:
-                horzStep = MapWidget._KeyboardMoveDelta / (self._viewScale.linear * multiverse.ParsecScaleX)
-                vertStep = MapWidget._KeyboardMoveDelta / (self._viewScale.linear * multiverse.ParsecScaleY)
+                horzStep = MapWidget._KeyboardMoveDelta / (self._viewScale.linear * astronomer.ParsecScaleX)
+                vertStep = MapWidget._KeyboardMoveDelta / (self._viewScale.linear * astronomer.ParsecScaleY)
                 deltaX = (deltaX / length) * horzStep
                 deltaY = (deltaY / length) * vertStep
 
@@ -2473,7 +2273,7 @@ class MapWidget(QtWidgets.QWidget):
         # Traveller Map uses a value of 64 for the multiplier but I've
         # increased it to 256 so it will animate over a larger transition
         # as drawing tiles is "cheaper" with my implementation
-        xyThreshold = multiverse.SectorHeight * 256 / self._viewScale.linear
+        xyThreshold = astronomer.SectorHeight * 256 / self._viewScale.linear
         return xyDistance < xyThreshold
 
     def _startMoveAnimation(
@@ -2549,7 +2349,7 @@ class MapWidget(QtWidgets.QWidget):
         newViewScale = gui.MapScale(log=logScale)
         self._updateView(scale=newViewScale)
 
-    def _stopMoveAnimation(self):
+    def _stopMoveAnimation(self) -> None:
         if self._viewAnimationGroup:
             self._viewAnimationGroup.stop()
             if self._viewCenterAnimation:
@@ -2575,13 +2375,26 @@ class MapWidget(QtWidgets.QWidget):
             MapWidget._sharedEasingCurves.append(self._viewScaleAnimationEasing)
             self._viewScaleAnimationEasing = None
 
-    def _handleMoveAnimationFinished(self):
+    def _handleMoveAnimationFinished(self) -> None:
         self._stopMoveAnimation()
 
     _viewScaleAnimationProp = QtCore.pyqtProperty(
         float,
         fget=_animateViewScaleGetter,
         fset=_animateViewScaleSetter)
+
+    def _handleUniversePostUpdate(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        self._renderer.clearCaches()
+
+        # If there is a main it may have become invalidated so clear it.
+        self._mainsOverlay.setMain(main=None)
+
+        self._forceAtomicRedraw = True
+        self.update()
 
     @staticmethod
     def _createPlaceholderTile() -> QtGui.QImage:

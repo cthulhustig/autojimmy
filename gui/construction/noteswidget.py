@@ -22,7 +22,7 @@ class NotesWidget(QtWidgets.QWidget):
         self._filterLineEdit.textEdited.connect(self._updateFilter)
 
         self._clearFilterButton = QtWidgets.QPushButton()
-        self._clearFilterButton.setIcon(gui.loadIcon(gui.Icon.CloseTab))
+        self._clearFilterButton.setIcon(gui.loadIcon(gui.Icon.Cross))
         self._clearFilterButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)

@@ -113,7 +113,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 
         self._deleteButton = None
         if deletable:
-            closeIcon = gui.loadIcon(gui.Icon.CloseTab)
+            closeIcon = gui.loadIcon(gui.Icon.Cross)
             self._deleteButton = QtWidgets.QPushButton()
             self._deleteButton.setIcon(closeIcon)
             self._deleteButton.setSizePolicy(

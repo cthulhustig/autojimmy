@@ -10,6 +10,7 @@
         "Autobar",
         "Autochef",
         "Autopistol",
+        "azathoth",
         "banes",
         "Belter",
         "Biologicals",
@@ -35,6 +36,7 @@
         "Gravitic",
         "Gravitics",
         "Hiver",
+        "Homeworld",
         "Hydrographics",
         "incapacitant",
         "Invisitech",
@@ -86,8 +88,8 @@
     "search.exclude": {
         "**/.svn": true,
         "**/.VSCodeCounter": true,
-        "**/build": true,
-        "**/dist": true,
-        "**/data": true
+        "build/**": true,
+        "dist/**": true,
+        "data/**": true
     },
 }

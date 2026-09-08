@@ -1,8 +1,9 @@
 import app
+import astronomer
+import azathoth
 import cartographer
 import gui
 import logic
-import multiverse
 import traveller
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
@@ -10,7 +11,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 class _CustomLabel(QtWidgets.QLabel):
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Collection[app.MapOption],
@@ -20,7 +21,7 @@ class _CustomLabel(QtWidgets.QLabel):
             ) -> None:
         super().__init__(parent)
 
-        self._milieu = milieu
+        self._universe = universe
         self._rules = traveller.Rules(rules)
         self._mapStyle = mapStyle
         self._mapOptions = set(mapOptions)
@@ -35,26 +36,26 @@ class _CustomLabel(QtWidgets.QLabel):
         self.setWordWrap(True)
         self.linkHovered.connect(self._linkHovered)
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
-        if milieu is self._milieu:
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        if universe is self._universe:
             return
 
-        self._milieu = milieu
-        self._updateContent()
+        self._universe = universe
+        self.syncContent()
 
     def setRules(self, rules: traveller.Rules) -> None:
         if rules == self._rules:
             return
 
         self._rules = traveller.Rules(rules)
-        self._updateContent()
+        self.syncContent()
 
     def setMapStyle(self, style: cartographer.MapStyle) -> None:
         if style is self._mapStyle:
             return
 
         self._mapStyle = style
-        self._updateContent()
+        self.syncContent()
 
     def setMapOptions(self, options: typing.Collection[app.MapOption]) -> None:
         options = set(options) # Force use of set so options can be compared
@@ -62,7 +63,7 @@ class _CustomLabel(QtWidgets.QLabel):
             return
 
         self._mapOptions = options
-        self._updateContent()
+        self.syncContent()
 
     def setWorldTagging(
             self,
@@ -71,7 +72,7 @@ class _CustomLabel(QtWidgets.QLabel):
         if tagging == self._worldTagging:
             return
         self._worldTagging = logic.WorldTagging(tagging) if tagging else None
-        self._updateContent()
+        self.syncContent()
 
     def setTaggingColours(
             self,
@@ -80,23 +81,22 @@ class _CustomLabel(QtWidgets.QLabel):
         if colours == self._taggingColours:
             return
         self._taggingColours = app.TaggingColours(colours) if colours else None
-        self._updateContent()
+        self.syncContent()
 
     def setHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         if hex == self._hex:
             return
 
         self._hex = hex
-        self._updateContent()
+        self.syncContent()
 
-    def _updateContent(self) -> None:
+    def syncContent(self) -> None:
         if self._hex:
             self.setText(gui.createHexToolTip(
-                universe=multiverse.WorldManager.instance().universe(),
-                milieu=self._milieu,
+                universe=self._universe,
                 hex=self._hex,
                 rules=self._rules,
                 worldTagging=self._worldTagging,
@@ -104,7 +104,8 @@ class _CustomLabel(QtWidgets.QLabel):
                 width=0,
                 includeHexImage=True, # Always show image of the hex in hex detail window
                 hexImageStyle=self._mapStyle,
-                hexImageOptions=self._mapOptions))
+                hexImageOptions=self._mapOptions,
+                includeCredits=True))
         else:
             self.clear()
 
@@ -119,7 +120,7 @@ class HexDetailsWindow(gui.WindowWidget):
             title='Hex Details',
             configSection='HexDetailsWindow')
 
-        self._hexes: typing.List[multiverse.HexPosition] = []
+        self._hexes: typing.List[astronomer.HexPosition] = []
 
         self._tabBar = gui.VerticalTabBar()
         self._tabBar.setTabsClosable(True)
@@ -127,7 +128,7 @@ class HexDetailsWindow(gui.WindowWidget):
         self._tabBar.selectionChanged.connect(self._tabChanged)
 
         self._hexLabel = _CustomLabel(
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            universe=astronomer.WorldManager.instance().universe(),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
@@ -147,9 +148,14 @@ class HexDetailsWindow(gui.WindowWidget):
 
         app.Config.instance().configChanged.connect(self._appConfigChanged)
 
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
+
     def addHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         for index, existingHex in enumerate(self._hexes):
             if hex == existingHex:
@@ -157,9 +163,8 @@ class HexDetailsWindow(gui.WindowWidget):
                 self._hexLabel.setHex(hex)
                 return
 
-        tabName = multiverse.WorldManager.instance().canonicalHexName(
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
-            hex=hex)
+        universe = astronomer.WorldManager.instance().universe()
+        tabName = universe.canonicalHexName(hex=hex)
         self._hexes.append(hex)
         index = self._tabBar.addTab(tabName)
         self._tabBar.setCurrentIndex(index)
@@ -167,18 +172,16 @@ class HexDetailsWindow(gui.WindowWidget):
 
     def addHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         if not hexes:
             return
 
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        universe = astronomer.WorldManager.instance().universe()
         currentHexes = set(self._hexes)
         for hex in hexes:
             if hex not in currentHexes:
-                tabName = multiverse.WorldManager.instance().canonicalHexName(
-                    milieu=milieu,
-                    hex=hex)
+                tabName = universe.canonicalHexName(hex=hex)
                 self._hexes.append(hex)
                 self._tabBar.addTab(tabName)
 
@@ -227,13 +230,12 @@ class HexDetailsWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
             for index, hex in enumerate(self._hexes):
-                tabName = multiverse.WorldManager.instance().canonicalHexName(
-                    milieu=newValue,
-                    hex=hex)
+                tabName = universe.canonicalHexName(hex=hex)
                 self._tabBar.setTabText(index, tabName)
-            self._hexLabel.setMilieu(milieu=newValue)
+            self._hexLabel.setUniverse(universe=universe)
         elif option is app.ConfigOption.Rules:
             self._hexLabel.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
@@ -244,3 +246,16 @@ class HexDetailsWindow(gui.WindowWidget):
             self._hexLabel.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:
             self._hexLabel.setTaggingColours(colours=newValue)
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != astronomer.WorldManager.instance().universe().id():
+            return
+
+        for index, hex in enumerate(self._hexes):
+            tabName = universe.canonicalHexName(hex=hex)
+            self._tabBar.setTabText(index, tabName)
+        self._hexLabel.syncContent()
