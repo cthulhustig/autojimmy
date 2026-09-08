@@ -20,12 +20,12 @@ class _Loader(object):
         self._universeDb = universeDb
         self._milieu = milieu
         self._entityFactory = entityFactory
-        self._allegiances = None
-        self._sophonts = None
-        self._sectors = None
-        self._worlds = None
-        self._mapLabels = None
-        self._mapVectors = None
+        self._allegiances = []
+        self._sophonts = []
+        self._sectors = []
+        self._worlds = []
+        self._mapLabels = []
+        self._mapVectors = []
 
     def loadAllegiances(
             self,
@@ -109,31 +109,6 @@ class _Loader(object):
             progress=progress.createChild(weight=0.5))
 
     def createUniverse(self) -> astronomer.Universe:
-        if self._allegiances is None:
-            raise RuntimeError('Allegiances have not been loaded for universe {name!r} ({id})'.format(
-                name=self._universeName,
-                id=self._universeDb.id()))
-        if self._sophonts is None:
-            raise RuntimeError('Sophonts have not been loaded for universe {name!r} ({id})'.format(
-                name=self._universeName,
-                id=self._universeId))
-        if self._sectors is None:
-            raise RuntimeError('Sectors have not been loaded for universe {name!r} ({id})'.format(
-                name=self._universeName,
-                id=self._universeId))
-        if self._worlds is None:
-            raise RuntimeError('Worlds have not been loaded for universe {name!r} ({id})'.format(
-                name=self._universeName,
-                id=self._universeId))
-        if self._mapLabels is None:
-            raise RuntimeError('Map labels have not been loaded for universe {name!r} ({id})'.format(
-                name=self._universeName,
-                id=self._universeId))
-        if self._mapVectors is None:
-            raise RuntimeError('Map vectors have not been loaded for universe {name!r} ({id})'.format(
-                name=self._universeName,
-                id=self._universeId))
-
         logging.debug('Universe {name!r} ({id}) contains:'.format(
             name=self._universeName,
             id=self._universeId))
@@ -195,17 +170,26 @@ def loadUniverseFromDatabase(
             universeDb=universeDb,
             milieu=milieu,
             entityFactory=entityFactory)
-        tasks = [
-            (loader.loadAllegiances, allegianceCount / objectCount),
-            (loader.loadSophonts, sophontCount / objectCount),
-            (loader.loadSectors, sectorCount / objectCount),
-            (loader.loadWorlds, systemCount / objectCount),
-            (loader.loadMapLabels, mapLabelCount / objectCount),
-            (loader.loadMapVectors, mapVectorCount / objectCount)]
+        if objectCount:
+            tasks = []
+            if allegianceCount:
+                tasks.append((loader.loadAllegiances, allegianceCount / objectCount))
+            if sophontCount:
+                tasks.append((loader.loadSophonts, sophontCount / objectCount))
+            if sectorCount:
+                tasks.append((loader.loadSectors, sectorCount / objectCount))
+            if systemCount:
+                tasks.append((loader.loadWorlds, systemCount / objectCount))
+            if mapLabelCount:
+                tasks.append((loader.loadMapLabels, mapLabelCount / objectCount))
+            if mapVectorCount:
+                tasks.append((loader.loadMapVectors, mapVectorCount / objectCount))
 
-        for function, weight in tasks:
-            function(
-                transaction=transaction,
-                progress=progress.createChild(weight=weight) if progress is not None else None)
+            for function, weight in tasks:
+                function(
+                    transaction=transaction,
+                    progress=progress.createChild(weight=weight) if progress is not None else None)
+        elif progress is not None:
+            progress.complete()
 
         return loader.createUniverse()
