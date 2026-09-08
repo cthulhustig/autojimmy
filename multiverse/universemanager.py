@@ -104,6 +104,14 @@ class UniverseManager(object):
     def universeInfoById(self, id: str) -> typing.Optional[multiverse.UniverseInfo]:
         return UniverseManager._registry.universeById(id=id)
 
+    def universeDbById(self, id: str) -> typing.Optional[multiverse.UniverseDb]:
+        universeInfo = UniverseManager._registry.universeById(id=id)
+        if not universeInfo:
+            raise ValueError(f'Unknown universe {id!r}')
+
+        universePath = UniverseManager._universeDbFilePath(id=id)
+        return multiverse.UniverseDb(universePath=universePath)
+
     def universeMilieu(self, id: str) -> str:
         universeInfo = UniverseManager._registry.universeById(id=id)
         if not universeInfo:

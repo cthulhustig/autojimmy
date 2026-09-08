@@ -111,10 +111,13 @@ class LoadUniverseJob(jobs.ProgressJob):
             self,
             progressCallback: typing.Callable[[str, int, int], typing.Any]
             ) -> None:
-        currentUniverseId = app.Config.instance().value(option=app.ConfigOption.Universe)
+        progressMessage = f'Loading Universe'
+        progressSteps = 1000
+        progressWrapper = lambda p: progressCallback(progressMessage, int(p * progressSteps), progressSteps)
+
         azathoth.UniverseEditor.instance().loadUniverse(
-            universeId=currentUniverseId,
-            progressCallback=progressCallback)
+            universeId=app.Config.instance().value(option=app.ConfigOption.Universe),
+            progress=common.ProgressTracker(weight=1, updateCallback=progressWrapper))
 
 class LoadRobotsJob(jobs.ProgressJob):
     def errorMessage(self) -> typing.Optional[str]:

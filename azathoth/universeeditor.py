@@ -36,7 +36,7 @@ class UniverseEditor(object):
     def loadUniverse(
             self,
             universeId: str,
-            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+            progress: typing.Optional[common.ProgressTracker] = None
             ) -> None:
         if self._universe and self._universe.id() == universeId:
             return # Nothing to do
@@ -44,7 +44,7 @@ class UniverseEditor(object):
         self._universe = astronomer.loadUniverseFromDatabase(
             universeId=universeId,
             entityFactory=self._entityFactory,
-            progressCallback=progressCallback)
+            progress=progress)
 
         # Clear undo stack of content from the previous universe
         self._undoStack.clear()

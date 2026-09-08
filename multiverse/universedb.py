@@ -545,6 +545,18 @@ class UniverseDb(object):
                     key=UniverseDb._MetadataDescriptionKey,
                     value=description)
 
+    def countAllegiances(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> int:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._countAllegiances(cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._countAllegiances(cursor=connection.cursor())
+
     def loadAllegiances(
             self,
             transaction: typing.Optional[database.Transaction] = None,
@@ -599,6 +611,18 @@ class UniverseDb(object):
                     cursor=connection.cursor(),
                     allegianceIds=allegianceIds)
 
+    def countSophonts(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> int:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._countSophonts(cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._countSophonts(cursor=connection.cursor())
+
     def loadSophonts(
             self,
             transaction: typing.Optional[database.Transaction] = None,
@@ -652,6 +676,18 @@ class UniverseDb(object):
                 self._deleteSophonts(
                     cursor=connection.cursor(),
                     sophontIds=sophontIds)
+
+    def countSectors(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> int:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._countSectors(cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._countSectors(cursor=connection.cursor())
 
     def listSectors(
             self,
@@ -721,6 +757,18 @@ class UniverseDb(object):
                     cursor=connection.cursor(),
                     sectorIds=sectorIds)
 
+    def countSystems(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> int:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._countSystems(cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._countSystems(cursor=connection.cursor())
+
     def loadSystems(
             self,
             transaction: typing.Optional[database.Transaction] = None,
@@ -775,6 +823,18 @@ class UniverseDb(object):
                     cursor=connection.cursor(),
                     systemIds=systemIds)
 
+    def countMapLabels(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> int:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._countMapLabels(cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._countMapLabels(cursor=connection.cursor())
+
     def loadMapLabels(
             self,
             transaction: typing.Optional[database.Transaction] = None,
@@ -828,6 +888,18 @@ class UniverseDb(object):
                 self._deleteMapLabels(
                     cursor=connection.cursor(),
                     labelIds=labelIds)
+
+    def countMapVectors(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> int:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._countMapVectors(cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._countMapVectors(cursor=connection.cursor())
 
     def loadMapVectors(
             self,
@@ -1780,6 +1852,13 @@ class UniverseDb(object):
 
         return usedTables
 
+    def _countTableObjects(
+            self,
+            cursor: sqlite3.Cursor,
+            tableMapping: TableMapping
+            ) -> int:
+        return self._database.rowCount(cursor=cursor, tableName=tableMapping.tableName())
+
     def _loadTableRows(
             self,
             cursor: sqlite3.Cursor,
@@ -2414,6 +2493,14 @@ class UniverseDb(object):
     #                                      ░░██████
     #                                       ░░░░░░
 
+    def _countAllegiances(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> int:
+        return self._countTableObjects(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbAllegiance])
+
     def _loadAllegiances(
             self,
             cursor: sqlite3.Cursor,
@@ -2475,6 +2562,14 @@ class UniverseDb(object):
     #                         █████
     #                        ░░░░░
 
+    def _countSophonts(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> int:
+        return self._countTableObjects(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbSophont])
+
     def _loadSophonts(
             self,
             cursor: sqlite3.Cursor,
@@ -2532,6 +2627,14 @@ class UniverseDb(object):
     #    ███    ░███░███░░░  ░███  ███  ░███ ███░███ ░███ ░███      ░░░░███
     #   ░░█████████ ░░██████ ░░██████   ░░█████ ░░██████  █████     ██████
     #    ░░░░░░░░░   ░░░░░░   ░░░░░░     ░░░░░   ░░░░░░  ░░░░░     ░░░░░░
+
+    def _countSectors(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> int:
+        return self._countTableObjects(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbSector])
 
     def _listSectors(
             self,
@@ -2626,6 +2729,14 @@ class UniverseDb(object):
     #                ░░██████
     #                 ░░░░░░
 
+    def _countSystems(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> int:
+        return self._countTableObjects(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbSystem])
+
     def _loadSystems(
             self,
             cursor: sqlite3.Cursor,
@@ -2693,6 +2804,14 @@ class UniverseDb(object):
     #    █████   █████░░██████  ░░████████  ░░█████ ░░██████  ██████
     #   ░░░░░   ░░░░░  ░░░░░░    ░░░░░░░░    ░░░░░   ░░░░░░  ░░░░░░
 
+    def _countRoutes(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> int:
+        return self._countTableObjects(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbRoute])
+
     def _loadRoutes(
             self,
             cursor: sqlite3.Cursor,
@@ -2747,6 +2866,14 @@ class UniverseDb(object):
     #    ░███    ░███░███ ░███ ░███     ░███ ░███ ░███░░░   ░███      ░░░░███
     #    ███████████ ░░██████  █████    ░░████████░░██████  █████     ██████
     #   ░░░░░░░░░░░   ░░░░░░  ░░░░░      ░░░░░░░░  ░░░░░░  ░░░░░     ░░░░░░
+
+    def _countBorders(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> int:
+        return self._countTableObjects(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbBorder])
 
     def _loadBorders(
             self,
@@ -2819,6 +2946,14 @@ class UniverseDb(object):
     #                          ░░██████
     #                           ░░░░░░
 
+    def _countRegions(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> int:
+        return self._countTableObjects(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbRegion])
+
     def _loadRegions(
             self,
             cursor: sqlite3.Cursor,
@@ -2890,6 +3025,14 @@ class UniverseDb(object):
     #                              █████
     #                             ░░░░░
 
+    def _countMapLabels(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> int:
+        return self._countTableObjects(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbMapLabel])
+
     def _loadMapLabels(
             self,
             cursor: sqlite3.Cursor,
@@ -2950,6 +3093,14 @@ class UniverseDb(object):
     #                              ░███
     #                              █████
     #                             ░░░░░
+
+    def _countMapVectors(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> int:
+        return self._countTableObjects(
+            cursor=cursor,
+            tableMapping=self._objectTypeToTableMapping[multiverse.DbMapVector])
 
     def _loadMapVectors(
             self,

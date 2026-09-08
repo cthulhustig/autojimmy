@@ -1,15 +1,163 @@
 import astronomer
 import common
+import database
 import logging
 import multiverse
 import typing
 
-# TODO: Progress is currently broken
-_ProgressStageCount = 6
+# TODO: The convertDB* functions should take a a progress tracker as well
+class _Loader(object):
+    def __init__(
+            self,
+            universeId: str,
+            universeName: str,
+            universeDb: multiverse.UniverseDb,
+            milieu: astronomer.Milieu,
+            entityFactory: astronomer.EntityFactoryInterface,
+            ) -> None:
+        self._universeId = universeId
+        self._universeName = universeName
+        self._universeDb = universeDb
+        self._milieu = milieu
+        self._entityFactory = entityFactory
+        self._allegiances = None
+        self._sophonts = None
+        self._sectors = None
+        self._worlds = None
+        self._mapLabels = None
+        self._mapVectors = None
+
+    def loadAllegiances(
+            self,
+            transaction: database.Transaction,
+            progress: typing.Optional[common.ProgressTracker]
+            ) -> None:
+        dbAllegiances = self._universeDb.loadAllegiances(
+            transaction=transaction,
+            progress=progress.createChild(weight=0.5))
+        self._allegiances = astronomer.convertDbAllegiancesToAstronomerAllegiances(
+            dbAllegiances=dbAllegiances,
+            entityFactory=self._entityFactory,
+            progress=progress.createChild(weight=0.5))
+
+    def loadSophonts(
+            self,
+            transaction: database.Transaction,
+            progress: typing.Optional[common.ProgressTracker]
+            ) -> None:
+        dbSophonts = self._universeDb.loadSophonts(
+            transaction=transaction,
+            progress=progress.createChild(weight=0.5))
+        self._sophonts = astronomer.convertDbSophontsToAstronomerSophonts(
+            dbSophonts=dbSophonts,
+            entityFactory=self._entityFactory,
+            progress=progress.createChild(weight=0.5))
+
+    def loadSectors(
+            self,
+            transaction: database.Transaction,
+            progress: typing.Optional[common.ProgressTracker]
+            ) -> None:
+        dbSectors = self._universeDb.loadSectors(
+            transaction=transaction,
+            progress=progress.createChild(weight=0.5))
+        self._sectors = astronomer.convertDbSectorsToAstronomerSectors(
+            dbSectors=dbSectors,
+            astroAllegiances=self._allegiances,
+            entityFactory=self._entityFactory,
+            progress=progress.createChild(weight=0.5))
+
+    def loadWorlds(
+            self,
+            transaction: database.Transaction,
+            progress: typing.Optional[common.ProgressTracker]
+            ) -> None:
+        dbSystems = self._universeDb.loadSystems(
+            transaction=transaction,
+            progress=progress.createChild(weight=0.5))
+        self._worlds = astronomer.convertDbSystemsToAstronomerWorlds(
+            dbSystems=dbSystems,
+            astroAllegiances=self._allegiances,
+            astroSophonts=self._sophonts,
+            entityFactory=self._entityFactory,
+            progress=progress.createChild(weight=0.5))
+
+    def loadMapLabels(
+            self,
+            transaction: database.Transaction,
+            progress: typing.Optional[common.ProgressTracker]
+            ) -> None:
+        dbMapLabels = self._universeDb.loadMapLabels(
+            transaction=transaction,
+            progress=progress.createChild(weight=0.5))
+        self._mapLabels = astronomer.convertDbMapLabelsToAstronomerMapLabels(
+            dbLabels=dbMapLabels,
+            entityFactory=self._entityFactory,
+            progress=progress.createChild(weight=0.5))
+
+    def loadMapVectors(
+            self,
+            transaction: database.Transaction,
+            progress: typing.Optional[common.ProgressTracker]
+            ) -> None:
+        dbMapVectors = self._universeDb.loadMapVectors(
+            transaction=transaction,
+            progress=progress.createChild(weight=0.5))
+        self._mapVectors = astronomer.convertDbMapVectorsToAstronomerMapVectors(
+            dbVectors=dbMapVectors,
+            entityFactory=self._entityFactory,
+            progress=progress.createChild(weight=0.5))
+
+    def createUniverse(self) -> astronomer.Universe:
+        if self._allegiances is None:
+            raise RuntimeError('Allegiances have not been loaded for universe {name!r} ({id})'.format(
+                name=self._universeName,
+                id=self._universeDb.id()))
+        if self._sophonts is None:
+            raise RuntimeError('Sophonts have not been loaded for universe {name!r} ({id})'.format(
+                name=self._universeName,
+                id=self._universeId))
+        if self._sectors is None:
+            raise RuntimeError('Sectors have not been loaded for universe {name!r} ({id})'.format(
+                name=self._universeName,
+                id=self._universeId))
+        if self._worlds is None:
+            raise RuntimeError('Worlds have not been loaded for universe {name!r} ({id})'.format(
+                name=self._universeName,
+                id=self._universeId))
+        if self._mapLabels is None:
+            raise RuntimeError('Map labels have not been loaded for universe {name!r} ({id})'.format(
+                name=self._universeName,
+                id=self._universeId))
+        if self._mapVectors is None:
+            raise RuntimeError('Map vectors have not been loaded for universe {name!r} ({id})'.format(
+                name=self._universeName,
+                id=self._universeId))
+
+        logging.debug('Universe {name!r} ({id}) contains:'.format(
+            name=self._universeName,
+            id=self._universeId))
+        logging.debug('Allegiances: {count}'.format(count=len(self._allegiances)))
+        logging.debug('Sophonts: {count}'.format(count=len(self._sophonts)))
+        logging.debug('Sectors: {count}'.format(count=len(self._sectors)))
+        logging.debug('Systems: {count}'.format(count=len(self._worlds)))
+        logging.debug('Map Labels: {count}'.format(count=len(self._mapLabels)))
+        logging.debug('Map Vectors: {count}'.format(count=len(self._mapVectors)))
+
+        return self._entityFactory.createUniverse(
+            universeId=self._universeId,
+            milieu=self._milieu,
+            allegiances=self._allegiances,
+            sophonts=self._sophonts,
+            sectors=self._sectors,
+            worlds=self._worlds,
+            labels=self._mapLabels,
+            vectors=self._mapVectors)
+
 def loadUniverseFromDatabase(
         universeId: str,
         entityFactory: typing.Optional[astronomer.EntityFactoryInterface] = None,
-        progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+        progress: typing.Optional[common.ProgressTracker] = None
         ) -> astronomer.Universe:
     if entityFactory is None:
         entityFactory = astronomer.DefaultEntityFactory()
@@ -23,84 +171,41 @@ def loadUniverseFromDatabase(
         name=universeInfo.name(),
         id=universeInfo.id()))
 
-    milieu = multiverse.UniverseManager.instance().universeMilieu(id=universeId)
+    universeDb = multiverse.UniverseManager.instance().universeDbById(id=universeId)
+
+    milieu = universeDb.milieu()
     try:
         milieu = astronomer.Milieu[milieu]
     except:
         raise ValueError(f'Universe {universeId!r} has unknown milieu {milieu!r}')
 
-    # TODO: Progress tracker should be passed in and child trackers created
-    # for each task
-    # TODO: The convertDB* functions should take a a progress tracker as well
-    taskCount = 6
-    taskWeight = 1 / taskCount
-    progress = None
-    progressSteps = 1000
-    progressStage = None
-    progressCount = 0
-    if progressCallback:
-        progress = common.ProgressTracker(
-            weight=1,
-            updateCallback=lambda progress: progressCallback(progressStage, int(progress * progressSteps), progressSteps))
+    with universeDb.createTransaction() as transaction:
+        # TODO: Routes, borders & regions (and possibly sector labels) should go here when I move them to the universe
+        allegianceCount = universeDb.countAllegiances(transaction=transaction)
+        sophontCount = universeDb.countSophonts(transaction=transaction)
+        sectorCount = universeDb.countSectors(transaction=transaction)
+        systemCount = universeDb.countSystems(transaction=transaction)
+        mapLabelCount = universeDb.countMapLabels(transaction=transaction)
+        mapVectorCount = universeDb.countMapVectors(transaction=transaction)
+        objectCount = allegianceCount + sophontCount + sectorCount + systemCount + mapLabelCount + mapVectorCount
 
-        progressStage = 'Loading Universe {name!r}:'.format(name=universeInfo.name())
-        progressCallback(progressStage, progressCount, _ProgressStageCount)
+        loader = _Loader(
+            universeId=universeId,
+            universeName=universeInfo.name(),
+            universeDb=universeDb,
+            milieu=milieu,
+            entityFactory=entityFactory)
+        tasks = [
+            (loader.loadAllegiances, allegianceCount / objectCount),
+            (loader.loadSophonts, sophontCount / objectCount),
+            (loader.loadSectors, sectorCount / objectCount),
+            (loader.loadWorlds, systemCount / objectCount),
+            (loader.loadMapLabels, mapLabelCount / objectCount),
+            (loader.loadMapVectors, mapVectorCount / objectCount)]
 
-    allegiances = astronomer.convertDbAllegiancesToAstronomerAllegiances(
-        dbAllegiances=multiverse.UniverseManager.instance().allegiances(
-            id=universeId,
-            progress=progress.createChild(weight=taskWeight)),
-        entityFactory=entityFactory)
+        for function, weight in tasks:
+            function(
+                transaction=transaction,
+                progress=progress.createChild(weight=weight) if progress is not None else None)
 
-    sophonts = astronomer.convertDbSophontsToAstronomerSophonts(
-        dbSophonts=multiverse.UniverseManager.instance().sophonts(
-            id=universeId,
-            progress=progress.createChild(weight=taskWeight)),
-        entityFactory=entityFactory)
-
-    sectors = astronomer.convertDbSectorsToAstronomerSectors(
-        dbSectors=multiverse.UniverseManager.instance().sectors(
-            id=universeId,
-            progress=progress.createChild(weight=taskWeight)),
-        astroAllegiances=allegiances,
-        entityFactory=entityFactory)
-
-    worlds = astronomer.convertDbSystemsToAstronomerWorlds(
-        dbSystems=multiverse.UniverseManager.instance().systems(
-            id=universeId,
-            progress=progress.createChild(weight=taskWeight)),
-        astroAllegiances=allegiances,
-        astroSophonts=sophonts,
-        entityFactory=entityFactory)
-
-    labels = astronomer.convertDbMapLabelsToAstronomerMapLabels(
-        dbLabels=multiverse.UniverseManager.instance().mapLabels(
-            id=universeId,
-            progress=progress.createChild(weight=taskWeight)),
-        entityFactory=entityFactory)
-
-    vectors = astronomer.convertDbMapVectorsToAstronomerMapVectors(
-        dbVectors=multiverse.UniverseManager.instance().mapVectors(
-            id=universeId,
-            progress=progress.createChild(weight=taskWeight)),
-        entityFactory=entityFactory)
-
-    logging.debug('Universe {name!r} ({id}) contains:'.format(
-        name=universeInfo.name(),
-        id=universeInfo.id()))
-    logging.debug('Allegiances: {count}'.format(count=len(allegiances)))
-    logging.debug('Sophonts: {count}'.format(count=len(sophonts)))
-    logging.debug('Sectors: {count}'.format(count=len(sectors)))
-    logging.debug('Systems: {count}'.format(count=len(worlds)))
-    logging.debug('Map Labels: {count}'.format(count=len(labels)))
-    logging.debug('Map Vectors: {count}'.format(count=len(vectors)))
-
-    return entityFactory.createUniverse(
-        universeId=universeId,
-        milieu=milieu,
-        allegiances=allegiances,
-        sophonts=sophonts,
-        sectors=sectors,
-        worlds=worlds,
-        labels=labels,
-        vectors=vectors)
+        return loader.createUniverse()
