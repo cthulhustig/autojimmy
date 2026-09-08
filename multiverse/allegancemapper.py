@@ -216,7 +216,9 @@ class AllegianceMapper(object):
                 for sectorAbbreviation in location.split('/'):
                     rawMetadata = sectorAbbreviationToMetadata.get(sectorAbbreviation)
                     if rawMetadata is None:
-                        logging.info(f'Ignoring unknown sector abbreviation {sectorAbbreviation!r} for stock abbreviation {rawAllegiance.name()!r}')
+                        # NOTE: Only write this at debug as the file uses M1105 sector abbreviations so this
+                        # will happen a lot for non-M1105 milieu
+                        logging.debug(f'Ignoring unknown sector abbreviation {sectorAbbreviation!r} for stock abbreviation {rawAllegiance.name()!r}')
                         continue
 
                     routeColour, routeStyle, routeWidth = self._styleMapper.lookupRouteStyle(

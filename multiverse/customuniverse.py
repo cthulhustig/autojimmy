@@ -24,7 +24,7 @@ def importLegacyCustomSectors(
         directoryPath: str,
         universeId: str,
         milieu: str,
-        progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
+        progress: typing.Optional[common.ProgressTracker] = None,
         reporter: typing.Optional[common.Reporter] = None
         ) -> None:
     # TODO: Legacy custom sectors are currently broken as systems (and anything else

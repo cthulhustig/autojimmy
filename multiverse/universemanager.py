@@ -120,18 +120,23 @@ class UniverseManager(object):
             milieu: str,
             description: str = '',
             importTravellerMap: bool = False,
-            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
+            progress: typing.Optional[common.ProgressTracker] = None,
             reporter: typing.Optional[common.Reporter] = None
             ) -> str: # Universe Id
         if not name.strip():
             raise ValueError(f'Universe name can\'t be empty')
 
+        taskWeight = None
+        if progress is not None:
+            taskCount = 2 # Load & Save
+            taskWeight = 1 / taskCount
+
         dbAllegiances = dbSophonts = dbSectors = dbSystems = dbMapLabels = dbMapVectors = None
         if importTravellerMap:
             dbAllegiances, dbSophonts, dbSectors, dbSystems, dbMapLabels, dbMapVectors = \
-                multiverse.convertStockUniverseToDbUniverse(
+                self._loadStockUniverse(
                     milieu=milieu,
-                    progressCallback=progressCallback,
+                    progress=progress.createChild(weight=taskWeight) if progress is not None else None,
                     reporter=reporter)
 
         universeId = str(uuid.uuid4())
@@ -139,51 +144,26 @@ class UniverseManager(object):
         if os.path.exists(universePath):
             raise RuntimeError(f'Universe database {universePath!r} already exists')
 
-        if progressCallback:
-            try:
-                progressCallback('Creating', 0, 0)
-            except Exception as ex:
-                logging.warning('UniverseManager custom universe creation progress callback threw an exception', exc_info=ex)
-
-        # Always create database, even when there are no sectors, as we want it
-        # to be created on disk
-        universeDb = multiverse.UniverseDb(universePath=universePath)
-
-        tasks = (
-            (dbAllegiances, universeDb.saveAllegiances),
-            (dbSophonts, universeDb.saveSophonts),
-            (dbSectors, universeDb.saveSectors),
-            (dbSystems, universeDb.saveSystems),
-            (dbMapLabels, universeDb.saveMapLabels),
-            (dbMapVectors, universeDb.saveMapVectors))
-
-        # TODO: A ProgressTracker should be passed in but that requires updating convertStockUniverseToDbUniverse
-        progress = None
-        taskWeight = None
-        if progressCallback:
-            taskCount = len(tasks)
-            taskWeight = 1 / taskCount
-            progressSteps = 1000
-            progressWrapper = lambda p: progressCallback('Creating', int(progressSteps * p), progressSteps)
-            progress = common.ProgressTracker(weight=1, updateCallback=progressWrapper)
-
-        with universeDb.createTransaction() as transaction:
-            universeDb.setMilieu(milieu=milieu, transaction=transaction)
-            universeDb.setDescription(description=description, transaction=transaction)
-
-            for objects, function in tasks:
-                taskProgress = progress.createChild(weight=taskWeight) if progress is not None else None
-                if objects:
-                    function(
-                        objects,
-                        transaction=transaction,
-                        progress=taskProgress)
-                elif taskProgress is not None:
-                    taskProgress.complete()
-
-        # Only add the universe to the registry after the database has been
-        # created to avoid dangling entries if creating the database fails
+        universeDb = None
         try:
+            # Always create database, even when there are no sectors, as we want it
+            # to be created on disk
+            universeDb = multiverse.UniverseDb(universePath=universePath)
+
+            self._saveUniverse(
+                universeDb=universeDb,
+                milieu=milieu,
+                description=description,
+                dbAllegiances=dbAllegiances,
+                dbSophonts=dbSophonts,
+                dbSectors=dbSectors,
+                dbSystems=dbSystems,
+                dbMapLabels=dbMapLabels,
+                dbMapVectors=dbMapVectors,
+                progress=progress.createChild(weight=taskWeight) if progress is not None else None)
+
+            # Only add the universe to the registry after the database has been
+            # created to avoid dangling entries if creating the database fails
             UniverseManager._registry.addUniverse(id=universeId, name=name)
         except Exception:
             # Attempt to tidy up by deleting the universe database
@@ -192,12 +172,6 @@ class UniverseManager(object):
             except Exception as ex:
                 logging.error(f'UniverseManager failed to clean up universe file {universePath!r}', exc_info=ex)
             raise
-
-        if progressCallback:
-            try:
-                progressCallback('Creation: Complete!', 1, 1)
-            except Exception as ex:
-                logging.warning('UniverseManager custom universe creation progress callback threw an exception', exc_info=ex)
 
         return universeId
 
@@ -435,6 +409,252 @@ class UniverseManager(object):
         universeDb = multiverse.UniverseDb(universePath=dbPath)
 
         return universeDb.loadMapVectors(progress=progress)
+
+    def _loadStockUniverse(
+            self,
+            milieu: str,
+            # TODO: Do something with progress
+            progress: typing.Optional[common.ProgressTracker] = None,
+            # TODO: Do something with the reporter
+            reporter: typing.Optional[common.Reporter] = None
+            ) -> typing.Tuple[
+                typing.List[multiverse.DbAllegiance],
+                typing.List[multiverse.DbSophont],
+                typing.List[multiverse.DbSector],
+                typing.List[multiverse.DbSystem],
+                typing.List[multiverse.DbMapLabel],
+                typing.List[multiverse.DbMapVector]]:
+        if reporter:
+            reporter.pushPrefix('Stock Allegiances: ')
+        try:
+            rawStockAllegiances = multiverse.loadSnapshotStockAllegiances(reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
+
+        if reporter:
+            reporter.pushPrefix('Stock Sophonts: ')
+        try:
+            rawStockSophonts = multiverse.loadSnapshotStockSophonts(reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
+
+        if reporter:
+            reporter.pushPrefix('Stock Style Sheet: ')
+        try:
+            rawStockStyleSheet = multiverse.loadSnapshotStyleSheet(reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
+
+        if reporter:
+            reporter.pushPrefix('Mega Labels: ')
+        try:
+            rawMegaLabels = multiverse.loadMegaLabels(reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
+
+        if reporter:
+            reporter.pushPrefix('Minor Labels: ')
+        try:
+            rawMinorLabels = multiverse.loadMinorLabels(reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
+
+        if reporter:
+            reporter.pushPrefix('World Labels: ')
+        try:
+            rawWorldLabels = multiverse.loadWorldLabels(reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
+
+        if reporter:
+            reporter.pushPrefix('Border Vectors: ')
+        try:
+            rawBorderVectors = multiverse.loadBorderVectors(reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
+
+        if reporter:
+            reporter.pushPrefix('Rift Vectors: ')
+        try:
+            rawRiftVectors = multiverse.loadRiftVectors(reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
+
+        if reporter:
+            reporter.pushPrefix('Route Vectors: ')
+        try:
+            rawRouteVectors = multiverse.loadRouteVectors(reporter=reporter)
+        finally:
+            if reporter:
+                reporter.popPrefix()
+
+        rawUniverseInfo = survey.parseUniverseInfo(
+            content=multiverse.SnapshotManager.instance().readUniverseInfo(milieu=milieu))
+
+        sectorNames = []
+        for sectorInfo in rawUniverseInfo:
+            nameInfos = sectorInfo.nameInfos()
+            canonicalName = nameInfos[0].name() if nameInfos else None
+            if not canonicalName:
+                logging.warning(f'Stock universe import ignoring sector with no name in milieu {milieu}')
+                continue
+            sectorNames.append(canonicalName)
+
+        localProgress = None
+        if progress is not None:
+            steps = len(sectorNames) + 4 # + 4 for each of the convert steps
+            localProgress = progress.createChild(weight=1, steps=steps)
+
+        rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.List[survey.RawWorld]]] = []
+        for sectorName in sectorNames:
+            try:
+                if reporter:
+                    reporter.pushPrefix(f'{milieu} {sectorName} Metadata - ')
+                try:
+                    sectorMetadata = multiverse.SnapshotManager.instance().readSectorMetadata(
+                        milieu=milieu,
+                        sector=sectorName)
+                    rawMetadata = survey.parseMetadata(content=sectorMetadata, reporter=reporter)
+                finally:
+                    if reporter:
+                        reporter.popPrefix()
+
+                if reporter:
+                    reporter.pushPrefix(f'{milieu} {sectorName} Sector - ')
+                try:
+                    sectorContent = multiverse.SnapshotManager.instance().readSectorContent(
+                        milieu=milieu,
+                        sector=sectorName)
+                    rawSystems = survey.parseSector(content=sectorContent, reporter=reporter)
+                finally:
+                    if reporter:
+                        reporter.popPrefix()
+
+                rawSectors.append((rawMetadata, rawSystems))
+                if localProgress is not None:
+                    localProgress.advance()
+            except Exception as ex:
+                logging.error(f'Stock universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
+
+        styleMapper = multiverse.StyleMapper(
+            rawSectors=rawSectors,
+            rawStockStyleSheet=rawStockStyleSheet)
+        allegianceMapper = multiverse.AllegianceMapper(
+            milieu=milieu,
+            rawSectors=rawSectors,
+            rawStockAllegiances=rawStockAllegiances,
+            styleMapper=styleMapper)
+        sophontMapper = multiverse.SophontMapper(
+            rawSectors=rawSectors,
+            rawStockSophonts=rawStockSophonts)
+
+        dbSectors = multiverse.convertRawSectorsToDbSectors(
+            rawSectors=rawSectors,
+            allegianceMapper=allegianceMapper,
+            styleMapper=styleMapper)
+        if localProgress is not None:
+            localProgress.advance()
+
+        dbSystems = multiverse.convertRawWorldsToDbSystems(
+            rawSectors=rawSectors,
+            allegianceMapper=allegianceMapper,
+            sophontMapper=sophontMapper)
+        if localProgress is not None:
+            localProgress.advance()
+
+        dbMapLabels: typing.List[multiverse.DbMapLabel] = []
+        dbMapLabels.extend(multiverse.convertRawLabelsToDbMapLabels(
+            rawMegaLabels=rawMegaLabels,
+            rawMinorLabels=rawMinorLabels,
+            rawWorldLabels=rawWorldLabels,
+            rawUniverseInfo=rawUniverseInfo))
+        if localProgress is not None:
+            localProgress.advance()
+
+        dbMapLabels.extend(multiverse.convertRawVectorsToDbMapLabels(
+            rawBorderVectors=rawBorderVectors,
+            rawRiftVectors=rawRiftVectors,
+            rawRouteVectors=rawRouteVectors))
+        if localProgress is not None:
+            localProgress.advance()
+
+        dbMapVectors: typing.List[multiverse.DbMapVector] = []
+        dbMapVectors.extend(multiverse.convertRawVectorsToDbMapVectors(
+            rawBorderVectors=rawBorderVectors,
+            rawRiftVectors=rawRiftVectors,
+            rawRouteVectors=rawRouteVectors))
+
+        return (
+            allegianceMapper.listAllegiances(),
+            sophontMapper.listSophonts(),
+            dbSectors,
+            dbSystems,
+            dbMapLabels,
+            dbMapVectors)
+
+    def _saveUniverse(
+            self,
+            universeDb: multiverse.UniverseDb,
+            milieu: str,
+            description: str,
+            dbAllegiances: typing.Optional[typing.Collection[multiverse.DbAllegiance]],
+            dbSophonts: typing.Optional[typing.Collection[multiverse.DbSophont]],
+            dbSectors: typing.Optional[typing.Collection[multiverse.DbSector]],
+            dbSystems: typing.Optional[typing.Collection[multiverse.DbSystem]],
+            dbMapLabels: typing.Optional[typing.Collection[multiverse.DbMapLabel]],
+            dbMapVectors: typing.Optional[typing.Collection[multiverse.DbMapVector]],
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> None:
+        objectCount = 0
+        saveTasks = []
+        if dbAllegiances:
+            objectCount += len(dbAllegiances)
+        if dbSophonts:
+            objectCount += len(dbSophonts)
+        if dbSectors:
+            objectCount += len(dbSectors)
+        if dbSystems:
+            objectCount += len(dbSystems)
+        if dbMapLabels:
+            objectCount += len(dbMapLabels)
+        if dbMapVectors:
+            objectCount += len(dbMapLabels)
+
+        saveTasks = []
+        if dbAllegiances:
+            saveTasks.append((dbAllegiances, universeDb.saveAllegiances, len(dbAllegiances) / objectCount))
+        if dbSophonts:
+            saveTasks.append((dbSophonts, universeDb.saveSophonts, len(dbSophonts) / objectCount))
+        if dbSectors:
+            saveTasks.append((dbSectors, universeDb.saveSectors, len(dbSectors) / objectCount))
+        if dbSystems:
+            saveTasks.append((dbSystems, universeDb.saveSystems, len(dbSystems) / objectCount))
+        if dbMapLabels:
+            saveTasks.append((dbMapLabels, universeDb.saveMapLabels, len(dbMapLabels) / objectCount))
+        if dbMapVectors:
+            saveTasks.append((dbMapVectors, universeDb.saveMapVectors, len(dbMapVectors) / objectCount))
+
+        with universeDb.createTransaction() as transaction:
+            universeDb.setMilieu(milieu=milieu, transaction=transaction)
+            universeDb.setDescription(description=description, transaction=transaction)
+
+            for objects, function, taskWeight in saveTasks:
+                taskProgress = progress.createChild(weight=taskWeight) if progress is not None else None
+                if objects:
+                    function(
+                        objects,
+                        transaction=transaction,
+                        progress=taskProgress)
+                elif taskProgress is not None:
+                    taskProgress.complete()
 
     @staticmethod
     def _registryDbFilePath() -> str:

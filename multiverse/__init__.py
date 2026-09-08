@@ -8,5 +8,4 @@ from .stylemapper import *
 from .allegancemapper import *
 from .sophontmapper import *
 from .convert import *
-from .stockuniverse import *
 from .customuniverse import *

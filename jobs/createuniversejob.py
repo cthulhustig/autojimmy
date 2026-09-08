@@ -32,10 +32,15 @@ class CreateUniverseJob(jobs.ProgressJob):
             self,
             progressCallback: typing.Callable[[str, int, int], typing.Any]
             ) -> None:
+        progressMessage = f'Creating Universe {self._name}'
+        progressSteps = 1000
+        progressWrapper = lambda p: progressCallback(progressMessage, int(p * progressSteps), progressSteps)
+        progress = common.ProgressTracker(weight=1, updateCallback=progressWrapper)
+
         self._universeId = multiverse.UniverseManager.instance().createUniverse(
             name=self._name,
             milieu=self._milieu,
             description=self._description,
             importTravellerMap=self._importTravellerMap,
-            progressCallback=progressCallback,
+            progress=progress,
             reporter=self._reporter)

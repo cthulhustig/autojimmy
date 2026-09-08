@@ -33,49 +33,54 @@ class CreateDefaultUniversesJob(jobs.ProgressJob):
             logging.info(f'Skipping creation of default universe {milieu!r} as universe register is not empty')
             return
 
+        snapshotMilieu = multiverse.SnapshotManager.instance().listMilieu()
+        customSectorMilieu: typing.List[typing.Tuple[
+            str,# Milieu
+            str # Path to directory containing legacy custom sectors
+            ]] = []
+        if self._legacyCustomSectorPath is not None:
+            for milieu in os.listdir(self._legacyCustomSectorPath):
+                customMilieuSectorsPath = os.path.join(self._legacyCustomSectorPath, milieu)
+                if not os.path.isdir(customMilieuSectorsPath):
+                    continue
+
+                if milieu not in snapshotMilieu:
+                    logging.warning(f'Ignoring custom sectors from unrecognised milieu {milieu!r}')
+                    continue
+
+                customSectorMilieu.append((milieu, customMilieuSectorsPath))
+
         milieuToUniverseMap = {}
-        for milieu in multiverse.SnapshotManager.instance().listMilieu():
+        for milieu in snapshotMilieu:
+            progressMessage = f'Creating Universe {milieu}'
+            progressSteps = 1000
+            progressWrapper = lambda p: progressCallback(progressMessage, int(p * progressSteps), progressSteps)
+
             universeId = multiverse.UniverseManager.instance().createUniverse(
                 name=milieu,
                 milieu=milieu,
                 description=f'Traveller Map data for {milieu}',
                 importTravellerMap=True,
-                progressCallback=progressCallback,
+                progress=common.ProgressTracker(weight=1, updateCallback=progressWrapper),
                 reporter=reporter)
             milieuToUniverseMap[milieu] = universeId
 
-        if self._legacyCustomSectorPath is not None:
-            milieuToProcess: typing.List[typing.Tuple[
-                str,# Milieu
-                str # Path to directory containing legacy custom sectors
-                ]] = []
-            for milieu in os.listdir(self._legacyCustomSectorPath):
-                customMilieuSectorsPath = os.path.join(self._legacyCustomSectorPath, milieu)
-                if os.path.isdir(customMilieuSectorsPath):
-                    milieuToProcess.append((milieu, customMilieuSectorsPath))
+        if customSectorMilieu:
+            progressMessage = f'Importing Legacy Custom Sectors'
+            progressSteps = 1000
+            progressWrapper = lambda p: progressCallback(progressMessage, int(p * progressSteps), progressSteps)
+            progress = common.ProgressTracker(weight=1, updateCallback=progressWrapper)
+            taskCount = len(customSectorMilieu)
+            taskWeight = 1 / taskCount
 
-            for milieu, milieuPath in milieuToProcess:
-                # Import custom sectors into the default universe that was
-                # previously created for this milieu. There shouldn't really
-                # be legacy custom sectors for unknown milieu, but if it
-                # somehow happens, just create a new empty universe for them
-                # to be imported into
+            for milieu, milieuPath in customSectorMilieu:
                 try:
                     universeId = milieuToUniverseMap.get(milieu)
-                    if universeId is None:
-                        universeId = multiverse.UniverseManager.instance().createUniverse(
-                            name=milieu,
-                            milieu=milieu,
-                            description=f'Legacy custom sectors for {milieu}',
-                            importTravellerMap=False,
-                            progressCallback=progressCallback,
-                            reporter=reporter)
-
                     multiverse.importLegacyCustomSectors(
                         directoryPath=milieuPath,
                         universeId=universeId,
                         milieu=milieu,
-                        progressCallback=progressCallback,
+                        progress=progress.createChild(weight=taskWeight),
                         reporter=reporter)
                 except Exception as ex:
                     # Failure to import legacy custom sector data is not treated
