@@ -173,13 +173,13 @@ def loadUniverseFromDatabase(
 
     universeDb = multiverse.UniverseManager.instance().universeDbById(id=universeId)
 
-    milieu = universeDb.milieu()
-    try:
-        milieu = astronomer.Milieu[milieu]
-    except:
-        raise ValueError(f'Universe {universeId!r} has unknown milieu {milieu!r}')
-
     with universeDb.createTransaction() as transaction:
+        milieu = universeDb.milieu(transaction=transaction)
+        try:
+            milieu = astronomer.Milieu[milieu]
+        except:
+            raise ValueError(f'Universe {universeId!r} has unknown milieu {milieu!r}')
+
         # TODO: Routes, borders & regions (and possibly sector labels) should go here when I move them to the universe
         allegianceCount = universeDb.countAllegiances(transaction=transaction)
         sophontCount = universeDb.countSophonts(transaction=transaction)
