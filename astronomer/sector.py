@@ -14,7 +14,6 @@ class Sector(astronomer.Entity):
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
-            routes: typing.Optional[typing.Collection[astronomer.Route]] = None,
             borders: typing.Optional[typing.Collection[astronomer.Border]] = None,
             regions: typing.Optional[typing.Collection[astronomer.Region]] = None,
             labels: typing.Optional[typing.Collection[astronomer.SectorLabel]] = None,
@@ -33,7 +32,6 @@ class Sector(astronomer.Entity):
         common.validateStr(name='abbreviation', value=abbreviation, allowEmpty=False, allowNone=True)
         common.validateStr(name='sectorLabel', value=sectorLabel, allowEmpty=False, allowNone=True)
         common.validateStrMapping(name='subsectorNames', value=subsectorNames, allowNone=True, allowEmptyKeys=False, allowEmptyValues=False, validationFn=Sector._validateSubsectorCode)
-        common.validateCollection(name='routes', value=routes, elementType=astronomer.Route, allowNone=True)
         common.validateCollection(name='borders', value=borders, elementType=astronomer.Border, allowNone=True)
         common.validateCollection(name='regions', value=regions, elementType=astronomer.Region, allowNone=True)
         common.validateCollection(name='labels', value=labels, elementType=astronomer.SectorLabel, allowNone=True)
@@ -49,7 +47,6 @@ class Sector(astronomer.Entity):
         self._nameLanguages = dict(nameLanguages) if nameLanguages else {}
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
-        self._routes = list(routes) if routes else []
         self._borders = list(borders) if borders else []
         self._regions = list(regions) if regions else []
         self._labels = list(labels) if labels else []
@@ -62,7 +59,7 @@ class Sector(astronomer.Entity):
         self._subsectorCodeToNameMap = dict(subsectorNames) if subsectorNames else {}
 
         self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
-        for entity in itertools.chain(self._borders, self._regions, self._routes, self._labels):
+        for entity in itertools.chain(self._borders, self._regions, self._labels):
             self._idToEntityMap[entity.entityId()] = entity
 
     def position(self) -> astronomer.SectorPosition:
@@ -85,9 +82,6 @@ class Sector(astronomer.Entity):
 
     def subsectorName(self, code: str) -> typing.Optional[str]:
         return self._subsectorCodeToNameMap.get(code)
-
-    def routes(self) -> typing.Collection[astronomer.Route]:
-        return common.ConstCollectionRef(self._routes)
 
     def borders(self) -> typing.Collection[astronomer.Border]:
         return common.ConstCollectionRef(self._borders)

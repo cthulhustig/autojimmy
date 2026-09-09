@@ -1,6 +1,5 @@
 import common
 import logging
-import itertools
 import math
 import multiverse
 import survey
@@ -20,6 +19,9 @@ import typing
 # this will need an update to the rendering code but it should be trivial. I think it
 # makes sense to leave the candy images as static files as they're more part of the
 # rendering system than the universe
+
+# TODO: The convertRaw*ToDb* functions should take a progress tracker and chunk the
+# conversion in the same way as convertDb*ToAstro* functions
 
 # Useful Test Locations:
 # - Sector: Tsebntsiatldlants
@@ -971,6 +973,17 @@ def _createDbRoutes(
                 logging.warning(f'Converter ignoring route with same start and end position ({rawRoute.startHexX()}, {rawRoute.startHexY()}) in {rawMetadata.canonicalName()}')
                 continue
 
+            dbStartHexX, dbStartHexY = _relativeSpaceToAbsoluteSpace((
+                rawMetadata.x() + (rawRoute.startOffsetX() if rawRoute.startOffsetX() else 0),
+                rawMetadata.y() + (rawRoute.startOffsetY() if rawRoute.startOffsetY() else 0),
+                rawRoute.startHexX(),
+                rawRoute.startHexY()))
+            dbEndHexX, dbEndHexY = _relativeSpaceToAbsoluteSpace((
+                rawMetadata.x() + (rawRoute.endOffsetX() if rawRoute.endOffsetX() else 0),
+                rawMetadata.y() + (rawRoute.endOffsetY() if rawRoute.endOffsetY() else 0),
+                rawRoute.endHexX(),
+                rawRoute.endHexY()))
+
             rawAllegianceCode = rawRoute.allegianceCode()
             dbAllegiance = None
             if rawAllegianceCode:
@@ -1070,14 +1083,10 @@ def _createDbRoutes(
             # so it should be an addition/subtraction if there is
             # There are routes in the Rocket sector I have which have this behaviour
             dbRoutes.append(multiverse.DbRoute(
-                startHexX=rawRoute.startHexX(),
-                startHexY=rawRoute.startHexY(),
-                endHexX=rawRoute.endHexX(),
-                endHexY=rawRoute.endHexY(),
-                startOffsetX=rawRoute.startOffsetX() if rawRoute.startOffsetX() is not None else 0,
-                startOffsetY=rawRoute.startOffsetY() if rawRoute.startOffsetY() is not None else 0,
-                endOffsetX=rawRoute.endOffsetX() if rawRoute.endOffsetX() is not None else 0,
-                endOffsetY=rawRoute.endOffsetY() if rawRoute.endOffsetY() is not None else 0,
+                startHexX=dbStartHexX,
+                startHexY=dbStartHexY,
+                endHexX=dbEndHexX,
+                endHexY=dbEndHexY,
                 type=dbType,
                 style=dbStyle,
                 colour=dbColour,
@@ -2132,11 +2141,6 @@ def _convertRawSectorToDbSector(
     dbSubsectorNames = _createDbSubsectorNames(
         rawMetadata=rawMetadata)
 
-    dbRoutes = _createDbRoutes(
-        rawMetadata=rawMetadata,
-        allegianceMapper=allegianceMapper,
-        styleMapper=styleMapper)
-
     dbBorders = _createDbBorders(
         rawMetadata=rawMetadata,
         allegianceMapper=allegianceMapper,
@@ -2180,7 +2184,6 @@ def _convertRawSectorToDbSector(
         selected=dbSelected,
         alternateNames=dbAlternateNames,
         subsectorNames=dbSubsectorNames,
-        routes=dbRoutes,
         borders=dbBorders,
         regions=dbRegions,
         labels=dbLabels,
@@ -2221,3 +2224,17 @@ def convertRawWorldsToDbSystems(
             sophontMapper=sophontMapper))
 
     return dbSectors
+
+def convertRawRoutesToDbRoutes(
+        rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.Collection[survey.RawWorld]]],
+        allegianceMapper: multiverse.AllegianceMapper,
+        styleMapper: multiverse.StyleMapper
+        ) -> typing.List[multiverse.DbRoute]:
+    dbRoutes: typing.List[multiverse.DbRoute] = []
+    for rawMetadata, _ in rawSectors:
+        dbRoutes.extend(_createDbRoutes(
+            rawMetadata=rawMetadata,
+            allegianceMapper=allegianceMapper,
+            styleMapper=styleMapper))
+
+    return dbRoutes

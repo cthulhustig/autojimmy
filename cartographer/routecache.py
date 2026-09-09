@@ -111,16 +111,15 @@ class RouteCache(object):
             maxObjects=10,
             maxDepth=8)
 
-        for sector in self._universe.sectors():
-            for route in sector.routes():
-                routeInfo = RouteCache._createRouteInfo(route=route)
-                if routeInfo is None:
-                    continue
-                self._routeIdToRouteInfoMap[route.entityId()] = routeInfo
+        for route in self._universe.routes():
+            routeInfo = RouteCache._createRouteInfo(route=route)
+            if routeInfo is None:
+                continue
+            self._routeIdToRouteInfoMap[route.entityId()] = routeInfo
 
-                self._quadTree.add(
-                    obj=routeInfo,
-                    bounds=routeInfo.bounds())
+            self._quadTree.add(
+                obj=routeInfo,
+                bounds=routeInfo.bounds())
 
     def _handleUniversePreUpdate(
             self,

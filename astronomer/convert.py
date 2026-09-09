@@ -616,82 +616,6 @@ def convertDbSystemsToAstronomerWorlds(
 
     return astroWorlds
 
-def _createAstronomerRoutes(
-        dbSector: multiverse.DbSector,
-        entityFactory: astronomer.EntityFactoryInterface,
-        sectorLogName: str,
-        dbIdToAstroAllegianceMap: typing.Optional[typing.Mapping[str, astronomer.Allegiance]]
-        ) -> typing.Optional[typing.List[astronomer.Route]]:
-    dbRoutes = dbSector.routes()
-    if not dbRoutes:
-        return None
-
-    astroRoutes = []
-    for dbRoute in dbRoutes:
-        try:
-            startHex = astronomer.HexPosition(
-                sectorX=dbSector.sectorX() + dbRoute.startOffsetX(),
-                sectorY=dbSector.sectorY() + dbRoute.startOffsetY(),
-                offsetX=dbRoute.startHexX(),
-                offsetY=dbRoute.startHexY())
-
-            endHex = astronomer.HexPosition(
-                sectorX=dbSector.sectorX() + dbRoute.endOffsetX(),
-                sectorY=dbSector.sectorY() + dbRoute.endOffsetY(),
-                offsetX=dbRoute.endHexX(),
-                offsetY=dbRoute.endHexY())
-
-            colour = dbRoute.colour()
-            if colour is not None:
-                try:
-                    colour = common.canonicalHtmlColour(colour)
-                except:
-                    logging.warning('Ignoring invalid colour "{colour}" for route {objectId} when loading sector {sectorId} ({name})'.format(
-                        colour=colour,
-                        objectId=dbRoute.id(),
-                        sectorId=dbSector.id(),
-                        name=sectorLogName))
-                    colour = None
-
-            allegianceId = dbRoute.allegianceId()
-            routeAllegiance = None
-            if allegianceId:
-                routeAllegiance = dbIdToAstroAllegianceMap.get(allegianceId) if dbIdToAstroAllegianceMap else None
-                if not routeAllegiance:
-                    logging.warning('Ignoring unknown allegiance {allegianceId} for route {objectId} when loading sector {sectorId} ({name})'.format(
-                        allegianceId=allegianceId,
-                        objectId=dbRoute.id(),
-                        sectorId=dbSector.id(),
-                        name=sectorLogName))
-
-            style = dbRoute.style()
-            if style:
-                style = _mapDbLineStyleToAstronomerLineStyle(style)
-                if not style:
-                    logging.warning('Ignoring invalid style "{style}" for route {objectId} when loading sector {sectorId} ({name})'.format(
-                        style=dbRoute.style(),
-                        objectId=dbRoute.id(),
-                        sectorId=dbSector.id(),
-                        name=sectorLogName))
-
-            astroRoutes.append(entityFactory.createRoute(
-                entityId=dbRoute.id(),
-                startHex=startHex,
-                endHex=endHex,
-                allegiance=routeAllegiance,
-                routeType=dbRoute.type(),
-                style=style,
-                colour=colour,
-                width=dbRoute.width()))
-        except Exception as ex:
-            logging.warning('Failed to create route {objectId} when loading sector {sectorId} ({name})'.format(
-                    objectId=dbRoute.id(),
-                    sectorId=dbSector.id(),
-                    name=sectorLogName),
-                exc_info=ex)
-
-    return astroRoutes
-
 def _createAstronomerBorders(
         dbSector: multiverse.DbSector,
         entityFactory: astronomer.EntityFactoryInterface,
@@ -978,12 +902,6 @@ def convertDbSectorsToAstronomerSectors(
 
                 astroSubsectorNames = _createAstronomerSubsectorNames(dbSector=dbSector)
 
-                astroRoutes = _createAstronomerRoutes(
-                    dbSector=dbSector,
-                    entityFactory=entityFactory,
-                    sectorLogName=sectorLogName,
-                    dbIdToAstroAllegianceMap=dbIdToAstroAllegianceMap)
-
                 astroBorders = _createAstronomerBorders(
                     dbSector=dbSector,
                     entityFactory=entityFactory,
@@ -1021,7 +939,6 @@ def convertDbSectorsToAstronomerSectors(
                     abbreviation=dbSector.abbreviation(),
                     sectorLabel=dbSector.sectorLabel(),
                     subsectorNames=astroSubsectorNames,
-                    routes=astroRoutes,
                     borders=astroBorders,
                     regions=astroRegions,
                     labels=astroLabels,
@@ -1587,6 +1504,50 @@ def convertAstronomerSectorToRawSector(
             typing.List[survey.RawWorld]]:
     # TODO: Reimplement me
     assert(False)
+
+def convertDbRoutesToAstronomerRoutes(
+        dbRoutes: typing.Collection[multiverse.DbRoute],
+        entityFactory: astronomer.EntityFactoryInterface,
+        astroAllegiances: typing.Optional[typing.Collection[astronomer.Allegiance]] = None,
+        progress: typing.Optional[common.ProgressTracker] = None
+        ) -> typing.List[astronomer.MapLabel]:
+    if not dbRoutes:
+        if progress is not None:
+            progress.complete()
+        return []
+
+    objectCount = len(dbRoutes)
+    chunkSize = objectCount
+    localProgress = None
+    if progress is not None:
+        chunkSize = _ProgressChunkSize
+        localProgress = progress.createChild(
+            weight=1,
+            steps=math.ceil(objectCount / chunkSize))
+
+    dbIdToAstroAllegianceMap = {a.entityId(): a for a in astroAllegiances} if astroAllegiances is not None else {}
+    astroRoutes = []
+    for chunkStart in range(0, objectCount, chunkSize):
+        for dbRoute in itertools.islice(dbRoutes, chunkStart, chunkStart + chunkSize):
+            try:
+                astroRoutes.append(entityFactory.createRoute(
+                    entityId=dbRoute.id(),
+                    startHex=astronomer.HexPosition(dbRoute.startHexX(), dbRoute.startHexY()),
+                    endHex=astronomer.HexPosition(dbRoute.endHexX(), dbRoute.endHexY()),
+                    allegiance=dbIdToAstroAllegianceMap.get(dbRoute.allegianceId()),
+                    routeType=dbRoute.type(),
+                    style=_mapDbLineStyleToAstronomerLineStyle(dbRoute.style()),
+                    colour=dbRoute.colour(),
+                    width=dbRoute.width()))
+            except Exception as ex:
+                logging.warning('Failed to convert database route {id!r} to astro route'.format(
+                        id=dbRoute.id()),
+                    exc_info=ex)
+
+        if localProgress is not None:
+            localProgress.advance()
+
+    return astroRoutes
 
 def convertDbMapLabelsToAstronomerMapLabels(
         dbLabels: typing.Collection[multiverse.DbMapLabel],

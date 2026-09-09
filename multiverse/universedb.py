@@ -823,6 +823,72 @@ class UniverseDb(object):
                     cursor=connection.cursor(),
                     systemIds=systemIds)
 
+    def countRoutes(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> int:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._countRoutes(cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._countRoutes(cursor=connection.cursor())
+
+    def loadRoutes(
+            self,
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[multiverse.DbRoute]:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._loadRoutes(
+                cursor=connection.cursor(),
+                progress=progress)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._loadRoutes(
+                    cursor=connection.cursor(),
+                    progress=progress)
+
+    def saveRoutes(
+            self,
+            routes: typing.Collection[multiverse.DbRoute],
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> None:
+        if transaction != None:
+            connection = transaction.connection()
+            self._saveRoutes(
+                cursor=connection.cursor(),
+                routes=routes,
+                progress=progress)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                self._saveRoutes(
+                    cursor=connection.cursor(),
+                    routes=routes,
+                    progress=progress)
+
+    def deleteRoutes(
+            self,
+            routeIds: typing.Collection[str],
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        if transaction != None:
+            connection = transaction.connection()
+            self._deleteRoutes(
+                cursor=connection.cursor(),
+                routeIds=routeIds)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                self._deleteRoutes(
+                    cursor=connection.cursor(),
+                    routeIds=routeIds)
+
     def countMapLabels(
             self,
             transaction: typing.Optional[database.Transaction] = None
@@ -969,839 +1035,24 @@ class UniverseDb(object):
             self._createSectorTables(cursor=cursor)
             self._createSystemTables(cursor=cursor)
             # TODO: These should be called from here rather than _createSystemTables as I move them to the universe
-            #self._createRouteTables(cursor=cursor)
+            self._createRouteTables(cursor=cursor)
             #self._createBorderTables(cursor=cursor)
             #self._createRegionTables(cursor=cursor)
             self._createMapLabelTables(cursor=cursor)
             self._createMapVectorTables(cursor=cursor)
 
     def _createMetadataTable(self, cursor: sqlite3.Cursor) -> None:
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._MetadataTableName,
-                requiredSchemaVersion=UniverseDb._MetadataTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='key', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='value', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)])
-            self._writeMetadata(
-                cursor=cursor,
-                key=UniverseDb._MetadataFormatKey,
-                value=UniverseDb._FormatString)
-
-    def _createAllegianceTables(self, cursor: sqlite3.Cursor) -> None:
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._AllegiancesTableName,
-                requiredSchemaVersion=UniverseDb._AllegiancesTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='legacy', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='base', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='route_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='route_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='route_width', columnType=database.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
-                    database.ColumnDef(columnName='border_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='border_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
-
-            self._objectTypeToTableMapping[multiverse.DbAllegiance] = ObjectTableMapping(
-                tableName=UniverseDb._AllegiancesTableName,
-                objectType=multiverse.DbAllegiance,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
-                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code'),
-                    ColumnParameterMapping(columnName='legacy', paramType=ColumnParameterMapping.ParamType.String, paramName='legacy'),
-                    ColumnParameterMapping(columnName='base', paramType=ColumnParameterMapping.ParamType.String, paramName='base'),
-                    ColumnParameterMapping(columnName='route_colour', paramType=ColumnParameterMapping.ParamType.String, paramName='routeColour'),
-                    ColumnParameterMapping(columnName='route_style', paramType=ColumnParameterMapping.ParamType.String, paramName='routeStyle'),
-                    ColumnParameterMapping(columnName='route_width', paramType=ColumnParameterMapping.ParamType.Float, paramName='routeWidth'),
-                    ColumnParameterMapping(columnName='border_colour', paramType=ColumnParameterMapping.ParamType.String, paramName='borderColour'),
-                    ColumnParameterMapping(columnName='border_style', paramType=ColumnParameterMapping.ParamType.String, paramName='borderStyle')])
-
-    def _createSophontTables(self, cursor: sqlite3.Cursor) -> None:
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._SophontsTableName,
-                requiredSchemaVersion=UniverseDb._SophontsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='is_major', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
-
-            self._objectTypeToTableMapping[multiverse.DbSophont] = ObjectTableMapping(
-                tableName=UniverseDb._SophontsTableName,
-                objectType=multiverse.DbSophont,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
-                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code'),
-                    ColumnParameterMapping(columnName='is_major', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='isMajor')])
-
-    def _createSectorTables(self, cursor: sqlite3.Cursor) -> None:
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._SectorsTableName,
-                requiredSchemaVersion=UniverseDb._SectorsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='sector_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='language', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='abbreviation', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='sector_label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='selected', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
-                    database.ColumnDef(columnName='credits', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='publication', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='author', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['sector_x', 'sector_y'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._AlternateNamesTableName,
-                requiredSchemaVersion=UniverseDb._AlternateNamesTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='language', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._SubsectorNamesTableName,
-                requiredSchemaVersion=UniverseDb._SubsectorNamesTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              minValue='A', maxValue='P'),
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['sector_id', 'code'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._SectorLabelsTableName,
-                requiredSchemaVersion=UniverseDb._SectorLabelsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    # TODO: This should be converted to world space as part of the changes to move things to the universe label
-                    database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                    database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                    database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='wrap', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._SectorTagsTableName,
-                requiredSchemaVersion=UniverseDb._SectorTagsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='tag', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['sector_id', 'tag'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._ProductsTableName,
-                requiredSchemaVersion=UniverseDb._ProductsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='publication', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='author', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
-
-            # TODO: These should be called from _initTables as I move them to the universe
-            self._createRouteTables(cursor=cursor)
-            self._createBorderTables(cursor=cursor)
-            self._createRegionTables(cursor=cursor)
-
-            self._objectTypeToTableMapping[multiverse.DbAlternateName] = ObjectTableMapping(
-                tableName=UniverseDb._AlternateNamesTableName,
-                objectType=multiverse.DbAlternateName,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
-                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
-                    ColumnParameterMapping(columnName='language', paramType=ColumnParameterMapping.ParamType.String, paramName='language')])
-
-            self._objectTypeToTableMapping[multiverse.DbSubsectorName] = ObjectTableMapping(
-                tableName=UniverseDb._SubsectorNamesTableName,
-                objectType=multiverse.DbSubsectorName,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
-                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code'),
-                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name')])
-
-            self._objectTypeToTableMapping[multiverse.DbSectorLabel] = ObjectTableMapping(
-                tableName=UniverseDb._SectorLabelsTableName,
-                objectType=multiverse.DbSectorLabel,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
-                    ColumnParameterMapping(columnName='text', paramType=ColumnParameterMapping.ParamType.String, paramName='text'),
-                    ColumnParameterMapping(columnName='x', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldX'),
-                    ColumnParameterMapping(columnName='y', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldY'),
-                    ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
-                    ColumnParameterMapping(columnName='size', paramType=ColumnParameterMapping.ParamType.String, paramName='size'),
-                    ColumnParameterMapping(columnName='wrap', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='wrap')])
-
-            self._objectTypeToTableMapping[multiverse.DbTag] = ObjectTableMapping(
-                tableName=UniverseDb._SectorTagsTableName,
-                objectType=multiverse.DbTag,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
-                    ColumnParameterMapping(columnName='tag', paramType=ColumnParameterMapping.ParamType.String, paramName='tag')])
-
-            self._objectTypeToTableMapping[multiverse.DbProduct] = ObjectTableMapping(
-                tableName=UniverseDb._ProductsTableName,
-                objectType=multiverse.DbProduct,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
-                    ColumnParameterMapping(columnName='publication', paramType=ColumnParameterMapping.ParamType.String, paramName='publication'),
-                    ColumnParameterMapping(columnName='author', paramType=ColumnParameterMapping.ParamType.String, paramName='author'),
-                    ColumnParameterMapping(columnName='publisher', paramType=ColumnParameterMapping.ParamType.String, paramName='publisher'),
-                    ColumnParameterMapping(columnName='reference', paramType=ColumnParameterMapping.ParamType.String, paramName='reference')])
-
-            self._objectTypeToTableMapping[multiverse.DbSector] = ObjectTableMapping(
-                tableName=UniverseDb._SectorsTableName,
-                objectType=multiverse.DbSector,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='sector_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='sectorX'),
-                    ColumnParameterMapping(columnName='sector_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='sectorY'),
-                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
-                    ColumnParameterMapping(columnName='language', paramType=ColumnParameterMapping.ParamType.String, paramName='language'),
-                    ColumnParameterMapping(columnName='abbreviation', paramType=ColumnParameterMapping.ParamType.String, paramName='abbreviation'),
-                    ColumnParameterMapping(columnName='sector_label', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorLabel'),
-                    ColumnParameterMapping(columnName='selected', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='selected'),
-                    ColumnParameterMapping(columnName='credits', paramType=ColumnParameterMapping.ParamType.String, paramName='credits'),
-                    ColumnParameterMapping(columnName='publication', paramType=ColumnParameterMapping.ParamType.String, paramName='publication'),
-                    ColumnParameterMapping(columnName='author', paramType=ColumnParameterMapping.ParamType.String, paramName='author'),
-                    ColumnParameterMapping(columnName='publisher', paramType=ColumnParameterMapping.ParamType.String, paramName='publisher'),
-                    ColumnParameterMapping(columnName='reference', paramType=ColumnParameterMapping.ParamType.String, paramName='reference'),
-                    ColumnParameterMapping(columnName='notes', paramType=ColumnParameterMapping.ParamType.String, paramName='notes'),
-                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbAlternateName], parentColumnName='sector_id', initParam='alternateNames'),
-                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSubsectorName], parentColumnName='sector_id', initParam='subsectorNames'),
-                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSectorLabel], parentColumnName='sector_id', initParam='labels'),
-                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbTag], parentColumnName='sector_id', initParam='tags'),
-                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbProduct], parentColumnName='sector_id', initParam='products'),
-                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbRoute], parentColumnName='sector_id', initParam='routes'),
-                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbBorder], parentColumnName='sector_id', initParam='borders'),
-                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbRegion], parentColumnName='sector_id', initParam='regions')])
-
-    def _createSystemTables(self, cursor: sqlite3.Cursor) -> None:
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._SystemsTableName,
-                requiredSchemaVersion=UniverseDb._SystemsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='planetoid_belt_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
-                    database.ColumnDef(columnName='gas_giant_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
-                    # NOTE: The world count is NOT the same as the system world count from
-                    # second survey sector format. The system would count includes belts
-                    # and gas giants where as this world count does not (but it does include
-                    # the main world)
-                    database.ColumnDef(columnName='world_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
-                    database.ColumnDef(columnName='zone', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
-                              foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
-                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['hex_x', 'hex_y'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._StarsTableName,
-                requiredSchemaVersion=UniverseDb._StarsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='system_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SystemsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='luminosity_class', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                    database.ColumnDef(columnName='spectral_class', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='spectral_scale', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._BodiesTableName,
-                requiredSchemaVersion=UniverseDb._BodiesTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='system_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SystemsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='orbit_index', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
-
-            # TODO: Also create giants and belts tables. Even if they don't have any extra data I need
-            # to store the body_id so in the future when the user can create them, the code knows which
-            # type of object they are. Currently there is no way to tell if a body is a gas giant or
-            # a belt. I need code that is similar to how worlds are loaded and that relies on worlds
-            # table to identify which bodies are worlds
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._WorldsTableName,
-                requiredSchemaVersion=UniverseDb._WorldsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='body_id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True,
-                                foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                                foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='is_main_world', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
-                    database.ColumnDef(columnName='starport', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='world_size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='atmosphere', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='hydrographics', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='population', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='government', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='law_level', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='tech_level', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='resources', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='labour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='infrastructure', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='efficiency', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='heterogeneity', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='acceptance', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='strangeness', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='symbols', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                    database.ColumnDef(columnName='population_multiplier', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._NobilitiesTableName,
-                requiredSchemaVersion=UniverseDb._NobilitiesTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._TradeCodesTableName,
-                requiredSchemaVersion=UniverseDb._TradeCodesTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._SophontPopulationsTableName,
-                requiredSchemaVersion=UniverseDb._SophontPopulationsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='sophont_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._SophontsTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='percentage', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0, maxValue=100),
-                    database.ColumnDef(columnName='is_home_world', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
-                    database.ColumnDef(columnName='is_die_back', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['world_id', 'sophont_id'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._RulingAllegiancesTableName,
-                requiredSchemaVersion=UniverseDb._RulingAllegiancesTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['world_id', 'allegiance_id'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._OwningSystemsTableName,
-                requiredSchemaVersion=UniverseDb._OwningSystemsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    # TODO: This should be converted to absolute space hex As part of the changes to move things to the universe label
-                    database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    # NOTE: This intentionally stores the abbreviation rather
-                    # than the sector id so that the referenced sector doesn't
-                    # need to exist in the DB at the point this sector was
-                    # imported. This avoids the chicken and egg situation where
-                    # it wouldn't be possible to import two sectors that
-                    # reference each other as which ever was imported first
-                    # would need the sector id of a sector that hasn't been
-                    # imported yet.
-                    database.ColumnDef(columnName='sector_abbreviation', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['world_id', 'hex_x', 'hex_y', 'sector_abbreviation'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._ColonySystemsTableName,
-                requiredSchemaVersion=UniverseDb._ColonySystemsTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    # TODO: This should be converted to absolute space hex As part of the changes to move things to the universe label
-                    database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                    # NOTE: See comment on owning systems as to why this is the
-                    # abbreviation rather than the sector id
-                    database.ColumnDef(columnName='sector_abbreviation', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['world_id', 'hex_x', 'hex_y', 'sector_abbreviation'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._ResearchStationTableName,
-                requiredSchemaVersion=UniverseDb._ResearchStationTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._BasesTableName,
-                requiredSchemaVersion=UniverseDb._BasesTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
-                uniqueConstraints=[
-                    database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
-
-            self._database.createTable(
-                cursor=cursor,
-                tableName=UniverseDb._CustomRemarksTableName,
-                requiredSchemaVersion=UniverseDb._CustomRemarksTableSchema,
-                columns=[
-                    database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                    database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                              foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
-                              foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    database.ColumnDef(columnName='remark', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)])
-
-            self._objectTypeToTableMapping[multiverse.DbStar] = ObjectTableMapping(
-                tableName=UniverseDb._StarsTableName,
-                objectType=multiverse.DbStar,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='system_id', paramType=ColumnParameterMapping.ParamType.String, paramName='systemId'),
-                    ColumnParameterMapping(columnName='luminosity_class', paramType=ColumnParameterMapping.ParamType.String, paramName='luminosityClass'),
-                    ColumnParameterMapping(columnName='spectral_class', paramType=ColumnParameterMapping.ParamType.String, paramName='spectralClass'),
-                    ColumnParameterMapping(columnName='spectral_scale', paramType=ColumnParameterMapping.ParamType.String, paramName='spectralScale')])
-
-            self._objectTypeToTableMapping[multiverse.DbNobility] = ObjectTableMapping(
-                tableName=UniverseDb._NobilitiesTableName,
-                objectType=multiverse.DbNobility,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
-                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code')])
-
-            self._objectTypeToTableMapping[multiverse.DbTradeCode] = ObjectTableMapping(
-                tableName=UniverseDb._TradeCodesTableName,
-                objectType=multiverse.DbTradeCode,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
-                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code')])
-
-            self._objectTypeToTableMapping[multiverse.DbSophontPopulation] = ObjectTableMapping(
-                tableName=UniverseDb._SophontPopulationsTableName,
-                objectType=multiverse.DbSophontPopulation,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
-                    ColumnParameterMapping(columnName='sophont_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sophontId'),
-                    ColumnParameterMapping(columnName='percentage', paramType=ColumnParameterMapping.ParamType.Integer, paramName='percentage'),
-                    ColumnParameterMapping(columnName='is_home_world', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='isHomeWorld'),
-                    ColumnParameterMapping(columnName='is_die_back', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='isDieBack')])
-
-            self._objectTypeToTableMapping[multiverse.DbRulingAllegiance] = ObjectTableMapping(
-                tableName=UniverseDb._RulingAllegiancesTableName,
-                objectType=multiverse.DbRulingAllegiance,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
-                    ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, paramName='allegianceId')])
-
-            self._objectTypeToTableMapping[multiverse.DbOwningSystem] = ObjectTableMapping(
-                tableName=UniverseDb._OwningSystemsTableName,
-                objectType=multiverse.DbOwningSystem,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
-                    ColumnParameterMapping(columnName='hex_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexX'),
-                    ColumnParameterMapping(columnName='hex_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexY'),
-                    ColumnParameterMapping(columnName='sector_abbreviation', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorAbbreviation')])
-
-            self._objectTypeToTableMapping[multiverse.DbColonySystem] = ObjectTableMapping(
-                tableName=UniverseDb._ColonySystemsTableName,
-                objectType=multiverse.DbColonySystem,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
-                    ColumnParameterMapping(columnName='hex_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexX'),
-                    ColumnParameterMapping(columnName='hex_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexY'),
-                    ColumnParameterMapping(columnName='sector_abbreviation', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorAbbreviation')])
-
-            self._objectTypeToTableMapping[multiverse.DbBase] = ObjectTableMapping(
-                tableName=UniverseDb._BasesTableName,
-                objectType=multiverse.DbBase,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
-                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code')])
-
-            self._objectTypeToTableMapping[multiverse.DbResearchStation] = ObjectTableMapping(
-                tableName=UniverseDb._ResearchStationTableName,
-                objectType=multiverse.DbResearchStation,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
-                    ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code')])
-
-            self._objectTypeToTableMapping[multiverse.DbCustomRemark] = ObjectTableMapping(
-                tableName=UniverseDb._CustomRemarksTableName,
-                objectType=multiverse.DbCustomRemark,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
-                    ColumnParameterMapping(columnName='remark', paramType=ColumnParameterMapping.ParamType.String, paramName='remark')])
-
-            self._objectTypeToTableMapping[multiverse.DbBody] = ObjectTableMapping(
-                tableName=UniverseDb._BodiesTableName,
-                objectType=multiverse.DbBody,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='system_id', paramType=ColumnParameterMapping.ParamType.String, paramName='systemId'),
-                    ColumnParameterMapping(columnName='orbit_index', paramType=ColumnParameterMapping.ParamType.Integer, paramName='orbitIndex'),
-                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
-                    ColumnParameterMapping(columnName='notes', paramType=ColumnParameterMapping.ParamType.String, paramName='notes')],
-                deriveObjects=[
-                    DerivedObjectMapping(
-                        tableName=self._WorldsTableName,
-                        baseColumnName='body_id',
-                        objectType=multiverse.DbWorld,
-                        parameters=[
-                            ColumnParameterMapping(columnName='is_main_world', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='isMainWorld'),
-                            ColumnParameterMapping(columnName='starport', paramType=ColumnParameterMapping.ParamType.String, paramName='starport'),
-                            ColumnParameterMapping(columnName='world_size', paramType=ColumnParameterMapping.ParamType.String, paramName='worldSize'),
-                            ColumnParameterMapping(columnName='atmosphere', paramType=ColumnParameterMapping.ParamType.String, paramName='atmosphere'),
-                            ColumnParameterMapping(columnName='hydrographics', paramType=ColumnParameterMapping.ParamType.String, paramName='hydrographics'),
-                            ColumnParameterMapping(columnName='population', paramType=ColumnParameterMapping.ParamType.String, paramName='population'),
-                            ColumnParameterMapping(columnName='government', paramType=ColumnParameterMapping.ParamType.String, paramName='government'),
-                            ColumnParameterMapping(columnName='law_level', paramType=ColumnParameterMapping.ParamType.String, paramName='lawLevel'),
-                            ColumnParameterMapping(columnName='tech_level', paramType=ColumnParameterMapping.ParamType.String, paramName='techLevel'),
-                            ColumnParameterMapping(columnName='resources', paramType=ColumnParameterMapping.ParamType.String, paramName='resources'),
-                            ColumnParameterMapping(columnName='labour', paramType=ColumnParameterMapping.ParamType.String, paramName='labour'),
-                            ColumnParameterMapping(columnName='infrastructure', paramType=ColumnParameterMapping.ParamType.String, paramName='infrastructure'),
-                            ColumnParameterMapping(columnName='efficiency', paramType=ColumnParameterMapping.ParamType.String, paramName='efficiency'),
-                            ColumnParameterMapping(columnName='heterogeneity', paramType=ColumnParameterMapping.ParamType.String, paramName='heterogeneity'),
-                            ColumnParameterMapping(columnName='acceptance', paramType=ColumnParameterMapping.ParamType.String, paramName='acceptance'),
-                            ColumnParameterMapping(columnName='strangeness', paramType=ColumnParameterMapping.ParamType.String, paramName='strangeness'),
-                            ColumnParameterMapping(columnName='symbols', paramType=ColumnParameterMapping.ParamType.String, paramName='symbols'),
-                            ColumnParameterMapping(columnName='population_multiplier', paramType=ColumnParameterMapping.ParamType.String, paramName='populationMultiplier'),
-                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbNobility], parentColumnName='world_id', initParam='nobilities'),
-                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbBase], parentColumnName='world_id', initParam='bases'),
-                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbTradeCode], parentColumnName='world_id', initParam='tradeCodes'),
-                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSophontPopulation], parentColumnName='world_id', initParam='sophontPopulations'),
-                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbRulingAllegiance], parentColumnName='world_id', initParam='rulingAllegiances'),
-                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbOwningSystem], parentColumnName='world_id', initParam='owningSystems'),
-                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbColonySystem], parentColumnName='world_id', initParam='colonySystems'),
-                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbResearchStation], parentColumnName='world_id', initParam='researchStations'),
-                            SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbCustomRemark], parentColumnName='world_id', initParam='customRemarks')])])
-
-            self._objectTypeToTableMapping[multiverse.DbSystem] = ObjectTableMapping(
-                tableName=UniverseDb._SystemsTableName,
-                objectType=multiverse.DbSystem,
-                parameters=[
-                    ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                    ColumnParameterMapping(columnName='hex_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexX'),
-                    ColumnParameterMapping(columnName='hex_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexY'),
-                    ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
-                    ColumnParameterMapping(columnName='planetoid_belt_count', paramType=ColumnParameterMapping.ParamType.Integer, paramName='planetoidBeltCount'),
-                    ColumnParameterMapping(columnName='gas_giant_count', paramType=ColumnParameterMapping.ParamType.Integer, paramName='gasGiantCount'),
-                    ColumnParameterMapping(columnName='world_count', paramType=ColumnParameterMapping.ParamType.Integer, paramName='worldCount'),
-                    ColumnParameterMapping(columnName='zone', paramType=ColumnParameterMapping.ParamType.String, paramName='zone'),
-                    ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, paramName='allegianceId'),
-                    ColumnParameterMapping(columnName='notes', paramType=ColumnParameterMapping.ParamType.String, paramName='notes'),
-                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbStar], parentColumnName='system_id', initParam='stars'),
-                    SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbBody], parentColumnName='system_id', initParam='bodies')])
-
-    def _createRouteTables(self, cursor: sqlite3.Cursor) -> None:
         self._database.createTable(
             cursor=cursor,
-            tableName=UniverseDb._RoutesTableName,
-            requiredSchemaVersion=UniverseDb._RoutesTableSchema,
+            tableName=UniverseDb._MetadataTableName,
+            requiredSchemaVersion=UniverseDb._MetadataTableSchema,
             columns=[
-                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                # TODO: These hexes should be converted to absolute space hex As part of the changes to move things to the universe label
-                database.ColumnDef(columnName='start_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                database.ColumnDef(columnName='start_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                database.ColumnDef(columnName='end_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                database.ColumnDef(columnName='end_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                database.ColumnDef(columnName='start_offset_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                database.ColumnDef(columnName='start_offset_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                database.ColumnDef(columnName='end_offset_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                database.ColumnDef(columnName='end_offset_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                database.ColumnDef(columnName='type', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='width', columnType=database.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
-                database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
-                            foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
-                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull)])
-
-        self._objectTypeToTableMapping[multiverse.DbRoute] = ObjectTableMapping(
-            tableName=UniverseDb._RoutesTableName,
-            objectType=multiverse.DbRoute,
-            parameters=[
-                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
-                ColumnParameterMapping(columnName='start_hex_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='startHexX'),
-                ColumnParameterMapping(columnName='start_hex_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='startHexY'),
-                ColumnParameterMapping(columnName='end_hex_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='endHexX'),
-                ColumnParameterMapping(columnName='end_hex_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='endHexY'),
-                ColumnParameterMapping(columnName='start_offset_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='startOffsetX'),
-                ColumnParameterMapping(columnName='start_offset_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='startOffsetY'),
-                ColumnParameterMapping(columnName='end_offset_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='endOffsetX'),
-                ColumnParameterMapping(columnName='end_offset_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='endOffsetY'),
-                ColumnParameterMapping(columnName='type', paramType=ColumnParameterMapping.ParamType.String, paramName='type'),
-                ColumnParameterMapping(columnName='style', paramType=ColumnParameterMapping.ParamType.String, paramName='style'),
-                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
-                ColumnParameterMapping(columnName='width', paramType=ColumnParameterMapping.ParamType.Float, paramName='width'),
-                ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, paramName='allegianceId')])
-
-    def _createBorderTables(self, cursor: sqlite3.Cursor) -> None:
-        self._database.createTable(
+                database.ColumnDef(columnName='key', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='value', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)])
+        self._writeMetadata(
             cursor=cursor,
-            tableName=UniverseDb._BordersTableName,
-            requiredSchemaVersion=UniverseDb._BordersTableSchema,
-            columns=[
-                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
-                            foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
-                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
-                database.ColumnDef(columnName='style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                # NOTE: The label position is stored as an offset in world space from the
-                # origin of the sector (top, left). An offset is used rather than storing
-                # world space coordinates to keep sector data relative to the sector. It
-                # will make it easier if we ever want to move a sector
-                # TODO: This should be converted to world space as part of the changes to move things to the universe label
-                database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
-                database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
-
-        self._database.createTable(
-            cursor=cursor,
-            tableName=UniverseDb._BorderHexesTableName,
-            requiredSchemaVersion=UniverseDb._BorderHexesTableSchema,
-            columns=[
-                database.ColumnDef(columnName='border_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                            foreignTableName=UniverseDb._BordersTableName, foreignColumnName='id',
-                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                # TODO: These hexes should be converted to absolute space hex as part of the changes to move things to the universe label
-                database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
-
-        hexesMapping = RawTableMapping(
-            tableName=UniverseDb._BorderHexesTableName,
-            columnNames=['hex_x', 'hex_y'])
-        self._objectTypeToTableMapping[multiverse.DbBorder] = ObjectTableMapping(
-            tableName=UniverseDb._BordersTableName,
-            objectType=multiverse.DbBorder,
-            parameters=[
-                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
-                SubTableParameterMapping(table=hexesMapping, parentColumnName='border_id', initParam='hexes'),
-                ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, paramName='allegianceId'),
-                ColumnParameterMapping(columnName='style', paramType=ColumnParameterMapping.ParamType.String, paramName='style'),
-                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
-                ColumnParameterMapping(columnName='label', paramType=ColumnParameterMapping.ParamType.String, paramName='label'),
-                ColumnParameterMapping(columnName='label_x', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldX'),
-                ColumnParameterMapping(columnName='label_y', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldY'),
-                ColumnParameterMapping(columnName='show_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='showLabel'),
-                ColumnParameterMapping(columnName='wrap_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='wrapLabel')])
-
-    def _createRegionTables(self, cursor: sqlite3.Cursor) -> None:
-        self._database.createTable(
-            cursor=cursor,
-            tableName=UniverseDb._RegionsTableName,
-            requiredSchemaVersion=UniverseDb._RegionsTableSchema,
-            columns=[
-                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                # NOTE: See note on borders about coordinate space used for world x/y
-                # TODO: This should be converted to world space as part of the changes to move things to the universe label
-                database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
-                database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
-
-        self._database.createTable(
-            cursor=cursor,
-            tableName=UniverseDb._RegionHexesTableName,
-            requiredSchemaVersion=UniverseDb._RegionHexesTableSchema,
-            columns=[
-                database.ColumnDef(columnName='region_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                            foreignTableName=UniverseDb._RegionsTableName, foreignColumnName='id',
-                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                # TODO: These hexes should be converted to absolute space hex as part of the changes to move things to the universe label
-                database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
-                database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
-
-        hexesMapping = RawTableMapping(
-            tableName=UniverseDb._RegionHexesTableName,
-            columnNames=['hex_x', 'hex_y'])
-        self._objectTypeToTableMapping[multiverse.DbRegion] = ObjectTableMapping(
-            tableName=UniverseDb._RegionsTableName,
-            objectType=multiverse.DbRegion,
-            parameters=[
-                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
-                SubTableParameterMapping(table=hexesMapping, parentColumnName='region_id', initParam='hexes'),
-                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
-                ColumnParameterMapping(columnName='label', paramType=ColumnParameterMapping.ParamType.String, paramName='label'),
-                ColumnParameterMapping(columnName='label_x', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldX'),
-                ColumnParameterMapping(columnName='label_y', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldY'),
-                ColumnParameterMapping(columnName='show_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='showLabel'),
-                ColumnParameterMapping(columnName='wrap_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='wrapLabel')])
-
-    def _createMapLabelTables(self, cursor: sqlite3.Cursor) -> None:
-        self._database.createTable(
-            cursor=cursor,
-            tableName=UniverseDb._MapLabelsTableName,
-            requiredSchemaVersion=UniverseDb._MapLabelsTableSchema,
-            columns=[
-                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                database.ColumnDef(columnName='layer', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                database.ColumnDef(columnName='alignment', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='rotation', columnType=database.ColumnDef.ColumnType.Real, isNullable=True)])
-
-        self._objectTypeToTableMapping[multiverse.DbMapLabel] = ObjectTableMapping(
-            tableName=UniverseDb._MapLabelsTableName,
-            objectType=multiverse.DbMapLabel,
-            parameters=[
-                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                ColumnParameterMapping(columnName='text', paramType=ColumnParameterMapping.ParamType.String, paramName='text'),
-                ColumnParameterMapping(columnName='x', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldX'),
-                ColumnParameterMapping(columnName='y', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldY'),
-                ColumnParameterMapping(columnName='layer', paramType=ColumnParameterMapping.ParamType.String, paramName='layer'),
-                ColumnParameterMapping(columnName='alignment', paramType=ColumnParameterMapping.ParamType.String, paramName='alignment'),
-                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
-                ColumnParameterMapping(columnName='size', paramType=ColumnParameterMapping.ParamType.String, paramName='size'),
-                ColumnParameterMapping(columnName='rotation', paramType=ColumnParameterMapping.ParamType.Float, paramName='rotation')])
-
-    def _createMapVectorTables(self, cursor: sqlite3.Cursor) -> None:
-        self._database.createTable(
-            cursor=cursor,
-            tableName=UniverseDb._MapVectorsTableName,
-            requiredSchemaVersion=UniverseDb._MapVectorsTableSchema,
-            columns=[
-                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                database.ColumnDef(columnName='layer', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                # TODO: Can I get rid of the closed flag? Can't I just make sure the first point is also
-                # the last point for closed polygons?
-                database.ColumnDef(columnName='closed', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
-
-        self._database.createTable(
-            cursor=cursor,
-            tableName=UniverseDb._MapVectorPointsTableName,
-            requiredSchemaVersion=UniverseDb._MapVectorPointsTableSchema,
-            columns=[
-                database.ColumnDef(columnName='vector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                            foreignTableName=UniverseDb._MapVectorsTableName, foreignColumnName='id',
-                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False)])
-
-        pointsMapping = RawTableMapping(
-            tableName=UniverseDb._MapVectorPointsTableName,
-            columnNames=['x', 'y'])
-        self._objectTypeToTableMapping[multiverse.DbMapVector] = ObjectTableMapping(
-            tableName=UniverseDb._MapVectorsTableName,
-            objectType=multiverse.DbMapVector,
-            parameters=[
-                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                SubTableParameterMapping(table=pointsMapping, parentColumnName='vector_id', initParam='points'),
-                ColumnParameterMapping(columnName='layer', paramType=ColumnParameterMapping.ParamType.String, paramName='layer'),
-                ColumnParameterMapping(columnName='closed', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='isClosed')])
+            key=UniverseDb._MetadataFormatKey,
+            value=UniverseDb._FormatString)
 
     def _readMetadata(
             self,
@@ -1954,12 +1205,12 @@ class UniverseDb(object):
                     str, # Parent id
                     typing.List[multiverse.DbObject]]]:
         tableRows = tableNameToRows[tableMapping.tableName()]
-        rowCount = len(tableRows)
-        if not rowCount:
+        if not tableRows:
             if progress is not None:
                 progress.complete()
             return
 
+        rowCount = len(tableRows)
         taskCount = 1
         for paramMapping in tableMapping.parameters():
             if isinstance(paramMapping, SubTableParameterMapping):
@@ -2093,7 +1344,8 @@ class UniverseDb(object):
                         if paramMapping.parentColumnName() is None:
                             initParams[paramMapping.paramName()] = initParamNameToParentRows[paramMapping.paramName()]
                         else:
-                            initParams[paramMapping.paramName()] = initParamNameToParentRows[paramMapping.paramName()].get(objectId)
+                            parentRows = initParamNameToParentRows[paramMapping.paramName()]
+                            initParams[paramMapping.paramName()] = parentRows.get(objectId) if parentRows is not None else None
 
                 if tableMapping.deriveObjects():
                     derivedMapping, derivedRow = baseIdToDerivedObjectRows[objectId]
@@ -2110,7 +1362,8 @@ class UniverseDb(object):
                             if paramMapping.parentColumnName() is None:
                                 initParams[paramMapping.paramName()] = derivedInitParamNameToParentRows[paramMapping.paramName()]
                             else:
-                                initParams[paramMapping.paramName()] = derivedInitParamNameToParentRows[paramMapping.paramName()].get(objectId)
+                                parentRows = derivedInitParamNameToParentRows[paramMapping.paramName()]
+                                initParams[paramMapping.paramName()] = parentRows.get(objectId) if parentRows is not None else None
 
                 obj = objectType(**initParams)
                 if parentColumnName is None:
@@ -2183,12 +1436,12 @@ class UniverseDb(object):
                     str, # Parent id
                     typing.List[typing.Tuple[typing.Any, ...]]]]:
         tableRows = tableNameToRows[tableMapping.tableName()]
-        rowCount = len(tableRows)
-        if not rowCount:
+        if not tableRows:
             if progress is not None:
                 progress.complete()
             return
 
+        rowCount = len(tableRows)
         chunkSize = rowCount
         localProgress = None
         if progress is not None:
@@ -2493,6 +1746,38 @@ class UniverseDb(object):
     #                                      ░░██████
     #                                       ░░░░░░
 
+    def _createAllegianceTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._AllegiancesTableName,
+            requiredSchemaVersion=UniverseDb._AllegiancesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                database.ColumnDef(columnName='legacy', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='base', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='route_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='route_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='route_width', columnType=database.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
+                database.ColumnDef(columnName='border_colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='border_style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+
+        self._objectTypeToTableMapping[multiverse.DbAllegiance] = ObjectTableMapping(
+            tableName=UniverseDb._AllegiancesTableName,
+            objectType=multiverse.DbAllegiance,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
+                ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code'),
+                ColumnParameterMapping(columnName='legacy', paramType=ColumnParameterMapping.ParamType.String, paramName='legacy'),
+                ColumnParameterMapping(columnName='base', paramType=ColumnParameterMapping.ParamType.String, paramName='base'),
+                ColumnParameterMapping(columnName='route_colour', paramType=ColumnParameterMapping.ParamType.String, paramName='routeColour'),
+                ColumnParameterMapping(columnName='route_style', paramType=ColumnParameterMapping.ParamType.String, paramName='routeStyle'),
+                ColumnParameterMapping(columnName='route_width', paramType=ColumnParameterMapping.ParamType.Float, paramName='routeWidth'),
+                ColumnParameterMapping(columnName='border_colour', paramType=ColumnParameterMapping.ParamType.String, paramName='borderColour'),
+                ColumnParameterMapping(columnName='border_style', paramType=ColumnParameterMapping.ParamType.String, paramName='borderStyle')])
+
     def _countAllegiances(
             self,
             cursor: sqlite3.Cursor
@@ -2562,6 +1847,26 @@ class UniverseDb(object):
     #                         █████
     #                        ░░░░░
 
+    def _createSophontTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._SophontsTableName,
+            requiredSchemaVersion=UniverseDb._SophontsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                database.ColumnDef(columnName='is_major', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+
+        self._objectTypeToTableMapping[multiverse.DbSophont] = ObjectTableMapping(
+            tableName=UniverseDb._SophontsTableName,
+            objectType=multiverse.DbSophont,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
+                ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code'),
+                ColumnParameterMapping(columnName='is_major', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='isMajor')])
+
     def _countSophonts(
             self,
             cursor: sqlite3.Cursor
@@ -2627,6 +1932,180 @@ class UniverseDb(object):
     #    ███    ░███░███░░░  ░███  ███  ░███ ███░███ ░███ ░███      ░░░░███
     #   ░░█████████ ░░██████ ░░██████   ░░█████ ░░██████  █████     ██████
     #    ░░░░░░░░░   ░░░░░░   ░░░░░░     ░░░░░   ░░░░░░  ░░░░░     ░░░░░░
+
+    def _createSectorTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._SectorsTableName,
+            requiredSchemaVersion=UniverseDb._SectorsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='sector_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='sector_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                database.ColumnDef(columnName='language', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='abbreviation', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='sector_label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='selected', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
+                database.ColumnDef(columnName='credits', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='publication', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='author', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['sector_x', 'sector_y'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._AlternateNamesTableName,
+            requiredSchemaVersion=UniverseDb._AlternateNamesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                database.ColumnDef(columnName='language', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._SubsectorNamesTableName,
+            requiredSchemaVersion=UniverseDb._SubsectorNamesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            minValue='A', maxValue='P'),
+                database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['sector_id', 'code'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._SectorLabelsTableName,
+            requiredSchemaVersion=UniverseDb._SectorLabelsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                # TODO: This should be converted to world space as part of the changes to move things to the universe label
+                database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='wrap', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._SectorTagsTableName,
+            requiredSchemaVersion=UniverseDb._SectorTagsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='tag', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['sector_id', 'tag'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._ProductsTableName,
+            requiredSchemaVersion=UniverseDb._ProductsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='publication', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='author', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+
+        # TODO: These should be called from _initTables as I move them to the universe
+        self._createBorderTables(cursor=cursor)
+        self._createRegionTables(cursor=cursor)
+
+        self._objectTypeToTableMapping[multiverse.DbAlternateName] = ObjectTableMapping(
+            tableName=UniverseDb._AlternateNamesTableName,
+            objectType=multiverse.DbAlternateName,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
+                ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
+                ColumnParameterMapping(columnName='language', paramType=ColumnParameterMapping.ParamType.String, paramName='language')])
+
+        self._objectTypeToTableMapping[multiverse.DbSubsectorName] = ObjectTableMapping(
+            tableName=UniverseDb._SubsectorNamesTableName,
+            objectType=multiverse.DbSubsectorName,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
+                ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code'),
+                ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name')])
+
+        self._objectTypeToTableMapping[multiverse.DbSectorLabel] = ObjectTableMapping(
+            tableName=UniverseDb._SectorLabelsTableName,
+            objectType=multiverse.DbSectorLabel,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
+                ColumnParameterMapping(columnName='text', paramType=ColumnParameterMapping.ParamType.String, paramName='text'),
+                ColumnParameterMapping(columnName='x', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldX'),
+                ColumnParameterMapping(columnName='y', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldY'),
+                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
+                ColumnParameterMapping(columnName='size', paramType=ColumnParameterMapping.ParamType.String, paramName='size'),
+                ColumnParameterMapping(columnName='wrap', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='wrap')])
+
+        self._objectTypeToTableMapping[multiverse.DbTag] = ObjectTableMapping(
+            tableName=UniverseDb._SectorTagsTableName,
+            objectType=multiverse.DbTag,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
+                ColumnParameterMapping(columnName='tag', paramType=ColumnParameterMapping.ParamType.String, paramName='tag')])
+
+        self._objectTypeToTableMapping[multiverse.DbProduct] = ObjectTableMapping(
+            tableName=UniverseDb._ProductsTableName,
+            objectType=multiverse.DbProduct,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
+                ColumnParameterMapping(columnName='publication', paramType=ColumnParameterMapping.ParamType.String, paramName='publication'),
+                ColumnParameterMapping(columnName='author', paramType=ColumnParameterMapping.ParamType.String, paramName='author'),
+                ColumnParameterMapping(columnName='publisher', paramType=ColumnParameterMapping.ParamType.String, paramName='publisher'),
+                ColumnParameterMapping(columnName='reference', paramType=ColumnParameterMapping.ParamType.String, paramName='reference')])
+
+        self._objectTypeToTableMapping[multiverse.DbSector] = ObjectTableMapping(
+            tableName=UniverseDb._SectorsTableName,
+            objectType=multiverse.DbSector,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='sector_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='sectorX'),
+                ColumnParameterMapping(columnName='sector_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='sectorY'),
+                ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
+                ColumnParameterMapping(columnName='language', paramType=ColumnParameterMapping.ParamType.String, paramName='language'),
+                ColumnParameterMapping(columnName='abbreviation', paramType=ColumnParameterMapping.ParamType.String, paramName='abbreviation'),
+                ColumnParameterMapping(columnName='sector_label', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorLabel'),
+                ColumnParameterMapping(columnName='selected', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='selected'),
+                ColumnParameterMapping(columnName='credits', paramType=ColumnParameterMapping.ParamType.String, paramName='credits'),
+                ColumnParameterMapping(columnName='publication', paramType=ColumnParameterMapping.ParamType.String, paramName='publication'),
+                ColumnParameterMapping(columnName='author', paramType=ColumnParameterMapping.ParamType.String, paramName='author'),
+                ColumnParameterMapping(columnName='publisher', paramType=ColumnParameterMapping.ParamType.String, paramName='publisher'),
+                ColumnParameterMapping(columnName='reference', paramType=ColumnParameterMapping.ParamType.String, paramName='reference'),
+                ColumnParameterMapping(columnName='notes', paramType=ColumnParameterMapping.ParamType.String, paramName='notes'),
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbAlternateName], parentColumnName='sector_id', initParam='alternateNames'),
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSubsectorName], parentColumnName='sector_id', initParam='subsectorNames'),
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSectorLabel], parentColumnName='sector_id', initParam='labels'),
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbTag], parentColumnName='sector_id', initParam='tags'),
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbProduct], parentColumnName='sector_id', initParam='products'),
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbBorder], parentColumnName='sector_id', initParam='borders'),
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbRegion], parentColumnName='sector_id', initParam='regions')])
 
     def _countSectors(
             self,
@@ -2729,6 +2208,376 @@ class UniverseDb(object):
     #                ░░██████
     #                 ░░░░░░
 
+    def _createSystemTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._SystemsTableName,
+            requiredSchemaVersion=UniverseDb._SystemsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='planetoid_belt_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
+                database.ColumnDef(columnName='gas_giant_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
+                # NOTE: The world count is NOT the same as the system world count from
+                # second survey sector format. The system would count includes belts
+                # and gas giants where as this world count does not (but it does include
+                # the main world)
+                database.ColumnDef(columnName='world_count', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0),
+                database.ColumnDef(columnName='zone', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
+                            foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
+                database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['hex_x', 'hex_y'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._StarsTableName,
+            requiredSchemaVersion=UniverseDb._StarsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='system_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SystemsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='luminosity_class', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                database.ColumnDef(columnName='spectral_class', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='spectral_scale', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._BodiesTableName,
+            requiredSchemaVersion=UniverseDb._BodiesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='system_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SystemsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='orbit_index', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='name', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='notes', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+
+        # TODO: Also create giants and belts tables. Even if they don't have any extra data I need
+        # to store the body_id so in the future when the user can create them, the code knows which
+        # type of object they are. Currently there is no way to tell if a body is a gas giant or
+        # a belt. I need code that is similar to how worlds are loaded and that relies on worlds
+        # table to identify which bodies are worlds
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._WorldsTableName,
+            requiredSchemaVersion=UniverseDb._WorldsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='body_id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True,
+                            foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='is_main_world', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
+                database.ColumnDef(columnName='starport', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='world_size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='atmosphere', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='hydrographics', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='population', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='government', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='law_level', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='tech_level', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='resources', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='labour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='infrastructure', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='efficiency', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='heterogeneity', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='acceptance', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='strangeness', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='symbols', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='population_multiplier', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._NobilitiesTableName,
+            requiredSchemaVersion=UniverseDb._NobilitiesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._TradeCodesTableName,
+            requiredSchemaVersion=UniverseDb._TradeCodesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._SophontPopulationsTableName,
+            requiredSchemaVersion=UniverseDb._SophontPopulationsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='sophont_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SophontsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='percentage', columnType=database.ColumnDef.ColumnType.Integer, isNullable=True, minValue=0, maxValue=100),
+                database.ColumnDef(columnName='is_home_world', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
+                database.ColumnDef(columnName='is_die_back', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['world_id', 'sophont_id'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._RulingAllegiancesTableName,
+            requiredSchemaVersion=UniverseDb._RulingAllegiancesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['world_id', 'allegiance_id'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._OwningSystemsTableName,
+            requiredSchemaVersion=UniverseDb._OwningSystemsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                # TODO: This should be converted to absolute space hex As part of the changes to move things to the universe label
+                database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                # NOTE: This intentionally stores the abbreviation rather
+                # than the sector id so that the referenced sector doesn't
+                # need to exist in the DB at the point this sector was
+                # imported. This avoids the chicken and egg situation where
+                # it wouldn't be possible to import two sectors that
+                # reference each other as which ever was imported first
+                # would need the sector id of a sector that hasn't been
+                # imported yet.
+                database.ColumnDef(columnName='sector_abbreviation', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['world_id', 'hex_x', 'hex_y', 'sector_abbreviation'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._ColonySystemsTableName,
+            requiredSchemaVersion=UniverseDb._ColonySystemsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                # TODO: This should be converted to absolute space hex As part of the changes to move things to the universe label
+                database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                # NOTE: See comment on owning systems as to why this is the
+                # abbreviation rather than the sector id
+                database.ColumnDef(columnName='sector_abbreviation', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['world_id', 'hex_x', 'hex_y', 'sector_abbreviation'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._ResearchStationTableName,
+            requiredSchemaVersion=UniverseDb._ResearchStationTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._BasesTableName,
+            requiredSchemaVersion=UniverseDb._BasesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='code', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)],
+            uniqueConstraints=[
+                database.UniqueConstraintDef(columnNames=['world_id', 'code'])])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._CustomRemarksTableName,
+            requiredSchemaVersion=UniverseDb._CustomRemarksTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='world_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BodiesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='remark', columnType=database.ColumnDef.ColumnType.Text, isNullable=False)])
+
+        self._objectTypeToTableMapping[multiverse.DbStar] = ObjectTableMapping(
+            tableName=UniverseDb._StarsTableName,
+            objectType=multiverse.DbStar,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='system_id', paramType=ColumnParameterMapping.ParamType.String, paramName='systemId'),
+                ColumnParameterMapping(columnName='luminosity_class', paramType=ColumnParameterMapping.ParamType.String, paramName='luminosityClass'),
+                ColumnParameterMapping(columnName='spectral_class', paramType=ColumnParameterMapping.ParamType.String, paramName='spectralClass'),
+                ColumnParameterMapping(columnName='spectral_scale', paramType=ColumnParameterMapping.ParamType.String, paramName='spectralScale')])
+
+        self._objectTypeToTableMapping[multiverse.DbNobility] = ObjectTableMapping(
+            tableName=UniverseDb._NobilitiesTableName,
+            objectType=multiverse.DbNobility,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
+                ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code')])
+
+        self._objectTypeToTableMapping[multiverse.DbTradeCode] = ObjectTableMapping(
+            tableName=UniverseDb._TradeCodesTableName,
+            objectType=multiverse.DbTradeCode,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
+                ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code')])
+
+        self._objectTypeToTableMapping[multiverse.DbSophontPopulation] = ObjectTableMapping(
+            tableName=UniverseDb._SophontPopulationsTableName,
+            objectType=multiverse.DbSophontPopulation,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
+                ColumnParameterMapping(columnName='sophont_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sophontId'),
+                ColumnParameterMapping(columnName='percentage', paramType=ColumnParameterMapping.ParamType.Integer, paramName='percentage'),
+                ColumnParameterMapping(columnName='is_home_world', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='isHomeWorld'),
+                ColumnParameterMapping(columnName='is_die_back', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='isDieBack')])
+
+        self._objectTypeToTableMapping[multiverse.DbRulingAllegiance] = ObjectTableMapping(
+            tableName=UniverseDb._RulingAllegiancesTableName,
+            objectType=multiverse.DbRulingAllegiance,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
+                ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, paramName='allegianceId')])
+
+        self._objectTypeToTableMapping[multiverse.DbOwningSystem] = ObjectTableMapping(
+            tableName=UniverseDb._OwningSystemsTableName,
+            objectType=multiverse.DbOwningSystem,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
+                ColumnParameterMapping(columnName='hex_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexX'),
+                ColumnParameterMapping(columnName='hex_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexY'),
+                ColumnParameterMapping(columnName='sector_abbreviation', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorAbbreviation')])
+
+        self._objectTypeToTableMapping[multiverse.DbColonySystem] = ObjectTableMapping(
+            tableName=UniverseDb._ColonySystemsTableName,
+            objectType=multiverse.DbColonySystem,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
+                ColumnParameterMapping(columnName='hex_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexX'),
+                ColumnParameterMapping(columnName='hex_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexY'),
+                ColumnParameterMapping(columnName='sector_abbreviation', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorAbbreviation')])
+
+        self._objectTypeToTableMapping[multiverse.DbBase] = ObjectTableMapping(
+            tableName=UniverseDb._BasesTableName,
+            objectType=multiverse.DbBase,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
+                ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code')])
+
+        self._objectTypeToTableMapping[multiverse.DbResearchStation] = ObjectTableMapping(
+            tableName=UniverseDb._ResearchStationTableName,
+            objectType=multiverse.DbResearchStation,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
+                ColumnParameterMapping(columnName='code', paramType=ColumnParameterMapping.ParamType.String, paramName='code')])
+
+        self._objectTypeToTableMapping[multiverse.DbCustomRemark] = ObjectTableMapping(
+            tableName=UniverseDb._CustomRemarksTableName,
+            objectType=multiverse.DbCustomRemark,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='world_id', paramType=ColumnParameterMapping.ParamType.String, paramName='worldId'),
+                ColumnParameterMapping(columnName='remark', paramType=ColumnParameterMapping.ParamType.String, paramName='remark')])
+
+        self._objectTypeToTableMapping[multiverse.DbBody] = ObjectTableMapping(
+            tableName=UniverseDb._BodiesTableName,
+            objectType=multiverse.DbBody,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='system_id', paramType=ColumnParameterMapping.ParamType.String, paramName='systemId'),
+                ColumnParameterMapping(columnName='orbit_index', paramType=ColumnParameterMapping.ParamType.Integer, paramName='orbitIndex'),
+                ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
+                ColumnParameterMapping(columnName='notes', paramType=ColumnParameterMapping.ParamType.String, paramName='notes')],
+            deriveObjects=[
+                DerivedObjectMapping(
+                    tableName=self._WorldsTableName,
+                    baseColumnName='body_id',
+                    objectType=multiverse.DbWorld,
+                    parameters=[
+                        ColumnParameterMapping(columnName='is_main_world', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='isMainWorld'),
+                        ColumnParameterMapping(columnName='starport', paramType=ColumnParameterMapping.ParamType.String, paramName='starport'),
+                        ColumnParameterMapping(columnName='world_size', paramType=ColumnParameterMapping.ParamType.String, paramName='worldSize'),
+                        ColumnParameterMapping(columnName='atmosphere', paramType=ColumnParameterMapping.ParamType.String, paramName='atmosphere'),
+                        ColumnParameterMapping(columnName='hydrographics', paramType=ColumnParameterMapping.ParamType.String, paramName='hydrographics'),
+                        ColumnParameterMapping(columnName='population', paramType=ColumnParameterMapping.ParamType.String, paramName='population'),
+                        ColumnParameterMapping(columnName='government', paramType=ColumnParameterMapping.ParamType.String, paramName='government'),
+                        ColumnParameterMapping(columnName='law_level', paramType=ColumnParameterMapping.ParamType.String, paramName='lawLevel'),
+                        ColumnParameterMapping(columnName='tech_level', paramType=ColumnParameterMapping.ParamType.String, paramName='techLevel'),
+                        ColumnParameterMapping(columnName='resources', paramType=ColumnParameterMapping.ParamType.String, paramName='resources'),
+                        ColumnParameterMapping(columnName='labour', paramType=ColumnParameterMapping.ParamType.String, paramName='labour'),
+                        ColumnParameterMapping(columnName='infrastructure', paramType=ColumnParameterMapping.ParamType.String, paramName='infrastructure'),
+                        ColumnParameterMapping(columnName='efficiency', paramType=ColumnParameterMapping.ParamType.String, paramName='efficiency'),
+                        ColumnParameterMapping(columnName='heterogeneity', paramType=ColumnParameterMapping.ParamType.String, paramName='heterogeneity'),
+                        ColumnParameterMapping(columnName='acceptance', paramType=ColumnParameterMapping.ParamType.String, paramName='acceptance'),
+                        ColumnParameterMapping(columnName='strangeness', paramType=ColumnParameterMapping.ParamType.String, paramName='strangeness'),
+                        ColumnParameterMapping(columnName='symbols', paramType=ColumnParameterMapping.ParamType.String, paramName='symbols'),
+                        ColumnParameterMapping(columnName='population_multiplier', paramType=ColumnParameterMapping.ParamType.String, paramName='populationMultiplier'),
+                        SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbNobility], parentColumnName='world_id', initParam='nobilities'),
+                        SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbBase], parentColumnName='world_id', initParam='bases'),
+                        SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbTradeCode], parentColumnName='world_id', initParam='tradeCodes'),
+                        SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSophontPopulation], parentColumnName='world_id', initParam='sophontPopulations'),
+                        SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbRulingAllegiance], parentColumnName='world_id', initParam='rulingAllegiances'),
+                        SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbOwningSystem], parentColumnName='world_id', initParam='owningSystems'),
+                        SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbColonySystem], parentColumnName='world_id', initParam='colonySystems'),
+                        SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbResearchStation], parentColumnName='world_id', initParam='researchStations'),
+                        SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbCustomRemark], parentColumnName='world_id', initParam='customRemarks')])])
+
+        self._objectTypeToTableMapping[multiverse.DbSystem] = ObjectTableMapping(
+            tableName=UniverseDb._SystemsTableName,
+            objectType=multiverse.DbSystem,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='hex_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexX'),
+                ColumnParameterMapping(columnName='hex_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='hexY'),
+                ColumnParameterMapping(columnName='name', paramType=ColumnParameterMapping.ParamType.String, paramName='name'),
+                ColumnParameterMapping(columnName='planetoid_belt_count', paramType=ColumnParameterMapping.ParamType.Integer, paramName='planetoidBeltCount'),
+                ColumnParameterMapping(columnName='gas_giant_count', paramType=ColumnParameterMapping.ParamType.Integer, paramName='gasGiantCount'),
+                ColumnParameterMapping(columnName='world_count', paramType=ColumnParameterMapping.ParamType.Integer, paramName='worldCount'),
+                ColumnParameterMapping(columnName='zone', paramType=ColumnParameterMapping.ParamType.String, paramName='zone'),
+                ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, paramName='allegianceId'),
+                ColumnParameterMapping(columnName='notes', paramType=ColumnParameterMapping.ParamType.String, paramName='notes'),
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbStar], parentColumnName='system_id', initParam='stars'),
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbBody], parentColumnName='system_id', initParam='bodies')])
+
     def _countSystems(
             self,
             cursor: sqlite3.Cursor
@@ -2804,6 +2653,40 @@ class UniverseDb(object):
     #    █████   █████░░██████  ░░████████  ░░█████ ░░██████  ██████
     #   ░░░░░   ░░░░░  ░░░░░░    ░░░░░░░░    ░░░░░   ░░░░░░  ░░░░░░
 
+    def _createRouteTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._RoutesTableName,
+            requiredSchemaVersion=UniverseDb._RoutesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='start_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='start_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='end_hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='end_hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='type', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='width', columnType=database.ColumnDef.ColumnType.Real, isNullable=True, minValue=0),
+                database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
+                            foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull)])
+
+        self._objectTypeToTableMapping[multiverse.DbRoute] = ObjectTableMapping(
+            tableName=UniverseDb._RoutesTableName,
+            objectType=multiverse.DbRoute,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='start_hex_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='startHexX'),
+                ColumnParameterMapping(columnName='start_hex_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='startHexY'),
+                ColumnParameterMapping(columnName='end_hex_x', paramType=ColumnParameterMapping.ParamType.Integer, paramName='endHexX'),
+                ColumnParameterMapping(columnName='end_hex_y', paramType=ColumnParameterMapping.ParamType.Integer, paramName='endHexY'),
+                ColumnParameterMapping(columnName='type', paramType=ColumnParameterMapping.ParamType.String, paramName='type'),
+                ColumnParameterMapping(columnName='style', paramType=ColumnParameterMapping.ParamType.String, paramName='style'),
+                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
+                ColumnParameterMapping(columnName='width', paramType=ColumnParameterMapping.ParamType.Float, paramName='width'),
+                ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, paramName='allegianceId')])
+
     def _countRoutes(
             self,
             cursor: sqlite3.Cursor
@@ -2866,6 +2749,63 @@ class UniverseDb(object):
     #    ░███    ░███░███ ░███ ░███     ░███ ░███ ░███░░░   ░███      ░░░░███
     #    ███████████ ░░██████  █████    ░░████████░░██████  █████     ██████
     #   ░░░░░░░░░░░   ░░░░░░  ░░░░░      ░░░░░░░░  ░░░░░░  ░░░░░     ░░░░░░
+
+    def _createBorderTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._BordersTableName,
+            requiredSchemaVersion=UniverseDb._BordersTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
+                            foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
+                database.ColumnDef(columnName='style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                # NOTE: The label position is stored as an offset in world space from the
+                # origin of the sector (top, left). An offset is used rather than storing
+                # world space coordinates to keep sector data relative to the sector. It
+                # will make it easier if we ever want to move a sector
+                # TODO: This should be converted to world space as part of the changes to move things to the universe label
+                database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
+                database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._BorderHexesTableName,
+            requiredSchemaVersion=UniverseDb._BorderHexesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='border_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BordersTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                # TODO: These hexes should be converted to absolute space hex as part of the changes to move things to the universe label
+                database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
+
+        hexesMapping = RawTableMapping(
+            tableName=UniverseDb._BorderHexesTableName,
+            columnNames=['hex_x', 'hex_y'])
+        self._objectTypeToTableMapping[multiverse.DbBorder] = ObjectTableMapping(
+            tableName=UniverseDb._BordersTableName,
+            objectType=multiverse.DbBorder,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
+                SubTableParameterMapping(table=hexesMapping, parentColumnName='border_id', initParam='hexes'),
+                ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, paramName='allegianceId'),
+                ColumnParameterMapping(columnName='style', paramType=ColumnParameterMapping.ParamType.String, paramName='style'),
+                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
+                ColumnParameterMapping(columnName='label', paramType=ColumnParameterMapping.ParamType.String, paramName='label'),
+                ColumnParameterMapping(columnName='label_x', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldX'),
+                ColumnParameterMapping(columnName='label_y', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldY'),
+                ColumnParameterMapping(columnName='show_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='showLabel'),
+                ColumnParameterMapping(columnName='wrap_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='wrapLabel')])
 
     def _countBorders(
             self,
@@ -2946,6 +2886,54 @@ class UniverseDb(object):
     #                          ░░██████
     #                           ░░░░░░
 
+    def _createRegionTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._RegionsTableName,
+            requiredSchemaVersion=UniverseDb._RegionsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                # NOTE: See note on borders about coordinate space used for world x/y
+                # TODO: This should be converted to world space as part of the changes to move things to the universe label
+                database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
+                database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._RegionHexesTableName,
+            requiredSchemaVersion=UniverseDb._RegionHexesTableSchema,
+            columns=[
+                database.ColumnDef(columnName='region_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._RegionsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                # TODO: These hexes should be converted to absolute space hex as part of the changes to move things to the universe label
+                database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
+                database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
+
+        hexesMapping = RawTableMapping(
+            tableName=UniverseDb._RegionHexesTableName,
+            columnNames=['hex_x', 'hex_y'])
+        self._objectTypeToTableMapping[multiverse.DbRegion] = ObjectTableMapping(
+            tableName=UniverseDb._RegionsTableName,
+            objectType=multiverse.DbRegion,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
+                SubTableParameterMapping(table=hexesMapping, parentColumnName='region_id', initParam='hexes'),
+                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
+                ColumnParameterMapping(columnName='label', paramType=ColumnParameterMapping.ParamType.String, paramName='label'),
+                ColumnParameterMapping(columnName='label_x', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldX'),
+                ColumnParameterMapping(columnName='label_y', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldY'),
+                ColumnParameterMapping(columnName='show_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='showLabel'),
+                ColumnParameterMapping(columnName='wrap_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='wrapLabel')])
+
     def _countRegions(
             self,
             cursor: sqlite3.Cursor
@@ -3025,6 +3013,36 @@ class UniverseDb(object):
     #                              █████
     #                             ░░░░░
 
+    def _createMapLabelTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._MapLabelsTableName,
+            requiredSchemaVersion=UniverseDb._MapLabelsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                database.ColumnDef(columnName='layer', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                database.ColumnDef(columnName='alignment', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='rotation', columnType=database.ColumnDef.ColumnType.Real, isNullable=True)])
+
+        self._objectTypeToTableMapping[multiverse.DbMapLabel] = ObjectTableMapping(
+            tableName=UniverseDb._MapLabelsTableName,
+            objectType=multiverse.DbMapLabel,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='text', paramType=ColumnParameterMapping.ParamType.String, paramName='text'),
+                ColumnParameterMapping(columnName='x', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldX'),
+                ColumnParameterMapping(columnName='y', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldY'),
+                ColumnParameterMapping(columnName='layer', paramType=ColumnParameterMapping.ParamType.String, paramName='layer'),
+                ColumnParameterMapping(columnName='alignment', paramType=ColumnParameterMapping.ParamType.String, paramName='alignment'),
+                ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
+                ColumnParameterMapping(columnName='size', paramType=ColumnParameterMapping.ParamType.String, paramName='size'),
+                ColumnParameterMapping(columnName='rotation', paramType=ColumnParameterMapping.ParamType.Float, paramName='rotation')])
+
     def _countMapLabels(
             self,
             cursor: sqlite3.Cursor
@@ -3093,6 +3111,41 @@ class UniverseDb(object):
     #                              ░███
     #                              █████
     #                             ░░░░░
+
+    def _createMapVectorTables(self, cursor: sqlite3.Cursor) -> None:
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._MapVectorsTableName,
+            requiredSchemaVersion=UniverseDb._MapVectorsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='layer', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
+                # TODO: Can I get rid of the closed flag? Can't I just make sure the first point is also
+                # the last point for closed polygons?
+                database.ColumnDef(columnName='closed', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._MapVectorPointsTableName,
+            requiredSchemaVersion=UniverseDb._MapVectorPointsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='vector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._MapVectorsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False)])
+
+        pointsMapping = RawTableMapping(
+            tableName=UniverseDb._MapVectorPointsTableName,
+            columnNames=['x', 'y'])
+        self._objectTypeToTableMapping[multiverse.DbMapVector] = ObjectTableMapping(
+            tableName=UniverseDb._MapVectorsTableName,
+            objectType=multiverse.DbMapVector,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                SubTableParameterMapping(table=pointsMapping, parentColumnName='vector_id', initParam='points'),
+                ColumnParameterMapping(columnName='layer', paramType=ColumnParameterMapping.ParamType.String, paramName='layer'),
+                ColumnParameterMapping(columnName='closed', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='isClosed')])
 
     def _countMapVectors(
             self,

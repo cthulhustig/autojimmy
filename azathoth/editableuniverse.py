@@ -12,6 +12,7 @@ class EditableUniverse(astronomer.Universe):
             sophonts: typing.Collection[astronomer.Sophont],
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
+            routes: typing.Collection[astronomer.Route],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.MapVector]
             ) -> None:
@@ -22,6 +23,7 @@ class EditableUniverse(astronomer.Universe):
             sophonts=sophonts,
             sectors=sectors,
             worlds=worlds,
+            routes=routes,
             labels=labels,
             vectors=vectors)
 

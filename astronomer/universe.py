@@ -28,6 +28,7 @@ class Universe(object):
             sophonts: typing.Collection[astronomer.Sophont],
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
+            routes: typing.Collection[astronomer.Route],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.MapVector]
             ) -> None:
@@ -36,6 +37,8 @@ class Universe(object):
         common.validateCollection(name='allegiances', value=allegiances, elementType=astronomer.Allegiance)
         common.validateCollection(name='sophonts', value=sophonts, elementType=astronomer.Sophont)
         common.validateCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
+        common.validateCollection(name='worlds', value=worlds, elementType=astronomer.World)
+        common.validateCollection(name='routes', value=routes, elementType=astronomer.Route)
         common.validateCollection(name='labels', value=labels, elementType=astronomer.MapLabel)
         common.validateCollection(name='vectors', value=vectors, elementType=astronomer.MapVector)
 
@@ -56,7 +59,6 @@ class Universe(object):
         self._abbreviationToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._subsectorNameToSectorMap: typing.Dict[str, typing.Set[astronomer.Sector]] = {}
         self._sectorPositionToSectorMap: typing.Dict[typing.Tuple[int, int], astronomer.Sector] = {}
-        self._hexPositionToRoutesMap: typing.Dict[typing.Tuple[int, int], typing.Set[astronomer.Route]] = {}
         for sector in sectors:
             self._addSector(sector=sector)
 
@@ -66,6 +68,11 @@ class Universe(object):
         self._hexPositionToMainMap: typing.Dict[typing.Tuple[int, int], astronomer.Main] = {}
         for world in worlds:
             self._addWorld(world=world)
+
+        self._routes: typing.Set[astronomer.Route] = set()
+        self._hexPositionToRoutesMap: typing.Dict[typing.Tuple[int, int], typing.Set[astronomer.Route]] = {}
+        for route in routes:
+            self._addRoute(route=route)
 
         self._labels: typing.List[astronomer.MapLabel] = []
         for label in labels:
@@ -496,6 +503,9 @@ class Universe(object):
 
         return main
 
+    def routes(self) -> typing.Collection[astronomer.Route]:
+        return common.ConstCollectionRef(self._routes)
+
     def hasRoutes(
             self,
             hex: astronomer.HexPosition
@@ -594,14 +604,6 @@ class Universe(object):
                 self._subsectorNameToSectorMap[subsectorName] = sectors
             sectors.add(sector)
 
-        for route in sector.routes():
-            for hex in [route.startHex(), route.endHex()]:
-                endpoints = self._hexPositionToRoutesMap.get(hex.absolute())
-                if not endpoints:
-                    endpoints = set()
-                    self._hexPositionToRoutesMap[hex.absolute()] = endpoints
-                endpoints.add(route)
-
     def _removeSector(self, sector: astronomer.Sector) -> None:
         self._idToEntityMap.pop(sector.entityId(), None)
         for entity in sector.entities():
@@ -614,12 +616,16 @@ class Universe(object):
         sectors = self._nameToSectorMap.get(canonicalName)
         if sectors:
             sectors.discard(sector)
+            if not sectors:
+                del self._nameToSectorMap[canonicalName]
 
         for alternateName in sector.alternateNames():
             alternateName = alternateName.lower()
             sectors = self._nameToSectorMap.get(alternateName)
             if sectors:
                 sectors.discard(sector)
+                if not sectors:
+                    del self._nameToSectorMap[alternateName]
 
         abbreviation = sector.abbreviation()
         if abbreviation:
@@ -628,18 +634,16 @@ class Universe(object):
             sectors = self._abbreviationToSectorMap.get(abbreviation)
             if sectors:
                 sectors.discard(sector)
+                if not sectors:
+                    del self._abbreviationToSectorMap[abbreviation]
 
         for subsectorName in sector.subsectorNames():
             subsectorName = subsectorName.lower()
             sectors = self._subsectorNameToSectorMap.get(subsectorName)
             if sectors:
                 sectors.discard(sector)
-
-        for route in sector.routes():
-            for hex in [route.startHex(), route.endHex()]:
-                endpoints = self._hexPositionToRoutesMap.get(hex.absolute())
-                if endpoints:
-                    endpoints.discard(route)
+                if not sectors:
+                    del self._subsectorNameToSectorMap[subsectorName]
 
     def _addWorld(self, world: astronomer.World) -> None:
         self._idToEntityMap[world.entityId()] = world
@@ -674,14 +678,40 @@ class Universe(object):
         sectorWorlds = self._sectorPositionToWorldsMap.get(sectorPos.elements())
         if sectorWorlds:
             sectorWorlds.discard(world)
+            if not sectorWorlds:
+                del self._sectorPositionToWorldsMap[sectorPos.elements()]
 
         subsectorPos = (*sectorPos.elements(), hexPos.subsectorCode())
         subsectorWorlds = self._subsectorPositionToWorldsMap.get(subsectorPos)
         if subsectorWorlds:
             subsectorWorlds.discard(world)
+            if not subsectorWorlds:
+                del self._subsectorPositionToWorldsMap[subsectorPos]
 
         # Clear mains so they will be regenerated from the updated data
         self._hexPositionToMainMap.clear()
+
+    def _addRoute(self, route: astronomer.Route) -> None:
+        self._routes.add(route)
+        self._idToEntityMap[route.entityId()] = route
+
+        for hex in (route.startHex(), route.endHex()):
+            endpoints = self._hexPositionToRoutesMap.get(hex.absolute())
+            if not endpoints:
+                endpoints = set()
+                self._hexPositionToRoutesMap[hex.absolute()] = endpoints
+            endpoints.add(route)
+
+    def _removeRoute(self, route: astronomer.Route) -> None:
+        self._routes.discard(route)
+        self._idToEntityMap.pop(route.entityId(), None)
+
+        for hex in [route.startHex(), route.endHex()]:
+            endpoints = self._hexPositionToRoutesMap.get(hex.absolute())
+            if endpoints:
+                endpoints.discard(route)
+                if not endpoints:
+                    del self._hexPositionToRoutesMap[hex.absolute()]
 
     def _addLabel(self, label: astronomer.MapLabel) -> None:
         self._idToEntityMap[label.entityId()] = label

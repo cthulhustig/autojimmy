@@ -1113,40 +1113,26 @@ class DbSubsectorName(DbSectorObject):
     def name(self) -> str:
         return self._name
 
-class DbRoute(DbSectorObject):
+class DbRoute(DbUniverseObject):
     def __init__(
             self,
             startHexX: int,
             startHexY: int,
             endHexX: int,
             endHexY: int,
-            # These offsets are sector offsets for the start/end. If all
-            # the x/y offsets are both 0 for the start and/or end it means
-            # they are in the current sector
-            startOffsetX: int = 0,
-            startOffsetY: int = 0,
-            endOffsetX: int = 0,
-            endOffsetY: int = 0,
             type: typing.Optional[str] = None,
             style: typing.Optional[str] = None,
             colour: typing.Optional[str] = None,
             width: typing.Optional[float] = None,
             allegianceId: typing.Optional[str] = None,
-            id: typing.Optional[str] = None, # None means allocate an id
-            sectorId: typing.Optional[str] = None
+            id: typing.Optional[str] = None # None means allocate an id
             ) -> None:
-        super().__init__(id=id, sectorId=sectorId)
+        super().__init__(id=id)
 
-        # TODO: Ideally I wouldn't allow invalid hexes here but I need to have
-        # the conversion process convert invalid hexes to valid hexes with offsets
-        survey.validateHexX(name='startHexX', value=startHexX, allowInvalid=True)
-        survey.validateHexY(name='startHexY', value=startHexY, allowInvalid=True)
-        survey.validateHexX(name='endHexX', value=endHexX, allowInvalid=True)
-        survey.validateHexY(name='endHexY', value=endHexY, allowInvalid=True)
-        common.validateInt(name='startOffsetX', value=startOffsetX, allowNone=True)
-        common.validateInt(name='startOffsetY', value=startOffsetY, allowNone=True)
-        common.validateInt(name='endOffsetX', value=endOffsetX, allowNone=True)
-        common.validateInt(name='endOffsetY', value=endOffsetY, allowNone=True)
+        common.validateInt(name='startHexX', value=startHexX)
+        common.validateInt(name='startHexY', value=startHexY)
+        common.validateInt(name='endHexX', value=endHexX)
+        common.validateInt(name='endHexY', value=endHexY)
         common.validateStr(name='type', value=type, allowNone=True, allowEmpty=False)
         survey.validateLineStyle(name='style', value=style, allowNone=True)
         survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
@@ -1157,10 +1143,6 @@ class DbRoute(DbSectorObject):
         self._startHexY = startHexY
         self._endHexX = endHexX
         self._endHexY = endHexY
-        self._startOffsetX = startOffsetX
-        self._startOffsetY = startOffsetY
-        self._endOffsetX = endOffsetX
-        self._endOffsetY = endOffsetY
         self._type = type
         self._style = style
         self._colour = colour
@@ -1178,18 +1160,6 @@ class DbRoute(DbSectorObject):
 
     def endHexY(self) -> int:
         return self._endHexY
-
-    def startOffsetX(self) -> int:
-        return self._startOffsetX
-
-    def startOffsetY(self) -> int:
-        return self._startOffsetY
-
-    def endOffsetX(self) -> int:
-        return self._endOffsetX
-
-    def endOffsetY(self) -> int:
-        return self._endOffsetY
 
     def type(self) -> typing.Optional[str]:
         return self._type
@@ -1430,7 +1400,6 @@ class DbSector(DbUniverseObject):
             selected: bool = False,
             alternateNames: typing.Optional[typing.Collection[DbAlternateName]] = None,
             subsectorNames: typing.Optional[typing.Collection[DbSubsectorName]] = None,
-            routes: typing.Optional[typing.Collection[DbRoute]] = None,
             borders: typing.Optional[typing.Collection[DbBorder]] = None,
             regions: typing.Optional[typing.Collection[DbRegion]] = None,
             labels: typing.Optional[typing.Collection[DbSectorLabel]] = None,
@@ -1455,7 +1424,6 @@ class DbSector(DbUniverseObject):
         common.validateBool(name='selected', value=selected)
         DbSector._validateAlternateNames(name='alternateNames', value=alternateNames, sectorId=id)
         DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames, sectorId=id)
-        DbSector._validateRoutes(name='routes', value=routes, sectorId=id)
         DbSector._validateBorders(name='borders', value=borders, sectorId=id)
         DbSector._validateRegions(name='regions', value=regions, sectorId=id)
         DbSector._validateLabels(name='labels', value=labels, sectorId=id)
@@ -1486,8 +1454,6 @@ class DbSector(DbUniverseObject):
         self._attachObjects(self._alternateNames)
         self._subsectorNames = list(subsectorNames) if subsectorNames else None
         self._attachObjects(self._subsectorNames)
-        self._routes = list(routes) if routes else None
-        self._attachObjects(self._routes)
         self._borders = list(borders) if borders else None
         self._attachObjects(self._borders)
         self._regions = list(regions) if regions else None
@@ -1525,9 +1491,6 @@ class DbSector(DbUniverseObject):
 
     def subsectorNames(self) -> typing.Optional[typing.Collection[DbSubsectorName]]:
         return self._subsectorNames
-
-    def routes(self) -> typing.Optional[typing.Collection[DbRoute]]:
-        return self._routes
 
     def borders(self) -> typing.Optional[typing.Collection[DbBorder]]:
         return self._borders
@@ -1608,22 +1571,6 @@ class DbSector(DbUniverseObject):
             if code in seen:
                 raise ValueError(f'{name} contains multiple names for the same subsector')
             seen.add(code)
-
-    @staticmethod
-    def _validateRoutes(
-            name: str,
-            value: typing.Optional[typing.Collection[DbRoute]],
-            sectorId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateCollection(name=name, value=value, elementType=DbRoute, allowNone=True)
-
-        for route in value:
-            currentSectorId = route.sectorId()
-            if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError(f'{name} contains routes that are already attached to a sector')
 
     @staticmethod
     def _validateBorders(
