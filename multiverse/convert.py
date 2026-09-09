@@ -967,6 +967,10 @@ def _createDbRoutes(
 
     if rawMetadata.routes():
         for rawRoute in rawMetadata.routes():
+            if rawRoute.startHexX() == rawRoute.endHexX() and rawRoute.startHexY() == rawRoute.endHexY():
+                logging.warning(f'Converter ignoring route with same start and end position ({rawRoute.startHexX()}, {rawRoute.startHexY()}) in {rawMetadata.canonicalName()}')
+                continue
+
             rawAllegianceCode = rawRoute.allegianceCode()
             dbAllegiance = None
             if rawAllegianceCode:

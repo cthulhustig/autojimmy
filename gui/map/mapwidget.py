@@ -981,6 +981,7 @@ class MapWidget(QtWidgets.QWidget):
         if self._renderer:
             self._renderer.clearCaches()
         self._clearTileCache()
+        self.update() # Force redraw
 
     def hexAt(
             self,

@@ -130,6 +130,8 @@ class RenderContext(object):
             universe=self._universe,
             imageStore=self._imageStore,
             capacity=RenderContext._WorldCacheCapacity)
+        self._routeCache = cartographer.RouteCache(
+            universe=self._universe)
         self._vectorCache = cartographer.VectorCache(
             universe=self._universe,
             graphics=self._graphics)
@@ -229,6 +231,7 @@ class RenderContext(object):
         self._selector.clearCaches()
         self._sectorCache.clear()
         self._worldCache.clear()
+        self._routeCache.clear()
         self._gridCache.clear()
         self._starfieldCache.clear()
 
@@ -358,7 +361,7 @@ class RenderContext(object):
         self._worldSpaceToImageSpace.translatePrepend(
             dx=-self._worldOutputRect.left(),
             dy=-self._worldOutputRect.top())
-        
+
         if scaleUpdated:
             self._updateLayerOrder()
 
@@ -723,42 +726,44 @@ class RenderContext(object):
             pen = self._graphics.createPen()
             baseWidth = self._styleSheet.microRoutes.linePen.width()
 
-            for sector in self._selector.sectors():
-                sectorRoutes = self._sectorCache.routeLines(
-                    sectorPos=sector.position())
-                if not sectorRoutes:
-                    continue
+            routeGroups: typing.Dict[
+                typing.Tuple[float, typing.Optional[str], typing.Optional[cartographer.LineStyle]],
+                typing.List[cartographer.PointF]
+                ] = {}
+            for route in self._routeCache.routesInArea(bounds=self._worldViewRect):
+                key = (route.width(), route.colour(), route.style())
+                pointList = routeGroups.get(key)
+                if pointList is None:
+                    pointList = []
+                    routeGroups[key] = pointList
+                pointList.append(route.start())
+                pointList.append(route.end())
 
-                for route in sectorRoutes:
-                    routeColour = route.colour()
-                    routeWidth = route.width()
+            for (routeWidth, routeColour, routeStyle), pointList in routeGroups.items():
+                if self._styleSheet.overrideLineStyle is not None:
                     routeStyle = self._styleSheet.overrideLineStyle
-                    if not routeStyle:
-                        routeStyle = route.style()
 
-                    # In grayscale, convert default colour and style to non-default style
-                    if self._styleSheet.grayscale and (not routeColour) and (not routeStyle):
-                        routeStyle = cartographer.LineStyle.Dash
+                # In grayscale, convert default colour and style to non-default style
+                if self._styleSheet.grayscale and (not routeColour) and (not routeStyle):
+                    routeStyle = cartographer.LineStyle.Dash
 
-                    if not routeWidth:
-                        routeWidth = 1.0
-                    if not routeColour:
-                        routeColour = self._styleSheet.microRoutes.linePen.colour()
-                    if not routeStyle:
-                        routeStyle = cartographer.LineStyle.Solid
+                if not routeColour:
+                    routeColour = self._styleSheet.microRoutes.linePen.colour()
+                if not routeStyle:
+                    routeStyle = cartographer.LineStyle.Solid
 
-                    # Ensure colour is visible
-                    if self._styleSheet.grayscale or \
-                            not common.noticeableColourDifference(routeColour, self._styleSheet.backgroundBrush.colour()):
-                        routeColour = self._styleSheet.microRoutes.linePen.colour() # default
+                # Ensure colour is visible
+                if self._styleSheet.grayscale or \
+                        not common.noticeableColourDifference(routeColour, self._styleSheet.backgroundBrush.colour()):
+                    routeColour = self._styleSheet.microRoutes.linePen.colour() # default
 
-                    pen.setColour(routeColour)
-                    pen.setWidth(routeWidth * baseWidth)
-                    pen.setStyle(routeStyle)
+                pen.setWidth(routeWidth * baseWidth)
+                pen.setColour(routeColour)
+                pen.setStyle(routeStyle)
 
-                    self._graphics.drawLines(
-                        points=route.points(),
-                        pen=pen)
+                self._graphics.drawLines(
+                    points=self._graphics.createPointList(points=pointList),
+                    pen=pen)
 
     _LabelDefaultColour = common.HtmlColours.TravellerAmber
 

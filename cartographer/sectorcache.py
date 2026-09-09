@@ -1,6 +1,5 @@
 import astronomer
 import cartographer
-import math
 import typing
 
 class SectorPath(object):
@@ -28,35 +27,7 @@ class SectorPath(object):
     def style(self) -> typing.Optional[cartographer.LineStyle]:
         return self._style
 
-class SectorLines(object):
-    def __init__(
-            self,
-            points: typing.Iterable[cartographer.AbstractPointList],
-            colour: typing.Optional[str],
-            width: typing.Optional[float],
-            style: typing.Optional[cartographer.LineStyle]
-            ) -> None:
-        self._points = points
-        self._colour = colour
-        self._width = width
-        self._style = style
-
-    def points(self) -> cartographer.AbstractPointList:
-        return self._points
-
-    def colour(self) -> typing.Optional[str]:
-        return self._colour
-
-    def width(self) -> typing.Optional[float]:
-        return self._width
-
-    def style(self) -> typing.Optional[cartographer.LineStyle]:
-        return self._style
-
 class SectorCache(object):
-    # This was moved from the style sheet as it never actually changes
-    _RouteEndAdjust = 0.25
-
     # This comes from the Traveller Map DrawMicroBorders code
     _SplineTension = 0.6
 
@@ -107,10 +78,6 @@ class SectorCache(object):
         self._regionCache: typing.Dict[
             astronomer.SectorPosition,
             typing.List[SectorPath]
-        ] = {}
-        self._routeCache: typing.Dict[
-            astronomer.SectorPosition,
-            typing.List[SectorLines]
         ] = {}
         self._clipCache: typing.Dict[
             astronomer.SectorPosition,
@@ -183,89 +150,6 @@ class SectorCache(object):
         self._regionCache[sectorPos] = regions
         return regions
 
-    def routeLines(
-            self,
-            sectorPos: astronomer.SectorPosition
-            ) -> typing.Optional[typing.List[SectorLines]]:
-        routes = self._routeCache.get(sectorPos)
-        if routes is not None:
-            return routes
-
-        sector = self._universe.sectorByPosition(position=sectorPos)
-        if not sector:
-            # Don't cache the fact the sector doesn't exist to avoid memory bloat
-            return None
-
-        routePointsMap: typing.Dict[
-            typing.Tuple[
-                typing.Optional[str], # Colour
-                typing.Optional[float], # Width
-                typing.Optional[cartographer.LineStyle], # Line style
-                typing.Optional[str], # Type
-                typing.Optional[astronomer.Allegiance]], # Allegiance
-            typing.List[cartographer.PointF]] = {}
-        for route in sector.routes():
-            # Compute source/target sectors (may be offset)
-            startPoint = route.startHex()
-            endPoint = route.endHex()
-
-            # If drawing dashed lines twice and the start/end are swapped the
-            # dashes don't overlap correctly. So "sort" the points.
-            needsSwap = (startPoint.absoluteX() < endPoint.absoluteX()) or \
-                (startPoint.absoluteX() == endPoint.absoluteX() and \
-                    startPoint.absoluteY() < endPoint.absoluteY())
-            if needsSwap:
-                (startPoint, endPoint) = (endPoint, startPoint)
-
-            centerX, centerY = startPoint.worldCenter()
-            startPoint = cartographer.PointF(x=centerX, y=centerY)
-
-            centerX, centerY = endPoint.worldCenter()
-            endPoint = cartographer.PointF(x=centerX, y=centerY)
-
-            # Shorten line to leave room for world glyph
-            SectorCache._offsetRouteSegment(
-                startPoint=startPoint,
-                endPoint=endPoint,
-                offset=SectorCache._RouteEndAdjust)
-
-            routeKey = (route.colour(), route.width(), route.style(), route.routeType(), route.allegiance())
-            routePoints = routePointsMap.get(routeKey)
-            if not routePoints:
-                routePoints = []
-                routePointsMap[routeKey] = routePoints
-
-            routePoints.append(startPoint)
-            routePoints.append(endPoint)
-
-        routes = []
-        for (colour, width, style, type, allegiance), points in routePointsMap.items():
-            if allegiance:
-                if colour is None:
-                    colour = allegiance.routeColour()
-                if style is None:
-                    style = allegiance.routeStyle()
-                if width is None:
-                    width = allegiance.routeWidth()
-
-            if style is astronomer.LineStyle.Solid:
-                style = cartographer.LineStyle.Solid
-            elif style is astronomer.LineStyle.Dashed:
-                style = cartographer.LineStyle.Dash
-            elif style is astronomer.LineStyle.Dotted:
-                style = cartographer.LineStyle.Dot
-            else:
-                style = None
-
-            routes.append(SectorLines(
-                points=self._graphics.createPointList(points=points),
-                colour=colour,
-                width=width,
-                style=style))
-        self._routeCache[sectorPos] = routes
-
-        return routes
-
     def clipPath(
             self,
             sectorPos: astronomer.SectorPosition
@@ -329,7 +213,6 @@ class SectorCache(object):
         self._worldsCache.clear()
         self._borderCache.clear()
         self._regionCache.clear()
-        self._routeCache.clear()
         self._clipCache.clear()
 
     def _createOutline(
@@ -372,21 +255,3 @@ class SectorCache(object):
             closed=True)
 
         return SectorPath(path=path, spline=spline, colour=colour, style=style)
-
-    @staticmethod
-    def _offsetRouteSegment(
-            startPoint: cartographer.PointF,
-            endPoint: cartographer.PointF,
-            offset: float
-            ) -> None:
-        dx = (endPoint.x() - startPoint.x()) * astronomer.ParsecScaleX
-        dy = (endPoint.y() - startPoint.y()) * astronomer.ParsecScaleY
-        length = math.sqrt(dx * dx + dy * dy)
-        if not length:
-            return # No offset
-        ddx = (dx * offset / length) / astronomer.ParsecScaleX
-        ddy = (dy * offset / length) / astronomer.ParsecScaleY
-        startPoint.setX(startPoint.x() + ddx)
-        startPoint.setY(startPoint.y() + ddy)
-        endPoint.setX(endPoint.x() - ddx)
-        endPoint.setY(endPoint.y() - ddy)
