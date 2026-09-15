@@ -29,6 +29,7 @@ class Universe(object):
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
             routes: typing.Collection[astronomer.Route],
+            borders: typing.Collection[astronomer.Border],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.MapVector]
             ) -> None:
@@ -39,6 +40,7 @@ class Universe(object):
         common.validateCollection(name='sectors', value=sectors, elementType=astronomer.Sector)
         common.validateCollection(name='worlds', value=worlds, elementType=astronomer.World)
         common.validateCollection(name='routes', value=routes, elementType=astronomer.Route)
+        common.validateCollection(name='borders', value=borders, elementType=astronomer.Border)
         common.validateCollection(name='labels', value=labels, elementType=astronomer.MapLabel)
         common.validateCollection(name='vectors', value=vectors, elementType=astronomer.MapVector)
 
@@ -73,6 +75,10 @@ class Universe(object):
         self._hexPositionToRoutesMap: typing.Dict[typing.Tuple[int, int], typing.Set[astronomer.Route]] = {}
         for route in routes:
             self._addRoute(route=route)
+
+        self._borders: typing.Set[astronomer.Border] = set()
+        for border in borders:
+            self._addBorder(border=border)
 
         self._labels: typing.List[astronomer.MapLabel] = []
         for label in labels:
@@ -544,6 +550,9 @@ class Universe(object):
                     worlds.append(connectedWorld)
         return worlds
 
+    def borders(self) -> typing.Collection[astronomer.Border]:
+        return common.ConstCollectionRef(self._borders)
+
     def labels(self) -> typing.Collection[astronomer.MapLabel]:
         return common.ConstCollectionRef(self._labels)
 
@@ -701,6 +710,21 @@ class Universe(object):
                 endpoints = set()
                 self._hexPositionToRoutesMap[hex.absolute()] = endpoints
             endpoints.add(route)
+
+    def _removeRoute(self, route: astronomer.Route) -> None:
+        self._routes.discard(route)
+        self._idToEntityMap.pop(route.entityId(), None)
+
+        for hex in [route.startHex(), route.endHex()]:
+            endpoints = self._hexPositionToRoutesMap.get(hex.absolute())
+            if endpoints:
+                endpoints.discard(route)
+                if not endpoints:
+                    del self._hexPositionToRoutesMap[hex.absolute()]
+
+    def _addBorder(self, border: astronomer.Border) -> None:
+        self._borders.add(border)
+        self._idToEntityMap[border.entityId()] = border
 
     def _removeRoute(self, route: astronomer.Route) -> None:
         self._routes.discard(route)

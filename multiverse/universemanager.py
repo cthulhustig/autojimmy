@@ -139,9 +139,9 @@ class UniverseManager(object):
             taskCount = 2 # Load & Save
             taskWeight = 1 / taskCount
 
-        dbAllegiances = dbSophonts = dbSectors = dbSystems = dbRoutes = dbMapLabels = dbMapVectors = None
+        dbAllegiances = dbSophonts = dbSectors = dbSystems = dbRoutes = dbBorders = dbMapLabels = dbMapVectors = None
         if importTravellerMap:
-            dbAllegiances, dbSophonts, dbSectors, dbSystems, dbRoutes, dbMapLabels, dbMapVectors = \
+            dbAllegiances, dbSophonts, dbSectors, dbSystems, dbRoutes, dbBorders, dbMapLabels, dbMapVectors = \
                 self._loadStockUniverse(
                     milieu=milieu,
                     progress=progress.createChild(weight=taskWeight) if progress is not None else None,
@@ -167,6 +167,7 @@ class UniverseManager(object):
                 dbSectors=dbSectors,
                 dbSystems=dbSystems,
                 dbRoutes=dbRoutes,
+                dbBorders=dbBorders,
                 dbMapLabels=dbMapLabels,
                 dbMapVectors=dbMapVectors,
                 progress=progress.createChild(weight=taskWeight) if progress is not None else None)
@@ -348,6 +349,7 @@ class UniverseManager(object):
                 typing.List[multiverse.DbSector],
                 typing.List[multiverse.DbSystem],
                 typing.List[multiverse.DbRoute],
+                typing.List[multiverse.DbBorder],
                 typing.List[multiverse.DbMapLabel],
                 typing.List[multiverse.DbMapVector]]:
         if reporter:
@@ -436,7 +438,7 @@ class UniverseManager(object):
 
         localProgress = None
         if progress is not None:
-            steps = len(sectorNames) + 6 # + 6 for each of the convert steps
+            steps = len(sectorNames) + 7 # + 6 for each of the convert steps
             localProgress = progress.createChild(weight=1, steps=steps)
 
         rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.List[survey.RawWorld]]] = []
@@ -503,6 +505,13 @@ class UniverseManager(object):
         if localProgress is not None:
             localProgress.advance()
 
+        dbBorders = multiverse.convertRawBordersToDbBorders(
+            rawSectors=rawSectors,
+            allegianceMapper=allegianceMapper,
+            styleMapper=styleMapper)
+        if localProgress is not None:
+            localProgress.advance()
+
         dbMapLabels: typing.List[multiverse.DbMapLabel] = []
         dbMapLabels.extend(multiverse.convertRawLabelsToDbMapLabels(
             rawMegaLabels=rawMegaLabels,
@@ -533,6 +542,7 @@ class UniverseManager(object):
             dbSectors,
             dbSystems,
             dbRoutes,
+            dbBorders,
             dbMapLabels,
             dbMapVectors)
 
@@ -546,6 +556,7 @@ class UniverseManager(object):
             dbSectors: typing.Optional[typing.Collection[multiverse.DbSector]],
             dbSystems: typing.Optional[typing.Collection[multiverse.DbSystem]],
             dbRoutes: typing.Optional[typing.Collection[multiverse.DbRoute]],
+            dbBorders: typing.Optional[typing.Collection[multiverse.DbBorder]],
             dbMapLabels: typing.Optional[typing.Collection[multiverse.DbMapLabel]],
             dbMapVectors: typing.Optional[typing.Collection[multiverse.DbMapVector]],
             progress: typing.Optional[common.ProgressTracker] = None
@@ -562,6 +573,8 @@ class UniverseManager(object):
             objectCount += len(dbSystems)
         if dbRoutes:
             objectCount += len(dbRoutes)
+        if dbBorders:
+            objectCount += len(dbBorders)
         if dbMapLabels:
             objectCount += len(dbMapLabels)
         if dbMapVectors:
@@ -578,6 +591,8 @@ class UniverseManager(object):
             saveTasks.append((dbSystems, universeDb.saveSystems, len(dbSystems) / objectCount))
         if dbRoutes:
             saveTasks.append((dbRoutes, universeDb.saveRoutes, len(dbRoutes) / objectCount))
+        if dbBorders:
+            saveTasks.append((dbBorders, universeDb.saveBorders, len(dbBorders) / objectCount))
         if dbMapLabels:
             saveTasks.append((dbMapLabels, universeDb.saveMapLabels, len(dbMapLabels) / objectCount))
         if dbMapVectors:

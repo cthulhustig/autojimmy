@@ -12,6 +12,7 @@ class EntityFactoryInterface(object):
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
             routes: typing.Collection[astronomer.Route],
+            borders: typing.Collection[astronomer.Border],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.VectorLayer]
             ) -> astronomer.Universe:
@@ -51,7 +52,6 @@ class EntityFactoryInterface(object):
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
-            borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
             regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
             labels: typing.Optional[typing.Iterable[astronomer.SectorLabel]] = None,
             selected: bool = False,
@@ -174,6 +174,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             sectors: typing.Collection[astronomer.Sector],
             worlds: typing.Collection[astronomer.World],
             routes: typing.Collection[astronomer.Route],
+            borders: typing.Collection[astronomer.Border],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.MapVector]
             ) -> astronomer.Universe:
@@ -185,6 +186,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             sectors=sectors,
             worlds=worlds,
             routes=routes,
+            borders=borders,
             labels=labels,
             vectors=vectors)
 
@@ -236,7 +238,6 @@ class DefaultEntityFactory(EntityFactoryInterface):
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
-            borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
             regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
             labels: typing.Optional[typing.Iterable[astronomer.SectorLabel]] = None,
             selected: bool = False,
@@ -254,7 +255,6 @@ class DefaultEntityFactory(EntityFactoryInterface):
             abbreviation=abbreviation,
             sectorLabel=sectorLabel,
             subsectorNames=subsectorNames,
-            borders=borders,
             regions=regions,
             labels=labels,
             selected=selected,

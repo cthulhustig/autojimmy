@@ -43,6 +43,32 @@ def _validateWorldSpacePointElement(
     if not isinstance(value[1], (float, int)):
         raise TypeError(f'{name} element at index {index} y value must be a float')
 
+def _validateAbsoluteHexPath(
+        name: str,
+        value: typing.Optional[typing.Sequence[typing.Tuple[int, int]]]
+        ) -> typing.Optional[typing.Sequence[typing.Tuple[int, int]]]:
+    return common.validateSequence(
+        name=name,
+        value=value,
+        allowNone=False,
+        allowEmpty=False,
+        validationFn=lambda n, i, v: _validateHexTuple(n, i, v))
+
+@staticmethod
+def _validateHexTuple(
+        name: str,
+        index: int,
+        value: typing.Tuple[int, int]
+        ) -> None:
+    if len(value) != 2:
+        raise ValueError(f'{name} should contain tuples containing 2 integers')
+    common.validateInt(
+        name=f'{name}[{index}]\\X',
+        value=value[0])
+    common.validateInt(
+        name=f'{name}[{index}]\\Y',
+        value=value[1])
+
 class DbObject(object):
     def __init__(
             self,
@@ -1193,7 +1219,7 @@ class DbBorder(DbSectorObject):
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        survey.validateHexSequence(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
+        _validateAbsoluteHexPath(name='hexes', value=hexes)
         common.validateStr(name='allegianceId', value=allegianceId, allowNone=True, allowEmpty=False)
         survey.validateLineStyle(name='style', value=style, allowNone=True)
         survey.validateHtmlColour(name='colour', value=colour, allowNone=True)

@@ -426,10 +426,6 @@ class RenderBoundsCalculator(object):
         finally:
             self._selector.setObjects(None)
 
-    def clearCaches(self) -> None:
-        if self._renderer:
-            self._renderer.clearCaches()
-
     def _createRenderer(self) -> None:
         self._renderer = cartographer.RenderContext(
             universe=self._universe,

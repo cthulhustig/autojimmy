@@ -978,8 +978,6 @@ class MapWidget(QtWidgets.QWidget):
         self._updateView()
 
     def fullRedraw(self) -> None:
-        if self._renderer:
-            self._renderer.clearCaches()
         self._clearTileCache()
         self.update() # Force redraw
 

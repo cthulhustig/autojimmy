@@ -1,3 +1,4 @@
+from .utils import *
 from .snapshotmanager import *
 from .stockfiles import *
 from .dbobjects import *
@@ -7,5 +8,6 @@ from .universemanager import *
 from .stylemapper import *
 from .allegancemapper import *
 from .sophontmapper import *
+from .bordermerger import *
 from .convert import *
 from .customuniverse import *

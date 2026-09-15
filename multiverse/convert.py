@@ -1,4 +1,5 @@
 import common
+import enum
 import logging
 import math
 import multiverse
@@ -121,39 +122,6 @@ def _sectorWorldOffsetToHex(
     worldOffsetY = yBase - hexY
 
     return (hexX, hexY, worldOffsetX if worldOffsetX else None, worldOffsetY if worldOffsetY else None)
-
-_ReferenceSectorX = 0
-_ReferenceSectorY = 0
-_ReferenceHexX = 1
-_ReferenceHexY = 40
-_SectorWidth = 32
-_SectorHeight = 40
-def _sectorHexToWorldSpace(
-        sectorX: int,
-        sectorY: int,
-        hexX: int,
-        hexY: int
-        ) -> typing.Tuple[float, float]:
-    absX = (sectorX - _ReferenceSectorX) * \
-        _SectorWidth + \
-        (hexX - _ReferenceHexX)
-    absY = (sectorY - _ReferenceSectorY) * \
-        _SectorHeight + \
-        (hexY - _ReferenceHexY)
-    return (
-        absX - 0.5,
-        absY - (0.0 if ((absX % 2) != 0) else 0.5))
-
-def _relativeSpaceToAbsoluteSpace(
-        pos: typing.Tuple[int, int, int, int],
-        ) -> typing.Tuple[int, int]:
-    absoluteX = (pos[0] - _ReferenceSectorX) * \
-        _SectorWidth + \
-        (pos[2] - _ReferenceHexX)
-    absoluteY = (pos[1] - _ReferenceSectorY) * \
-        _SectorHeight + \
-        (pos[3] - _ReferenceHexY)
-    return (absoluteX, absoluteY)
 
 def _createDbAlternateNames(
         rawMetadata: survey.RawMetadata
@@ -858,7 +826,7 @@ def _createDbSystems(
         try:
             # TODO: The raw positions are in sector coordinates and need
             # converted to absolute coordinates for writing to the DB
-            dbHexX, dbHexY = _relativeSpaceToAbsoluteSpace(
+            dbHexX, dbHexY = multiverse.relativeSpaceToAbsoluteSpace(
                 (rawMetadata.x(), rawMetadata.y(), rawWorld.x(), rawWorld.y()))
             hexString = survey.formatHexString(x=dbHexX, y=dbHexY)
 
@@ -973,12 +941,12 @@ def _createDbRoutes(
                 logging.warning(f'Converter ignoring route with same start and end position ({rawRoute.startHexX()}, {rawRoute.startHexY()}) in {rawMetadata.canonicalName()}')
                 continue
 
-            dbStartHexX, dbStartHexY = _relativeSpaceToAbsoluteSpace((
+            dbStartHexX, dbStartHexY = multiverse.relativeSpaceToAbsoluteSpace((
                 rawMetadata.x() + (rawRoute.startOffsetX() if rawRoute.startOffsetX() else 0),
                 rawMetadata.y() + (rawRoute.startOffsetY() if rawRoute.startOffsetY() else 0),
                 rawRoute.startHexX(),
                 rawRoute.startHexY()))
-            dbEndHexX, dbEndHexY = _relativeSpaceToAbsoluteSpace((
+            dbEndHexX, dbEndHexY = multiverse.relativeSpaceToAbsoluteSpace((
                 rawMetadata.x() + (rawRoute.endOffsetX() if rawRoute.endOffsetX() else 0),
                 rawMetadata.y() + (rawRoute.endOffsetY() if rawRoute.endOffsetY() else 0),
                 rawRoute.endHexX(),
@@ -1056,21 +1024,20 @@ def _createDbRoutes(
                     # to its allegiance
                     tag=rawAllegianceCode)
 
-                # If the style for this route is not the default style for its allegiance,
-                # we need to explicitly specify it as the route style
-                if dbAllegianceColour == dbAllegiance.routeColour():
-                    dbAllegianceColour = None
-                if dbAllegianceStyle == dbAllegiance.routeStyle():
-                    dbAllegianceStyle = None
-                if dbAllegianceWidth == dbAllegiance.routeWidth():
-                    dbAllegianceWidth = None
-
                 if dbColour is None:
                     dbColour = dbAllegianceColour
                 if dbStyle is None:
                     dbStyle = dbAllegianceStyle
                 if dbWidth is None:
                     dbWidth = dbAllegianceWidth
+
+                # Only set the route style attributes if they differ from the allegiance attributes.
+                if dbColour == dbAllegiance.routeColour():
+                    dbColour = None
+                if dbStyle == dbAllegiance.routeStyle():
+                    dbStyle = None
+                if dbWidth == dbAllegiance.routeWidth():
+                    dbWidth = None
 
             # TODO: Usually hex range from 1-32 in X and 1-40 in Y. For some reason the
             # metadata spec says route start ends can be in the range 0-33 and 0-41. This
@@ -1104,10 +1071,13 @@ def _createDbBorders(
 
     if rawMetadata.borders():
         for rawBorder in rawMetadata.borders():
-            dbHexes = rawBorder.hexes()
-            if not dbHexes:
+            rawHexes = rawBorder.hexes()
+            if not rawHexes:
                 logging.warning(f'Converter ignoring border with empty hex list in {rawMetadata.canonicalName()}')
                 continue
+            dbHexes = []
+            for offsetX, offsetY in rawHexes:
+                dbHexes.append(multiverse.relativeSpaceToAbsoluteSpace((rawMetadata.x(), rawMetadata.y(), offsetX, offsetY)))
 
             rawAllegianceCode = rawBorder.allegianceCode()
             dbAllegiance = None
@@ -1161,17 +1131,16 @@ def _createDbBorders(
                     rawMetadata=rawMetadata,
                     tag=rawAllegianceCode)
 
-                # If the style for this border is not the default style for its allegiance,
-                # we need to explicitly specify it as the border style
-                if dbAllegianceColour == dbAllegiance.borderColour():
-                    dbAllegianceColour = None
-                if dbAllegianceStyle == dbAllegiance.borderStyle():
-                    dbAllegianceStyle = None
-
                 if dbColour is None:
                     dbColour = dbAllegianceColour
                 if dbStyle is None:
                     dbStyle = dbAllegianceStyle
+
+                # Only set the border style attributes if they differ from the allegiance attributes.
+                if dbColour == dbAllegiance.borderColour():
+                    dbColour = None
+                if dbStyle == dbAllegiance.borderStyle():
+                    dbStyle = None
 
             rawLabel = rawBorder.label()
             dbLabel = rawLabel if rawLabel else None
@@ -1888,7 +1857,7 @@ def convertRawLabelsToDbMapLabels(
                 # TODO: Log this or write to reporter
                 continue
 
-            worldX, worldY = _sectorHexToWorldSpace(
+            worldX, worldY = multiverse.sectorHexToWorldSpace(
                 sectorX=sectorInfo.x(),
                 sectorY=sectorInfo.y(),
                 hexX=rawLabel.hexX(),
@@ -2238,3 +2207,25 @@ def convertRawRoutesToDbRoutes(
             styleMapper=styleMapper))
 
     return dbRoutes
+
+def convertRawBordersToDbBorders(
+        rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.Collection[survey.RawWorld]]],
+        allegianceMapper: multiverse.AllegianceMapper,
+        styleMapper: multiverse.StyleMapper
+        ) -> typing.List[multiverse.DbBorder]:
+    sectorPosToDbBorders: typing.Dict[
+        typing.Tuple[int, int],
+        typing.List[multiverse.DbBorder]
+        ] = {}
+    for rawMetadata, _ in rawSectors:
+        rawBorders = rawMetadata.borders()
+        if not rawBorders:
+            continue
+
+        sectorPosToDbBorders[(rawMetadata.x(), rawMetadata.y())] = _createDbBorders(
+            rawMetadata=rawMetadata,
+            allegianceMapper=allegianceMapper,
+            styleMapper=styleMapper)
+
+    idToAllegiance = {a.id(): a for a in allegianceMapper.listAllegiances()}
+    return multiverse.mergeBorders(borders=sectorPosToDbBorders, allegiances=idToAllegiance)

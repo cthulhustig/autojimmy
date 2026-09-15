@@ -632,10 +632,8 @@ def _createAstronomerBorders(
             hexes = []
             for hexX, hexY in dbBorder.hexes():
                 hexes.append(astronomer.HexPosition(
-                    sectorX=dbSector.sectorX(),
-                    sectorY=dbSector.sectorY(),
-                    offsetX=hexX,
-                    offsetY=hexY))
+                    absoluteX=hexX,
+                    absoluteY=hexY))
 
             colour = dbBorder.colour()
             if colour is not None:
@@ -863,9 +861,6 @@ def _createAstronomerProducts(
 def convertDbSectorsToAstronomerSectors(
         dbSectors: typing.Collection[multiverse.DbSector],
         entityFactory: astronomer.EntityFactoryInterface,
-        # TODO: When I've finished moving stuff to the universe I don't think I should
-        # need to pass the allegiances into this function
-        astroAllegiances: typing.Optional[typing.Collection[astronomer.Allegiance]] = None,
         progress: typing.Optional[common.ProgressTracker] = None
         ) -> typing.List[astronomer.Sector]:
     if not dbSectors:
@@ -882,7 +877,6 @@ def convertDbSectorsToAstronomerSectors(
             weight=1,
             steps=math.ceil(objectCount / chunkSize))
 
-    dbIdToAstroAllegianceMap = {a.entityId(): a for a in astroAllegiances} if astroAllegiances is not None else {}
     astroSectors = []
     for chunkStart in range(0, objectCount, chunkSize):
         for dbSector in itertools.islice(dbSectors, chunkStart, chunkStart + chunkSize):
@@ -901,12 +895,6 @@ def convertDbSectorsToAstronomerSectors(
                 astroNameLanguages = _createAstronomerNameLanguages(dbSector=dbSector)
 
                 astroSubsectorNames = _createAstronomerSubsectorNames(dbSector=dbSector)
-
-                astroBorders = _createAstronomerBorders(
-                    dbSector=dbSector,
-                    entityFactory=entityFactory,
-                    sectorLogName=sectorLogName,
-                    dbIdToAstroAllegianceMap=dbIdToAstroAllegianceMap)
 
                 astroRegions = _createAstronomerRegions(
                     dbSector=dbSector,
@@ -939,7 +927,6 @@ def convertDbSectorsToAstronomerSectors(
                     abbreviation=dbSector.abbreviation(),
                     sectorLabel=dbSector.sectorLabel(),
                     subsectorNames=astroSubsectorNames,
-                    borders=astroBorders,
                     regions=astroRegions,
                     labels=astroLabels,
                     selected=dbSector.selected(),
@@ -1548,6 +1535,52 @@ def convertDbRoutesToAstronomerRoutes(
             localProgress.advance()
 
     return astroRoutes
+
+def convertDbBordersToAstronomerBorders(
+        dbBorders: typing.Collection[multiverse.DbBorder],
+        entityFactory: astronomer.EntityFactoryInterface,
+        astroAllegiances: typing.Optional[typing.Collection[astronomer.Allegiance]] = None,
+        progress: typing.Optional[common.ProgressTracker] = None
+        ) -> typing.List[astronomer.MapLabel]:
+    if not dbBorders:
+        if progress is not None:
+            progress.complete()
+        return []
+
+    objectCount = len(dbBorders)
+    chunkSize = objectCount
+    localProgress = None
+    if progress is not None:
+        chunkSize = _ProgressChunkSize
+        localProgress = progress.createChild(
+            weight=1,
+            steps=math.ceil(objectCount / chunkSize))
+
+    dbIdToAstroAllegianceMap = {a.entityId(): a for a in astroAllegiances} if astroAllegiances is not None else {}
+    astroBorders = []
+    for chunkStart in range(0, objectCount, chunkSize):
+        for dbBorder in itertools.islice(dbBorders, chunkStart, chunkStart + chunkSize):
+            try:
+                astroBorders.append(entityFactory.createBorder(
+                    entityId=dbBorder.id(),
+                    hexes=[astronomer.HexPosition(absoluteX=x, absoluteY=y) for x, y in dbBorder.hexes()],
+                    allegiance=dbIdToAstroAllegianceMap.get(dbBorder.allegianceId()),
+                    style=_mapDbLineStyleToAstronomerLineStyle(dbBorder.style()),
+                    colour=dbBorder.colour(),
+                    label=dbBorder.label(),
+                    labelWorldX=dbBorder.labelWorldX(),
+                    labelWorldY=dbBorder.labelWorldY(),
+                    showLabel=dbBorder.showLabel(),
+                    wrapLabel=dbBorder.wrapLabel()))
+            except Exception as ex:
+                logging.warning('Failed to convert database border {id!r} to astro border'.format(
+                        id=dbBorder.id()),
+                    exc_info=ex)
+
+        if localProgress is not None:
+            localProgress.advance()
+
+    return astroBorders
 
 def convertDbMapLabelsToAstronomerMapLabels(
         dbLabels: typing.Collection[multiverse.DbMapLabel],

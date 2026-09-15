@@ -25,6 +25,7 @@ class _Loader(object):
         self._sectors = []
         self._worlds = []
         self._routes = []
+        self._borders = []
         self._mapLabels = []
         self._mapVectors = []
 
@@ -64,7 +65,6 @@ class _Loader(object):
             progress=progress.createChild(weight=0.5))
         self._sectors = astronomer.convertDbSectorsToAstronomerSectors(
             dbSectors=dbSectors,
-            astroAllegiances=self._allegiances,
             entityFactory=self._entityFactory,
             progress=progress.createChild(weight=0.5))
 
@@ -93,6 +93,20 @@ class _Loader(object):
             progress=progress.createChild(weight=0.5))
         self._routes = astronomer.convertDbRoutesToAstronomerRoutes(
             dbRoutes=dbRoutes,
+            astroAllegiances=self._allegiances,
+            entityFactory=self._entityFactory,
+            progress=progress.createChild(weight=0.5))
+
+    def loadBorders(
+            self,
+            transaction: database.Transaction,
+            progress: typing.Optional[common.ProgressTracker]
+            ) -> None:
+        dbBorders = self._universeDb.loadBorders(
+            transaction=transaction,
+            progress=progress.createChild(weight=0.5))
+        self._borders = astronomer.convertDbBordersToAstronomerBorders(
+            dbBorders=dbBorders,
             astroAllegiances=self._allegiances,
             entityFactory=self._entityFactory,
             progress=progress.createChild(weight=0.5))
@@ -132,6 +146,7 @@ class _Loader(object):
         logging.debug('Sectors: {count}'.format(count=len(self._sectors)))
         logging.debug('Systems: {count}'.format(count=len(self._worlds)))
         logging.debug('Routes: {count}'.format(count=len(self._routes)))
+        logging.debug('Borders: {count}'.format(count=len(self._borders)))
         logging.debug('Map Labels: {count}'.format(count=len(self._mapLabels)))
         logging.debug('Map Vectors: {count}'.format(count=len(self._mapVectors)))
 
@@ -143,6 +158,7 @@ class _Loader(object):
             sectors=self._sectors,
             worlds=self._worlds,
             routes=self._routes,
+            borders=self._borders,
             labels=self._mapLabels,
             vectors=self._mapVectors)
 
@@ -178,9 +194,10 @@ def loadUniverseFromDatabase(
         sectorCount = universeDb.countSectors(transaction=transaction)
         systemCount = universeDb.countSystems(transaction=transaction)
         routeCount = universeDb.countRoutes(transaction=transaction)
+        borderCount = universeDb.countBorders(transaction=transaction)
         mapLabelCount = universeDb.countMapLabels(transaction=transaction)
         mapVectorCount = universeDb.countMapVectors(transaction=transaction)
-        objectCount = allegianceCount + sophontCount + sectorCount + systemCount + routeCount + mapLabelCount + mapVectorCount
+        objectCount = allegianceCount + sophontCount + sectorCount + systemCount + routeCount + borderCount + mapLabelCount + mapVectorCount
 
         loader = _Loader(
             universeId=universeId,
@@ -200,6 +217,8 @@ def loadUniverseFromDatabase(
                 tasks.append((loader.loadWorlds, systemCount / objectCount))
             if routeCount:
                 tasks.append((loader.loadRoutes, routeCount / objectCount))
+            if borderCount:
+                tasks.append((loader.loadBorders, borderCount / objectCount))
             if mapLabelCount:
                 tasks.append((loader.loadMapLabels, mapLabelCount / objectCount))
             if mapVectorCount:

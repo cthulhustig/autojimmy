@@ -67,6 +67,7 @@ class SectorCache(object):
             ) -> None:
         self._universe = universe
         self._graphics = graphics
+        # TODO: This needs to register for updates and regenerate the cached world points
         self._worldsCache: typing.Dict[
             astronomer.SectorPosition,
             cartographer.AbstractPointList
@@ -111,25 +112,6 @@ class SectorCache(object):
         worlds = self._graphics.createPointList(points=points) if points else None
         self._worldsCache[sectorPos] = worlds
         return worlds
-
-    def borderPaths(
-            self,
-            sectorPos: astronomer.SectorPosition
-            ) -> typing.Optional[typing.List[SectorPath]]:
-        borders = self._borderCache.get(sectorPos)
-        if borders is not None:
-            return borders
-
-        sector = self._universe.sectorByPosition(position=sectorPos)
-        if not sector:
-            # Don't cache the fact the sector doesn't exist to avoid memory bloat
-            return None
-
-        borders = []
-        for border in sector.borders():
-            borders.append(self._createOutline(source=border))
-        self._borderCache[sectorPos] = borders
-        return borders
 
     def regionPaths(
             self,

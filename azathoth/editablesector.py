@@ -13,7 +13,6 @@ class EditableSector(astronomer.Sector):
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
-            borders: typing.Optional[typing.Iterable[astronomer.Border]] = None,
             regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
             labels: typing.Optional[typing.Iterable[astronomer.SectorLabel]] = None,
             selected: bool = False,
@@ -31,7 +30,6 @@ class EditableSector(astronomer.Sector):
             abbreviation=abbreviation,
             sectorLabel=sectorLabel,
             subsectorNames=subsectorNames,
-            borders=borders,
             regions=regions,
             labels=labels,
             selected=selected,
@@ -39,10 +37,6 @@ class EditableSector(astronomer.Sector):
             credits=credits,
             source=source,
             products=products)
-
-        for border in self._borders:
-            assert(isinstance(border, azathoth.EditableBorder))
-            border.setSectorId(sectorId=self._entityId)
 
         for regions in self._regions:
             assert(isinstance(regions, azathoth.EditableRegion))

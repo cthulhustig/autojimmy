@@ -132,6 +132,9 @@ class RenderContext(object):
             capacity=RenderContext._WorldCacheCapacity)
         self._routeCache = cartographer.RouteCache(
             universe=self._universe)
+        self._borderCache = cartographer.BorderCache(
+            universe=self._universe,
+            graphics=self._graphics)
         self._vectorCache = cartographer.VectorCache(
             universe=self._universe,
             graphics=self._graphics)
@@ -231,7 +234,13 @@ class RenderContext(object):
         self._selector.clearCaches()
         self._sectorCache.clear()
         self._worldCache.clear()
-        self._routeCache.clear()
+        # TODO: I've disabled clearing the route and border caches as the only
+        # reason the caches are being cleared is because the universe has changed
+        # but these caches handle universe updates themselves. I think the other
+        # caches should be updated to do the same then this whole function can be
+        # removed
+        #self._routeCache.clear()
+        #self._borderCache.clear()
         self._gridCache.clear()
         self._starfieldCache.clear()
 
@@ -782,6 +791,8 @@ class RenderContext(object):
                 sectorPos = sector.position()
                 sectorWorldOriginX, sectorWorldOriginY, _, _ = sectorPos.worldBounds()
 
+                # TODO: Update drawing border labels
+                """
                 for border in sector.borders():
                     if not border.showLabel():
                         continue
@@ -809,6 +820,7 @@ class RenderContext(object):
                         font=self._styleSheet.microBorders.font,
                         brush=brush,
                         labelStyle=self._styleSheet.microBorders.textStyle)
+                """
 
                 for region in sector.regions():
                     if not region.showLabel():
@@ -1844,6 +1856,42 @@ class RenderContext(object):
             drawRegions = False
             drawBorders = True
 
+        if drawBorders:
+            borders = self._borderCache.bordersInArea(bounds=self._worldViewRect)
+            with self._graphics.save():
+                useBrush = layer is RenderContext.MicroBorderLayer.Background and \
+                    self._styleSheet.fillMicroBorders
+                usePen = pen is not None
+
+                if useBrush or usePen:
+                    for border in borders:
+                        colour = self._calculateBorderColour(border)
+
+                        if useBrush:
+                            brush.setColour(cartographer.makeAlphaColour(
+                                alpha=RenderContext._MicroBorderFillAlpha,
+                                colour=colour))
+
+                        if usePen:
+                            if layer is RenderContext.MicroBorderLayer.Background:
+                                pen.setColour(cartographer.makeAlphaColour(
+                                    alpha=RenderContext._MicroBorderShadeAlpha,
+                                    colour=colour))
+                            else:
+                                pen.setColour(colour)
+
+                                style = self._styleSheet.microBorders.linePen.style()
+                                if style is cartographer.LineStyle.Solid:
+                                    style = border.style()
+                                    if not style:
+                                        style = cartographer.LineStyle.Solid
+                                pen.setStyle(style)
+
+                        self._drawMicroBorder(
+                            outline=border,
+                            brush=brush if useBrush else None,
+                            pen=pen if usePen else None)
+
         for sector in self._selector.sectors():
             sectorClipPath = self._sectorCache.clipPath(
                 sectorPos=sector.position())
@@ -1908,66 +1956,13 @@ class RenderContext(object):
                     if self._worldViewRect.intersects(outlineBounds):
                         regionOutlines.append(outline)
 
-            sectorBorders = self._sectorCache.borderPaths(
-                sectorPos=sector.position())
-            borderOutlines: typing.List[cartographer.SectorPath] = []
-            if sectorBorders and drawBorders:
-                for outline in sectorBorders:
-                    outlineBounds = \
-                        outline.spline().bounds() \
-                        if drawCurvedBorders else \
-                        outline.path().bounds()
-                    if self._worldViewRect.intersects(outlineBounds):
-                        borderOutlines.append(outline)
-
-            if not regionOutlines and not borderOutlines:
+            if not regionOutlines:
                 continue
-
-            if layer is RenderContext.MicroBorderLayer.Background and \
-                    borderOutlines and self._styleSheet.fillMicroBorders and \
-                    drawCurvedBorders:
-                # When drawing filled curved borders the clipping of the fill
-                # needs to be handled separately from border pen/shade and
-                # regions. This is required due to the kind of hacky way
-                # drawing filled borders are handled in Traveller Map. Rather
-                # than there being a single polygon covering multiple sectors,
-                # each sector has polygons for their portion of the area covered
-                # by the border. The problem is that in some cases (e.g. Core)
-                # the polygon for that sector extends outside area of that
-                # sector. This is problematic if you have to draw two sectors
-                # like this next to each other as the regions where the borders
-                # overlap are drawn darker. To work around this we clip border
-                # fills to the sector outline, this is the same way Traveller
-                # Map works around the issue. My code is slightly different as
-                # rather than having regions, border fills, border shades
-                # and border strokes as 4 render passes, I combine them into
-                # just 2 to reduce the number of times the sector clip path is
-                # applied to the graphics as it's a relatively costly operation
-                with self._graphics.save():
-                    self._graphics.intersectClipPath(path=sectorClipPath)
-
-                    for outline in borderOutlines:
-                        colour = self._calculateBorderColour(outline)
-                        brush.setColour(cartographer.makeAlphaColour(
-                            alpha=RenderContext._MicroBorderFillAlpha,
-                            colour=colour))
-                        self._drawMicroBorder(
-                            outline=outline,
-                            brush=brush)
 
             with self._graphics.save():
                 useBrush = layer is RenderContext.MicroBorderLayer.Background and \
                     self._styleSheet.fillMicroBorders and not drawCurvedBorders
                 usePen = pen is not None
-
-                # Clip the drawing to the sector. When drawing curved borders
-                # a slightly expanded clip rect is used rather than the
-                # exact sector hex outline as curved borders draw slightly
-                # outside the sectors true area
-                if not drawCurvedBorders:
-                    self._graphics.intersectClipPath(path=sectorClipPath)
-                else:
-                    self._graphics.intersectClipRect(rect=sectorClipRect)
 
                 for outline in regionOutlines:
                     colour = self._calculateBorderColour(outline)
@@ -1979,37 +1974,9 @@ class RenderContext(object):
                         outline=outline,
                         brush=brush)
 
-                if useBrush or usePen:
-                    for outline in borderOutlines:
-                        colour = self._calculateBorderColour(outline)
 
-                        if useBrush:
-                            brush.setColour(cartographer.makeAlphaColour(
-                                alpha=RenderContext._MicroBorderFillAlpha,
-                                colour=colour))
-
-                        if usePen:
-                            if layer is RenderContext.MicroBorderLayer.Background:
-                                pen.setColour(cartographer.makeAlphaColour(
-                                    alpha=RenderContext._MicroBorderShadeAlpha,
-                                    colour=colour))
-                            else:
-                                pen.setColour(colour)
-
-                                style = self._styleSheet.microBorders.linePen.style()
-                                if style is cartographer.LineStyle.Solid:
-                                    style = outline.style()
-                                    if not style:
-                                        style = cartographer.LineStyle.Solid
-                                pen.setStyle(style)
-
-                        self._drawMicroBorder(
-                            outline=outline,
-                            brush=brush if useBrush else None,
-                            pen=pen if usePen else None)
-
-    def _calculateBorderColour(self, outline: cartographer.SectorPath) -> str:
-        colour = outline.colour()
+    def _calculateBorderColour(self, border: cartographer.BorderInfo) -> str:
+        colour = border.colour()
         if not colour:
             colour = self._styleSheet.microRoutes.linePen.colour()
 
@@ -2021,7 +1988,9 @@ class RenderContext(object):
 
     def _drawMicroBorder(
             self,
-            outline: cartographer.SectorPath,
+            # TODO: The fact this can be one of two different types is a bodge that shouldn't be
+            # needed by the time I've moved regions to the universe level
+            outline: typing.Union[cartographer.BorderInfo, cartographer.SectorPath],
             brush: typing.Optional[cartographer.AbstractBrush] = None,
             pen: typing.Optional[cartographer.AbstractPen] = None
             ) -> None:

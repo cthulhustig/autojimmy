@@ -889,6 +889,72 @@ class UniverseDb(object):
                     cursor=connection.cursor(),
                     routeIds=routeIds)
 
+    def countBorders(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> int:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._countBorders(cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._countBorders(cursor=connection.cursor())
+
+    def loadBorders(
+            self,
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[multiverse.DbBorder]:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._loadBorders(
+                cursor=connection.cursor(),
+                progress=progress)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._loadBorders(
+                    cursor=connection.cursor(),
+                    progress=progress)
+
+    def saveBorders(
+            self,
+            borders: typing.Collection[multiverse.DbBorder],
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> None:
+        if transaction != None:
+            connection = transaction.connection()
+            self._saveBorders(
+                cursor=connection.cursor(),
+                borders=borders,
+                progress=progress)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                self._saveBorders(
+                    cursor=connection.cursor(),
+                    borders=borders,
+                    progress=progress)
+
+    def deleteBorders(
+            self,
+            borderIds: typing.Collection[str],
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        if transaction != None:
+            connection = transaction.connection()
+            self._deleteBorders(
+                cursor=connection.cursor(),
+                routeIds=borderIds)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                self._deleteBorders(
+                    cursor=connection.cursor(),
+                    routeIds=borderIds)
+
     def countMapLabels(
             self,
             transaction: typing.Optional[database.Transaction] = None
@@ -2104,7 +2170,6 @@ class UniverseDb(object):
                 SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSectorLabel], parentColumnName='sector_id', initParam='labels'),
                 SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbTag], parentColumnName='sector_id', initParam='tags'),
                 SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbProduct], parentColumnName='sector_id', initParam='products'),
-                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbBorder], parentColumnName='sector_id', initParam='borders'),
                 SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbRegion], parentColumnName='sector_id', initParam='regions')])
 
     def _countSectors(
@@ -2757,9 +2822,6 @@ class UniverseDb(object):
             requiredSchemaVersion=UniverseDb._BordersTableSchema,
             columns=[
                 database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
                 database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
                             foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
                             foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
@@ -2784,7 +2846,6 @@ class UniverseDb(object):
                 database.ColumnDef(columnName='border_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
                             foreignTableName=UniverseDb._BordersTableName, foreignColumnName='id',
                             foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                # TODO: These hexes should be converted to absolute space hex as part of the changes to move things to the universe label
                 database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                 database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
 
@@ -2796,7 +2857,6 @@ class UniverseDb(object):
             objectType=multiverse.DbBorder,
             parameters=[
                 ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
                 SubTableParameterMapping(table=hexesMapping, parentColumnName='border_id', initParam='hexes'),
                 ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, paramName='allegianceId'),
                 ColumnParameterMapping(columnName='style', paramType=ColumnParameterMapping.ParamType.String, paramName='style'),
@@ -2827,7 +2887,7 @@ class UniverseDb(object):
             tableMapping=self._objectTypeToTableMapping[multiverse.DbBorder],
             progress=progress)
 
-    def _insertBorders(
+    def _saveBorders(
             self,
             cursor: sqlite3.Cursor,
             borders: typing.Collection[multiverse.DbBorder],
