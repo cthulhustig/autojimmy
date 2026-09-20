@@ -138,37 +138,42 @@ class BorderCache(object):
     def _createBorderInfo(
             self,
             border: astronomer.Border
-            ) -> BorderInfo:
-        colour = border.colour()
-        style = border.style()
+            ) -> typing.Optional[BorderInfo]:
+        try:
+            colour = border.colour()
+            style = border.style()
 
-        allegiance = border.allegiance()
-        if allegiance:
-            if colour is None:
-                colour = allegiance.borderColour()
-            if style is None:
-                style = allegiance.borderStyle()
+            allegiance = border.allegiance()
+            if allegiance:
+                if colour is None:
+                    colour = allegiance.borderColour()
+                if style is None:
+                    style = allegiance.borderStyle()
 
-        if style is astronomer.LineStyle.Solid:
-            style = cartographer.LineStyle.Solid
-        elif style is astronomer.LineStyle.Dashed:
-            style = cartographer.LineStyle.Dash
-        elif style is astronomer.LineStyle.Dotted:
-            style = cartographer.LineStyle.Dot
-        else:
-            style = None
+            if style is astronomer.LineStyle.Solid:
+                style = cartographer.LineStyle.Solid
+            elif style is astronomer.LineStyle.Dashed:
+                style = cartographer.LineStyle.Dash
+            elif style is astronomer.LineStyle.Dotted:
+                style = cartographer.LineStyle.Dot
+            else:
+                style = None
 
-        outline = border.worldOutline()
-        drawPath = []
-        for x, y in outline:
-            drawPath.append(cartographer.PointF(x=x, y=y))
+            outline = border.worldOutline2()
+            drawPath = []
+            for x, y in outline:
+                drawPath.append(cartographer.PointF(x=x, y=y))
 
-        path = self._graphics.createPath(
-            points=drawPath,
-            closed=True)
-        spline = self._graphics.createSpline(
-            points=drawPath,
-            tension=BorderCache._SplineTension,
-            closed=True)
+            path = self._graphics.createPath(
+                points=drawPath,
+                closed=True)
+            spline = self._graphics.createSpline(
+                points=drawPath,
+                tension=BorderCache._SplineTension,
+                closed=True)
 
-        return BorderInfo(path=path, spline=spline, colour=colour, style=style)
+            return BorderInfo(path=path, spline=spline, colour=colour, style=style)
+        except Exception as ex:
+            # TODO: Log something
+            print(str(ex))
+            return None

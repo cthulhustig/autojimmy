@@ -42,7 +42,7 @@ class Region(astronomer.Entity):
             ) -> None:
         super().__init__(entityId=entityId)
 
-        common.validateSequence(name='hexes', value=hexes, elementType=astronomer.HexPosition)
+        common.validateSequence(name='hexes', value=hexes, elementType=astronomer.HexPosition, allowEmpty=False)
         survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
         common.validateStr(name='label', value=label, allowEmpty=False, allowNone=True)
         common.validateFloat(name='labelWorldX', value=labelWorldX, allowNone=True)
@@ -81,6 +81,65 @@ class Region(astronomer.Entity):
     def wrapLabel(self) -> bool:
         return self._wrapLabel
 
+    # TODO: Rename this and get rid of the old version once I've moved regions to the universe
+    def worldOutline2(self) -> typing.Iterable[typing.Tuple[float, float]]:
+        if self._outline is not None:
+            return self._outline
+
+        self._outline = []
+
+        hexCount = len(self._hexes)
+        if hexCount > 1 and self._hexes[0] == self._hexes[-1]:
+            # Ignore the last hex if it's just looping back to the original hex
+            # as the algorithm does that automatically
+            hexCount -= 1
+
+        if hexCount == 1:
+            # This is a single hex on it's own
+            centerX, centerY = self._hexes[0].worldCenter()
+            for offsetX, offsetY in Region._HexOutlineOffsets:
+                self._outline.append((centerX + offsetX, centerY + offsetY))
+            return self._outline
+
+        uniqueHexes = set(self._hexes)
+        if astronomer.HexPosition(118, 29) in uniqueHexes:
+            pass # TODO: Remove debug code
+
+        startHex = self._hexes[0]
+        finishHex = self._hexes[hexCount - 1]
+
+        startEdge = startHex.connectingEdge(finishHex)
+        if startEdge is None:
+            # TODO: Not sure what to do here. Probably need checks somewhere
+            # that stops invalid hex lists getting this far
+            print(f'({startHex}) ({finishHex})') # TODO: Remove debug code
+            raise RuntimeError('Route hex list doesn\'t loop')
+        startEdge = astronomer.clockwiseHexEdge(startEdge)
+
+        for index in range(hexCount):
+            currentHex = self._hexes[index]
+            nextHex = self._hexes[(index + 1) % hexCount]
+            if currentHex == nextHex:
+                continue # Skip runs of the same hex
+
+            connectingEdge = currentHex.connectingEdge(nextHex)
+            if connectingEdge is None:
+                # TODO Not sure what to do here
+                #raise RuntimeError('Route hex list is not contiguous')
+                continue
+
+            edge = startEdge
+            while True:
+                if edge == connectingEdge:
+                    break
+                self._outline.append(Region._mostAntiClockwisePoint(hex=currentHex, edge=edge))
+                edge = astronomer.clockwiseHexEdge(edge=edge)
+
+            startEdge = astronomer.clockwiseHexEdge(
+                astronomer.oppositeHexEdge(connectingEdge))
+
+        return self._outline
+
     def worldOutline(self) -> typing.Iterable[typing.Tuple[float, float]]:
         if self._outline is not None:
             return self._outline
@@ -111,7 +170,7 @@ class Region(astronomer.Entity):
                 self._outline.append(Region._mostAntiClockwisePoint(
                     hex=hex,
                     edge=edge))
-                edge = astronomer.anticlockwiseHexEdge(edge)
+                edge = astronomer.clockwiseHexEdge(edge)
 
             if adjacentHex == startHex and edge == startEdge:
                 # Finished this outline

@@ -88,7 +88,7 @@ _OppositeHexEdgeTransitions = {
     HexEdge.TopLeft: HexEdge.BottomRight
 }
 
-_ClockwiseHexEdgeTransitions = {
+_AnticlockwiseHexEdgeTransitions = {
     HexEdge.Top: HexEdge.TopLeft,
     HexEdge.TopRight: HexEdge.Top,
     HexEdge.BottomRight: HexEdge.TopRight,
@@ -97,7 +97,7 @@ _ClockwiseHexEdgeTransitions = {
     HexEdge.TopLeft: HexEdge.BottomLeft
 }
 
-_AnticlockwiseHexEdgeTransitions = {
+_ClockwiseHexEdgeTransitions = {
     HexEdge.Top: HexEdge.TopRight,
     HexEdge.TopRight: HexEdge.BottomRight,
     HexEdge.BottomRight: HexEdge.Bottom,
@@ -447,6 +447,33 @@ class HexPosition(object):
                 sectorY += 1
 
             return HexPosition(sectorX, sectorY, hexX, hexY)
+
+    def connectingEdge(self, other: 'HexPosition') -> typing.Optional[HexEdge]:
+        selfX, selfY = self.absolute()
+        otherX, otherY = other.absolute()
+
+        deltaX = otherX - selfX
+        deltaY = otherY - selfY
+
+        if deltaX == 0:
+            if deltaY == -1:
+                return HexEdge.Top
+            elif deltaY == 1:
+                return HexEdge.Bottom
+
+        elif deltaX == 1:
+            if deltaY == (0 if selfX % 2 else -1):
+                return HexEdge.TopRight
+            elif deltaY == (1 if selfX % 2 else 0):
+                return HexEdge.BottomRight
+
+        elif deltaX == -1:
+            if deltaY == (0 if selfX % 2 else -1):
+                return HexEdge.TopLeft
+            elif deltaY == (1 if selfX % 2 else 0):
+                return HexEdge.BottomLeft
+
+        return None
 
     def radiusHexes(
             self,

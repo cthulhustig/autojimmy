@@ -131,7 +131,7 @@ def calculateOuterHexOutlines(
                 border.append(_antiClockwisePoint(
                     hex=hex,
                     edge=edge))
-                edge = astronomer.anticlockwiseHexEdge(edge)
+                edge = astronomer.clockwiseHexEdge(edge)
 
             if adjacentHex == startHex and edge == startEdge:
                 # Finished this outline
@@ -205,7 +205,7 @@ def calculateCompleteHexOutlines(
                 border.append(_antiClockwisePoint(
                     hex=hex,
                     edge=edge))
-                edge = astronomer.anticlockwiseHexEdge(edge)
+                edge = astronomer.clockwiseHexEdge(edge)
 
             if hex == startHex and edge == startEdge:
                 # Finished this outline
