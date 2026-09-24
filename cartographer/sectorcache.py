@@ -223,7 +223,7 @@ class SectorCache(object):
             else:
                 style = None
 
-        outline = source.worldOutline()
+        outline = source.legacyWorldOutline()
         drawPath = []
         for x, y in outline:
             drawPath.append(cartographer.PointF(x=x, y=y))

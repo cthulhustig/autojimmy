@@ -1887,8 +1887,8 @@ class RenderContext(object):
                                         style = cartographer.LineStyle.Solid
                                 pen.setStyle(style)
 
-                        self._drawMicroBorder(
-                            outline=border,
+                        self._drawMicroBorder2(
+                            border=border,
                             brush=brush if useBrush else None,
                             pen=pen if usePen else None)
 
@@ -1986,11 +1986,38 @@ class RenderContext(object):
 
         return colour
 
+    # TODO: This should be renamed and the old version deleted when I've moved
+    # regions over to the universe
+    def _drawMicroBorder2(
+            self,
+            border: typing.Union[cartographer.BorderInfo],
+            brush: typing.Optional[cartographer.AbstractBrush] = None,
+            pen: typing.Optional[cartographer.AbstractPen] = None
+            ) -> None:
+        if self._styleSheet.microBorderStyle is cartographer.MicroBorderStyle.Curve:
+            if brush is not None:
+                self._graphics.drawCurve(spline=border.fillSpline(), brush=brush)
+
+            if pen is not None:
+                for spline in border.outlineSplines():
+                    self._graphics.drawCurve(spline=spline, pen=pen)
+        else:
+            if brush is not None:
+                self._graphics.drawPath(path=border.fillPath(), brush=brush)
+
+            if pen is not None:
+                with self._graphics.save():
+                    # Clip to the path itself - this means adjacent borders don't clash
+                    self._graphics.intersectClipPath(path=border.fillPath())
+
+                    for path in border.outlinePaths():
+                        self._graphics.drawPath(path=path, pen=pen)
+
     def _drawMicroBorder(
             self,
             # TODO: The fact this can be one of two different types is a bodge that shouldn't be
             # needed by the time I've moved regions to the universe level
-            outline: typing.Union[cartographer.BorderInfo, cartographer.SectorPath],
+            outline: typing.Union[cartographer.SectorPath],
             brush: typing.Optional[cartographer.AbstractBrush] = None,
             pen: typing.Optional[cartographer.AbstractPen] = None
             ) -> None:

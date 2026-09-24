@@ -123,6 +123,49 @@ def _sectorWorldOffsetToHex(
 
     return (hexX, hexY, worldOffsetX if worldOffsetX else None, worldOffsetY if worldOffsetY else None)
 
+# TODO: This should probably do some additional checks
+# - Non-adjacent hexes in the path. Not sure what to do if it finds them, could
+# throw an error and the path isn't converted or it could try to fill in the gap
+# - Self intersecting paths. Not sure how to detect this, it's not as simple as
+# just saying hexes should only appear once in a path. It might be they should
+# only appear once with the same winding but I'm not sure about that
+def _sanitizeHexPath(
+        input: typing.Sequence[typing.Tuple[int, int]],
+        shouldLoop: bool = True
+        ) -> typing.Sequence[typing.Tuple[int, int]]:
+    pathLength = len(input)
+    if pathLength == 1:
+        # A single hex path is treated as a special case and is just
+        # it's self, no looping even if specified.
+        return input
+
+    output = None
+
+    for index in range(1, pathLength):
+        prevHex = input[index - 1]
+        currentHex = input[index]
+        if currentHex == prevHex:
+            if output is None:
+                # We're going to need to make a copy of the input sequence
+                # so backfill all the points up to this one (no need to copy
+                # this point as it's a duplicate of the one before)
+                output = list(input[:index])
+        elif output is not None:
+            # The hex is different to the previous hex and we're making a copy
+            # of the input path so append the hex
+            output.append(currentHex)
+        prevHex = currentHex
+
+    if len(output if output is not None else input) > 1 and shouldLoop:
+        startHex = output[0] if output is not None else input[0]
+        finishHex = output[-1] if output is not None else input[-1]
+        if startHex != finishHex:
+            if output is None:
+                output = list(input)
+            output.append(output[0])
+
+    return output if output is not None else input
+
 def _createDbAlternateNames(
         rawMetadata: survey.RawMetadata
         ) -> typing.List[multiverse.DbAlternateName]:
@@ -1075,9 +1118,11 @@ def _createDbBorders(
             if not rawHexes:
                 logging.warning(f'Converter ignoring border with empty hex list in {rawMetadata.canonicalName()}')
                 continue
+
             dbHexes = []
             for offsetX, offsetY in rawHexes:
                 dbHexes.append(multiverse.relativeSpaceToAbsoluteSpace((rawMetadata.x(), rawMetadata.y(), offsetX, offsetY)))
+            dbHexes = _sanitizeHexPath(dbHexes)
 
             rawAllegianceCode = rawBorder.allegianceCode()
             dbAllegiance = None

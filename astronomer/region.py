@@ -1,5 +1,6 @@
 import astronomer
 import common
+import multiverse
 import survey
 import typing
 
@@ -58,6 +59,7 @@ class Region(astronomer.Entity):
         self._showLabel = showLabel
         self._wrapLabel = wrapLabel
         self._outline: typing.Optional[typing.List[typing.Tuple[float, float]]] = None
+        self._outlines: typing.Optional[typing.List[typing.Tuple[float, float]]] = None
 
     def hexes(self) -> typing.Iterable[astronomer.HexPosition]:
         return self._hexes
@@ -81,12 +83,16 @@ class Region(astronomer.Entity):
     def wrapLabel(self) -> bool:
         return self._wrapLabel
 
-    # TODO: Rename this and get rid of the old version once I've moved regions to the universe
-    def worldOutline2(self) -> typing.Iterable[typing.Tuple[float, float]]:
+    def worldPath(self) -> typing.Iterable[typing.Tuple[float, float]]:
         if self._outline is not None:
-            return self._outline
+            return common.ConstSequenceRef(self._outline)
 
-        self._outline = []
+        self._outline = Region._generateWorldOutline(self._hexes)
+        return common.ConstSequenceRef(self._outline)
+
+    def worldOutlines(self) -> typing.Collection[typing.Sequence[astronomer.HexPosition]]:
+        if self._outlines is not None:
+            return common.ConstCollectionRef(self._outlines)
 
         hexCount = len(self._hexes)
         if hexCount > 1 and self._hexes[0] == self._hexes[-1]:
@@ -94,53 +100,30 @@ class Region(astronomer.Entity):
             # as the algorithm does that automatically
             hexCount -= 1
 
+        self._outlines = []
+
         if hexCount == 1:
-            # This is a single hex on it's own
-            centerX, centerY = self._hexes[0].worldCenter()
-            for offsetX, offsetY in Region._HexOutlineOffsets:
-                self._outline.append((centerX + offsetX, centerY + offsetY))
-            return self._outline
+            self._outlines.append(self.worldPath())
+            return self._outlines
 
-        uniqueHexes = set(self._hexes)
-        if astronomer.HexPosition(118, 29) in uniqueHexes:
-            pass # TODO: Remove debug code
+        # TODO: This is really inefficient, the code for finding the outline should
+        # work with HexPositions (would need moved to astronomer)
+        hexes = [hex.absolute() for hex in self._hexes]
+        outline, holes = multiverse.extractHexRings(path=hexes)
 
-        startHex = self._hexes[0]
-        finishHex = self._hexes[hexCount - 1]
+        hexes = [astronomer.HexPosition(*hex) for hex in outline]
+        self._outlines.append(Region._generateWorldOutline(hexes))
 
-        startEdge = startHex.connectingEdge(finishHex)
-        if startEdge is None:
-            # TODO: Not sure what to do here. Probably need checks somewhere
-            # that stops invalid hex lists getting this far
-            print(f'({startHex}) ({finishHex})') # TODO: Remove debug code
-            raise RuntimeError('Route hex list doesn\'t loop')
-        startEdge = astronomer.clockwiseHexEdge(startEdge)
+        if holes:
+            for hole in holes:
+                hexes = [astronomer.HexPosition(*hex) for hex in hole]
+                self._outlines.append(Region._generateWorldOutline(hexes))
 
-        for index in range(hexCount):
-            currentHex = self._hexes[index]
-            nextHex = self._hexes[(index + 1) % hexCount]
-            if currentHex == nextHex:
-                continue # Skip runs of the same hex
+        return self._outlines
 
-            connectingEdge = currentHex.connectingEdge(nextHex)
-            if connectingEdge is None:
-                # TODO Not sure what to do here
-                #raise RuntimeError('Route hex list is not contiguous')
-                continue
-
-            edge = startEdge
-            while True:
-                if edge == connectingEdge:
-                    break
-                self._outline.append(Region._mostAntiClockwisePoint(hex=currentHex, edge=edge))
-                edge = astronomer.clockwiseHexEdge(edge=edge)
-
-            startEdge = astronomer.clockwiseHexEdge(
-                astronomer.oppositeHexEdge(connectingEdge))
-
-        return self._outline
-
-    def worldOutline(self) -> typing.Iterable[typing.Tuple[float, float]]:
+    # TODO: This shouldn't be needed (replaced by worldPath calls) when I've moved regions
+    # to the universe
+    def legacyWorldOutline(self) -> typing.Iterable[typing.Tuple[float, float]]:
         if self._outline is not None:
             return self._outline
 
@@ -153,7 +136,7 @@ class Region(astronomer.Entity):
             centerX, centerY = startHex.worldCenter()
             for offsetX, offsetY in Region._HexOutlineOffsets:
                 self._outline.append((centerX + offsetX, centerY + offsetY))
-            return self._outline
+            return common.ConstSequenceRef(self._outline)
 
         hex = startHex
         edge = startEdge
@@ -176,7 +159,62 @@ class Region(astronomer.Entity):
                 # Finished this outline
                 break
 
-        return self._outline
+        return common.ConstSequenceRef(self._outline)
+
+    @staticmethod
+    def _generateWorldOutline(
+        hexes: typing.Sequence[astronomer.HexPosition]
+        ) -> typing.List[typing.Tuple[float, float]]:
+        outline = []
+
+        hexCount = len(hexes)
+        if hexCount > 1 and hexes[0] == hexes[-1]:
+            # Ignore the last hex if it's just looping back to the original hex
+            # as the algorithm does that automatically
+            hexCount -= 1
+
+        if hexCount == 1:
+            # This is a single hex on it's own
+            centerX, centerY = hexes[0].worldCenter()
+            for offsetX, offsetY in Region._HexOutlineOffsets:
+                outline.append((centerX + offsetX, centerY + offsetY))
+            return outline
+
+        startHex = hexes[0]
+        finishHex = hexes[hexCount - 1]
+
+        startEdge = startHex.connectingEdge(finishHex)
+        if startEdge is None:
+            # TODO: Not sure what to do here. Probably need checks somewhere
+            # that stops invalid hex lists getting this far
+            # TODO: I don't think this should be happening any more with the
+            # new validation on import but it still is
+            raise RuntimeError('Route hex list doesn\'t loop')
+        startEdge = astronomer.clockwiseHexEdge(startEdge)
+
+        for index in range(hexCount):
+            currentHex = hexes[index]
+            nextHex = hexes[(index + 1) % hexCount]
+            if currentHex == nextHex:
+                continue # Skip runs of the same hex
+
+            connectingEdge = currentHex.connectingEdge(nextHex)
+            if connectingEdge is None:
+                # TODO Not sure what to do here
+                #raise RuntimeError('Route hex list is not contiguous')
+                continue
+
+            edge = startEdge
+            while True:
+                if edge == connectingEdge:
+                    break
+                outline.append(Region._mostAntiClockwisePoint(hex=currentHex, edge=edge))
+                edge = astronomer.clockwiseHexEdge(edge=edge)
+
+            startEdge = astronomer.clockwiseHexEdge(
+                astronomer.oppositeHexEdge(connectingEdge))
+
+        return outline
 
     @staticmethod
     def _findOutlineStart(hexes: typing.Collection[astronomer.HexPosition]) -> typing.Tuple[

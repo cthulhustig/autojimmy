@@ -9,21 +9,31 @@ import typing
 class BorderInfo(object):
     def __init__(
             self,
-            path: cartographer.AbstractPath,
-            spline: cartographer.AbstractSpline,
+            outlinePaths: typing.List[cartographer.AbstractPath],
+            outlineSplines: typing.List[cartographer.AbstractSpline],
+            fillPath: cartographer.AbstractPath,
+            fillSpline: cartographer.AbstractSpline,
             colour: typing.Optional[str],
             style: typing.Optional[cartographer.LineStyle]
             ) -> None:
-        self._path = path
-        self._spline = spline
+        self._outlinePaths = outlinePaths
+        self._outlineSplines = outlineSplines
+        self._fillPath = fillPath
+        self._fillSpline = fillSpline
         self._colour = colour
         self._style = style
 
-    def path(self) -> cartographer.AbstractPath:
-        return self._path
+    def outlinePaths(self) -> typing.Collection[cartographer.AbstractPath]:
+        return self._outlinePaths
 
-    def spline(self) -> cartographer.AbstractSpline:
-        return self._spline
+    def outlineSplines(self) -> typing.Collection[cartographer.AbstractSpline]:
+        return self._outlineSplines
+
+    def fillPath(self) -> cartographer.AbstractPath:
+        return self._fillPath
+
+    def fillSpline(self) -> cartographer.AbstractSpline:
+        return self._fillSpline
 
     def colour(self) -> typing.Optional[str]:
         return self._colour
@@ -35,7 +45,7 @@ class BorderInfo(object):
         # TODO: Not sure what is best to do here as the spline and path can have
         # slightly different bounds. I think the spline bounds will always be the
         # larger of the two so I'm using that for now
-        return self._spline.bounds()
+        return self._fillPath.bounds()
 
 class BorderCache(object):
     # This comes from the Traveller Map DrawMicroBorders code
@@ -159,20 +169,49 @@ class BorderCache(object):
             else:
                 style = None
 
-            outline = border.worldOutline2()
-            drawPath = []
-            for x, y in outline:
-                drawPath.append(cartographer.PointF(x=x, y=y))
+            # TODO: The outline/fill paths/splines should be calculated on
+            # demand when rendered. Here I just need to convert the world
+            # points to PointF paths and pass them into the info, the info
+            # can then generate the graphics objects when needed and then
+            # cache them (it will need to know about the graphics object)
+            outlinePaths = []
+            outlineSplines = []
+            for outline in border.worldOutlines():
+                path = []
+                for x, y in outline:
+                    path.append(cartographer.PointF(x=x, y=y))
+                if not path:
+                    continue
 
-            path = self._graphics.createPath(
-                points=drawPath,
+                outlinePaths.append(self._graphics.createPath(
+                    points=path,
+                    closed=True))
+                outlineSplines.append(self._graphics.createSpline(
+                    points=path,
+                    tension=BorderCache._SplineTension,
+                    closed=True))
+
+            path = []
+            for x, y in border.worldPath():
+                path.append(cartographer.PointF(x=x, y=y))
+            if not path:
+                return None
+
+            fillPath = self._graphics.createPath(
+                points=path,
                 closed=True)
-            spline = self._graphics.createSpline(
-                points=drawPath,
+            fillSpline = self._graphics.createSpline(
+                points=path,
                 tension=BorderCache._SplineTension,
                 closed=True)
 
-            return BorderInfo(path=path, spline=spline, colour=colour, style=style)
+            return BorderInfo(
+                outlinePaths=outlinePaths,
+                outlineSplines=outlineSplines,
+                fillPath=fillPath,
+                fillSpline=fillSpline,
+                colour=colour,
+                style=style)
         except Exception as ex:
             # TODO: Log something
             print(str(ex))
