@@ -106,18 +106,13 @@ class Region(astronomer.Entity):
             self._outlines.append(self.worldPath())
             return self._outlines
 
-        # TODO: This is really inefficient, the code for finding the outline should
-        # work with HexPositions (would need moved to astronomer)
-        hexes = [hex.absolute() for hex in self._hexes]
-        outline, holes = multiverse.extractHexRings(path=hexes)
+        outline, holes = astronomer.decomposeHexPath(self._hexes)
 
-        hexes = [astronomer.HexPosition(*hex) for hex in outline]
-        self._outlines.append(Region._generateWorldOutline(hexes))
+        self._outlines.append(Region._generateWorldOutline(outline))
 
         if holes:
             for hole in holes:
-                hexes = [astronomer.HexPosition(*hex) for hex in hole]
-                self._outlines.append(Region._generateWorldOutline(hexes))
+                self._outlines.append(Region._generateWorldOutline(hole))
 
         return self._outlines
 

@@ -1,5 +1,6 @@
 from .data.milieu import *
 from .data.astrometrics import *
+from .data.hexpaths import *
 from .data.sectorhex import *
 from .data.style import *
 from .data.zone import *
