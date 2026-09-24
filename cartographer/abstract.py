@@ -1,3 +1,4 @@
+import astronomer
 import enum
 import cartographer
 import typing
@@ -113,7 +114,7 @@ class AbstractPen(object):
     def style(self) -> cartographer.LineStyle:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement style')
 
-    def setStyle(self, style: cartographer.LineStyle, pattern: typing.Optional[typing.List[float]] = None) -> None:
+    def setStyle(self, style: cartographer.LineStyle, pattern: typing.Optional[typing.Sequence[float]] = None) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement setStyle')
 
     def pattern(self) -> typing.Optional[typing.Sequence[float]]:
@@ -226,9 +227,6 @@ class AbstractGraphics(object):
             ) -> AbstractMatrix:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createMatrix')
 
-    def copyMatrix(self, other: AbstractMatrix) -> AbstractMatrix:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement copyMatrix')
-
     def createBrush(self, colour: str = '') -> AbstractBrush:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createBrush')
 
@@ -262,6 +260,9 @@ class AbstractGraphics(object):
     def setSmoothingMode(self, mode: SmoothingMode) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement setSmoothingMode')
 
+    def setWorldToImageTransform(self, matrix: AbstractMatrix) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement setWorldToImageTransform')
+
     def scaleTransformUniform(self, scaleXY: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement scaleTransformUniform')
 
@@ -273,9 +274,6 @@ class AbstractGraphics(object):
 
     def rotateTransform(self, degrees: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement rotateTransform')
-
-    def multiplyTransform(self, matrix: AbstractMatrix) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement multiplyTransform')
 
     def intersectClipPath(self, clip: AbstractPath) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement intersectClipPath')
@@ -354,7 +352,7 @@ class AbstractGraphics(object):
     def measureString(self, text: str, font: AbstractFont) -> typing.Tuple[float, float]: # (width, height)
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement measureString')
 
-    def drawString(self, text: str, font: AbstractFont, brush: AbstractBrush, x: float, y: float, format: cartographer.TextAlignment) -> None:
+    def drawString(self, text: str, font: AbstractFont, brush: AbstractBrush, x: float, y: float, alignment: cartographer.TextAlignment) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawString')
 
     def save(self) -> AbstractGraphicsState:
@@ -362,3 +360,52 @@ class AbstractGraphics(object):
 
     def restore(self) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement restore')
+
+# TODO: Move SectorCache & WorldCache behind AbstractSelector so that it returns WorldInfo's and
+# a new SectorInfo that contains all the precomputed information for the sector, including the
+# points/paths currently managed by SectorCache
+# - I'd probably want to create AbstractWorldInfo & AbstractSectorInfo for the AbstractSelector
+# to return and the rendering code to use. This would allow custom implementations of where
+# the info comes from which can be moved elsewhere. By the end of it I think I can remove the
+# dependency on astronomer from the main rendering code barring some stuff from astrometrics
+# - In RectSelector I'd need to duplicate code from WorldManager for finding sectors/world in an
+# area. However, this should allow me to create a more optimised implementation
+# - Updating the rendering code to only use WorldInfo isn't to bad as it's already accessing
+# pretty much everything from the WorldInfo rather than the astronomer World. The only exception
+# I can see is _worldStarProps which access the stellar information. I think I could solve this
+# by moving what it calculates into the WorldCache code and having it store what the function
+# returns on the WorldInfo. The main problem with WorldInfo is the rendering code is currently
+# accessing its member variables directly and I'll need to update everything to use function
+# calls to the new AbstractWorldInfo interface
+# - Updating the rendering code to use SectorInfo is a bit more complicated as it currently
+# accesses subsector names, regions, borders, labels, sector labels and tagging directly from
+# the astronomer Sector object. I'd need to update it so it accesses ABSTRACT representations
+# of these via the AbstractSectorInfo interface. Most stuff would just be a case of having the
+# implementation for AbstractSectorInfo take the relevant info from the astronomer Sector.
+# - By moving to use an AbstractWorldInfo & AbstractSectorInfo interface it means I could have
+# the implementations of those interfaces hold references to the relevant astronomer object and
+# just pass the abstract interface through to it to avoid holding copies of the data.
+class AbstractSelector(object):
+    def setRect(self, rect: cartographer.RectangleF) -> None:
+        raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement setRect')
+
+    def sectorSlop(self) -> float:
+        raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement sectorSlop')
+
+    def setSectorSlop(self, slop: float) -> None:
+        raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement setSectorSlop')
+
+    def worldSlop(self) -> float:
+        raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement worldSlop')
+
+    def setWorldSlop(self, slop: float) -> None:
+        raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement setWorldSlop')
+
+    def sectors(self, tight: bool = False) -> typing.Collection[astronomer.Sector]:
+        raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement sectors')
+
+    def worlds(self, tight: bool = False) -> typing.Collection[astronomer.World]:
+        raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement worlds')
+
+    def clearCaches(self) -> None:
+        raise NotImplementedError(f'{type(self)} is derived from SelectorInterface so must implement clearCaches')

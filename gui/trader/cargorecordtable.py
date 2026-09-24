@@ -5,7 +5,6 @@ import gui
 import json
 import logic
 import logging
-import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -205,7 +204,7 @@ class CargoRecordTable(gui.FrozenColumnListTable):
 
     def hasCargoRecordForTradeGood(
             self,
-            tradeGood: traveller.TradeGood
+            tradeGood: logic.TradeGood
             ) -> bool:
         for row in range(self.rowCount()):
             cargoRecord = self.cargoRecord(row)

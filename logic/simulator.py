@@ -1,10 +1,10 @@
+import astronomer
 import common
 import enum
-import logic
 import functools
+import logic
 import time
 import traveller
-import multiverse
 import typing
 
 # Rules for finding a supplier (seller or buyer)
@@ -67,8 +67,8 @@ class Simulator(object):
 
     def run(
             self,
-            milieu: multiverse.Milieu,
-            startHex: multiverse.HexPosition,
+            universe: astronomer.Universe,
+            startHex: astronomer.HexPosition,
             startingFunds: int,
             shipTonnage: int,
             shipJumpRating: int,
@@ -90,7 +90,7 @@ class Simulator(object):
             randomSeed: typing.Optional[int] = None,
             simulationLength: typing.Optional[int] = None # Length in simulated hours
             ) -> None:
-        self._milieu = milieu
+        self._universe = universe
         self._shipTonnage = shipTonnage
         self._shipJumpRating = shipJumpRating
         self._shipCargoCapacity = shipCargoCapacity
@@ -137,9 +137,7 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
-        currentWorld = multiverse.WorldManager.instance().worldByPosition(
-            milieu=self._milieu,
-            hex=self._currentHex)
+        currentWorld = self._universe.worldByPosition(hex=self._currentHex)
 
         if not self._cargoManifest:
             # No current cargo manifest so buy something on the current world
@@ -147,14 +145,13 @@ class Simulator(object):
 
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
             worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
-            self._nearbyWorlds = multiverse.WorldManager.instance().worldsInRadius(
-                milieu=self._milieu,
+            self._nearbyWorlds = self._universe.worldsInRadius(
                 center=self._currentHex,
-                searchRadius=self._searchRadius,
+                radius=self._searchRadius,
                 filterCallback=worldFilterCallback)
 
             # Buy something
-            self._logMessage(f'Buying goods on {currentWorld.name(includeSubsector=True)}')
+            self._logMessage(f'Buying goods on {self._formatWorldLogString(world=currentWorld)}')
             self._runTradeLoop(
                 world=currentWorld,
                 onTraderCallback=self._sellerFound,
@@ -191,7 +188,7 @@ class Simulator(object):
                     berthingCost = berthingCost.value()
                     self._logMessage(
                         'Berthing at {world} for a cost of Cr{cost}'.format(
-                            world=currentWorld.name(includeSubsector=True),
+                            world=self._formatWorldLogString(world=currentWorld),
                             cost=berthingCost))
                     self._setAvailableFunds(self._availableFunds - berthingCost)
                     self._actualLogisticsCost += berthingCost
@@ -206,7 +203,7 @@ class Simulator(object):
                     fuelCost = fuelCost.value() if fuelCost else 0
 
                     infoString = 'Refuelling at {world}, taking on {tons} tons of {type} fuel'.format(
-                        world=currentWorld.name(includeSubsector=True),
+                        world=self._formatWorldLogString(world=currentWorld),
                         tons=fuelTons,
                         type=refuellingType.value.lower())
                     if fuelCost > 0:
@@ -220,22 +217,15 @@ class Simulator(object):
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex = jumpRoute.nodeAt(self._jumpRouteIndex)
-                nextWorld = multiverse.WorldManager.instance().worldByPosition(
-                    milieu=self._milieu,
-                    hex=nextHex)
-                currentString = multiverse.WorldManager.instance().canonicalHexName(
-                    milieu=self._milieu,
-                    hex=self._currentHex)
-                nextString = multiverse.WorldManager.instance().canonicalHexName(
-                    milieu=self._milieu,
-                    hex=nextHex)
-                self._logMessage(
-                    f'Travelling from {currentString} to {nextString}')
+                nextWorld = self._universe.worldByPosition(hex=nextHex)
+                self._logMessage('Travelling from {src} to {dst}'.format(
+                    src=self._formatWorldLogString(world=currentWorld),
+                    dst=self._formatWorldLogString(world=nextWorld)))
 
                 self._simulationTime += self._calculateTravelHours(1)
 
                 self._setCurrentHex(hex=nextHex)
-                self._logMessage(f'Arrived on {nextWorld.name(includeSubsector=True)}')
+                self._logMessage(f'Arrived on {self._formatWorldLogString(world=currentWorld)}')
                 return
 
             if self._perJumpOverheads:
@@ -252,12 +242,12 @@ class Simulator(object):
         else:
             assert(currentWorld) # Should always be on a world if we get here
             self._logMessage(
-                f'Staying on {currentWorld.name(includeSubsector=True)} to sell goods')
+                f'Staying on {self._formatWorldLogString(world=currentWorld)} to sell goods')
 
         assert(currentWorld) # Should always be on a world if we get here
 
         # Sell what was bought
-        self._logMessage(f'Selling goods on {currentWorld.name(includeSubsector=True)}')
+        self._logMessage(f'Selling goods on {self._formatWorldLogString(world=currentWorld)}')
         self._runTradeLoop(
             world=currentWorld,
             onTraderCallback=self._buyerFound,
@@ -271,7 +261,7 @@ class Simulator(object):
                 self._availableFunds,
                 self._simulationTime))
 
-    def _setCurrentHex(self, hex: multiverse.HexPosition) -> None:
+    def _setCurrentHex(self, hex: astronomer.HexPosition) -> None:
         self._currentHex = hex
         if self._eventCallback:
             self._eventCallback(Simulator.Event(
@@ -304,7 +294,7 @@ class Simulator(object):
 
     def _sellerFound(
             self,
-            world: multiverse.World,
+            world: astronomer.World,
             elapsedHours: int,
             blackMarket: bool,
             ) -> bool:
@@ -318,7 +308,7 @@ class Simulator(object):
 
         diceRoller = common.DiceRoller(randomGenerator=self._randomGenerator)
         cargoRecords, _ = logic.generateRandomPurchaseCargo(
-            ruleSystem=self._rules.system(),
+            rules=self._rules,
             world=world,
             playerBrokerDm=self._playerBrokerDm,
             sellerDm=sellerDm,
@@ -333,8 +323,8 @@ class Simulator(object):
         infoMessages = []
 
         trader = logic.Trader(
+            universe=self._universe,
             rules=self._rules,
-            milieu=self._milieu,
             tradeOptionCallback=lambda tradeOption: tradeOptions.append(tradeOption),
             traderInfoCallback=lambda infoMessage: infoMessages.append(infoMessage),
             isCancelledCallback=self._isCancelledCallback)
@@ -408,7 +398,7 @@ class Simulator(object):
 
     def _buyerFound(
             self,
-            world: multiverse.World,
+            world: astronomer.World,
             elapsedHours: int,
             blackMarket: bool,
             ) -> bool:
@@ -420,7 +410,7 @@ class Simulator(object):
 
         purchaseCargoRecords = self._cargoManifest.cargoRecords()
         saleCargoRecords, _ = logic.generateRandomSaleCargo(
-            ruleSystem=self._rules.system(),
+            rules=self._rules,
             world=world,
             currentCargo=purchaseCargoRecords,
             playerBrokerDm=self._playerBrokerDm,
@@ -503,8 +493,8 @@ class Simulator(object):
 
     def _runTradeLoop(
             self,
-            world: multiverse.World,
-            onTraderCallback: typing.Callable[[multiverse.World, int, bool], bool],
+            world: astronomer.World,
+            onTraderCallback: typing.Callable[[astronomer.World, int, bool], bool],
             lookingForSeller: bool
             ) -> None:
         class MethodState(object):
@@ -533,7 +523,7 @@ class Simulator(object):
             for tradeOption in self._cargoManifest.tradeOptions():
                 tradeGood = tradeOption.tradeGood()
 
-                if tradeGood.id() != traveller.TradeGoodIds.Exotics:
+                if tradeGood.id() != logic.TradeGoodIds.Exotics:
                     # Look for a buyer that matches the legality of the trade good
                     if tradeGood.isIllegal(world=world):
                         lookForBlackMarketTrader = True
@@ -559,7 +549,7 @@ class Simulator(object):
                 False, # Not online
                 True, # Black market buyer/seller
                 0))
-        if self._playerAdminDm != None and multiverse.ehexToInteger(value=world.uwp().code(multiverse.UWP.Element.TechLevel), default=-1) >= 8:
+        if self._playerAdminDm != None and world.uwp().numeric(astronomer.UWP.Element.TechLevel, default=-1) >= 8:
             if lookForLegalTrader:
                 methods.append(MethodState(
                     self._playerAdminDm,
@@ -636,8 +626,8 @@ class Simulator(object):
                 lastTraderFoundTime = tradeTime
 
     @staticmethod
-    def _starPortModifier(world: multiverse.World) -> int:
-        starPortCode = world.uwp().code(multiverse.UWP.Element.StarPort)
+    def _starPortModifier(world: astronomer.World) -> int:
+        starPortCode = world.uwp().code(astronomer.UWP.Element.StarPort)
         return 0 if starPortCode not in Simulator.StarPortModifiers else Simulator.StarPortModifiers[starPortCode]
 
     def _traderSearchStep(
@@ -658,6 +648,14 @@ class Simulator(object):
         foundTrader = (skillRoll.value() + skillRating + worldModifier - retryModifier) >= 8
 
         return (foundTrader, elapsedHours)
+
+    def _formatWorldLogString(
+            self,
+            world: astronomer.World
+            ) -> str:
+        return '{world} ({hex})'.format(
+            world=world.name(),
+            hex=self._universe.formatSectorHex(hex=world.hex()))
 
     @staticmethod
     def _sortCargoManifestsInPlace(cargoManifests: typing.List[logic.CargoManifest]) -> None:

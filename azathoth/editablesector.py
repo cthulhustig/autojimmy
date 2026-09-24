@@ -1,0 +1,47 @@
+import astronomer
+import azathoth
+import typing
+
+class EditableSector(astronomer.Sector):
+    def __init__(
+            self,
+            entity: str,
+            position: astronomer.SectorPosition,
+            name: str,
+            alternateNames: typing.Optional[typing.Iterable[str]] = None,
+            nameLanguages: typing.Optional[typing.Mapping[str, str]] = None, # Maps names to the language that name is in
+            abbreviation: typing.Optional[str] = None,
+            sectorLabel: typing.Optional[str] = None,
+            subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
+            regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
+            labels: typing.Optional[typing.Iterable[astronomer.SectorLabel]] = None,
+            selected: bool = False,
+            tagging: typing.Optional[astronomer.SectorTagging] = None,
+            credits: typing.Optional[str] = None,
+            source: typing.Optional[astronomer.SectorSource] = None,
+            products: typing.Optional[typing.Iterable[astronomer.SectorSource]] = None
+            ) -> None:
+        super().__init__(
+            entityId=entity,
+            position=position,
+            name=name,
+            alternateNames=alternateNames,
+            nameLanguages=nameLanguages,
+            abbreviation=abbreviation,
+            sectorLabel=sectorLabel,
+            subsectorNames=subsectorNames,
+            regions=regions,
+            labels=labels,
+            selected=selected,
+            tagging=tagging,
+            credits=credits,
+            source=source,
+            products=products)
+
+        for regions in self._regions:
+            assert(isinstance(regions, azathoth.EditableRegion))
+            regions.setSectorId(sectorId=self._entityId)
+
+        for label in self._labels:
+            assert(isinstance(label, azathoth.EditableSectorLabel))
+            label.setSectorId(sectorId=self._entityId)

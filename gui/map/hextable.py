@@ -1,4 +1,6 @@
 import app
+import astronomer
+import azathoth
 import csv
 import enum
 import gui
@@ -6,7 +8,6 @@ import io
 import logging
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -113,7 +114,7 @@ class HexTable(gui.FrozenColumnListTable):
         Bases = 'Bases'
         ScoutBase = 'Scout Base'
         MilitaryBase = 'Military Base'
-        OwnerWorld = 'Owner'
+        OwnerWorlds = 'Owners\n(Count)'
         ColonyWorlds = 'Colonies\n(Count)'
         Remarks = 'Remarks'
 
@@ -155,7 +156,7 @@ class HexTable(gui.FrozenColumnListTable):
         ColumnType.Bases,
         ColumnType.ScoutBase,
         ColumnType.MilitaryBase,
-        ColumnType.OwnerWorld,
+        ColumnType.OwnerWorlds,
         ColumnType.ColonyWorlds,
         ColumnType.Anomaly,
         ColumnType.Remarks
@@ -178,7 +179,7 @@ class HexTable(gui.FrozenColumnListTable):
         ColumnType.Bases,
         ColumnType.ScoutBase,
         ColumnType.MilitaryBase,
-        ColumnType.OwnerWorld,
+        ColumnType.OwnerWorlds,
         ColumnType.ColonyWorlds,
         ColumnType.Anomaly,
     ]
@@ -251,7 +252,7 @@ class HexTable(gui.FrozenColumnListTable):
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -260,7 +261,7 @@ class HexTable(gui.FrozenColumnListTable):
             ) -> None:
         super().__init__(parent)
 
-        self._milieu = milieu
+        self._universe = universe
         self._rules = traveller.Rules(rules)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
@@ -298,14 +299,19 @@ class HexTable(gui.FrozenColumnListTable):
                     column == self.ColumnType.Subsector:
                 self.setColumnWidth(index, 100)
 
-    def milieu(self) -> multiverse.Milieu:
-        return self._milieu
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
-        if milieu is self._milieu:
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
+
+    def universe(self) -> astronomer.Universe:
+        return self._universe
+
+    def setUniverse(self, universe: astronomer.Universe) -> None:
+        if universe is self._universe:
             return
 
-        self._milieu = milieu
+        self._universe = universe
         self._syncContent()
 
     def rules(self) -> traveller.Rules:
@@ -342,19 +348,19 @@ class HexTable(gui.FrozenColumnListTable):
         self._taggingColours = app.TaggingColours(colours) if colours else None
         self._syncContent()
 
-    def hex(self, row: int) -> typing.Optional[multiverse.HexPosition]:
+    def hex(self, row: int) -> typing.Optional[astronomer.HexPosition]:
         tableItem = self.item(row, 0)
         if not tableItem:
             return None
         return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)[0]
 
-    def world(self, row: int) -> typing.Optional[multiverse.World]:
+    def world(self, row: int) -> typing.Optional[astronomer.World]:
         tableItem = self.item(row, 0)
         if not tableItem:
             return None
         return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)[1]
 
-    def hexes(self) -> typing.List[multiverse.HexPosition]:
+    def hexes(self) -> typing.List[astronomer.HexPosition]:
         hexes = []
         for row in range(self.rowCount()):
             hexes.append(self.hex(row))
@@ -362,7 +368,7 @@ class HexTable(gui.FrozenColumnListTable):
 
     # NOTE: Indexing into the list of returned worlds does not match
     # table row indexing if the table contains dead space hexes.
-    def worlds(self) -> typing.List[multiverse.World]:
+    def worlds(self) -> typing.List[astronomer.World]:
         worlds = []
         for row in range(self.rowCount()):
             world = self.world(row)
@@ -370,18 +376,18 @@ class HexTable(gui.FrozenColumnListTable):
                 worlds.append(world)
         return worlds
 
-    def hexAt(self, y: int) -> typing.Optional[multiverse.HexPosition]:
+    def hexAt(self, y: int) -> typing.Optional[astronomer.HexPosition]:
         row = self.rowAt(y)
         return self.hex(row) if row >= 0 else None
 
-    def worldAt(self, y: int) -> typing.Optional[multiverse.World]:
+    def worldAt(self, y: int) -> typing.Optional[astronomer.World]:
         row = self.rowAt(y)
         return self.world(row) if row >= 0 else None
 
     def insertHex(
             self,
             row: int,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> int:
         self.insertRow(row)
         return self._fillRow(row, hex)
@@ -389,27 +395,35 @@ class HexTable(gui.FrozenColumnListTable):
     def setHex(
             self,
             row: int,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> int:
         return self._fillRow(row, hex)
 
     def setHexes(
             self,
-            hexes: typing.Iterator[multiverse.HexPosition]
+            hexes: typing.Collection[astronomer.HexPosition]
             ) -> None:
-        self.removeAllRows()
-        for hex in hexes:
-            self.addHex(hex)
+        # Disable sorting while adding multiple rows then sort once after they've
+        # all been added
+        sortingEnabled = self.isSortingEnabled()
+        self.setSortingEnabled(False)
+
+        try:
+            self.setRowCount(len(hexes))
+            for row, hex in enumerate(hexes):
+                self._fillRow(row, hex)
+        finally:
+            self.setSortingEnabled(sortingEnabled)
 
     def addHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> int:
         return self.insertHex(self.rowCount(), hex)
 
     def addHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Collection[astronomer.HexPosition]
             ) -> None:
         # Disable sorting while inserting multiple rows then sort once after they've
         # all been added
@@ -417,14 +431,16 @@ class HexTable(gui.FrozenColumnListTable):
         self.setSortingEnabled(False)
 
         try:
-            for hex in hexes:
-                self.insertHex(self.rowCount(), hex)
+            oldCount = self.rowCount()
+            self.setRowCount(oldCount + len(hexes))
+            for offset, hex in enumerate(hexes):
+                self._fillRow(oldCount + offset, hex)
         finally:
             self.setSortingEnabled(sortingEnabled)
 
     def removeHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> bool:
         removed = False
         for row in range(self.rowCount() - 1, -1, -1):
@@ -433,7 +449,7 @@ class HexTable(gui.FrozenColumnListTable):
                 removed = True
         return removed
 
-    def currentHex(self) -> typing.Optional[multiverse.HexPosition]:
+    def currentHex(self) -> typing.Optional[astronomer.HexPosition]:
         row = self.currentRow()
         if row < 0:
             return None
@@ -441,14 +457,14 @@ class HexTable(gui.FrozenColumnListTable):
 
     def containsHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> bool:
         for row in range(self.rowCount()):
             if hex == self.hex(row):
                 return True
         return False
 
-    def selectedHexes(self) -> typing.List[multiverse.HexPosition]:
+    def selectedHexes(self) -> typing.List[astronomer.HexPosition]:
         hexes = []
         for row in range(self.rowCount()):
             if self.isRowSelected(row):
@@ -459,7 +475,7 @@ class HexTable(gui.FrozenColumnListTable):
 
     # NOTE: Indexing into the list of returned worlds does not match table
     # selection indexing if the selection contains dead space hexes.
-    def selectedWorlds(self) -> typing.List[multiverse.World]:
+    def selectedWorlds(self) -> typing.List[astronomer.World]:
         worlds = []
         for row in range(self.rowCount()):
             if self.isRowSelected(row):
@@ -584,7 +600,7 @@ class HexTable(gui.FrozenColumnListTable):
         count = stream.readUInt32()
         hexes = []
         for _ in range(count):
-            hexes.append(multiverse.HexPosition(
+            hexes.append(astronomer.HexPosition(
                 absoluteX=stream.readInt32(),
                 absoluteY=stream.readInt32()))
         self.setHexes(hexes=hexes)
@@ -606,7 +622,7 @@ class HexTable(gui.FrozenColumnListTable):
     def _fillRow(
             self,
             row: int,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> int:
         # Workaround for the issue covered here, re-enabled after setting items
         # https://stackoverflow.com/questions/7960505/strange-qtablewidget-behavior-not-all-cells-populated-after-sorting-followed-b
@@ -616,16 +632,16 @@ class HexTable(gui.FrozenColumnListTable):
         try:
             uwp = economics = culture = pbg = worldTagColour = None
 
-            world = multiverse.WorldManager.instance().worldByPosition(
-                milieu=self._milieu,
-                hex=hex)
+            world = self._universe.worldByPosition(hex=hex)
             if world:
                 uwp = world.uwp()
                 economics = world.economics()
                 culture = world.culture()
                 pbg = world.pbg()
-                worldTagColour = self._taggingColour(
-                    level=self._worldTagging.calculateWorldTagLevel(world) if self._worldTagging else None)
+                worldTagLevel = worldTagColour = None
+                if self._worldTagging:
+                    worldTagLevel = self._worldTagging.calculateWorldTagLevel(world=world)
+                    worldTagColour = self._taggingColour(worldTagLevel) if worldTagLevel else None
 
             # NOTE: It's important that an item is always created for each of the
             # cells in the row, even if it has no text. If you don't and you use
@@ -650,93 +666,83 @@ class HexTable(gui.FrozenColumnListTable):
                         tagColour = self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Sector:
                     tableItem = gui.TableWidgetItemEx()
-                    if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.sectorName())
-                        tagColour = worldTagColour
-                    else:
-                        sector = multiverse.WorldManager.instance().sectorByPosition(
-                            milieu=self._milieu,
-                            hex=hex)
-                        tableItem.setData(
-                            QtCore.Qt.ItemDataRole.DisplayRole,
-                            sector.name() if sector else 'Unknown')
-                        tableItem.setItalic(enable=not sector)
-                        tagColour = self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
+                    sector = self._universe.sectorByPosition(position=hex)
+                    tableItem.setData(
+                        QtCore.Qt.ItemDataRole.DisplayRole,
+                        sector.name() if sector else '<Unnamed>')
+                    tableItem.setItalic(enable=not sector)
+                    tagColour = worldTagColour if world else self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Subsector:
                     tableItem = gui.TableWidgetItemEx()
-                    if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.subsectorName())
-                        tagColour = worldTagColour
-                    else:
-                        subsector = multiverse.WorldManager.instance().subsectorByPosition(
-                            milieu=self._milieu,
-                            hex=hex)
-                        tableItem.setData(
-                            QtCore.Qt.ItemDataRole.DisplayRole,
-                            subsector.name() if subsector else 'Unknown')
-                        tableItem.setItalic(enable=not sector)
-                        tagColour = self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
+                    sector = self._universe.sectorByPosition(position=hex)
+                    subsectorName = sector.subsectorName(code=hex.subsectorCode()) if sector else None
+                    tableItem.setData(
+                        QtCore.Qt.ItemDataRole.DisplayRole,
+                        subsectorName if subsectorName else '<Unnamed>')
+                    tableItem.setItalic(enable=not sector)
+                    tagColour = worldTagColour if world else self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Zone:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, multiverse.zoneTypeCode(world.zone()))
+                        zoneCode = astronomer.zoneTypeToCode(world.zone())
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, zoneCode if zoneCode else '')
                         tagLevel = self._worldTagging.calculateZoneTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.StarPort:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(multiverse.UWP.Element.StarPort))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(astronomer.UWP.Element.StarPort))
                         tagLevel = self._worldTagging.calculateStarPortTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.TechLevel:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(multiverse.UWP.Element.TechLevel))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(astronomer.UWP.Element.TechLevel))
                         tagLevel = self._worldTagging.calculateTechLevelTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.LawLevel:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(multiverse.UWP.Element.LawLevel))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(astronomer.UWP.Element.LawLevel))
                         tagLevel = self._worldTagging.calculateLawLevelTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Population:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(multiverse.UWP.Element.Population))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(astronomer.UWP.Element.Population))
                         tagLevel = self._worldTagging.calculatePopulationTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Government:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(multiverse.UWP.Element.Government))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(astronomer.UWP.Element.Government))
                         tagLevel = self._worldTagging.calculateGovernmentTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.WorldSize:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(multiverse.UWP.Element.WorldSize))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(astronomer.UWP.Element.WorldSize))
                         tagLevel = self._worldTagging.calculateWorldSizeTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Atmosphere:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(multiverse.UWP.Element.Atmosphere))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(astronomer.UWP.Element.Atmosphere))
                         tagLevel = self._worldTagging.calculateAtmosphereTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Hydrographics:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(multiverse.UWP.Element.Hydrographics))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(astronomer.UWP.Element.Hydrographics))
                         tagLevel = self._worldTagging.calculateHydrographicsTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.StarPortRefuelling:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         text = ''
-                        if traveller.worldHasStarPortRefuelling(world=world, rules=self._rules, includeUnrefined=False):
+                        if world.hasStarPortRefuelling(rules=self._rules, includeUnrefined=False):
                             text += 'refined'
-                        if traveller.worldHasStarPortRefuelling(world=world, rules=self._rules, includeRefined=False):
+                        if world.hasStarPortRefuelling(rules=self._rules, includeRefined=False):
                             if text:
                                 text += ' & '
                             text += 'unrefined'
@@ -746,12 +752,12 @@ class HexTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.GasGiantRefuelling:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        hasRefuelling = traveller.worldHasGasGiantRefuelling(world=world)
+                        hasRefuelling = world.hasGasGiantRefuelling()
                         tableItem.setText('yes' if hasRefuelling else 'no' )
                 elif columnType == self.ColumnType.WaterRefuelling:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        hasRefuelling = traveller.worldHasWaterRefuelling(world=world)
+                        hasRefuelling = world.hasWaterRefuelling()
                         tableItem.setText('yes' if hasRefuelling else 'no' )
                 elif columnType == self.ColumnType.FuelCache:
                     tableItem = QtWidgets.QTableWidgetItem()
@@ -764,49 +770,49 @@ class HexTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.Resources:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(multiverse.Economics.Element.Resources))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(astronomer.Economics.Element.Resources))
                         tagLevel = self._worldTagging.calculateResourcesTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Labour:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(multiverse.Economics.Element.Labour))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(astronomer.Economics.Element.Labour))
                         tagLevel = self._worldTagging.calculateLabourTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Infrastructure:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(multiverse.Economics.Element.Infrastructure))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(astronomer.Economics.Element.Infrastructure))
                         tagLevel = self._worldTagging.calculateInfrastructureTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Efficiency:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(multiverse.Economics.Element.Efficiency))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(astronomer.Economics.Element.Efficiency))
                         tagLevel = self._worldTagging.calculateEfficiencyTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Heterogeneity:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(multiverse.Culture.Element.Heterogeneity))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(astronomer.Culture.Element.Heterogeneity))
                         tagLevel = self._worldTagging.calculateHeterogeneityTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Acceptance:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(multiverse.Culture.Element.Acceptance))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(astronomer.Culture.Element.Acceptance))
                         tagLevel = self._worldTagging.calculateAcceptanceTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Strangeness:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(multiverse.Culture.Element.Strangeness))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(astronomer.Culture.Element.Strangeness))
                         tagLevel = self._worldTagging.calculateStrangenessTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Symbols:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(multiverse.Culture.Element.Symbols))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(astronomer.Culture.Element.Symbols))
                         tagLevel = self._worldTagging.calculateSymbolsTagLevel(world) if self._worldTagging else None
                         tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Nobilities:
@@ -828,26 +834,33 @@ class HexTable(gui.FrozenColumnListTable):
                         allegiance = world.allegiance()
                         if allegiance:
                             tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, allegiance.code())
-                            tagLevel = self._worldTagging.calculateAllegianceTagLevel(world=world) if self._worldTagging else None
+                            tagLevel = self._worldTagging.calculateAllegianceTagLevel(allegiance=allegiance) if self._worldTagging else None
                             tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Sophont:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         displayText = ''
-                        remarks = world.remarks()
-                        for sophont in remarks.sophonts():
-                            percentage = remarks.sophontPercentage(sophont)
-                            displayText += f', {sophont}' if displayText else sophont
-                            displayText += f' ({percentage}%)'
+                        for sophont in world.sophonts():
+                            if displayText:
+                                displayText += ', '
+                            displayText += sophont.name()
+
+                            if sophont.isHomeWorld():
+                                displayText += ' (Home World)'
+
+                            if sophont.isDieBack():
+                                displayText += ' (Die Back)'
+                            elif sophont.percentage() is not None:
+                                displayText += f' (Population: {sophont.percentage()}%)'
+
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, displayText)
                 elif columnType == self.ColumnType.TradeCodes:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        displayText = ''
-                        for tradeCode in world.tradeCodes():
-                            tradeCodeString = multiverse.tradeCodeString(tradeCode)
-                            displayText += f', {tradeCodeString}' if displayText else tradeCodeString
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, displayText)
+                        tradeCodeStrings = [traveller.tradeCodeString(tc) for tc in world.tradeCodes()]
+                        tradeCodeStrings.sort()
+                        tableItem.setData(
+                            QtCore.Qt.ItemDataRole.DisplayRole, ', '.join(tradeCodeStrings))
                 elif columnType == self.ColumnType.PopulationCount:
                     if world:
                         count = world.population()
@@ -859,8 +872,8 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.PopulationMultiplier:
                     if world:
-                        count = multiverse.ehexToInteger(
-                            value=pbg.code(element=multiverse.PBG.Element.PopulationMultiplier),
+                        count = pbg.numeric(
+                            element=astronomer.PBG.Element.PopulationMultiplier,
                             default=None)
                         if count != None:
                             tableItem = gui.FormattedNumberTableWidgetItem(value=count)
@@ -870,8 +883,8 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.PlanetoidBeltCount:
                     if world:
-                        count = multiverse.ehexToInteger(
-                            value=pbg.code(element=multiverse.PBG.Element.PlanetoidBelts),
+                        count = pbg.numeric(
+                            element=astronomer.PBG.Element.PlanetoidBelts,
                             default=None)
                         if count != None:
                             tableItem = gui.FormattedNumberTableWidgetItem(value=count)
@@ -881,8 +894,8 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.GasGiantCount:
                     if world:
-                        count = multiverse.ehexToInteger(
-                            value=pbg.code(element=multiverse.PBG.Element.GasGiants),
+                        count = pbg.numeric(
+                            element=astronomer.PBG.Element.GasGiants,
                             default=None)
                         if count != None:
                             tableItem = gui.FormattedNumberTableWidgetItem(value=count)
@@ -896,7 +909,7 @@ class HexTable(gui.FrozenColumnListTable):
                     else:
                         tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.SystemWorldCount:
-                    if world:
+                    if world and world.numberOfSystemWorlds() is not None:
                         tableItem = gui.FormattedNumberTableWidgetItem(world.numberOfSystemWorlds())
                     else:
                         tableItem = QtWidgets.QTableWidgetItem()
@@ -941,43 +954,36 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, 'yes' if militaryBases else 'no')
                         if highestTagLevel:
                             tagColour = self._taggingColour(level=highestTagLevel)
-                elif columnType == self.ColumnType.OwnerWorld:
+                elif columnType == self.ColumnType.OwnerWorlds:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        ownerString = None
-                        tagLevel = None
-                        if world.hasOwner():
-                            try:
-                                ownerWorld = multiverse.WorldManager.instance().worldBySectorHex(
-                                    milieu=self._milieu,
-                                    sectorHex=world.ownerSectorHex())
-                            except Exception:
-                                ownerWorld = None
-
-                            if ownerWorld:
-                                ownerString = ownerWorld.name(includeSubsector=True)
-                                tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld) if self._worldTagging else None
-                            else:
-                                # We don't know about this world so just display the sector hex and tag it as danger
-                                ownerString = world.ownerSectorHex()
-                                tagLevel = logic.TagLevel.Danger
-                            tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, ownerString)
-                        if tagLevel:
-                            tagColour = self._taggingColour(level=tagLevel)
+                        highestTagLevel = None
+                        if self._worldTagging:
+                            for worldRef in world.ownerWorldReferences():
+                                refWorlds =  self._universe.worldsByWorldRef(
+                                    worldRef=worldRef,
+                                    sourceSectorPos=hex.sectorPosition())
+                                if len(refWorlds) == 1:
+                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=refWorlds[0])
+                                    if tagLevel and (not highestTagLevel or tagLevel > highestTagLevel):
+                                        highestTagLevel = tagLevel
+                                else:
+                                    # We don't know about this world so the tag level is error, no need to continue looking
+                                    highestTagLevel = logic.TagLevel.Danger
+                                    break
+                        tableItem = gui.FormattedNumberTableWidgetItem(world.ownerCount())
+                        if highestTagLevel:
+                            tagColour = self._taggingColour(level=highestTagLevel)
                 elif columnType == self.ColumnType.ColonyWorlds:
                     if world:
                         highestTagLevel = None
                         if self._worldTagging:
-                            for colonySectorHex in world.colonySectorHexes():
-                                try:
-                                    colonyWorld = multiverse.WorldManager.instance().worldBySectorHex(
-                                        milieu=self._milieu,
-                                        sectorHex=colonySectorHex)
-                                except Exception:
-                                    colonyWorld = None
-
-                                if colonyWorld:
-                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=colonyWorld)
+                            for worldRef in world.colonyWorldReferences():
+                                refWorlds =  self._universe.worldsByWorldRef(
+                                    worldRef=worldRef,
+                                    sourceSectorPos=hex.sectorPosition())
+                                if len(refWorlds) == 1:
+                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=refWorlds[0])
                                     if tagLevel and (not highestTagLevel or tagLevel > highestTagLevel):
                                         highestTagLevel = tagLevel
                                 else:
@@ -992,8 +998,9 @@ class HexTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.Remarks:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        remarks = world.remarks()
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, remarks.string())
+                        tableItem.setData(
+                            QtCore.Qt.ItemDataRole.DisplayRole,
+                            world.remarksString())
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
@@ -1025,56 +1032,54 @@ class HexTable(gui.FrozenColumnListTable):
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=hex)
             elif world:
-                return multiverse.WorldManager.instance().canonicalHexName(
-                    milieu=world.milieu(),
-                    hex=world.hex())
+                return self._universe.canonicalHexName(hex=world.hex())
 
         if world == None:
             return gui.createStringToolTip('Dead Space')
 
         if columnType == self.ColumnType.Zone:
-            zone = world.zone()
+            zone = astronomer.zoneTypeDescription(world.zone())
             if not zone:
                 return None
-            return gui.createStringToolTip(multiverse.zoneTypeName(zone))
+            return gui.createStringToolTip(zone)
         elif columnType == self.ColumnType.StarPort:
-            return gui.createStringToolTip(world.uwp().description(multiverse.UWP.Element.StarPort))
+            return gui.createStringToolTip(world.uwp().description(astronomer.UWP.Element.StarPort))
         elif columnType == self.ColumnType.TechLevel:
-            return gui.createStringToolTip(world.uwp().description(multiverse.UWP.Element.TechLevel))
+            return gui.createStringToolTip(world.uwp().description(astronomer.UWP.Element.TechLevel))
         elif columnType == self.ColumnType.LawLevel:
-            return gui.createStringToolTip(world.uwp().description(multiverse.UWP.Element.LawLevel))
+            return gui.createStringToolTip(world.uwp().description(astronomer.UWP.Element.LawLevel))
         elif columnType == self.ColumnType.Population:
-            return gui.createStringToolTip(world.uwp().description(multiverse.UWP.Element.Population))
+            return gui.createStringToolTip(world.uwp().description(astronomer.UWP.Element.Population))
         elif columnType == self.ColumnType.Government:
-            return gui.createStringToolTip(world.uwp().description(multiverse.UWP.Element.Government))
+            return gui.createStringToolTip(world.uwp().description(astronomer.UWP.Element.Government))
         elif columnType == self.ColumnType.WorldSize:
-            return gui.createStringToolTip(world.uwp().description(multiverse.UWP.Element.WorldSize))
+            return gui.createStringToolTip(world.uwp().description(astronomer.UWP.Element.WorldSize))
         elif columnType == self.ColumnType.Atmosphere:
-            return gui.createStringToolTip(world.uwp().description(multiverse.UWP.Element.Atmosphere))
+            return gui.createStringToolTip(world.uwp().description(astronomer.UWP.Element.Atmosphere))
         elif columnType == self.ColumnType.Hydrographics:
-            return gui.createStringToolTip(world.uwp().description(multiverse.UWP.Element.Hydrographics))
+            return gui.createStringToolTip(world.uwp().description(astronomer.UWP.Element.Hydrographics))
         elif columnType == self.ColumnType.Resources:
-            return gui.createStringToolTip(world.economics().description(multiverse.Economics.Element.Resources))
+            return gui.createStringToolTip(world.economics().description(astronomer.Economics.Element.Resources))
         elif columnType == self.ColumnType.Labour:
-            return gui.createStringToolTip(world.economics().description(multiverse.Economics.Element.Labour))
+            return gui.createStringToolTip(world.economics().description(astronomer.Economics.Element.Labour))
         elif columnType == self.ColumnType.Infrastructure:
-            return gui.createStringToolTip(world.economics().description(multiverse.Economics.Element.Infrastructure))
+            return gui.createStringToolTip(world.economics().description(astronomer.Economics.Element.Infrastructure))
         elif columnType == self.ColumnType.Efficiency:
-            return gui.createStringToolTip(world.economics().description(multiverse.Economics.Element.Efficiency))
+            return gui.createStringToolTip(world.economics().description(astronomer.Economics.Element.Efficiency))
         elif columnType == self.ColumnType.Heterogeneity:
-            return gui.createStringToolTip(world.culture().description(multiverse.Culture.Element.Heterogeneity))
+            return gui.createStringToolTip(world.culture().description(astronomer.Culture.Element.Heterogeneity))
         elif columnType == self.ColumnType.Acceptance:
-            return gui.createStringToolTip(world.culture().description(multiverse.Culture.Element.Acceptance))
+            return gui.createStringToolTip(world.culture().description(astronomer.Culture.Element.Acceptance))
         elif columnType == self.ColumnType.Strangeness:
-            return gui.createStringToolTip(world.culture().description(multiverse.Culture.Element.Strangeness))
+            return gui.createStringToolTip(world.culture().description(astronomer.Culture.Element.Strangeness))
         elif columnType == self.ColumnType.Symbols:
-            return gui.createStringToolTip(world.culture().description(multiverse.Culture.Element.Symbols))
+            return gui.createStringToolTip(world.culture().description(astronomer.Culture.Element.Symbols))
         elif columnType == self.ColumnType.Nobilities:
             lines = []
             lineColours = {}
             nobilities = world.nobilities()
             for nobilityType in nobilities:
-                nobilityDescription = multiverse.Nobilities.description(nobilityType)
+                nobilityDescription = astronomer.Nobilities.description(nobilityType)
                 lines.append(nobilityDescription)
 
                 tagLevel = self._worldTagging.calculateNobilityTagLevel(nobilityType) if self._worldTagging else None
@@ -1089,15 +1094,21 @@ class HexTable(gui.FrozenColumnListTable):
             allegiance = world.allegiance()
             if not allegiance:
                 return None
-            allegianceName = allegiance.name()
-            return gui.createStringToolTip(allegianceName if allegianceName else allegiance.code())
+            return gui.createStringToolTip(allegiance.name())
         elif columnType == self.ColumnType.Sophont:
             lines = []
-            remarks = world.remarks()
-            for sophont in remarks.sophonts():
-                percentage = remarks.sophontPercentage(sophont)
-                sophont += f' ({percentage}%)'
-                lines.append(sophont)
+            for sophont in world.sophonts():
+                line = sophont.name()
+
+                if sophont.isHomeWorld():
+                    line += ' (Home World)'
+
+                if sophont.isDieBack():
+                    line += ' (Die Back)'
+                elif sophont.percentage() is not None:
+                    line += f' (Population: {sophont.percentage()}%)'
+
+                lines.append(line)
             if lines:
                 return gui.createListToolTip(
                     title='Sophonts:',
@@ -1105,8 +1116,12 @@ class HexTable(gui.FrozenColumnListTable):
         elif columnType == self.ColumnType.TradeCodes:
             lines = []
             for tradeCode in world.tradeCodes():
-                lines.append(multiverse.tradeCodeName(tradeCode=tradeCode))
+                lines.append('{code} - {name} - {description}'.format(
+                    code=traveller.tradeCodeString(tradeCode=tradeCode),
+                    name=traveller.tradeCodeName(tradeCode=tradeCode),
+                    description=traveller.tradeCodeDescription(tradeCode=tradeCode)))
             if lines:
+                lines.sort()
                 return gui.createListToolTip(
                     title='Trade Codes:',
                     strings=lines)
@@ -1115,33 +1130,35 @@ class HexTable(gui.FrozenColumnListTable):
             lineIndents = {}
             lineColours = {}
             stellar = world.stellar()
-            for star in stellar:
+            for star in stellar.stars():
                 lines.append(f'Classification: {star.string()}')
-                spectralClass = f'Spectral Class: {star.code(multiverse.Star.Element.SpectralClass)} - {star.description(multiverse.Star.Element.SpectralClass)}'
-                spectralScale = f'Spectral Scale: {star.code(multiverse.Star.Element.SpectralScale)} - {star.description(multiverse.Star.Element.SpectralScale)}'
-                luminosityClass = f'Luminosity Class: {star.code(multiverse.Star.Element.LuminosityClass)} - {star.description(multiverse.Star.Element.LuminosityClass)}'
-                lines.append(spectralClass)
-                lines.append(spectralScale)
+
+                luminosityClass = star.code(astronomer.Star.Element.LuminosityClass)
+                luminosityClass = f'Luminosity Class: {luminosityClass} - {star.description(astronomer.Star.Element.LuminosityClass)}'
                 lines.append(luminosityClass)
-
-                # There could be collisions when adding to dicts in the following code as multiple
-                # stars can have the same spectral/luminosity text. This isn't an issue though as
-                # the mapping value will always be the same for a given piece of text
-                lineIndents[spectralClass] = 1
-                lineIndents[spectralScale] = 1
                 lineIndents[luminosityClass] = 1
-
-                tagLevel = self._worldTagging.calculateSpectralTagLevel(star=star) if self._worldTagging else None
-                if tagLevel:
-                    lineColours[spectralClass] = self._taggingColour(level=tagLevel)
-
                 tagLevel = self._worldTagging.calculateLuminosityTagLevel(star=star) if self._worldTagging else None
                 if tagLevel:
                     lineColours[luminosityClass] = self._taggingColour(level=tagLevel)
 
+                spectralClass = star.code(astronomer.Star.Element.SpectralClass)
+                if spectralClass is not None:
+                    spectralClass = f'Spectral Class: {spectralClass} - {star.description(astronomer.Star.Element.SpectralClass)}'
+                    lines.append(spectralClass)
+                    lineIndents[spectralClass] = 1
+                    tagLevel = self._worldTagging.calculateSpectralTagLevel(star=star) if self._worldTagging else None
+                    if tagLevel:
+                        lineColours[spectralClass] = self._taggingColour(level=tagLevel)
+
+                    spectralScale = star.code(astronomer.Star.Element.SpectralScale)
+                    if spectralScale is not None:
+                        spectralScale = f'Spectral Scale: {spectralScale} - {star.description(astronomer.Star.Element.SpectralScale)}'
+                        lines.append(spectralScale)
+                        lineIndents[spectralScale] = 1
+
             if lines:
                 return gui.createListToolTip(
-                    title=f'Stars: {stellar.string()}',
+                    title=f'Stellar: {stellar.string()}',
                     strings=lines,
                     stringColours=lineColours,
                     stringIndents=lineIndents)
@@ -1150,11 +1167,11 @@ class HexTable(gui.FrozenColumnListTable):
                 return None
             return gui.createStringToolTip(string='Unknown')
         elif columnType == self.ColumnType.PopulationMultiplier:
-            return gui.createStringToolTip(world.pbg().description(element=multiverse.PBG.Element.PopulationMultiplier))
+            return gui.createStringToolTip(world.pbg().description(element=astronomer.PBG.Element.PopulationMultiplier))
         elif columnType == self.ColumnType.PlanetoidBeltCount:
-            return gui.createStringToolTip(world.pbg().description(element=multiverse.PBG.Element.PlanetoidBelts))
+            return gui.createStringToolTip(world.pbg().description(element=astronomer.PBG.Element.PlanetoidBelts))
         elif columnType == self.ColumnType.GasGiantCount:
-            return gui.createStringToolTip(world.pbg().description(element=multiverse.PBG.Element.GasGiants))
+            return gui.createStringToolTip(world.pbg().description(element=astronomer.PBG.Element.GasGiants))
         elif columnType == self.ColumnType.Bases:
             return gui.createBasesToolTip(
                 world=world,
@@ -1178,54 +1195,26 @@ class HexTable(gui.FrozenColumnListTable):
                     includeBaseTypes=militaryBases,
                     worldTagging=self._worldTagging,
                     taggingColours=self._taggingColours)
-        elif columnType == self.ColumnType.OwnerWorld:
-            if world.hasOwner():
-                try:
-                    ownerWorld = multiverse.WorldManager.instance().worldBySectorHex(
-                        milieu=self._milieu,
-                        sectorHex=world.ownerSectorHex())
-                except Exception:
-                    ownerWorld = None
-
-                if ownerWorld:
-                    if self._hexTooltipProvider:
-                        return self._hexTooltipProvider.tooltip(hex=ownerWorld.hex())
-                    else:
-                        return multiverse.WorldManager.instance().canonicalHexName(
-                            milieu=ownerWorld.milieu(),
-                            hex=ownerWorld.hex())
-                else:
-                    return gui.createStringToolTip(f'Unknown world at {world.ownerSectorHex()}')
+        elif columnType == self.ColumnType.OwnerWorlds:
+            if world.ownerCount() > 0:
+                return gui.createWorldRefListTooltip(
+                    title='Owner Worlds',
+                    universe=self._universe,
+                    worldRefs=world.ownerWorldReferences(),
+                    sourceSectorPos=world.hex().sectorPosition(),
+                    worldTagging=self._worldTagging,
+                    taggingColours=self._taggingColours)
         elif columnType == self.ColumnType.ColonyWorlds:
-            if world.hasColony():
-                listStrings = []
-                listColours = {}
-                for colonySectorHex in world.colonySectorHexes():
-                    try:
-                        colonyWorld = multiverse.WorldManager.instance().worldBySectorHex(
-                            milieu=self._milieu,
-                            sectorHex=colonySectorHex)
-                    except Exception:
-                        colonyWorld = None
-
-                    if colonyWorld:
-                        colonyString = colonyWorld.name(includeSubsector=True)
-                        listStrings.append(colonyString)
-                        tagLevel = self._worldTagging.calculateWorldTagLevel(world=colonyWorld) if self._worldTagging else None
-                        if tagLevel:
-                            listColours[colonyString] = self._taggingColour(level=tagLevel)
-                    else:
-                        colonyString = f'Unknown world at {colonySectorHex}'
-                        listStrings.append(colonyString)
-                        listColours[colonyString] = self._taggingColour(
-                            level=logic.TagLevel.Danger)
-                return gui.createListToolTip(
+            if world.colonyCount() > 0:
+                return gui.createWorldRefListTooltip(
                     title='Colony Worlds',
-                    strings=listStrings,
-                    stringColours=listColours)
+                    universe=self._universe,
+                    worldRefs=world.colonyWorldReferences(),
+                    sourceSectorPos=world.hex().sectorPosition(),
+                    worldTagging=self._worldTagging,
+                    taggingColours=self._taggingColours)
         elif columnType == self.ColumnType.Remarks:
-            remarks = world.remarks()
-            return gui.createStringToolTip(remarks.string())
+            return gui.createStringToolTip(world.remarksString())
 
         return None
 
@@ -1271,19 +1260,19 @@ class HexTable(gui.FrozenColumnListTable):
 
     def _showDetails(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=hexes)
 
     def _showOnMap(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         try:
-            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
-            mapWindow.clearOverlays()
+            mapWindow = gui.MapWindow()
             mapWindow.highlightHexes(hexes=hexes)
+            gui.WindowManager.instance().manageWindow(window=mapWindow)
         except Exception as ex:
             message = 'Failed to show hexes(s) on map'
             logging.error(message, exc_info=ex)
@@ -1291,3 +1280,13 @@ class HexTable(gui.FrozenColumnListTable):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != self._universe.id():
+            return
+
+        self._syncContent()

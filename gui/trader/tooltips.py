@@ -1,10 +1,10 @@
 import app
+import astronomer
 import common
 import gui
 import html
 import logic
 import traveller
-import multiverse
 import typing
 
 ShipTonnageToolTip = gui.createStringToolTip(
@@ -233,20 +233,16 @@ Mgt2022LocalBrokerToolTip = gui.createStringToolTip(
     escape=False)
 
 def createLogisticsToolTip(
+        universe: astronomer.Universe,
         routeLogistics: logic.RouteLogistics,
         worldTagging: typing.Optional[logic.WorldTagging] = None,
         taggingColours: typing.Optional[app.TaggingColours] = None
         ) -> str:
-    milieu = routeLogistics.milieu()
     jumpRoute = routeLogistics.jumpRoute()
     startHex = jumpRoute.startNode()
     finishHex = jumpRoute.finishNode()
-    startString = html.escape(multiverse.WorldManager.instance().canonicalHexName(
-        milieu=milieu,
-        hex=startHex))
-    finishString = html.escape(multiverse.WorldManager.instance().canonicalHexName(
-        milieu=milieu,
-        hex=finishHex))
+    startString = html.escape(universe.canonicalHexName(hex=startHex))
+    finishString = html.escape(universe.canonicalHexName(hex=finishHex))
 
     toolTip = '<html>'
 
@@ -308,16 +304,14 @@ def createLogisticsToolTip(
             pitStopMap[pitStop.routeIndex()] = pitStop
 
     for index, nodePos in enumerate(jumpRoute):
-        world = multiverse.WorldManager.instance().worldByPosition(
-            milieu=milieu,
-            hex=nodePos)
+        world = universe.worldByPosition(hex=nodePos)
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
-            name=multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=nodePos)))
+            name=universe.canonicalHexName(hex=nodePos)))
 
         tagLevel = logic.TagLevel.Danger # Dead space is tagged as danger
         if world and worldTagging:
-            tagLevel = worldTagging.calculateWorldTagLevel(world)
+            tagLevel = worldTagging.calculateWorldTagLevel(world=world)
         tagColour = taggingColours.colour(level=tagLevel) if tagLevel and taggingColours else None
 
         style = f'background-color:#{tagColour}' if tagColour else ''
@@ -379,7 +373,7 @@ def createSaleTradeScoreToolTip(tradeScore: logic.TradeScore) -> str:
         totalScore=tradeScore.totalSaleScore())
 
 def _createTradeScoreToolTip(
-        tradeScores: typing.Mapping[traveller.TradeGood, common.ScalarCalculation],
+        tradeScores: typing.Mapping[logic.TradeGood, common.ScalarCalculation],
         quantityModifiers: typing.Iterable[common.ScalarCalculation],
         totalScore: common.ScalarCalculation
         ) -> str:
@@ -437,30 +431,3 @@ def _createTradeScoreToolTip(
     toolTip += '</ul>'
 
     return toolTip
-
-
-def createBasesToolTip(
-        world: multiverse.World,
-        includeBaseTypes: typing.Optional[typing.Iterable[multiverse.BaseType]] = None,
-        worldTagging: typing.Optional[logic.WorldTagging] = None,
-        taggingColours: typing.Optional[app.TaggingColours] = None
-        ) -> str:
-    baseStrings = []
-    baseColours = {}
-    for baseType in includeBaseTypes if includeBaseTypes else world.bases():
-        if includeBaseTypes and not world.hasBase(baseType=baseType):
-            # An include list is being used and the world doesn't have the base type
-            continue
-        baseString = multiverse.Bases.description(baseType=baseType)
-        baseStrings.append(baseString)
-
-        tagLevel = worldTagging.calculateBaseTypeTagLevel(baseType=baseType) if worldTagging else None
-        if tagLevel and taggingColours:
-            baseColours[baseString] = taggingColours.colour(level=tagLevel)
-    if not baseStrings:
-        return ''
-
-    return gui.createListToolTip(
-        title='Bases',
-        strings=baseStrings,
-        stringColours=baseColours)

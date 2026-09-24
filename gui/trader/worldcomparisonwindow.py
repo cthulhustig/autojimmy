@@ -1,10 +1,10 @@
 import app
+import astronomer
 import cartographer
 import gui
-import logic
 import logging
+import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -55,13 +55,13 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
 
     def _filterTradeGoods(
             self,
-            tradeGood: traveller.TradeGood
+            tradeGood: logic.TradeGood
             ) -> bool:
         # Don't include exotics in the table as they're not like other trade
         # goods and don't affect the trade score
-        exotics = traveller.tradeGoodFromId(
+        exotics = logic.tradeGoodFromId(
             ruleSystem=self._rules.system(),
-            tradeGoodId=traveller.TradeGoodIds.Exotics)
+            tradeGoodId=logic.TradeGoodIds.Exotics)
         return tradeGood is not exotics
 
 class WorldComparisonWindow(gui.WindowWidget):
@@ -174,7 +174,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._scoredGoodGroupBox.setLayout(groupLayout)
 
     def _setupWorldControls(self) -> None:
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        universe = astronomer.WorldManager.instance().universe()
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -184,7 +184,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -192,12 +192,12 @@ class WorldComparisonWindow(gui.WindowWidget):
             taggingColours=taggingColours)
 
         self._worldTable = gui.WorldTradeScoreTable(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
         self._worldManagementWidget = gui.HexTableManagerWidget(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -233,8 +233,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             showAllOnMapAction)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=multiverse.WorldManager.instance().universe(),
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             style=mapStyle,
             options=mapOptions,
@@ -243,7 +242,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             worldTagging=worldTagging,
             taggingColours=taggingColours)
         self._mapWidget.setSelectionMode(
-            mode=gui.MapWidgetEx.SelectionMode.MultiSelect)
+            mode=gui.MapWidgetEx.SelectionMode.MultiSelection)
         self._mapWidget.selectionChanged.connect(self._mapSelectionChanged)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
@@ -279,7 +278,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldsGroupBox = QtWidgets.QGroupBox('Worlds')
         self._worldsGroupBox.setLayout(groupLayout)
 
-    def _allowWorld(self, hex: multiverse.HexPosition) -> bool:
+    def _allowWorld(self, hex: astronomer.HexPosition) -> bool:
         return not self._worldManagementWidget.containsHex(hex)
 
     def _tradeGoodTableItemChanged(self, item: QtWidgets.QTableWidgetItem) -> None:
@@ -306,7 +305,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _tableContentsChanged(self) -> None:
         with gui.SignalBlocker(widget=self._mapWidget):
-            self._mapWidget.clearSelectedHexes()
+            self._mapWidget.clearSelection()
             for world in self._worldTable.worlds():
                 self._mapWidget.selectHex(
                     hex=world.hex(),
@@ -331,10 +330,11 @@ class WorldComparisonWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
-            self._hexTooltipProvider.setMilieu(milieu=newValue)
-            self._worldManagementWidget.setMilieu(milieu=newValue)
-            self._mapWidget.setMilieu(milieu=newValue)
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._hexTooltipProvider.setUniverse(universe=universe)
+            self._worldManagementWidget.setUniverse(universe=universe)
+            self._mapWidget.setUniverse(universe=universe)
         elif option is app.ConfigOption.Rules:
             self._tradeGoodTable.setRules(rules=newValue)
             self._hexTooltipProvider.setRules(rules=newValue)
@@ -424,7 +424,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _findTradeOptions(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         try:
             traderWindow = gui.WindowManager.instance().showMultiWorldTradeOptionsWindow()
@@ -457,14 +457,14 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showHexesOnMap(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         if not hexes:
             return

@@ -269,7 +269,7 @@ class DiceRollerWindow(gui.WindowWidget):
         # New
         #
         self._newRollerAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.NewFile),
+            gui.loadIcon(gui.Icon.FileNew),
             'New Dice Roller',
             self)
         self._newRollerAction.setShortcut(QtGui.QKeySequence.StandardKey.New)
@@ -291,7 +291,7 @@ class DiceRollerWindow(gui.WindowWidget):
         # Save
         #
         self._saveSelectedAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.SaveFile),
+            gui.loadIcon(gui.Icon.FileSave),
             'Save',
             self)
         self._saveSelectedAction.setShortcut(QtGui.QKeySequence.StandardKey.Save)
@@ -320,7 +320,7 @@ class DiceRollerWindow(gui.WindowWidget):
         # Rename
         #
         self._renameAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.RenameFile), 'Rename...', self)
+            gui.loadIcon(gui.Icon.FileRename), 'Rename...', self)
         self._renameAction.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key.Key_F2))
         self._renameAction.triggered.connect(self._renameCurrentObject)
         self._rollerTree.addAction(self._renameAction)
@@ -352,7 +352,7 @@ class DiceRollerWindow(gui.WindowWidget):
         # Copy
         #
         self._copyAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.CopyFile), 'Copy', self)
+            gui.loadIcon(gui.Icon.FileCopy), 'Copy', self)
         self._copyAction.triggered.connect(self._copyCurrentObject)
         self._rollerTree.addAction(self._copyAction)
         self._rollerToolbar.addAction(self._copyAction)
@@ -361,7 +361,7 @@ class DiceRollerWindow(gui.WindowWidget):
         # Delete
         #
         self._deleteAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.DeleteFile), 'Delete...', self)
+            gui.loadIcon(gui.Icon.FileDelete), 'Delete...', self)
         self._deleteAction.triggered.connect(self._deleteSelectedObjects)
         self._deleteAction.setShortcut(QtGui.QKeySequence.StandardKey.Delete)
         self._rollerTree.addAction(self._deleteAction)
@@ -371,7 +371,7 @@ class DiceRollerWindow(gui.WindowWidget):
         # Import
         #
         self._importAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.ImportFile), 'Import...', self)
+            gui.loadIcon(gui.Icon.FileImport), 'Import...', self)
         self._importAction.triggered.connect(self._importObjects)
         self._rollerTree.addAction(self._importAction)
         self._rollerToolbar.addAction(self._importAction)
@@ -380,7 +380,7 @@ class DiceRollerWindow(gui.WindowWidget):
         # Export
         #
         self._exportAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.ExportFile), 'Export...', self)
+            gui.loadIcon(gui.Icon.FileExport), 'Export...', self)
         self._exportAction.triggered.connect(self._exportSelectedObjects)
         self._rollerTree.addAction(self._exportAction)
         self._rollerToolbar.addAction(self._exportAction)

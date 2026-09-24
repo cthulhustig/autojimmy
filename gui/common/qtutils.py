@@ -42,17 +42,26 @@ def colourToString(
     else:
         return f'#{colour.red():02X}{colour.green():02X}{colour.blue():02X}'
 
-def isShiftKeyDown():
+def isShiftKeyDown(exclusive: bool = True):
     modifiers = QtWidgets.QApplication.keyboardModifiers()
-    return modifiers == QtCore.Qt.KeyboardModifier.ShiftModifier
+    if exclusive:
+        return modifiers == QtCore.Qt.KeyboardModifier.ShiftModifier
+    else:
+        return (modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier) == QtCore.Qt.KeyboardModifier.ShiftModifier
 
-def isCtrlKeyDown():
+def isCtrlKeyDown(exclusive: bool = True):
     modifiers = QtWidgets.QApplication.keyboardModifiers()
-    return modifiers == QtCore.Qt.KeyboardModifier.ControlModifier
+    if exclusive:
+        return modifiers == QtCore.Qt.KeyboardModifier.ControlModifier
+    else:
+        return (modifiers & QtCore.Qt.KeyboardModifier.ControlModifier) == QtCore.Qt.KeyboardModifier.ControlModifier
 
-def isAltKeyDown():
+def isAltKeyDown(exclusive: bool = True):
     modifiers = QtWidgets.QApplication.keyboardModifiers()
-    return modifiers == QtCore.Qt.KeyboardModifier.AltModifier
+    if exclusive:
+        return modifiers == QtCore.Qt.KeyboardModifier.AltModifier
+    else:
+        return (modifiers & QtCore.Qt.KeyboardModifier.AltModifier) == QtCore.Qt.KeyboardModifier.AltModifier
 
 class SignalBlocker():
     def __init__(self, widget: QtWidgets.QWidget) -> None:
@@ -267,3 +276,14 @@ def setClipboardContent(
         clipboard.setImage(content)
     else:
         raise ValueError(f'Clipboard object is unsupported type {type(content)}')
+
+def createAlphaColour(
+        base: typing.Union[QtGui.QColor, str],
+        alpha: typing.Union[int, float] # Int in range 0 to 255 or float in range 0 to 1.0
+        ) -> QtGui.QColor:
+    colour = QtGui.QColor(base)
+    if isinstance(alpha, int):
+        colour.setAlpha(alpha)
+    else:
+        colour.setAlphaF(alpha)
+    return colour

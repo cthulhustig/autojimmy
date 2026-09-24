@@ -1,16 +1,16 @@
 import app
+import astronomer
 import cartographer
 import gui
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class HexSelectDialog(gui.DialogEx):
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Iterable[app.MapOption],
@@ -26,8 +26,7 @@ class HexSelectDialog(gui.DialogEx):
             parent=parent)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=multiverse.WorldManager.instance().universe(),
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             style=mapStyle,
             options=mapOptions,
@@ -36,7 +35,7 @@ class HexSelectDialog(gui.DialogEx):
             worldTagging=worldTagging,
             taggingColours=taggingColours)
         self._mapWidget.setInfoEnabled(False) # Disable by default
-        self._mapWidget.setSelectionMode(gui.MapWidgetEx.SelectionMode.MultiSelect)
+        self._mapWidget.setSelectionMode(gui.MapWidgetEx.SelectionMode.MultiSelection)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
@@ -79,12 +78,12 @@ class HexSelectDialog(gui.DialogEx):
 
         self._updateLabel()
 
-    def selectedHexes(self) -> typing.Iterable[multiverse.HexPosition]:
+    def selectedHexes(self) -> typing.Iterable[astronomer.HexPosition]:
         return self._mapWidget.selectedHexes()
 
     def selectHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             setInfoHex: bool = True
             ) -> None:
         self._mapWidget.selectHex(
@@ -93,18 +92,18 @@ class HexSelectDialog(gui.DialogEx):
 
     def deselectHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         self._mapWidget.deselectHex(hex=hex)
 
     def selectHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         self._mapWidget.selectHexes(hexes=hexes)
 
     def clearSelectedHexes(self) -> None:
-        self._mapWidget.clearSelectedHexes()
+        self._mapWidget.clearSelection()
 
     def configureSelection(
             self,
@@ -112,9 +111,9 @@ class HexSelectDialog(gui.DialogEx):
             includeDeadSpace: bool = False
             ) -> None:
         self._mapWidget.setSelectionMode(
-            gui.MapWidgetEx.SelectionMode.SingleSelect \
+            gui.MapWidgetEx.SelectionMode.SingleSelection \
             if singleSelect else \
-            gui.MapWidgetEx.SelectionMode.MultiSelect)
+            gui.MapWidgetEx.SelectionMode.MultiSelection)
         self._mapWidget.enableDeadSpaceSelection(enable=includeDeadSpace)
         self._updateLabel()
 
@@ -134,7 +133,7 @@ class HexSelectDialog(gui.DialogEx):
         # it needs to be done after the initial size has been calculated.
         selection = self.selectedHexes()
         if selection:
-            if self._mapWidget.selectionMode() is gui.MapWidgetEx.SelectionMode.SingleSelect:
+            if self._mapWidget.selectionMode() is gui.MapWidgetEx.SelectionMode.SingleSelection:
                 self._mapWidget.centerOnHex(
                     hex=selection[0],
                     immediate=True)
@@ -177,7 +176,7 @@ class HexSelectDialog(gui.DialogEx):
 
     def _updateLabel(self) -> None:
         isWorld = not self._mapWidget.isDeadSpaceSelectionEnabled()
-        isSingular = self._mapWidget.selectionMode() == gui.MapWidgetEx.SelectionMode.SingleSelect
+        isSingular = self._mapWidget.selectionMode() == gui.MapWidgetEx.SelectionMode.SingleSelection
         if isWorld:
             wording = 'world' if isSingular else 'worlds'
         else:

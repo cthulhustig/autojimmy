@@ -1,5 +1,6 @@
+import astronomer
+import common
 import enum
-import multiverse
 import typing
 
 class JumpRoute(object):
@@ -10,12 +11,12 @@ class JumpRoute(object):
     def __init__(
             self,
             nodes: typing.Sequence[typing.Tuple[
-                multiverse.HexPosition,
+                astronomer.HexPosition,
                 NodeFlags]]
             ) -> None:
         if not nodes:
             raise ValueError('A jump route can\'t have an empty nodes list')
-        self._hexes: typing.List[multiverse.HexPosition] = []
+        self._hexes: typing.List[astronomer.HexPosition] = []
         self._flags: typing.List[JumpRoute.NodeFlags] = []
         for hex, flags in nodes:
             self._hexes.append(hex)
@@ -41,16 +42,16 @@ class JumpRoute(object):
     def nodeCount(self) -> int:
         return len(self._hexes)
 
-    def nodeAt(self, index: int) -> multiverse.HexPosition:
+    def nodeAt(self, index: int) -> astronomer.HexPosition:
         return self._hexes[index]
 
-    def nodes(self) -> typing.List[multiverse.HexPosition]:
-        return list(self._hexes)
+    def nodes(self) -> typing.Sequence[astronomer.HexPosition]:
+        return common.ConstSequenceRef(self._hexes)
 
-    def startNode(self) -> multiverse.HexPosition:
+    def startNode(self) -> astronomer.HexPosition:
         return self._hexes[0]
 
-    def finishNode(self) -> multiverse.HexPosition:
+    def finishNode(self) -> astronomer.HexPosition:
         return self._hexes[-1]
 
     def flagsAt(self, index: int) -> NodeFlags:
@@ -78,10 +79,10 @@ class JumpRoute(object):
     def totalParsecs(self) -> int:
         return self._totalParsecs
 
-    def __getitem__(self, index: int) -> multiverse.HexPosition:
+    def __getitem__(self, index: int) -> astronomer.HexPosition:
         return self.nodeAt(index)
 
-    def __iter__(self) -> typing.Iterator[multiverse.HexPosition]:
+    def __iter__(self) -> typing.Iterator[astronomer.HexPosition]:
         return self._hexes.__iter__()
 
     def __next__(self) -> typing.Any:

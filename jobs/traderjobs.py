@@ -1,9 +1,9 @@
+import astronomer
 import common
 import datetime
 import logic
 import time
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -16,8 +16,8 @@ class TraderJobBase(QtCore.QThread):
     def __init__(
             self,
             parent: QtCore.QObject,
+            universe: astronomer.Universe,
             rules: traveller.Rules,
-            milieu: multiverse.Milieu,
             tradeOptionCallback: typing.Callable[[typing.List[logic.TradeOption]], typing.Any],
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
             tradeInfoCallback: typing.Optional[typing.Callable[[str], typing.Any]] = None,
@@ -29,8 +29,8 @@ class TraderJobBase(QtCore.QThread):
         super().__init__(parent=parent)
 
         self._trader = logic.Trader(
+            universe=universe,
             rules=rules,
-            milieu=milieu,
             tradeOptionCallback=self._handleTradeOption,
             traderInfoCallback=self._handleTradeInfo,
             progressCallback=self._handleProgress,
@@ -95,17 +95,17 @@ class TraderJobBase(QtCore.QThread):
         shouldYield = (self._lastYieldTime == None) or \
             ((now - self._lastYieldTime) >= self._yieldDelta)
         if shouldYield:
-            time.sleep(0.01)
+            time.sleep(0.05)
             self._lastYieldTime = now
 
 class SingleWorldTraderJob(TraderJobBase):
     def __init__(
             self,
             parent: QtCore.QObject,
+            universe: astronomer.Universe,
             rules: traveller.Rules,
-            milieu: multiverse.Milieu,
-            purchaseWorld: multiverse.World,
-            saleWorlds: typing.Iterable[multiverse.World],
+            purchaseWorld: astronomer.World,
+            saleWorlds: typing.Iterable[astronomer.World],
             currentCargo: typing.Iterable[logic.CargoRecord],
             possibleCargo: typing.Iterable[logic.CargoRecord],
             playerBrokerDm: typing.Union[int, common.ScalarCalculation],
@@ -164,8 +164,8 @@ class SingleWorldTraderJob(TraderJobBase):
 
         super().__init__(
             parent=parent,
+            universe=universe,
             rules=rules,
-            milieu=milieu,
             tradeOptionCallback=tradeOptionCallback,
             finishedCallback=finishedCallback,
             tradeInfoCallback=tradeInfoCallback,
@@ -211,10 +211,10 @@ class MultiWorldTraderJob(TraderJobBase):
     def __init__(
             self,
             parent: QtCore.QObject,
+            universe: astronomer.Universe,
             rules: traveller.Rules,
-            milieu: multiverse.Milieu,
-            purchaseWorlds: typing.Iterable[multiverse.World],
-            saleWorlds: typing.Iterable[multiverse.World],
+            purchaseWorlds: typing.Iterable[astronomer.World],
+            saleWorlds: typing.Iterable[astronomer.World],
             playerBrokerDm: typing.Union[int, common.ScalarCalculation],
             minSellerDm: typing.Union[int, common.ScalarCalculation],
             maxSellerDm: typing.Union[int, common.ScalarCalculation],
@@ -277,8 +277,8 @@ class MultiWorldTraderJob(TraderJobBase):
 
         super().__init__(
             parent=parent,
+            universe=universe,
             rules=rules,
-            milieu=milieu,
             tradeOptionCallback=tradeOptionCallback,
             finishedCallback=finishedCallback,
             tradeInfoCallback=tradeInfoCallback,

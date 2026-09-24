@@ -1,11 +1,12 @@
 import app
+import astronomer
+import azathoth
 import common
 import gui
 import jobs
 import logging
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -27,13 +28,13 @@ class _WorldSaleScoreTable(gui.WorldTradeScoreTable):
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
             columns: typing.Iterable[typing.Union[gui.WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]] = AllColumns) -> None:
         super().__init__(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours,
@@ -58,7 +59,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         super().__init__(title=title, configSection=configSection)
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            universe=astronomer.WorldManager.instance().universe(),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
@@ -68,6 +69,11 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._traderJob: typing.Optional[jobs.TraderJobBase] = None
 
         app.Config.instance().configChanged.connect(self._appConfigChanged)
+        azathoth.UniverseEditor.instance().addPreUpdateObserver(self._preUniverseUpdate)
+
+    def __del__(self) -> None:
+        app.Config.instance().configChanged.disconnect(self._appConfigChanged)
+        azathoth.UniverseEditor.instance().removeObserver(self._preUniverseUpdate)
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -105,9 +111,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         super().firstShowEvent(e)
 
     def closeEvent(self, e: QtGui.QCloseEvent):
-        if self._traderJob:
-            self._traderJob.cancel(block=True)
-            self._traderJob = None
+        self._cancelTraderJob()
         return super().closeEvent(e)
 
     def _setupConfigurationControls(self) -> None:
@@ -277,6 +281,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(configurationLayout)
 
     def _setupTradeOptionControls(self) -> None:
+        universe = astronomer.WorldManager.instance().universe()
         outcomeColours = app.Config.instance().value(option=app.ConfigOption.OutcomeColours)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
@@ -298,6 +303,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionCalculationModeTabs.currentChanged.connect(self._updateTradeOptionTableColumns)
 
         self._tradeOptionsTable = gui.TradeOptionsTable(
+            universe=universe,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -338,9 +344,11 @@ class _BaseTraderWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
-            self._hexTooltipProvider.setMilieu(milieu=newValue)
-            # Changing milieu invalidates existing trade options as the world
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._hexTooltipProvider.setUniverse(universe=universe)
+            self._tradeOptionsTable.setUniverse(universe=universe)
+            # Changing universe invalidates existing trade options as the world
             # data they were generated from has changed
             self._clearTradeOptions()
         elif option is app.ConfigOption.Rules:
@@ -462,9 +470,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionCountLabel.setNum(self._tradeOptionsTable.rowCount())
 
     def _clearTradeOptions(self) -> None:
-        if self._traderJob:
-            self._traderJob.cancel()
-            self._traderJob = None
+        self._cancelTraderJob()
         self._tradeOptionsTable.removeAllRows()
         self._progressLabel.clear()
         self._tradeOptionCountLabel.clear()
@@ -688,7 +694,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             ) -> None:
         self._progressLabel.setText(common.formatNumber(optionsProcessed) + '/' + common.formatNumber(optionsToProcess))
 
-    def _traderJobStart(self) -> None:
+    def _startTraderJob(self) -> None:
         if not self._traderJob:
             return
 
@@ -705,6 +711,16 @@ class _BaseTraderWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _cancelTraderJob(self) -> None:
+        if self._traderJob is None:
+            return
+
+        self._traderJob.cancel(block=True)
+        self._traderJob = None
+
+        self._calculateTradeOptionsButton.showPrimaryText()
+        self._enableDisableControls()
 
     def _traderJobFinished(self, result: typing.Union[str, Exception]) -> None:
         if isinstance(result, Exception):
@@ -750,6 +766,25 @@ class _BaseTraderWindow(gui.WindowWidget):
     def _showWelcomeMessage(self) -> None:
         # This should be implemented by the derived class
         assert(False)
+
+    def _preUniverseUpdate(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != astronomer.WorldManager.instance().universe().id():
+            return
+
+        # Cancel any in progress the trader job if the universe is going to
+        # change. This MUST be done in the pre-update handler to avoid issues
+        # due to the job running in a worker thread.
+        self._cancelTraderJob()
+
+        # Trade options are calculated based on the universe state at a point
+        # in time, so if the universe changes the trade options may become
+        # incorrect/invalid. It's not really realistic to determine if they're
+        # still valid so the best we can do is clear them
+        self._clearTradeOptions()
 
 
 # █████   ███   █████                    ████      █████    ███████████                         █████
@@ -855,8 +890,8 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def configureControls(
             self,
-            purchaseWorld: typing.Optional[multiverse.World] = None,
-            saleWorlds: typing.Optional[typing.Iterable[multiverse.World]] = None,
+            purchaseWorld: typing.Optional[astronomer.World] = None,
+            saleWorlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
             playerBrokerDm: typing.Optional[int] = None,
             minSellerDm: typing.Optional[int] = None,
             maxSellerDm: typing.Optional[int] = None,
@@ -1091,7 +1126,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         return super().eventFilter(object, event)
 
     def _setupPurchaseWorldControls(self) -> None:
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        universe = astronomer.WorldManager.instance().universe()
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -1101,7 +1136,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._purchaseWorldWidget = gui.HexSelectToolWidget(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -1123,7 +1158,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._purchaseWorldGroupBox.setLayout(purchaseWorldLayout)
 
     def _setupSaleWorldControls(self) -> None:
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        universe = astronomer.WorldManager.instance().universe()
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -1133,12 +1168,12 @@ class WorldTraderWindow(_BaseTraderWindow):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._saleWorldsTable = _WorldSaleScoreTable(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
         self._saleWorldsWidget = gui.HexTableManagerWidget(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -1513,7 +1548,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         replacements = {}
         for currentCargoRecord in self._speculativeCargoTable.cargoRecords():
             cargoRecords = logic.generateSpeculativePurchaseCargo(
-                ruleSystem=rules.system(),
+                rules=rules,
                 world=world,
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
                 useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1576,7 +1611,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         return cargoRecords
 
-    def _allowSaleWorld(self, hex: multiverse.HexPosition) -> bool:
+    def _allowSaleWorld(self, hex: astronomer.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
         return not self._saleWorldsWidget.containsHex(hex)
 
@@ -1601,9 +1636,10 @@ class WorldTraderWindow(_BaseTraderWindow):
             oldValue=oldValue,
             newValue=newValue)
 
-        if option is app.ConfigOption.Milieu:
-            self._purchaseWorldWidget.setMilieu(milieu=newValue)
-            self._saleWorldsWidget.setMilieu(milieu=newValue)
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._purchaseWorldWidget.setUniverse(universe=universe)
+            self._saleWorldsWidget.setUniverse(universe=universe)
         elif option is app.ConfigOption.Rules:
             self._purchaseWorldWidget.setRules(rules=newValue)
             self._saleWorldsWidget.setRules(rules=newValue)
@@ -1675,7 +1711,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         cargoRecords = logic.generateSpeculativePurchaseCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1694,16 +1730,16 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         # Don't list exotics. We can't generate speculate trade options for them so there's no
         # reason to add them here
-        ignoreTradeGoods = [traveller.tradeGoodFromId(
+        ignoreTradeGoods = [logic.tradeGoodFromId(
             ruleSystem=rules.system(),
-            tradeGoodId=traveller.TradeGoodIds.Exotics)]
+            tradeGoodId=logic.TradeGoodIds.Exotics)]
 
         # Don't list trade goods that have already been added to the list
         for row in range(self._speculativeCargoTable.rowCount()):
             cargoRecord = self._speculativeCargoTable.cargoRecord(row)
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
-        tradeGoods = traveller.tradeGoodList(
+        tradeGoods = logic.tradeGoodList(
             ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
@@ -1722,7 +1758,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             return
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1802,7 +1838,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
-        tradeGoods = traveller.tradeGoodList(
+        tradeGoods = logic.tradeGoodList(
             ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
@@ -2087,7 +2123,7 @@ class WorldTraderWindow(_BaseTraderWindow):
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:
             # A trade option job is already running so cancel it
-            self._traderJob.cancel()
+            self._cancelTraderJob()
             return
 
         if self._speculativeCargoTable.isEmpty() and \
@@ -2164,7 +2200,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             if answer == QtWidgets.QMessageBox.StandardButton.No:
                 return
 
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        universe = astronomer.WorldManager.instance().universe()
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None
@@ -2215,11 +2251,11 @@ class WorldTraderWindow(_BaseTraderWindow):
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.StrictXBoat:
             jumpCostCalculator = logic.StrictXBoatCostCalculator(
-                milieu=milieu,
+                universe=universe,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LooseXBoat:
             jumpCostCalculator = logic.LooseXBoatCostCalculator(
-                milieu=milieu,
+                universe=universe,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -2232,8 +2268,8 @@ class WorldTraderWindow(_BaseTraderWindow):
         try:
             self._traderJob = jobs.SingleWorldTraderJob(
                 parent=self,
+                universe=universe,
                 rules=rules,
-                milieu=milieu,
                 purchaseWorld=self._purchaseWorldWidget.selectedWorld(),
                 saleWorlds=self._saleWorldsWidget.worlds(),
                 currentCargo=self._currentCargoTable.cargoRecords(),
@@ -2275,7 +2311,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._enableDisableControls()
 
         # Start job after a delay to give the ui time to update
-        QtCore.QTimer.singleShot(200, self._traderJobStart)
+        QtCore.QTimer.singleShot(200, self._startTraderJob)
 
     def _createCargoManifest(self) -> None:
         speculativeCargoLookup = set(self._speculativeCargoTable.cargoRecords())
@@ -2438,8 +2474,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
     def configureControls(
             self,
-            purchaseWorlds: typing.Optional[typing.Iterable[multiverse.World]] = None,
-            saleWorlds: typing.Optional[typing.Iterable[multiverse.World]] = None,
+            purchaseWorlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
+            saleWorlds: typing.Optional[typing.Iterable[astronomer.World]] = None,
             playerBrokerDm: typing.Optional[int] = None,
             minSellerDm: typing.Optional[int] = None,
             maxSellerDm: typing.Optional[int] = None,
@@ -2570,7 +2606,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         super().saveSettings()
 
     def _setupSaleWorldControls(self) -> None:
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        universe = astronomer.WorldManager.instance().universe()
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -2580,7 +2616,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._saleWorldsWidget = gui.HexTableManagerWidget(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -2603,7 +2639,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._saleWorldsGroupBox.setLayout(layout)
 
     def _setupPurchaseWorldControls(self) -> None:
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        universe = astronomer.WorldManager.instance().universe()
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -2613,7 +2649,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._purchaseWorldsWidget = gui.HexTableManagerWidget(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -2646,9 +2682,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             oldValue=oldValue,
             newValue=newValue)
 
-        if option is app.ConfigOption.Milieu:
-            self._purchaseWorldsWidget.setMilieu(milieu=newValue)
-            self._saleWorldsWidget.setMilieu(milieu=newValue)
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._purchaseWorldsWidget.setUniverse(universe=universe)
+            self._saleWorldsWidget.setUniverse(universe=universe)
         elif option is app.ConfigOption.Rules:
             self._purchaseWorldsWidget.setRules(rules=newValue)
             self._saleWorldsWidget.setRules(rules=newValue)
@@ -2679,11 +2716,11 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._purchaseWorldsGroupBox.setDisabled(self._traderJob != None)
         self._saleWorldsGroupBox.setDisabled(self._traderJob != None)
 
-    def _allowPurchaseWorld(self, hex: multiverse.HexPosition) -> bool:
+    def _allowPurchaseWorld(self, hex: astronomer.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
         return not self._purchaseWorldsWidget.containsHex(hex)
 
-    def _allowSaleWorld(self, hex: multiverse.HexPosition) -> bool:
+    def _allowSaleWorld(self, hex: astronomer.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
         return not self._saleWorldsWidget.containsHex(hex)
 
@@ -2751,7 +2788,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:
             # A trade option job is already running so cancel it
-            self._traderJob.cancel()
+            self._cancelTraderJob()
             return
 
         if self._availableFundsSpinBox.value() <= 0:
@@ -2820,7 +2857,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             if answer == QtWidgets.QMessageBox.StandardButton.No:
                 return
 
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        universe = astronomer.WorldManager.instance().universe()
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None
@@ -2875,11 +2912,11 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.StrictXBoat:
             jumpCostCalculator = logic.StrictXBoatCostCalculator(
-                milieu=milieu,
+                universe=universe,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LooseXBoat:
             jumpCostCalculator = logic.LooseXBoatCostCalculator(
-                milieu=milieu,
+                universe=universe,
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -2892,8 +2929,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         try:
             self._traderJob = jobs.MultiWorldTraderJob(
                 parent=self,
+                universe=universe,
                 rules=rules,
-                milieu=milieu,
                 purchaseWorlds=self._purchaseWorldsWidget.worlds(),
                 saleWorlds=self._saleWorldsWidget.worlds(),
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
@@ -2938,7 +2975,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._enableDisableControls()
 
         # Start job after a delay to give the ui time to update
-        QtCore.QTimer.singleShot(200, self._traderJobStart)
+        QtCore.QTimer.singleShot(200, self._startTraderJob)
 
     def _createCargoManifest(self) -> None:
         if self._tradeOptionsTable.isEmpty():
