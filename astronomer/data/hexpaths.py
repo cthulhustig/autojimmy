@@ -83,7 +83,7 @@ def _tracePathOutline(
     while True:
         if currentIndex in seenIndices:
             # TODO: Better error message?
-            raise ValueError('Path is re-entrant')
+            raise ValueError(f'Path is re-entrant at {currentHex.absolute()}')
 
         outline.append(currentHex)
         seenIndices.add(currentIndex)

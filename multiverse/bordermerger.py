@@ -64,6 +64,61 @@ def _pathArea(path: typing.Sequence[typing.Tuple[int, int]]) -> int:
         path[(index + 1) % len(path)][0] * path[index][1]
         for index in range(len(path))))
 
+def _walkOutOfBoundsPath(
+        startHex: typing.Tuple[int, int],
+        entryEdge: multiverse.HexEdge,
+        oobHexes: typing.Set[typing.Tuple[int, int]],
+        finishHex: typing.Tuple[int, int],
+        startHexToSegmentMap: typing.Dict[
+            typing.Tuple[int, int],
+            typing.Tuple[
+                int,
+                typing.List[typing.Tuple[int, int]]]],
+        borderPath: typing.List[typing.Tuple[int, int]],
+        ) -> None:
+    # Track seen hexes to prevent infinite loops in badly formed data
+    seenHexEntries: typing.Set[typing.Tuple[int, int]] = set()
+
+    currentHex = startHex
+    currentEdge = entryEdge
+    while True:
+        if (currentHex, currentEdge) in seenHexEntries:
+            raise RuntimeError(f'Out of bounds path walk looped at {currentHex}')
+        seenHexEntries.add((currentHex, currentEdge))
+
+        borderPath.append(currentHex)
+
+        checkEdge = multiverse.clockwiseHexEdge(currentEdge)
+        nextHex = None
+        while True:
+            neighbourHex = multiverse.absoluteNeighbourHex(currentHex, checkEdge)
+            if neighbourHex in startHexToSegmentMap or neighbourHex == finishHex:
+                # The neighbour the start of a segment so the out of bounds
+                # walk is completed
+                borderPath.append(neighbourHex)
+                return
+
+            if neighbourHex in oobHexes:
+                # We've found another out of bounds hex so walk to it
+                nextHex = neighbourHex
+                break
+
+            # If we've looped round to the edge that the current hex was entered
+            # from. Bail out to avoid an infinite loop. This is done after the
+            # check that the neighbour is the start of a segment or another out of
+            # bounds hex as doubling back is valid if there is somewhere for the
+            # walk to go
+            if checkEdge is currentEdge:
+                break
+
+            checkEdge = multiverse.clockwiseHexEdge(checkEdge)
+
+        if nextHex is None:
+            raise RuntimeError(f'No connecting out of bounds hex found for {currentHex}')
+
+        currentHex = nextHex
+        currentEdge = multiverse.oppositeHexEdge(checkEdge)
+
 # Holes are inserted by generating two vertical columns of parallel hexes
 # that run upwards from the upper most edge of the hole to the edge of the
 # boundary above it. One of the columns is the inward join and is ordered
@@ -306,14 +361,20 @@ def mergeBorders(
     # TODO: The fact I removed allegiance from the key will probably cause issues for "Smade's Planet" (Solomani Rim)
     # as it will likely get detected as a hole in the larger border as it ends up on the same layer as it's the
     # same colour (but a different allegiance)
-    layerToSegmentsMap: typing.Dict[
+    layerDataMap: typing.Dict[
         typing.Tuple[
             typing.Optional[str], # Style
             typing.Optional[str]], # Colour
-        typing.List[typing.Tuple[
-            int, # Number of hexes inside the sector
-            typing.List[typing.Tuple[int, int]]]]
-        ] = {}
+        typing.Tuple[
+            typing.List[typing.Tuple[ # Segments
+                # TODO: If the stuff I'm working on to walk the oob data works out then there
+                # should be no need to include oob data in segments (other that the first oob
+                # hex for looking up the start point of the next segment). It means this count
+                # shouldn't be needed and the the stuff about confirmed points can be removed
+                int, # Number of hexes inside the sector
+                typing.List[typing.Tuple[int, int]]]], # Hexes
+            typing.Set[typing.Tuple[int, int]] # OOB Hexes
+        ]] = {}
 
     for (sectorX, sectorY), sectorBorders in borders.items():
         sectorMinX, sectorMinY = multiverse.relativeSpaceToAbsoluteSpace((sectorX, sectorY, 1, 1))
@@ -352,6 +413,7 @@ def mergeBorders(
             # defined in another sector.
             segments = []
             segmentPath = []
+            oobHexes = set()
             internalCount = 0
             hasOOB = False
             isSimple = True
@@ -370,11 +432,15 @@ def mergeBorders(
                     continue
 
                 segmentPath.append(hex)
+                oobHexes.add(hex)
                 hasOOB = True
                 isSimple = False
 
+            # If there were out of bounds hexes at the start of the path, add them
+            # to the end of the last segment
             if start > 0:
                 segmentPath.extend(itertools.islice(hexes, 0, start))
+                oobHexes.update(itertools.islice(hexes, 0, start))
                 isSimple = False
 
             if segmentPath:
@@ -396,15 +462,17 @@ def mergeBorders(
                         colour = allegiance.borderColour()
 
                 layer = (style, colour)
-                layerSegments = layerToSegmentsMap.get(layer)
-                if layerSegments is None:
-                    layerSegments = []
-                    layerToSegmentsMap[layer] = layerSegments
+                layerData = layerDataMap.get(layer)
+                if layerData is None:
+                    layerData = (list(), set())
+                    layerDataMap[layer] = layerData
+                layerSegments, layerOOBHexes = layerData
                 layerSegments.extend(segments)
+                layerOOBHexes.update(oobHexes)
             else:
                 merged.append(border)
 
-    for (style, colour), segments in layerToSegmentsMap.items():
+    for (style, colour), (segments, oobHexes) in layerDataMap.items():
         layerMerged: typing.List[multiverse.DbBorder] = []
         startHexToSegmentMap: typing.Dict[
             typing.Tuple[int, int],
@@ -438,20 +506,40 @@ def mergeBorders(
                             # Drop any pending points from the path
                             borderPath = borderPath[:confirmedCount + 1]
                         break
+
                     segment = startHexToSegmentMap.pop(currentHex, None)
-                    if segment is None:
-                        lastIndex = len(borderPath) - 1
-                        if lastIndex > confirmedCount:
-                            confirmedCount = lastIndex
-                            #confirmedCount += 1
-                            continue
+                    if segment is not None:
+                        # A segment starting where the previous left of was found
+                        internalCount, segmentPath = segment
+                        borderPath = borderPath[:confirmedCount]
+                        borderPath.extend(segmentPath)
+                        confirmedCount += internalCount
+                        continue
 
-                        raise RuntimeError(f'Incomplete path at {currentHex}')
+                    # No segment starting at the position the previous segment
+                    # left the sector was found. Try to walk the oob hexes to
+                    # find the re-entry point
+                    if currentHex in oobHexes:
+                        pervHex = borderPath[confirmedCount - 1]
+                        enterEdge = multiverse.connectingEdge(currentHex, pervHex)
+                        if enterEdge is None:
+                            raise RuntimeError(f'Hexes ({pervHex}) ({currentHex}) are not adjacent')
 
-                    internalCount, segmentPath = segment
-                    borderPath = borderPath[:confirmedCount]
-                    borderPath.extend(segmentPath)
-                    confirmedCount += internalCount
+                        # Drop any pending points from the path
+                        borderPath = borderPath[:confirmedCount]
+
+                        _walkOutOfBoundsPath(
+                            startHex=currentHex,
+                            entryEdge=enterEdge,
+                            oobHexes=oobHexes,
+                            finishHex=startHex,
+                            startHexToSegmentMap=startHexToSegmentMap,
+                            borderPath=borderPath)
+
+                        confirmedCount = len(borderPath) - 1
+                        continue
+
+                    raise RuntimeError(f'Incomplete path at {currentHex}')
 
                 if borderPath:
                     layerMerged.append(multiverse.DbBorder(
