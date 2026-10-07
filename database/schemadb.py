@@ -552,6 +552,11 @@ class SchemaDb(object):
             replaceIfExists=replaceIfExists)
         cursor.execute(sql, values)
 
+    # TODO: It might be possible to make this a lot more efficient by batching the requests
+    # into a smaller number of insert queries rather than using executemany which I believe
+    # just executes the full query for each row. I think you can do it with insert, the
+    # problem is just that there is a limit to the number of rows that can be inserted with
+    # a single query so it would need chunked
     def insertMany(
             self,
             cursor: sqlite3.Cursor,
