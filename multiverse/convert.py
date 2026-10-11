@@ -24,6 +24,10 @@ import typing
 # TODO: The convertRaw*ToDb* functions should take a progress tracker and chunk the
 # conversion in the same way as convertDb*ToAstro* functions
 
+# TODO: Need to handle border text, both the case when there is an explicit text and when it
+# should be the allegiance name
+# TODO: Need to handle regions in the same way as borders
+
 # Useful Test Locations:
 # - Sector: Tsebntsiatldlants
 #   - There is a route that runs the length of it (e.g. through Oiansh) that

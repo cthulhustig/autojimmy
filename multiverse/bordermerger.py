@@ -222,24 +222,19 @@ def _insertHole(
     inJoinX = inHoleHex[0]
     inJoinPath = [(inJoinX, y) for y in range(inBorderHex[1] + 1, inHoleHex[1])]
 
-    # Generate the outward join path. this is done by stepping upwards
-    # until we hit a hex that is adjacent to the outward border hex
+    # Generate the outward join path. This needs to be a full path search as
+    # the out path needs to work around the in path
     outHoleIndex = loopHoleIndex(inHoleIndex - 1)
     outHoleHex = hole[outHoleIndex]
     outBorderIndex = loopBorderIndex(inBorderIndex + 1)
     outBorderHex = border[outBorderIndex]
-    outJoinPath = []
-    currentJoinY = outHoleHex[1] - 1
-    while currentJoinY > outBorderHex[1]:
-        currentJoinHex = (outHoleHex[0], currentJoinY)
-        outJoinPath.append(currentJoinHex)
-        distance = multiverse.parsecsBetweenAbsoluteSpace(
-            currentJoinHex,
-            outBorderHex)
-        if distance <= 1:
-            break
-
-        currentJoinY -= 1
+    avoidHexes = set(inJoinPath)
+    outJoinPath = multiverse.pathSearch(
+        start=outHoleHex,
+        target=outBorderHex,
+        neighboursFn=lambda hex: [n for n in [multiverse.absoluteNeighbourHex(hex, e) for e in multiverse.HexEdge] if n not in avoidHexes])
+    # Remove the outHoleHex and outBorderHex from the path
+    outJoinPath = outJoinPath[1:-1]
 
     # Generate the border path with the hole inserted. This is ordered
     joinedPath = []
@@ -360,9 +355,13 @@ def mergeBorders(
         ) -> typing.List[multiverse.DbBorder]:
     merged: typing.List[multiverse.DbBorder] = []
 
-    # TODO: The fact I removed allegiance from the key will probably cause issues for "Smade's Planet" (Solomani Rim)
-    # as it will likely get detected as a hole in the larger border as it ends up on the same layer as it's the
-    # same colour (but a different allegiance)
+    # TODO: The fact I removed allegiance from the key is known to cause an issue for a
+    # border in M1120. Bersha and Courage are different allegiances and should be under
+    # different borders (VIrM - Irrgh Manifest and VGoT - Glory of Taarskoerzn). I think
+    # it was a problem for the big Imperial border in M1105 as parts of that borders have
+    # different imperium based allegiances depending on which sector your in.I think the
+    # thing to do might be to add allegiance back in but if the allegiance has a base
+    # code, use it instead of the full code
     layerDataMap: typing.Dict[
         typing.Tuple[
             typing.Optional[str], # Style
@@ -472,7 +471,7 @@ def mergeBorders(
                 segment = startHexToSegmentMap.pop(startHex)
 
                 currentHex = startHex
-                borderPath = []
+                borderPath: typing.List[typing.Tuple[int, int]] = []
                 while True:
                     # NOTE: The last hex in a segment is the starting hex of the next segment
                     # so don't include it when when generating the merged segment

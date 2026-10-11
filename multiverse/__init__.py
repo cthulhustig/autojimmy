@@ -1,4 +1,5 @@
 from .utils import *
+from .pathsearch import *
 from .snapshotmanager import *
 from .stockfiles import *
 from .dbobjects import *

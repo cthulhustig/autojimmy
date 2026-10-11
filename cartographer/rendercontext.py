@@ -525,6 +525,10 @@ class RenderContext(object):
                 image=self._imageStore.riftImage,
                 rect=self._riftImageRect)
 
+    # TODO: Traveller Map doesn't show the red vector border outlines
+    # for milieu other than M1105. Rather than turning it off here
+    # it probably makes more sense to only import them if the milieu
+    # is M1105
     def _drawMacroBorders(self) -> None:
         if not self._styleSheet.macroBorders.visible:
             return
