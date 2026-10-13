@@ -9,11 +9,13 @@ class TextWindow(gui.WindowWidget):
             configSection: str,
             text: typing.Optional[str] = None,
             html: typing.Optional[str] = None,
-            readOnly: typing.Optional[bool] = False
+            readOnly: typing.Optional[bool] = False,
+            parent: typing.Optional['QtWidgets.QWidget'] = None,
             ) -> None:
         super().__init__(
             title=title,
-            configSection=configSection)
+            configSection=configSection,
+            parent=parent)
 
         self._textEdit = QtWidgets.QTextEdit()
         if text != None:

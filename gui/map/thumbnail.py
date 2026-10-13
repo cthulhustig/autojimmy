@@ -1,36 +1,29 @@
 import app
+import astronomer
 import cartographer
 import gui
-import multiverse
 import typing
 from PyQt5 import QtCore, QtGui
 
 _thumbnailRenderInitialised = False
 _thumbnailGraphics: typing.Optional[gui.MapGraphics] = None
 _thumbnailImageCache: typing.Optional[cartographer.ImageStore] = None
-_thumbnailVectorCache: typing.Optional[cartographer.VectorStore] = None
-_thumbnailStyleCache: typing.Optional[cartographer.StyleStore] = None
 
 def _initThumbnailRenderer():
     global _thumbnailRenderInitialised
     global _thumbnailGraphics
     global _thumbnailImageCache
-    global _thumbnailVectorCache
-    global _thumbnailStyleCache
 
     if _thumbnailRenderInitialised:
         return
 
     _thumbnailGraphics = gui.MapGraphics()
     _thumbnailImageCache = cartographer.ImageStore(graphics=_thumbnailGraphics)
-    _thumbnailVectorCache = cartographer.VectorStore(graphics=_thumbnailGraphics)
-    _thumbnailStyleCache = cartographer.StyleStore()
     _thumbnailRenderInitialised = True
 
 def generateThumbnail(
-        universe: multiverse.Universe,
-        milieu: multiverse.Milieu,
-        hex: multiverse.HexPosition,
+        universe: astronomer.Universe,
+        hex: astronomer.HexPosition,
         width: int,
         height: int,
         linearScale: float,
@@ -43,25 +36,21 @@ def generateThumbnail(
     renderer = cartographer.RenderContext(
         universe=universe,
         graphics=_thumbnailGraphics,
-        worldCenterX=centerX,
-        worldCenterY=centerY,
-        scale=linearScale,
-        outputPixelX=width,
-        outputPixelY=height,
-        milieu=milieu,
         style=style,
         options=gui.mapOptionsToRenderOptions(options),
-        imageStore=_thumbnailImageCache,
-        styleStore=_thumbnailStyleCache,
-        vectorStore=_thumbnailVectorCache,
-        labelStore=cartographer.LabelStore(universe=universe))
+        imageStore=_thumbnailImageCache)
 
     image = QtGui.QImage(width, height, QtGui.QImage.Format.Format_ARGB32)
     painter = QtGui.QPainter()
     painter.begin(image)
     try:
         _thumbnailGraphics.setPainter(painter)
-        renderer.render()
+        renderer.renderArea(
+            worldCenterX=centerX,
+            worldCenterY=centerY,
+            linearScale=linearScale,
+            outputPixelWidth=width,
+            outputPixelHeight=height)
     finally:
         painter.end()
         _thumbnailGraphics.setPainter(None)

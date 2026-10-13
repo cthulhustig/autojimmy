@@ -83,6 +83,7 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
 
 class ListTable(gui.TableWidgetEx):
     iconClicked = QtCore.pyqtSignal(int)
+    currentRowChanged = QtCore.pyqtSignal(int, int)
 
     class MenuAction(enum.Enum):
         CopyAsCsv = enum.auto()
@@ -123,6 +124,10 @@ class ListTable(gui.TableWidgetEx):
         header.setSectionsMovable(True)
         header.setHighlightSections(False) # Don't bold header when cells are selected
         header.sectionResized.connect(self._columnWidthChanged)
+        header.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        header.customContextMenuRequested.connect(
+            self._showHeaderContextMenu)
 
         self.verticalHeader().hide()
         self.setSortingEnabled(True)
@@ -135,6 +140,8 @@ class ListTable(gui.TableWidgetEx):
         itemDelegate = gui.StyledItemDelegateEx()
         itemDelegate.setHighlightCurrentItem(enabled=False)
         self.setItemDelegate(itemDelegate)
+
+        self.currentCellChanged.connect(self._currentCellChanged)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -277,16 +284,6 @@ class ListTable(gui.TableWidgetEx):
 
         self._userColumnHidingEnabled = enabled
 
-        header = self.horizontalHeader()
-        if self._userColumnHidingEnabled:
-            header.setContextMenuPolicy(
-                QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-            header.customContextMenuRequested.connect(
-                self._showHeaderContextMenu)
-        else:
-            header.customContextMenuRequested.disconnect(
-                self._showHeaderContextMenu)
-
         # Update columns to match new state
         if self._activeColumns:
             for columnHeader in self._activeColumns:
@@ -309,7 +306,7 @@ class ListTable(gui.TableWidgetEx):
         item = self.item(row, 0)
         return item and item.isSelected()
 
-    def setSelectedRow(self, row: int, select: bool):
+    def setSelectedRow(self, row: int, select: bool = True):
         for column in range(self.columnCount()):
             item = self.item(row, column)
             if item:
@@ -328,6 +325,8 @@ class ListTable(gui.TableWidgetEx):
                 self.removeRow(row)
 
     def setCurrentRow(self, row: int) -> None:
+        if row == self.currentRow():
+            return
         self.setCurrentCell(row, 0)
 
     def removeAllRows(self) -> None:
@@ -403,6 +402,14 @@ class ListTable(gui.TableWidgetEx):
         item = super().takeItem(row, column)
         self._checkRowFiltering(row=row)
         return item
+
+    def rowFromItem(self, item) -> int:
+        index = self.indexFromItem(item)
+        return index.row() if index is not None else -1
+
+    def columnFromItem(self, item) -> int:
+        index = self.indexFromItem(item)
+        return index.column() if index is not None else -1
 
     def setRowFilter(
             self,
@@ -740,42 +747,45 @@ class ListTable(gui.TableWidgetEx):
             self,
             point: QtCore.QPoint
             ) -> None:
-        if not self._activeColumns or not self._userColumnHidingEnabled:
-            return
-
-        visibleColumnCount = self.visibleColumnCount()
-
         menu = QtWidgets.QMenu(self)
-        for columnHeader in self._activeColumns:
-            columnIndex = self.columnHeaderIndex(columnHeader)
-            if columnIndex < 0:
-                continue
 
-            columnText = self.columnHeaderText(columnIndex)
-            if not columnText:
-                continue
+        if self._activeColumns and self._userColumnHidingEnabled:
+            visibleColumnCount = self.visibleColumnCount()
 
-            action = QtWidgets.QAction(columnText, self)
-            action.setCheckable(True)
-            action.setChecked(not self.isColumnHidden(columnIndex))
-            action.setData(columnIndex)
-            partial = functools.partial(self._userHideColumnAction, action)
-            action.changed.connect(partial)
+            for columnHeader in self._activeColumns:
+                columnIndex = self.columnHeaderIndex(columnHeader)
+                if columnIndex < 0:
+                    continue
 
-            if (visibleColumnCount == 1) and action.isChecked():
-                # Don't allow the user to hide the last column as the header
-                # will be hidden and there is no great way of getting it back
-                action.setDisabled(True)
+                columnText = self.columnHeaderText(columnIndex)
+                if not columnText:
+                    continue
 
-            menu.addAction(action)
+                action = QtWidgets.QAction(columnText, self)
+                action.setCheckable(True)
+                action.setChecked(not self.isColumnHidden(columnIndex))
+                action.setData(columnIndex)
+                partial = functools.partial(self._userHideColumnAction, action)
+                action.changed.connect(partial)
+
+                if (visibleColumnCount == 1) and action.isChecked():
+                    # Don't allow the user to hide the last column as the header
+                    # will be hidden and there is no great way of getting it back
+                    action.setDisabled(True)
+
+                menu.addAction(action)
 
         if self.isSortingEnabled():
-            menu.addSeparator()
+            if not menu.isEmpty():
+                menu.addSeparator()
 
             action = QtWidgets.QAction('Clear Sorting', self)
             action.triggered.connect(self._clearSortingAction)
             action.setEnabled(self.currentSortColumnIndex() >= 0)
             menu.addAction(action)
+
+        if menu.isEmpty():
+            return
 
         menu.exec(self.mapToGlobal(point))
 
@@ -812,6 +822,16 @@ class ListTable(gui.TableWidgetEx):
     def _csvCellText(self, row: int, column: int) -> str:
         item = self.item(row, column)
         return item.text() if item else ''
+
+    def _currentCellChanged(
+            self,
+            currentRow: int,
+            currentColumn: int,
+            previousRow: int,
+            previousColumn: int
+            ) -> None:
+        if currentRow != previousRow:
+            self.currentRowChanged.emit(currentRow, previousRow)
 
 # Based on code from here
 # https://github.com/baoboa/pyqt5/blob/master/examples/itemviews/frozencolumn/frozencolumn.py
@@ -889,6 +909,10 @@ class FrozenColumnListTable(ListTable):
         self._frozenColumnWidget.verticalScrollBar().valueChanged.connect(self.verticalScrollBar().setValue)
 
         self._frozenColumnWidget.customContextMenuRequested.connect(self._frozenContextMenuRequested)
+
+        # Connect currentCellChanged on frozen widget to this widgets currentCellChanged
+        # handler (defined in ListView) so the currentRowChanged event works
+        self._frozenColumnWidget.currentCellChanged.connect(self._currentCellChanged)
 
         self.horizontalHeader().sectionMoved.connect(self._columnMoved)
 
@@ -1016,8 +1040,8 @@ class FrozenColumnListTable(ListTable):
         self._frozenColumnWidget.setHorizontalHeaderLabels(labels)
         super().setHorizontalHeaderLabels(labels)
 
-        unfrozenIcon = gui.loadIcon(gui.Icon.UnfrozenColumn)
-        frozenIcon = gui.loadIcon(gui.Icon.FrozenColumn)
+        unfrozenIcon = gui.loadIcon(gui.Icon.ColumnUnlocked)
+        frozenIcon = gui.loadIcon(gui.Icon.ColumnLocked)
         for column in range(self.horizontalHeader().count()):
             item = self.horizontalHeaderItem(column)
             item.setData(QtCore.Qt.ItemDataRole.DecorationRole, unfrozenIcon)
@@ -1029,8 +1053,8 @@ class FrozenColumnListTable(ListTable):
         frozenItem = None
         if item:
             frozenItem = item.clone()
-            item.setData(QtCore.Qt.ItemDataRole.DecorationRole, gui.loadIcon(gui.Icon.UnfrozenColumn))
-            frozenItem.setData(QtCore.Qt.ItemDataRole.DecorationRole, gui.loadIcon(gui.Icon.FrozenColumn))
+            item.setData(QtCore.Qt.ItemDataRole.DecorationRole, gui.loadIcon(gui.Icon.ColumnUnlocked))
+            frozenItem.setData(QtCore.Qt.ItemDataRole.DecorationRole, gui.loadIcon(gui.Icon.ColumnLocked))
 
         self._frozenColumnWidget.setHorizontalHeaderItem(column, frozenItem)
         super().setHorizontalHeaderItem(column, item)
@@ -1287,7 +1311,7 @@ class FrozenColumnListTable(ListTable):
             if oldData != newData:
                 frozenItem.setData(role, newData)
 
-    def _hideColumnAction(self, action):
+    def _hideColumnAction(self, action: QtWidgets.QAction) -> None:
         super()._userHideColumnAction(action)
 
         index = action.data()

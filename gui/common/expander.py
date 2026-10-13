@@ -53,11 +53,7 @@ class ExpanderWidget(QtWidgets.QWidget):
         self._contentArea.setMaximumHeight(0)
         self._contentArea.setMinimumHeight(0)
         # let the entire widget grow and shrink with its content
-        self._toggleAnimation = QtCore.QParallelAnimationGroup()
-        self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self, b'minimumHeight'))
-        self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self, b'maximumHeight'))
-        self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self._contentArea, b'maximumHeight'))
-        self._toggleAnimation.finished.connect(self._animationFinished)
+        self._toggleAnimation = None
 
         # don't waste space
         self._mainLayout = QtWidgets.QGridLayout()
@@ -154,7 +150,10 @@ class ExpanderWidget(QtWidgets.QWidget):
         if animated:
             self._startAnimation(expanding=expanded)
         else:
-            self._toggleAnimation.stop()
+            if self._toggleAnimation:
+                self._toggleAnimation.stop()
+                self._toggleAnimation = None
+
             requiredHeight = self._collapsedHeight
             contentHeight = 0
             if expanded:
@@ -173,6 +172,16 @@ class ExpanderWidget(QtWidgets.QWidget):
             self,
             expanding: bool
             ) -> None:
+        # Create a new animation group each time one is needed rather than
+        # creating it once and reusing. This is done as it looks like the
+        # animation group can cause a reference loop that will keep the
+        # Expander in memory until gc.collect is explicitly called.
+        self._toggleAnimation = QtCore.QParallelAnimationGroup()
+        self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self, b'minimumHeight'))
+        self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self, b'maximumHeight'))
+        self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self._contentArea, b'maximumHeight'))
+        self._toggleAnimation.finished.connect(self._animationFinished)
+
         contentLayout = self._contentArea.layout()
         self._contentHeight = contentLayout.sizeHint().height()
         for i in range(self._toggleAnimation.animationCount() - 1):
@@ -200,6 +209,7 @@ class ExpanderWidget(QtWidgets.QWidget):
         # _updateState for why this is important
         if not self.isExpanded():
             self._contentArea.setHidden(True)
+        self._toggleAnimation = None
 
     def _updateContentHeight(self) -> None:
         # The content height has changed. If the expander is expanded then update its height to

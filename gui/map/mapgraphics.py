@@ -17,9 +17,7 @@ class MapPointList(cartographer.AbstractPath):
         if len(args) == 1:
             arg = args[0]
             if isinstance(arg, MapPointList):
-                # NOTE: This assumes the points method return a copy of
-                # the list held by other not the list itself
-                self._points = arg.points()
+                self._points = list(arg.points())
             else:
                 self._points = list(arg)
         elif 'other' in kwargs:
@@ -35,7 +33,7 @@ class MapPointList(cartographer.AbstractPath):
         self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
 
     def points(self) -> typing.Sequence[cartographer.PointF]:
-        return list(self._points)
+        return common.ConstSequenceRef(self._points)
 
     def bounds(self) -> cartographer.RectangleF:
         if self._bounds is None:
@@ -66,9 +64,7 @@ class MapPointList(cartographer.AbstractPath):
             self._qtPolygon.translate(dx, dy)
 
     def copyFrom(self, other: 'MapPointList') -> None:
-        # NOTE: This assumes the points method return a copy of
-        # the list held by other not the list itself
-        self._points = other.points()
+        self._points = list(other.points())
         self._bounds = None # Calculate on demand
         self._qtPolygon = None
 
@@ -98,9 +94,7 @@ class MapPath(cartographer.AbstractPath):
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, MapPath):
                 raise TypeError('The other parameter must be a MapPath')
-            # NOTE: This assumes the points and types methods return copies of
-            # the lists held by other not the lists themselves
-            self._points = other.points()
+            self._points = list(other.points())
             self._closed = other.closed()
         else:
             self._points = list(args[0] if len(args) > 0 else kwargs['points'])
@@ -111,7 +105,7 @@ class MapPath(cartographer.AbstractPath):
         self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
 
     def points(self) -> typing.Sequence[cartographer.PointF]:
-        return list(self._points)
+        return common.ConstSequenceRef(self._points)
 
     def closed(self) -> bool:
         return self._closed
@@ -145,9 +139,7 @@ class MapPath(cartographer.AbstractPath):
             self._qtPolygon.translate(dx, dy)
 
     def copyFrom(self, other: 'MapPath') -> None:
-        # NOTE: This assumes the points methods return a copy of
-        # the list held by other not the list itself
-        self._points = other.points()
+        self._points = list(other.points())
         self._closed = other.closed()
         self._bounds = None # Calculate on demand
         self._qtPolygon = None
@@ -180,9 +172,7 @@ class MapSpline(object):
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, MapSpline):
                 raise TypeError('The other parameter must be a MapSpline')
-            # NOTE: This assumes the points methods return copies of
-            # the list held by other not the list themselves
-            self._points = other.points()
+            self._points = list(other.points())
             self._tension = other.tension()
             self._closed = other.closed()
         else:
@@ -195,7 +185,7 @@ class MapSpline(object):
         self._qtPainterPath: typing.Optional[QtGui.QPainterPath] = None
 
     def points(self) -> typing.Sequence[cartographer.PointF]:
-        return list(self._points)
+        return common.ConstSequenceRef(self._points)
 
     def tension(self) -> float:
         return self._tension
@@ -226,9 +216,7 @@ class MapSpline(object):
             self._qtPainterPath.translate(dx, dy)
 
     def copyFrom(self, other: 'MapPath') -> None:
-        # NOTE: This assumes the points methods return copies of
-        # the list held by other not the list themselves
-        self._points = other.points()
+        self._points = list(other.points())
         self._closed = other.closed()
         self._bounds = None # Calculate on demand
         self._qtPainterPath = None
@@ -517,7 +505,7 @@ class MapPen(cartographer.AbstractPen):
     def setStyle(
             self,
             style: cartographer.LineStyle,
-            pattern: typing.Optional[typing.List[float]] = None
+            pattern: typing.Optional[typing.Sequence[float]] = None
             ) -> None:
         self._style = style
         self._pattern = list(pattern) if self._style is cartographer.LineStyle.Custom else None
@@ -763,9 +751,6 @@ class MapGraphics(cartographer.AbstractGraphics):
             ) -> MapMatrix:
         return MapMatrix(m11=m11, m12=m12, m21=m21, m22=m22, dx=dx, dy=dy)
 
-    def copyMatrix(self, other: MapMatrix) -> MapMatrix:
-        return MapMatrix(other=other)
-
     def createBrush(self, colour: str = '') -> MapBrush:
         return MapBrush(colour=colour)
 
@@ -815,6 +800,10 @@ class MapGraphics(cartographer.AbstractGraphics):
             QtGui.QPainter.RenderHint.SmoothPixmapTransform,
             antialias)
 
+    def setWorldToImageTransform(self, matrix: MapMatrix) -> None:
+        self._painter.setTransform(
+            matrix.qtTransform() * self._painter.transform())
+
     def scaleTransform(self, scaleX: float, scaleY: float) -> None:
         if scaleX == 1.0 and scaleY == 1.0:
             return
@@ -835,10 +824,6 @@ class MapGraphics(cartographer.AbstractGraphics):
         transform = self._painter.transform()
         transform.rotate(degrees, QtCore.Qt.Axis.ZAxis)
         self._painter.setTransform(transform)
-
-    def multiplyTransform(self, matrix: MapMatrix) -> None:
-        self._painter.setTransform(
-            matrix.qtTransform() * self._painter.transform())
 
     def intersectClipPath(self, path: MapPath) -> None:
         newClip = QtGui.QPainterPath()
@@ -985,11 +970,50 @@ class MapGraphics(cartographer.AbstractGraphics):
             font: MapFont,
             brush: MapBrush,
             x: float, y: float,
-            format: cartographer.TextAlignment
+            alignment: cartographer.TextAlignment
             ) -> None:
         qtFont = font.qtFont()
         textRect = font.qtMeasureText(text)
         scale = font.emSize() / qtFont.pointSizeF()
+
+        if alignment == cartographer.TextAlignment.Baseline:
+            textOrigin = QtCore.QPointF(0, 0)
+        elif alignment == cartographer.TextAlignment.Center:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - (textRect.width() / 2),
+                -textRect.y() - (textRect.height() / 2))
+        elif alignment == cartographer.TextAlignment.TopLeft:
+            textOrigin = QtCore.QPointF(
+                -textRect.x(),
+                -textRect.y())
+        elif alignment == cartographer.TextAlignment.TopCenter:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - (textRect.width() / 2),
+                -textRect.y())
+        elif alignment == cartographer.TextAlignment.TopRight:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - textRect.width(),
+                -textRect.y())
+        elif alignment == cartographer.TextAlignment.CenterLeft:
+            textOrigin = QtCore.QPointF(
+                -textRect.x(),
+                -textRect.y() - (textRect.height() / 2))
+        elif alignment == cartographer.TextAlignment.CenterRight:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - textRect.width(),
+                -textRect.y() - (textRect.height() / 2))
+        elif alignment == cartographer.TextAlignment.BottomLeft:
+            textOrigin = QtCore.QPointF(
+                -textRect.x(),
+                -textRect.y() - textRect.height())
+        elif alignment == cartographer.TextAlignment.BottomCenter:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - (textRect.width() / 2),
+                -textRect.y() - textRect.height())
+        elif alignment == cartographer.TextAlignment.BottomRight:
+            textOrigin = QtCore.QPointF(
+                -textRect.x() - textRect.width(),
+                -textRect.y() - textRect.height())
 
         self._painter.save()
         try:
@@ -1007,45 +1031,6 @@ class MapGraphics(cartographer.AbstractGraphics):
             # current pen
             qtBrush = brush.qtBrush()
             self._painter.setPen(qtBrush.color())
-
-            if format == cartographer.TextAlignment.Baseline:
-                textOrigin = QtCore.QPointF(0, 0)
-            elif format == cartographer.TextAlignment.Centered:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - (textRect.width() / 2),
-                    -textRect.y() - (textRect.height() / 2))
-            elif format == cartographer.TextAlignment.TopLeft:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x(),
-                    -textRect.y())
-            elif format == cartographer.TextAlignment.TopCenter:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - (textRect.width() / 2),
-                    -textRect.y())
-            elif format == cartographer.TextAlignment.TopRight:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - textRect.width(),
-                    -textRect.y())
-            elif format == cartographer.TextAlignment.MiddleLeft:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x(),
-                    -textRect.y() - (textRect.height() / 2))
-            elif format == cartographer.TextAlignment.MiddleRight:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - textRect.width(),
-                    -textRect.y() - (textRect.height() / 2))
-            elif format == cartographer.TextAlignment.BottomLeft:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x(),
-                    -textRect.y() - textRect.height())
-            elif format == cartographer.TextAlignment.BottomCenter:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - (textRect.width() / 2),
-                    -textRect.y() - textRect.height())
-            elif format == cartographer.TextAlignment.BottomRight:
-                textOrigin = QtCore.QPointF(
-                    -textRect.x() - textRect.width(),
-                    -textRect.y() - textRect.height())
 
             self._painter.drawText(textOrigin, text)
         finally:

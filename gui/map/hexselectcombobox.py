@@ -1,71 +1,73 @@
 import app
+import astronomer
+import azathoth
 import gui
 import html
 import logging
+import logic
 import math
-import multiverse
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-def _formatWorldName(world: multiverse.World) -> str:
-    return world.name(includeSubsector=True)
+def _formatWorldName(
+        universe: astronomer.Universe,
+        world: astronomer.World
+        ) -> str:
+    worldHex = world.hex()
+    sector = universe.sectorByPosition(position=worldHex)
+    subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
+    if not subsectorName:
+        return world.name()
+    return f'{world.name()} ({subsectorName})'
 
 def _formatHexName(
-        universe: multiverse.Universe,
-        milieu: multiverse.Milieu,
-        hex: multiverse.HexPosition
+        universe: astronomer.Universe,
+        hex: astronomer.HexPosition
         ) -> str:
-    world = universe.worldByPosition(
-        milieu=milieu,
-        hex=hex)
+    world = universe.worldByPosition(hex=hex)
     if world:
-        return _formatWorldName(world=world)
+        return _formatWorldName(universe=universe, world=world)
 
-    sectorHex = universe.positionToSectorHex(milieu=milieu, hex=hex)
-    subsector = universe.subsectorByPosition(milieu=milieu, hex=hex)
-    return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
+    sectorHex = universe.formatSectorHex(hex=hex)
 
-def _formatWorldHtml(world: multiverse.World) -> str:
-    return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
-        worldName=html.escape(_formatWorldName(world=world)),
-        sectorHex=html.escape(world.sectorHex()),
-        uwp=html.escape(world.uwp().string()))
+    sector = universe.sectorByPosition(position=hex)
+    subsectorName = sector.subsectorName(code=hex.subsectorCode()) if sector else None
+    if not subsectorName:
+        return sectorHex
+
+    return f'{sectorHex} ({subsectorName})'
 
 def _formatHexHtml(
-        universe: multiverse.Universe,
-        milieu: multiverse.Milieu,
-        hex: multiverse.HexPosition
+        universe: astronomer.Universe,
+        hex: astronomer.HexPosition
         ) -> str:
-    world = universe.worldByPosition(milieu=milieu, hex=hex)
-    if world:
-        return _formatWorldHtml(world=world)
-    return html.escape(_formatHexName(universe=universe, milieu=milieu, hex=hex))
+    world = universe.worldByPosition(hex=hex)
+    if not world:
+        return html.escape(_formatHexName(universe=universe, hex=hex))
+
+    sectorHex = universe.formatSectorHex(hex=world.hex())
+    return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
+        worldName=html.escape(_formatWorldName(universe=universe, world=world)),
+        sectorHex=html.escape(sectorHex),
+        uwp=html.escape(world.uwp().string()))
 
 # Based on code from here
 # https://stackoverflow.com/questions/21141757/pyqt-different-colors-in-a-single-row-in-a-combobox
 class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(
             self,
-            universe: multiverse.Universe,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
         super().__init__(parent)
         self._universe = universe
-        self._milieu = milieu
         self._document = QtGui.QTextDocument(self)
 
-    def universe(self) -> multiverse.Universe:
+    def universe(self) -> astronomer.Universe:
         return self._universe
 
-    def setUniverse(self, universe: multiverse.Universe) -> None:
+    def setUniverse(self, universe: astronomer.Universe) -> None:
         self._universe = universe
-
-    def milieu(self) -> multiverse.Milieu:
-        return self._milieu
-
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
-        self._milieu = milieu
 
     def paint(
             self,
@@ -85,7 +87,6 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         if hex:
             self._document.setHtml(_formatHexHtml(
                 universe=self._universe,
-                milieu=self._milieu,
                 hex=hex))
         else:
             self._document.clear()
@@ -116,7 +117,6 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
             return super().sizeHint(option, index)
         self._document.setHtml(_formatHexHtml(
             universe=self._universe,
-            milieu=self._milieu,
             hex=hex))
         return QtCore.QSize(int(self._document.idealWidth()),
                             int(self._document.size().height()))
@@ -138,14 +138,12 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def __init__(
             self,
-            universe: multiverse.Universe,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ):
         super().__init__(parent)
 
         self._universe = universe
-        self._milieu = milieu
         self._enableDeadSpaceSelection = False
         self._selectedHex = None
 
@@ -157,9 +155,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
         self._document = QtGui.QTextDocument(self)
 
-        self._itemDelegate = _ListItemDelegate(
-            universe=self._universe,
-            milieu=self._milieu)
+        self._itemDelegate = _ListItemDelegate(universe=self._universe)
 
         self.setEditable(True)
         self.setInsertPolicy(QtWidgets.QComboBox.InsertPolicy.NoInsert)
@@ -171,10 +167,15 @@ class HexSelectComboBox(gui.ComboBoxEx):
         self.activated.connect(self._dropDownSelected)
         self.customContextMenuRequested.connect(self._showContextMenu)
 
-    def universe(self) -> multiverse.Universe:
+        azathoth.UniverseEditor.instance().addPostUpdateObserver(self._universeChanged)
+
+    def __del__(self) -> None:
+        azathoth.UniverseEditor.instance().removeObserver(self._universeChanged)
+
+    def universe(self) -> astronomer.Universe:
         return self._universe
 
-    def setUniverse(self, universe: multiverse.Universe) -> None:
+    def setUniverse(self, universe: astronomer.Universe) -> None:
         if universe is self._universe:
             return
 
@@ -184,36 +185,20 @@ class HexSelectComboBox(gui.ComboBoxEx):
         if self._completerPopupDelegate:
             self._completerPopupDelegate.setUniverse(universe=self._universe)
 
-        self._handleDataChanged()
+        self._syncToHex(hex=self._selectedHex, updateHistory=False)
 
-    def milieu(self) -> multiverse.Milieu:
-        return self._milieu
-
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
-        if milieu is self._milieu:
-            return
-
-        self._milieu = milieu
-        self._itemDelegate.setMilieu(milieu=self._milieu)
-
-        if self._completerPopupDelegate:
-            self._completerPopupDelegate.setMilieu(milieu=self._milieu)
-
-        self._handleDataChanged()
-
-    def currentHex(self) -> typing.Optional[multiverse.HexPosition]:
+    def currentHex(self) -> typing.Optional[astronomer.HexPosition]:
         return self._selectedHex
 
     def setCurrentHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition],
+            hex: typing.Optional[astronomer.HexPosition],
             updateHistory: bool = True
             ) -> None:
-        text = _formatHexName(universe=self._universe, milieu=self._milieu, hex=hex) if hex else ''
-        self.setCurrentText(text)
-        self._updateSelectedHex(
-            hex=hex,
-            updateHistory=updateHistory)
+        if hex == self._selectedHex:
+            return # Nothing to do
+
+        self._syncToHex(hex=hex, updateHistory=updateHistory)
 
     def enableAutoComplete(self, enable: bool) -> None:
         if enable == (self._completer != None):
@@ -221,9 +206,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
         if enable:
             self._completerModel = QtGui.QStandardItemModel()
-            self._completerPopupDelegate = _ListItemDelegate(
-                universe=self._universe,
-                milieu=self._milieu)
+            self._completerPopupDelegate = _ListItemDelegate(universe=self._universe)
 
             self._completer = QtWidgets.QCompleter()
             self._completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
@@ -246,16 +229,12 @@ class HexSelectComboBox(gui.ComboBoxEx):
     def enableDeadSpaceSelection(self, enable: bool) -> None:
         self._enableDeadSpaceSelection = enable
 
-        if not self._enableDeadSpaceSelection:
+        if self._selectedHex and not self._enableDeadSpaceSelection:
             # Dead space selection has been disabled so clear the current selection
             # if it's a dead space hex
-            hex = self.currentHex()
-            if hex:
-                world = self._universe.worldByPosition(
-                    milieu=self._milieu,
-                    hex=hex)
-                if not world:
-                    self.setCurrentHex(hex=None)
+            world = self._universe.worldByPosition(hex=self._selectedHex)
+            if not world:
+                self._syncToHex(hex=None, updateHistory=False)
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._enableDeadSpaceSelection
@@ -294,17 +273,12 @@ class HexSelectComboBox(gui.ComboBoxEx):
                 # obvious if it was the first.
                 assert(isinstance(event, QtGui.QFocusEvent))
                 if self._completer and event.reason() != QtCore.Qt.FocusReason.PopupFocusReason:
-                    hex = self.currentHex()
-                    if hex:
-                        newText = _formatHexName(
-                            universe=self._universe,
-                            milieu=self._milieu,
-                            hex=hex)
-                        if newText != self.currentText():
-                            self.setCurrentText(newText)
-                    else:
+                    hex = self._selectedHex
+                    if not hex:
                         matches = self._findCompletionMatches()
-                        self.setCurrentHex(hex=matches[0] if matches else None)
+                        if matches:
+                            hex = matches[0]
+                    self._syncToHex(hex=hex, updateHistory=False)
             elif event.type() == QtCore.QEvent.Type.KeyPress:
                 assert(isinstance(event, QtGui.QKeyEvent))
                 if event.matches(QtGui.QKeySequence.StandardKey.Paste):
@@ -330,11 +304,10 @@ class HexSelectComboBox(gui.ComboBoxEx):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(HexSelectComboBox._StateVersion)
 
-        current = self.currentHex()
-        stream.writeBool(current != None)
-        if current:
-            stream.writeInt32(current.absoluteX())
-            stream.writeInt32(current.absoluteY())
+        stream.writeBool(self._selectedHex is not None)
+        if self._selectedHex:
+            stream.writeInt32(self._selectedHex.absoluteX())
+            stream.writeInt32(self._selectedHex.absoluteY())
 
         return state
 
@@ -350,12 +323,10 @@ class HexSelectComboBox(gui.ComboBoxEx):
             return False
 
         if stream.readBool():
-            hex = multiverse.HexPosition(
+            hex = astronomer.HexPosition(
                 absoluteX=stream.readInt32(),
                 absoluteY=stream.readInt32())
-            self.setCurrentHex(
-                hex=hex,
-                updateHistory=False)
+            self._syncToHex(hex=hex, updateHistory=False)
 
         return True
 
@@ -363,6 +334,33 @@ class HexSelectComboBox(gui.ComboBoxEx):
         self._document.setHtml(html)
         self._document.setTextWidth(100000)
         return math.ceil(self._document.idealWidth())
+
+    def _syncToHex(
+            self,
+            hex: typing.Optional[astronomer.HexPosition],
+            updateHistory: bool
+            ) -> None:
+        if hex and not self._enableDeadSpaceSelection:
+            # Dead space selection is not enabled so clear the currently selected
+            # hex if there isn't a world at that location
+            world = self._universe.worldByPosition(hex=hex)
+            if not world:
+                hex = None
+
+        hasChanged = hex != self._selectedHex
+        self._selectedHex = hex
+
+        text = _formatHexName(universe=self._universe, hex=self._selectedHex) if self._selectedHex else ''
+        if text != self.currentText(): # Avoid event with no change
+            # Block signals as we don't want editTextChanged firing
+            with gui.SignalBlocker(self):
+                self.setCurrentText(text)
+
+        if self._selectedHex and updateHistory:
+            app.HexHistory.instance().addHex(hex=self._selectedHex)
+
+        if hasChanged:
+            self.hexChanged.emit(self._selectedHex)
 
     def _calculateListWidth(
             self,
@@ -374,22 +372,6 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
         return max(width, self.width())
 
-    def _handleDataChanged(self) -> None:
-        selectedHex = self._selectedHex
-        if selectedHex and not self._enableDeadSpaceSelection:
-            # Dead space selection is not enabled so clear the currently selected
-            # hex if there isn't a world at that location
-            world = self._universe.worldByPosition(
-                milieu=self._milieu,
-                hex=selectedHex)
-            if not world:
-                selectedHex = None
-
-        # Set the current hex so the text is updated to the new world/hex name.
-        # This will also generate a selected hex changed event if the current
-        # selection has been cleared due to it being dead space
-        self.setCurrentHex(hex=selectedHex)
-
     def _loadHistory(self) -> None:
         contentWidth = 0
         with gui.SignalBlocker(widget=self):
@@ -397,19 +379,16 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
             for hex in app.HexHistory.instance().hexes():
                 if not self._enableDeadSpaceSelection:
-                    world = self._universe.worldByPosition(
-                        milieu=self._milieu,
-                        hex=hex)
+                    world = self._universe.worldByPosition(hex=hex)
                     if not world:
                         # Ignore dead space in history
                         continue
 
-                name = _formatHexName(universe=self._universe, milieu=self._milieu, hex=hex)
+                name = _formatHexName(universe=self._universe, hex=hex)
                 self.addItem(name, hex)
 
                 html = _formatHexHtml(
                     universe=self._universe,
-                    milieu=self._milieu,
                     hex=hex)
                 itemWidth = self._calculateIdealHtmlWidth(html)
                 if itemWidth > contentWidth:
@@ -453,7 +432,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             modelIndex = self._completerModel.index(index, 0)
             self._completerModel.setData(
                 modelIndex,
-                _formatHexName(universe=self._universe, milieu=self._milieu, hex=hex),
+                _formatHexName(universe=self._universe, hex=hex),
                 QtCore.Qt.ItemDataRole.DisplayRole)
             self._completerModel.setData(
                 modelIndex,
@@ -462,7 +441,6 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
             html = _formatHexHtml(
                 universe=self._universe,
-                milieu=self._milieu,
                 hex=hex)
             idealWidth = self._calculateIdealHtmlWidth(html)
             if idealWidth > contentWidth:
@@ -505,9 +483,9 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def _delayedCompleterHandler(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
-        self._updateSelectedHex(hex=hex)
+        self._syncToHex(hex=hex, updateHistory=True)
         self.selectAll()
 
     def _dropDownSelected(
@@ -515,23 +493,11 @@ class HexSelectComboBox(gui.ComboBoxEx):
             index: int
             ) -> None:
         hex = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
-        self._updateSelectedHex(hex=hex)
+        self._syncToHex(hex=hex, updateHistory=True)
 
         # Select all the current text so the control is ready for the user to search for something
         # else without them having to delete the current search text
         self.selectAll()
-
-    def _updateSelectedHex(
-            self,
-            hex: typing.Optional[multiverse.HexPosition],
-            updateHistory: bool = True
-            ) -> None:
-        if hex and updateHistory:
-            app.HexHistory.instance().addHex(hex=hex)
-
-        if hex != self._selectedHex:
-            self._selectedHex = hex
-            self.hexChanged.emit(self._selectedHex)
 
     # https://forum.qt.io/topic/123909/how-to-override-paste-or-catch-the-moment-before-paste-happens-in-qlineedit/10
     # NOTE: I suspect this might not work with RTL languages
@@ -566,9 +532,9 @@ class HexSelectComboBox(gui.ComboBoxEx):
             self._completer.setWidget(lineEdit)
             self._completer.complete()
 
-    def _findCompletionMatches(self) -> typing.Collection[multiverse.HexPosition]:
+    def _findCompletionMatches(self) -> typing.Collection[astronomer.HexPosition]:
         searchString = self.currentText().strip()
-        matches: typing.List[multiverse.HexPosition] = []
+        matches: typing.List[astronomer.HexPosition] = []
 
         if searchString:
             # NOTE: For sorting to make sense it's important that the world
@@ -576,8 +542,8 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # can be sorted. The limiting of the number of results added to
             # the completer should be done on the sorted list.
             try:
-                worlds = self._universe.searchForWorlds(
-                    milieu=self._milieu,
+                worlds = logic.searchForWorlds(
+                    universe=self._universe,
                     searchString=searchString)
                 for world in worlds:
                     matches.append(world.hex())
@@ -588,10 +554,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
                     exc_info=ex)
 
             if self._enableDeadSpaceSelection:
-                try:
-                    hex = self._universe.stringToPosition(
-                        milieu=self._milieu,
-                        string=searchString)
+                for hex in self._universe.stringToPositions(string=searchString):
                     isDuplicate = False
                     for other in matches:
                         if hex == other:
@@ -599,13 +562,6 @@ class HexSelectComboBox(gui.ComboBoxEx):
                             break
                     if not isDuplicate:
                         matches.append(hex)
-                except KeyError:
-                    pass # The search string isn't a a sector hex so ignore it
-                except Exception as ex:
-                    # Log this at debug as it could get very spammy as the user types
-                    logging.debug(
-                        f'Search for sector hex "{searchString}" failed',
-                        exc_info=ex)
 
             # If the currently selected hex is in the list of matched hexes, make sure
             # it's the first option in the list
@@ -616,3 +572,13 @@ class HexSelectComboBox(gui.ComboBoxEx):
         if len(matches) > HexSelectComboBox._MaxCompleterResults:
             matches = matches[:HexSelectComboBox._MaxCompleterResults]
         return matches
+
+    def _universeChanged(
+            self,
+            universe: azathoth.EditableUniverse,
+            changeEvent: azathoth.ChangeEvent
+            ) -> None:
+        if universe.id() != self._universe.id():
+            return
+
+        self._syncToHex(hex=self._selectedHex, updateHistory=False)

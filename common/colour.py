@@ -148,11 +148,24 @@ class HtmlColours(object):
     Yellow = '#FFFF00'
     YellowGreen = '#9ACD32'
 
+_NameToColourMap: typing.Dict[str, str] = {}
+for name, colour in common.getClassVariables(HtmlColours).items():
+    _NameToColourMap[name.lower()] = colour
 
-_NameToColourMap = {name.lower(): colour for name, colour in common.getClassVariables(HtmlColours).items()}
+    # Add mappings for Grey rather than Gray to allow for proper English
+    replaced = name.replace('Gray', 'Grey')
+    if replaced != name:
+        _NameToColourMap[replaced.lower()] = colour
+
+_ColourToNameMap: typing.Dict[str, str] = {}
+for name, colour in common.getClassVariables(HtmlColours).items():
+    if name.find('Traveller') == 0:
+        continue # Don't add Traveller colours as they aren't canonical html
+
+    _ColourToNameMap[colour.lower()] = name
 
 _ValidDigits = set('0123456789AaBbCcDdEeFf')
-def validateHtmlColour(htmlColour: str) -> bool:
+def isValidHtmlColour(htmlColour: str) -> bool:
     length = len(htmlColour)
     if not length:
         return False
@@ -165,6 +178,27 @@ def validateHtmlColour(htmlColour: str) -> bool:
 
     return set(htmlColour[1:]).issubset(_ValidDigits)
 
+def canonicalHtmlColour(htmlColour: str) -> str:
+    if not htmlColour:
+        raise ValueError(f'Invalid colour {htmlColour!r}')
+
+    if htmlColour[0] == '#':
+        r, g, b, a = parseHtmlColour(htmlColour)
+        lowerColour = f'#{a:02x}{r:02x}{g:02x}{b:02x}' if a != 255 else f'#{r:02x}{g:02x}{b:02x}'
+        namedColour = _ColourToNameMap.get(lowerColour)
+    else:
+        stockColour = _NameToColourMap.get(htmlColour.lower())
+        if stockColour is None:
+            raise ValueError(f'Invalid colour {htmlColour!r}')
+        namedColour = _ColourToNameMap.get(stockColour.lower())
+        if namedColour is None:
+            # This should only happen if the input colour was one of the Traveller* named
+            # colour strings. In this situation we want to return the # colour rather than
+            # the input name as those names aren't a standard html colour name
+            htmlColour = stockColour
+
+    return namedColour if namedColour is not None else htmlColour.upper()
+
 def parseHtmlColour(
         htmlColour: str
         ) -> typing.Tuple[
@@ -175,11 +209,11 @@ def parseHtmlColour(
         ]:
     length = len(htmlColour)
     if not length:
-        raise ValueError(f'Invalid colour "{htmlColour}"')
+        raise ValueError(f'Invalid colour {htmlColour!r}')
     if htmlColour[0] != '#':
         namedColour = _NameToColourMap.get(htmlColour.lower())
         if not namedColour:
-            raise ValueError(f'Invalid colour "{htmlColour}"')
+            raise ValueError(f'Invalid colour {htmlColour!r}')
         htmlColour = namedColour
         length = len(namedColour)
 
@@ -190,7 +224,7 @@ def parseHtmlColour(
             green = int(htmlColour[3:5], 16)
             blue = int(htmlColour[5:7], 16)
         except:
-            raise ValueError(f'Invalid colour "{htmlColour}"')
+            raise ValueError(f'Invalid colour {htmlColour!r}')
     elif length == 9:
         try:
             alpha = int(htmlColour[1:3], 16)
@@ -198,9 +232,9 @@ def parseHtmlColour(
             green = int(htmlColour[5:7], 16)
             blue = int(htmlColour[7:9], 16)
         except:
-            raise ValueError(f'Invalid colour "{htmlColour}"')
+            raise ValueError(f'Invalid colour {htmlColour!r}')
     else:
-        raise ValueError(f'Invalid colour "{htmlColour}"')
+        raise ValueError(f'Invalid colour {htmlColour!r}')
 
     return (red, green, blue, alpha)
 
@@ -252,3 +286,24 @@ def noticeableColourDifference(a: str, b: str) -> bool:
     bl, ba, bb = _convertXYZtoLab(bx, by, bz)
 
     return _deltaE76(al, aa, ab, bl, ba, bb) > JND
+
+# The intention is this works in the same was as the more generic
+# parameter validation functions in validation.py
+def validateHtmlColour(
+        name: str,
+        value: typing.Optional[str],
+        allowNone: bool = False,
+        validationFn: typing.Optional[typing.Callable[[str, typing.Optional[str]], typing.Any]] = None
+        ) -> typing.Optional[str]:
+    if not allowNone and value is None:
+        raise ValueError(f'{name} can\'t be None')
+
+    if value is not None:
+        common.validateStr(name=name, value=value, allowEmpty=False)
+        if not isValidHtmlColour(value):
+            raise ValueError(f'{name} must be a valid HTML colour')
+
+    if validationFn is not None:
+        validationFn(name, value)
+
+    return value

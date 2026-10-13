@@ -113,7 +113,7 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         modifierWidget = DiceModifierWidget(modifier=modifier)
         modifierWidget.modifierChanged.connect(lambda: self._modifierChanged(modifier))
 
-        deleteButton = gui.IconButton(icon=gui.loadIcon(id=gui.Icon.CloseTab))
+        deleteButton = gui.IconButton(icon=gui.loadIcon(id=gui.Icon.Cross))
         deleteButton.clicked.connect(lambda: self._deleteClicked(modifier))
 
         moveUpButton = QtWidgets.QToolButton()

@@ -13,12 +13,12 @@ class MapStyle(enum.Enum):
 
 class TextAlignment(enum.Enum):
     Baseline = 0
-    Centered = 1
+    Center = 1
     TopLeft = 2
     TopCenter = 3
     TopRight = 4
-    MiddleLeft = 5
-    MiddleRight = 6
+    CenterLeft = 5
+    CenterRight = 6
     BottomLeft = 7
     BottomCenter = 8
     BottomRight = 9
@@ -67,17 +67,15 @@ class RenderOptions(enum.IntFlag):
     SectorsAll = 0x0008
     SectorsMask = SectorsSelected | SectorsAll
 
-    BordersMajor = 0x0010
-    BordersMinor = 0x0020
-    BordersMask = BordersMajor | BordersMinor
+    Borders = 0x0010
+    Names = 0x0020
 
-    NamesMajor = 0x0040
-    NamesMinor = 0x0080
-    NamesMask = NamesMajor | NamesMinor
-
-    WorldsCapitals = 0x0100
-    WorldsHomeworlds = 0x0200
-    WorldsMask = WorldsCapitals | WorldsHomeworlds
+    # The Traveller Map rendering code splits this into Capitals and Homeworlds,
+    # however the UI only lets you turn them on/off together using the Important
+    # Worlds slider. I've chosen to simplify things as now I'm storing them in
+    # the database (and may want to allow the user to edit them), I want to make
+    # the feature more generic.
+    ImportantWorlds = 0x0100
 
     ForceHexes = 0x2000
     WorldColours = 0x4000
@@ -127,13 +125,14 @@ class LayerId(enum.Enum):
     Micro_BordersBackground = 11
     Micro_BordersForeground = 12
     Micro_Routes = 13
-    Micro_BorderExplicitLabels = 14
+    Micro_Labels = 14
 
     Names_Sector = 15
 
     Macro_GovernmentRiftRouteNames = 16
     Macro_CapitalsAndHomeWorlds = 17
-    Mega_GalaxyScaleLabels = 18
+    
+    Mega_Labels = 18
 
     Worlds_Background = 19
     Worlds_Foreground = 20
@@ -321,16 +320,30 @@ class RectangleF(object):
         self._x, self._y, self._width, self._height = other.rect()
 
     def left(self) -> float:
-        return self.x()
+        return self._x
+    
+    def setLeft(self, value: float) -> None:
+        self._width += self._x - value
+        self._x = value
 
     def right(self) -> float:
-        return self.x() + self.width()
+        return self._x + self._width
+    
+    def setRight(self, value: float) -> None:
+        self._width = value - self._x
 
     def top(self) -> float:
-        return self.y()
+        return self._y
+
+    def setTop(self, value: float) -> None:
+        self._height += self._y - value
+        self._y = value
 
     def bottom(self) -> float:
-        return self.y() + self.height()
+        return self._y + self._height
+    
+    def setBottom(self, value: float) -> None:
+        self._height = value - self._y
 
     def centre(self) -> PointF:
         x, y, width, height = self.rect()
@@ -352,20 +365,44 @@ class RectangleF(object):
             (otherY < selfY + selfHeight) and \
             (selfY < otherY + otherHeight)
 
+    # Expand the current rect to include the passed in object
+    def include(self, other: typing.Union[PointF, 'RectangleF']) -> None:
+        if isinstance(other, PointF):
+            if other.x() < self.left():
+                self.setLeft(other.x())
+            elif other.x() > self.right():
+                self.setRight(other.x())
+
+            if other.y() < self.top():
+                self.setTop(other.y())
+            elif other.y() > self.bottom():
+                self.setBottom(other.y())
+        elif isinstance(other, RectangleF):
+            if other.left() < self.left():
+                self.setLeft(other.left())
+            if other.right() > self.right():
+                self.setRight(other.right())
+
+            if other.top() < self.top():
+                self.setTop(other.top())
+            if other.bottom() > self.bottom():
+                self.setBottom(other.bottom())
+        else:
+            raise ValueError(f'Unknown object type {type(other)} for include update')
+
     def contains(self, other: typing.Union[PointF, 'RectangleF']) -> bool:
         if isinstance(other, PointF):
             return other.x() >= self.left() and other.x() <= self.right() and \
                 other.y() >= self.top() and other.y() <= self.bottom()
-        else:
+        elif isinstance(other, RectangleF):
             return other.left() >= self.left() and other.right() <= self.right() and \
                 other.top() >= self.top() and other.bottom() <= self.bottom()
+        
+        raise ValueError(f'Unknown object type {type(other)} for contains check')
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, RectangleF):
-            selfX, selfY, selfWidth, selfHeight = self.rect()
-            otherX, otherY, otherWidth, otherHeight = other.rect()
-            return selfX == otherX and selfY == otherY and\
-                selfHeight == otherHeight and selfWidth == otherWidth
+            return self.rect() == other.rect()
         return super().__eq__(other)
 
 class LabelStyle(object):

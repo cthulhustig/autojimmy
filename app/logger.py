@@ -27,3 +27,7 @@ def setupLogger(
 def setLogLevel(logLevel: int) -> None:
     logger = logging.getLogger()
     logger.setLevel(logLevel)
+
+def currentLogLevel() -> int:
+    logger = logging.getLogger()
+    return logger.level

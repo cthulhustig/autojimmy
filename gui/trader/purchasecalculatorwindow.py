@@ -1,9 +1,9 @@
 import app
+import astronomer
 import common
 import gui
 import logging
 import logic
-import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -27,7 +27,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._randomGenerator = common.RandomGenerator()
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            universe=astronomer.WorldManager.instance().universe(),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
@@ -186,7 +186,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         return super().eventFilter(object, event)
 
     def _setupWorldSelectControls(self) -> None:
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        universe = astronomer.WorldManager.instance().universe()
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
@@ -196,7 +196,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._purchaseWorldWidget = gui.HexSelectToolWidget(
-            milieu=milieu,
+            universe=universe,
             rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
@@ -343,9 +343,10 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        if option is app.ConfigOption.Milieu:
-            self._hexTooltipProvider.setMilieu(milieu=newValue)
-            self._purchaseWorldWidget.setMilieu(milieu=newValue)
+        if option is app.ConfigOption.Universe:
+            universe = astronomer.WorldManager.instance().universe()
+            self._hexTooltipProvider.setUniverse(universe=universe)
+            self._purchaseWorldWidget.setUniverse(universe=universe)
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._purchaseWorldWidget.setRules(rules=newValue)
@@ -387,7 +388,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         cargoRecords, localBrokerIsInformant = logic.generateRandomPurchaseCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=purchaseWorld,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localBrokerSpinBox.isChecked(),
@@ -461,7 +462,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
-        tradeGoods = traveller.tradeGoodList(
+        tradeGoods = logic.tradeGoodList(
             ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 

@@ -119,7 +119,7 @@ class VerticalTabBar(QtWidgets.QWidget):
         item = QtWidgets.QListWidgetItem(text)
         item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         if self._tabsClosable:
-            item.setIcon(gui.loadIcon(gui.Icon.CloseTab))
+            item.setIcon(gui.loadIcon(gui.Icon.Cross))
 
         self._list.addItem(item)
         self._list.setMinimumWidth(self._list.sizeHintForColumn(0) + 20)
@@ -158,7 +158,7 @@ class VerticalTabBar(QtWidgets.QWidget):
 
         icon = None
         if self._tabsClosable:
-            icon = gui.loadIcon(gui.Icon.CloseTab)
+            icon = gui.loadIcon(gui.Icon.Cross)
 
         for row in range(self._list.count()):
             item = self._list.item(row)
@@ -217,7 +217,7 @@ class VerticalTabWidget(QtWidgets.QWidget):
         item.setData(QtCore.Qt.ItemDataRole.UserRole, widget)
         item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         if self._tabsClosable:
-            item.setIcon(gui.loadIcon(gui.Icon.CloseTab))
+            item.setIcon(gui.loadIcon(gui.Icon.Cross))
 
         self._list.addItem(item)
         self._list.setMinimumWidth(self._list.sizeHintForColumn(0) + 20)
@@ -294,7 +294,7 @@ class VerticalTabWidget(QtWidgets.QWidget):
 
         icon = None
         if self._tabsClosable:
-            icon = gui.loadIcon(gui.Icon.CloseTab)
+            icon = gui.loadIcon(gui.Icon.Cross)
 
         for row in range(self._list.count()):
             item = self._list.item(row)

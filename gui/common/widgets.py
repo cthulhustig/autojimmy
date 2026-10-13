@@ -690,8 +690,117 @@ class OptionalDoubleSpinBox(_BaseOptionalSpinBox):
         return super().minimum()
 
 class TextEditEx(QtWidgets.QTextEdit):
+    delayedTextEdited = QtCore.pyqtSignal()
+
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, f: typing.Union[QtWidgets.QTextEdit.AutoFormatting, QtWidgets.QTextEdit.AutoFormattingFlag]) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._delayedTextEditedTimer = None
+
+    def enableDelayedTextEdited(
+            self,
+            msecs: int
+            ) -> None:
+        if not self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer = QtCore.QTimer()
+            self._delayedTextEditedTimer.setSingleShot(True)
+            self._delayedTextEditedTimer.timeout.connect(self._delayedTextEditedFired)
+            self.textChanged.connect(self._primeDelayedTextEdited)
+        self._delayedTextEditedTimer.setInterval(msecs)
+
+    def disableDelayedTextEdited(self) -> None:
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+            del self._delayedTextEditedTimer
+            self._delayedTextEditedTimer = None
+        self.textChanged.disconnect(self._primeDelayedTextEdited)
+
+    def setHtml(self, text: typing.Optional[str]) -> None:
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+
+        # We don't want setting the text programmatically to trigger
+        # a delayed edit event as they should only be generated in
+        # response to user edits so move the timer sideways while the
+        # edit is made
+        delayedTextEditedTimer = self._delayedTextEditedTimer
+        self._delayedTextEditedTimer = None
+        try:
+            super().setHtml(text)
+        finally:
+            self._delayedTextEditedTimer = delayedTextEditedTimer
+
+    def setPlainText(self, text: typing.Optional[str]) -> None:
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+
+        # We don't want setting the text programmatically to trigger
+        # a delayed edit event as they should only be generated in
+        # response to user edits so move the timer sideways while the
+        # edit is made
+        delayedTextEditedTimer = self._delayedTextEditedTimer
+        self._delayedTextEditedTimer = None
+        try:
+            super().setPlainText(text)
+        finally:
+            self._delayedTextEditedTimer = delayedTextEditedTimer
+
+    def setText(self, text: typing.Optional[str]) -> None:
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+
+        # We don't want setting the text programmatically to trigger
+        # a delayed edit event as they should only be generated in
+        # response to user edits so move the timer sideways while the
+        # edit is made
+        delayedTextEditedTimer = self._delayedTextEditedTimer
+        self._delayedTextEditedTimer = None
+        try:
+            super().setText(text)
+        finally:
+            self._delayedTextEditedTimer = delayedTextEditedTimer
+
+    def clear(self):
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+
+        # We don't want setting the text programmatically to trigger
+        # a delayed edit event as they should only be generated in
+        # response to user edits so move the timer sideways while the
+        # edit is made
+        delayedTextEditedTimer = self._delayedTextEditedTimer
+        self._delayedTextEditedTimer = None
+        try:
+            super().clear()
+        finally:
+            self._delayedTextEditedTimer = delayedTextEditedTimer
+
     def isEmpty(self) -> bool:
         return self.document().isEmpty()
+
+    def _primeDelayedTextEdited(self) -> None:
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.start()
+
+    def _delayedTextEditedFired(self) -> None:
+        self.delayedTextEdited.emit()
 
 class LineEditEx(QtWidgets.QLineEdit):
     regexValidityChanged = QtCore.pyqtSignal(bool)
@@ -747,6 +856,14 @@ class LineEditEx(QtWidgets.QLineEdit):
         if self._delayedTextEditedTimer:
             self._delayedTextEditedTimer.stop()
         return super().setText(text)
+
+    def clear(self):
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+        return super().clear()
 
     def enableDelayedTextEdited(
             self,
@@ -1068,6 +1185,12 @@ class ComboBoxEx(QtWidgets.QComboBox):
                 self.setCurrentIndex(index)
                 return
 
+    def findUserData(self, userData: typing.Any) -> int:
+        for i in range(self.count()):
+            if userData == self.userDataByIndex(i):
+                return i
+        return -1
+
     def setSelection(
             self,
             start: int,
@@ -1280,39 +1403,6 @@ class NaturalSortTreeWidgetItem(QtWidgets.QTreeWidgetItem):
         except Exception:
             return super().__lt__(other)
 
-class ListWidgetEx(QtWidgets.QListWidget):
-    def isEmpty(self) -> bool:
-        return self.count() <= 0
-
-    def removeRow(self, row: int) -> None:
-        self.takeItem(row)
-
-    def hasCurrentItem(self) -> bool:
-        return self.currentItem() != None
-
-    def hasSelection(self) -> bool:
-        return self.selectionModel().hasSelection()
-
-    def selectionCount(self) -> int:
-        count = 0
-        for row in range(self.count()):
-            item = self.item(row)
-            if not item:
-                continue
-            if item.isSelected():
-                count += 1
-        return count
-
-    def itemFromWidget(
-            self,
-            widget: QtWidgets.QWidget
-            ) -> typing.Optional[QtWidgets.QListWidgetItem]:
-        for item in self.items():
-            itemWidget = self.itemWidget(item)
-            if itemWidget == widget:
-                return item
-        return None
-
 class VBoxLayoutEx(QtWidgets.QVBoxLayout):
     @typing.overload
     def __init__(self) -> None: ...
@@ -1523,39 +1613,6 @@ class ContentSizedLineEdit(LineEditEx):
         fontMetrics = self.fontMetrics()
         width = fontMetrics.boundingRect(text).width() + margins.left() + margins.right() + ContentSizedLineEdit._ContentWidthPaddingHack
         return width
-
-class ResizingListWidget(ListWidgetEx):
-    @typing.overload
-    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
-    @typing.overload
-    def __init__(self, text: str, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-
-    def sizeHint(self) -> QtCore.QSize:
-        sizeHint = super().sizeHint()
-
-        height = 0
-        for row in range(self.count()):
-            item = self.item(row)
-            index = self.indexFromItem(item)
-            rect = self.rectForIndex(index)
-            height += rect.height()
-
-        contentMargin = self.contentsMargins()
-        sizeHint.setHeight(height + contentMargin.top() + contentMargin.bottom())
-
-        return sizeHint
-
-    def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
-        # If the widget has been resized then the size hint will also have changed.
-        # Call updateGeometry to make sure any layouts are notified of the change.
-        self.updateGeometry()
-        return super().resizeEvent(a0)
 
 class ProgressDialogEx(QtWidgets.QProgressDialog):
     @typing.overload
