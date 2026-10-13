@@ -76,7 +76,7 @@ def _walkOutOfBoundsPath(
             typing.Tuple[int, int],
             typing.List[typing.Tuple[int, int]]],
         borderPath: typing.List[typing.Tuple[int, int]],
-        ) -> typing.Optional[typing.Tuple[int, int]]:
+        ) -> typing.Tuple[int, int]:
     seenHexEntries: typing.Set[typing.Tuple[int, int]] = set()
 
     currentHex = startHex
@@ -94,7 +94,7 @@ def _walkOutOfBoundsPath(
             neighbourHex = multiverse.absoluteNeighbourHex(currentHex, checkEdge)
 
             if neighbourHex == finishHex:
-                return None # We've walked all the way to the finish
+                return neighbourHex # We've walked all the way to the finish
 
             nextSegment = startHexToSegmentMap.get(neighbourHex)
             if nextSegment:
@@ -452,62 +452,101 @@ def mergeBorders(
 
     for (style, colour), (segments, oobHexes) in layerDataMap.items():
         layerMerged: typing.List[multiverse.DbBorder] = []
+
+        # Generate mapping of start position to segment. It's rare but
+        # there can be multiple segments that start at the same hex
+        # (see (76, -79) in M1120). When walking, if there is more than
+        # on segment with the same start hex, the one where the second
+        # hex in the segment is the closest clockwise to the hex that
+        # was walked pervious to the segment start hex should be used
+        # first. When choosing the start segment for the walk, if there
+        # are multiple segments at the chosen start hex, it doesn't
+        # mater which segment is used
         startHexToSegmentMap: typing.Dict[
             typing.Tuple[int, int],
-            typing.List[typing.Tuple[int, int]]
+            typing.List[typing.List[typing.Tuple[int, int]]]
             ] = {}
         for segment in segments:
             startHex = segment[0]
-            if startHex in startHexToSegmentMap:
-                # TODO: Not sure what is best to do here. It should never happen with valid
-                # data but borders in the stock sectors can get messed up
-                raise RuntimeError(f'Duplicate start position {startHex}')
 
-            startHexToSegmentMap[startHex] = segment
+            hexSegments = startHexToSegmentMap.get(startHex)
+            if hexSegments is None:
+                hexSegments = []
+                startHexToSegmentMap[startHex] = hexSegments
+            hexSegments.append(segment)
 
         while startHexToSegmentMap:
             try:
                 startHex = next(iter(startHexToSegmentMap))
-                segment = startHexToSegmentMap.pop(startHex)
+                possibleSegments = startHexToSegmentMap[startHex]
+                segment = possibleSegments.pop(0)
+                if not possibleSegments:
+                    del startHexToSegmentMap[startHex]
 
-                currentHex = startHex
                 borderPath: typing.List[typing.Tuple[int, int]] = []
                 while True:
-                    # NOTE: The last hex in a segment is the starting hex of the next segment
-                    # so don't include it when when generating the merged segment
+                    # NOTE: The last hex in a segment is the starting hex of the next
+                    # segment so don't include it when when generating the merged segment
                     borderPath.extend(itertools.islice(segment, 0, len(segment) - 1))
-
                     currentHex = segment[-1]
-                    if currentHex == startHex:
-                        break
 
-                    segment = startHexToSegmentMap.pop(currentHex, None)
-                    if segment is not None:
-                        # A segment starting where the previous left of was found
-                        continue
+                    # If there is no segment starting at the current hex we need
+                    # to perform a path search in the oob hexes to try and find
+                    # the next segment. There is no need to do this if we've
+                    # already looped back to the start hex
+                    if currentHex not in startHexToSegmentMap and currentHex != startHex:
+                        if currentHex not in oobHexes:
+                            raise RuntimeError(f'Next hex {currentHex} is not in oob hexes')
 
-                    # No segment starting at the position the previous segment left the sector
-                    # was found. Try to walk the oob hexes to find the re-entry point
-                    if currentHex in oobHexes:
                         pervHex = borderPath[-1]
                         enterEdge = multiverse.connectingEdge(currentHex, pervHex)
                         if enterEdge is None:
                             raise RuntimeError(f'Hexes ({pervHex}) ({currentHex}) are not adjacent')
 
-                        nextHex = _walkOutOfBoundsPath(
+                        currentHex = _walkOutOfBoundsPath(
                             startHex=currentHex,
                             entryEdge=enterEdge,
                             oobHexes=oobHexes,
                             finishHex=startHex,
                             startHexToSegmentMap=startHexToSegmentMap,
                             borderPath=borderPath)
-                        if not nextHex:
-                            break # The out of bounds walk walked all the way to the finish
 
-                        segment = startHexToSegmentMap.pop(nextHex)
-                        continue
+                    # Check if we've looped back to the start. It's important to
+                    # check there is no other segment remaining in the segment map
+                    # as there could be multiple segments that start at the hex
+                    # we started walking from and we we've only hit the finish if
+                    # we've processed all of them
+                    if currentHex == startHex and currentHex not in startHexToSegmentMap:
+                        break
 
-                    raise RuntimeError(f'Incomplete path at {currentHex}')
+                    possibleSegments = startHexToSegmentMap.get(currentHex)
+                    if not possibleSegments:
+                        raise RuntimeError(f'No segment was found starting at {currentHex}')
+
+                    if len(possibleSegments) == 1:
+                        segment = possibleSegments.pop()
+                    else:
+                        pervHex = borderPath[-1]
+                        enterEdge = multiverse.connectingEdge(currentHex, pervHex)
+                        if enterEdge is None:
+                            raise RuntimeError(f'Hexes ({pervHex}) ({currentHex}) are not adjacent')
+
+                        nextEdge = multiverse.clockwiseHexEdge(enterEdge)
+                        segmentIndex = None
+                        while segmentIndex is None and nextEdge != enterEdge:
+                            nextHex = multiverse.absoluteNeighbourHex(currentHex, nextEdge)
+                            for index, segment in enumerate(possibleSegments):
+                                if segment[1] == nextHex:
+                                    segmentIndex = index
+                                    break
+                            nextEdge = multiverse.clockwiseHexEdge(nextEdge)
+
+                        if segmentIndex is None:
+                            raise RuntimeError(f'No valid next segment found for {currentHex}')
+                        segment = possibleSegments.pop(segmentIndex)
+
+                    if not possibleSegments:
+                        del startHexToSegmentMap[currentHex]
 
                 if borderPath:
                     # Loop the path
