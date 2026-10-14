@@ -678,6 +678,9 @@ class RenderContext(object):
             for sector in self._selector.sectors():
                 sectorRoutes = self._sectorCache.routeLines(
                     index=sector.index())
+                if not sectorRoutes:
+                    continue
+
                 for route in sectorRoutes:
                     routeColour = route.colour()
                     routeWidth = route.width()
