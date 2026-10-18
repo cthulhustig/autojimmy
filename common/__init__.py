@@ -2,6 +2,7 @@ from .containers import *
 from .validation import *
 from .orderedset import *
 from .observerset import *
+from .instancecounter import *
 from .utils import *
 from .calculator import *
 from .random import *
