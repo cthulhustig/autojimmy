@@ -19,9 +19,22 @@ class InstanceCounter(typing.Generic[T]):
         count = self._dict.get(element, 0)
         self._dict[element] = count + 1
 
-    def extend(self, elements: typing.Iterable[T]) -> None:
-        for element in elements:
-            self.add(element)
+    def update(self, elements: typing.Union[typing.Iterable[T], 'InstanceCounter[T]']) -> None:
+        if isinstance(elements, InstanceCounter):
+            for element in elements:
+                current = self._dict.get(element, 0)
+                self._dict[element] = current + elements.count(element)
+        else:
+            for element in elements:
+                self.add(element)
+
+    def remove(self, element: T) -> int:
+        count = self._dict[element] - 1
+        if count == 0:
+            del self._dict[element]
+        else:
+            self._dict[element] = count
+        return count
 
     def count(self, element) -> int:
         return self._dict.get(element, 0)

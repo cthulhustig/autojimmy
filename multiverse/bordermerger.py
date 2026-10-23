@@ -77,49 +77,85 @@ def _walkOutOfBoundsPath(
             typing.List[typing.Tuple[int, int]]],
         borderPath: typing.List[typing.Tuple[int, int]],
         ) -> typing.Tuple[int, int]:
-    seenHexEntries: typing.Set[typing.Tuple[int, int]] = set()
-
+    startEdge = entryEdge
     currentHex = startHex
-    currentEdge = entryEdge
+    currentEdge = startEdge
+    reentryHex = None
+    walkPath = []
+    seenHexes = set()
     while True:
-        if (currentHex, currentEdge) in seenHexEntries:
-            raise RuntimeError(f'Out of bounds path walk looped at {currentHex}')
-        seenHexEntries.add((currentHex, currentEdge))
+        walkPath.append(currentHex)
 
-        borderPath.append(currentHex)
-
-        checkEdge = multiverse.clockwiseHexEdge(currentEdge)
-        nextHex = None
+        # Start at the first edge clockwise from the edge we walked into the
+        # current hex and loop round clockwise checking if the neighbour hex
+        # is the start of a segment or the finish. If it is, the walk is done
+        checkEdge = currentEdge
         while True:
+            checkEdge = multiverse.clockwiseHexEdge(checkEdge)
             neighbourHex = multiverse.absoluteNeighbourHex(currentHex, checkEdge)
 
             if neighbourHex == finishHex:
-                return neighbourHex # We've walked all the way to the finish
+                reentryHex = neighbourHex # We've walked all the way to the finish
+                break
 
             nextSegment = startHexToSegmentMap.get(neighbourHex)
             if nextSegment:
-                return neighbourHex # We've walked to the next segment
-
-            if neighbourHex in oobHexes:
-                # We've found another out of bounds hex so walk to it
-                nextHex = neighbourHex
+                reentryHex = neighbourHex # We've walked to the next segment
                 break
 
-            # If we've looped round to the edge that the current hex was entered
-            # from. Bail out to avoid an infinite loop. This is done after the
-            # check that the neighbour is the start of a segment or another out of
-            # bounds hex as doubling back is valid if there is somewhere for the
-            # walk to go
             if checkEdge is currentEdge:
+                break
+
+        if reentryHex is not None:
+            break
+
+        # We didn't find the start of a segment or the finish so perform
+        # the same loop around the edges of the current hex but this time
+        # loop for an oob hex to continue the walk. This is done as a
+        # separate pass after looking for a segment/finish as those should
+        # take priority, even if there is an oob hex that is closer to the
+        # entry edge in looping order. This is important for correctly
+        # handling Irrgh Manifest, Glory of Taarskoerzn & Dzarrgh Federate
+        # in M1120. They are meant to be 3 separate borders but would get
+        # merged if we checked for oob as we looped round the edges looking
+        # for a segment/finish rather than checking oob afterwards
+        checkEdge = multiverse.clockwiseHexEdge(currentEdge)
+        nextHex = None
+        while checkEdge != currentEdge:
+            neighbourHex = multiverse.absoluteNeighbourHex(currentHex, checkEdge)
+
+            if neighbourHex in oobHexes and neighbourHex not in seenHexes:
+                # We've found another out of bounds hex so walk to it
+                seenHexes.add(neighbourHex)
+                nextHex = neighbourHex
                 break
 
             checkEdge = multiverse.clockwiseHexEdge(checkEdge)
 
         if nextHex is None:
-            raise RuntimeError(f'No connecting out of bounds hex found for {currentHex}')
+            if currentHex == startHex:
+                # We're on the start hex but haven't been able to find a next hex
+                raise RuntimeError(f'No oob path found from {startHex}')
+
+            # The current path walk has ended without finding a segment to connect
+            # to or the finish. There may still be an alternate oob path going of
+            # of a different edge on the start hex. Reset the path walk to the
+            # start and try the next clockwise edge round the start hex.
+            # This can happen when merging other borders on the same layer that are
+            # touching has left small sections of oob data that don't go anywhere
+            # (example merging the First Fleet of Dzo and Antares Pact borders from
+            # Lishun and Antares in M1200)
+            walkPath.clear()
+            startEdge = multiverse.clockwiseHexEdge(startEdge)
+            currentHex = startHex
+            currentEdge = startEdge
+            continue
 
         currentHex = nextHex
         currentEdge = multiverse.oppositeHexEdge(checkEdge)
+
+    borderPath.extend(walkPath)
+    return reentryHex
 
 # Holes are inserted by generating two vertical columns of parallel hexes
 # that run upwards from the upper most edge of the hole to the edge of the
@@ -355,6 +391,11 @@ def mergeBorders(
         ) -> typing.List[multiverse.DbBorder]:
     merged: typing.List[multiverse.DbBorder] = []
 
+    segmentAllegianceMap: typing.Dict[
+        typing.Tuple[int, int],
+        multiverse.DbAllegiance
+        ] = {}
+
     # TODO: The fact I removed allegiance from the key is known to cause an issue for a
     # border in M1120. Bersha and Courage are different allegiances and should be under
     # different borders (VIrM - Irrgh Manifest and VGoT - Glory of Taarskoerzn). I think
@@ -430,6 +471,8 @@ def mergeBorders(
 
             style = border.style()
             colour = border.colour()
+            allegiance = None
+            allegianceCode = None
 
             allegianceId = border.allegianceId()
             if allegianceId is not None:
@@ -441,7 +484,10 @@ def mergeBorders(
                 if colour is None:
                     colour = allegiance.borderColour()
 
-            layer = (style, colour)
+                #allegianceCode = allegiance.legacy() if allegiance.legacy() else allegiance.code()
+                allegianceCode = None # TODO: remove debug code
+
+            layer = (style, colour, allegianceCode)
             layerData = layerDataMap.get(layer)
             if layerData is None:
                 layerData = (list(), set())
@@ -450,7 +496,11 @@ def mergeBorders(
             layerSegments.extend(segments)
             layerOOBHexes.update(oobHexes)
 
-    for (style, colour), (segments, oobHexes) in layerDataMap.items():
+            if allegiance is not None:
+                for segment in segments:
+                    segmentAllegianceMap[segment[0]] = allegiance
+
+    for (style, colour, _), (segments, oobHexes) in layerDataMap.items():
         layerMerged: typing.List[multiverse.DbBorder] = []
 
         # Generate mapping of start position to segment. It's rare but
@@ -477,18 +527,49 @@ def mergeBorders(
 
         while startHexToSegmentMap:
             try:
-                startHex = next(iter(startHexToSegmentMap))
-                possibleSegments = startHexToSegmentMap[startHex]
-                segment = possibleSegments.pop(0)
-                if not possibleSegments:
+                # Start with the segment that has the lowest x value, if there are
+                # multiple segments with the same x, choose the one with the lowest
+                # y value.
+                startSegment = None
+                minHex = None
+                for segments in startHexToSegmentMap.values():
+                    for segment in segments:
+                        for hex in segment:
+                            if minHex is None or (hex[0] < minHex[0]) or (hex[0] == minHex[0] and hex[1] < minHex[1]):
+                                startSegment = segment
+                                minHex = hex
+                startHex = startSegment[0]
+
+                segments = startHexToSegmentMap[startHex]
+                segments.remove(startSegment)
+                if not segments:
                     del startHexToSegmentMap[startHex]
 
+                # TODO: Remove this if it ends up not being used
+                usedAllegiances: typing.Set[typing.Optional[multiverse.DbAllegiance]] = set()
+
                 borderPath: typing.List[typing.Tuple[int, int]] = []
+                segment = startSegment
                 while True:
                     # NOTE: The last hex in a segment is the starting hex of the next
                     # segment so don't include it when when generating the merged segment
                     borderPath.extend(itertools.islice(segment, 0, len(segment) - 1))
                     currentHex = segment[-1]
+
+                    # Hexes that are in the segment we just added might also appear in
+                    # the oob hex path, for example, when a border spans multiple sectors,
+                    # the start hex of the segment from one sector should always be in
+                    # the oob hexes added for the sector it connects to. By removing the
+                    # hexes after adding the segment it prevents oob path walks from
+                    # connecting back oob hexes that have already been used by a segment.
+                    # It's important not to remove the oob hex at the end of the segment
+                    # as it needs to be present in order for the oob hex walk to work.
+                    # This is needed to correctly merge cases like where the Antares Pact
+                    # border spanning Lishun and Antares in M1120
+                    oobHexes.difference_update(itertools.islice(segment, 0, len(segment) - 1))
+
+                    # TODO: Remove this if it ends up not being used
+                    usedAllegiances.add(segmentAllegianceMap.get(segment[0]))
 
                     # If there is no segment starting at the current hex we need
                     # to perform a path search in the oob hexes to try and find
@@ -548,22 +629,45 @@ def mergeBorders(
                     if not possibleSegments:
                         del startHexToSegmentMap[currentHex]
 
-                if borderPath:
-                    # Loop the path
-                    borderPath.append(borderPath[0])
+                if not borderPath:
+                    continue # No path so nothing to do
 
-                    layerMerged.append(multiverse.DbBorder(
-                        hexes=borderPath,
-                        # TODO: Allegiance is being lost
-                        allegianceId=None,
-                        style=style,
-                        colour=colour,
-                        # TODO: Label information is being lost
-                        label=None,
-                        labelWorldX=None,
-                        labelWorldY=None,
-                        showLabel=False,
-                        wrapLabel=False))
+                # Loop the path
+                borderPath.append(borderPath[0])
+
+                # TODO: Remove debug code
+                if len(usedAllegiances) > 1:
+                    print('!!!!!!!!!!!!!!!!!!!!Conflict')
+                    for allegiance in usedAllegiances:
+                        print(f'- {borderPath[0]} {allegiance.name() if allegiance else None} {allegiance.base() if allegiance else None}')
+
+                allegiance = None
+                if len(usedAllegiances) == 1:
+                    allegiance = next(iter(usedAllegiances))
+                elif len(usedAllegiances) > 0:
+                    # TODO: Need to decide which allegiance to use. I'm not sure
+                    # I want to use any of the used set. I think I want to use
+                    # which ever allegiance code was used in the key for layerDataMap
+                    # and look it up in the allegiance mapper. The idea being that
+                    # the code might be for the base allegiance rather than one of
+                    # the allegiances in the set.
+                    # TODO: I think the way I'm using allegiances in the key won't
+                    # work as it won't allow segments with no allegiance to be merged
+                    # to segments with allegiances
+                    pass
+
+                layerMerged.append(multiverse.DbBorder(
+                    hexes=borderPath,
+                    # TODO: Allegiance is being lost
+                    allegianceId=allegiance.id() if allegiance else None,
+                    style=style,
+                    colour=colour,
+                    # TODO: Label information is being lost
+                    label=None,
+                    labelWorldX=None,
+                    labelWorldY=None,
+                    showLabel=False,
+                    wrapLabel=False))
             except Exception as ex:
                 # TODO: Better logging
                 print(str(ex))
