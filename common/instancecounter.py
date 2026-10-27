@@ -1,4 +1,3 @@
-import collections.abc
 import typing
 
 T = typing.TypeVar("T")
@@ -36,11 +35,35 @@ class InstanceCounter(typing.Generic[T]):
             self._dict[element] = count
         return count
 
-    def count(self, element) -> int:
+    def count(self, element: T) -> int:
         return self._dict.get(element, 0)
 
     def clear(self) -> None:
         self._dict.clear()
+
+    def min(self) -> typing.List[T]:
+        minCount = None
+        for count in self._dict.values():
+            if minCount is None or count < minCount:
+                minCount = count
+
+        elements = []
+        for element, count in self._dict.items():
+            if count == minCount:
+                elements.append(element)
+        return elements
+
+    def max(self) -> typing.List[T]:
+        maxCount = None
+        for count in self._dict.values():
+            if maxCount is None or count > maxCount:
+                maxCount = count
+
+        elements = []
+        for element, count in self._dict.items():
+            if count == maxCount:
+                elements.append(element)
+        return elements
 
     def __getitem__(self, element: T) -> typing.Any:
         return self._dict[element]

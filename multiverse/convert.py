@@ -28,6 +28,9 @@ import typing
 # should be the allegiance name
 # TODO: Need to handle regions in the same way as borders
 
+# TODO: Need to update map snapshot in repo after I've finished getting fixes made
+# to Traveller Map data for borders and regions
+
 # Useful Test Locations:
 # - Sector: Tsebntsiatldlants
 #   - There is a route that runs the length of it (e.g. through Oiansh) that
@@ -2276,5 +2279,4 @@ def convertRawBordersToDbBorders(
             allegianceMapper=allegianceMapper,
             styleMapper=styleMapper)
 
-    idToAllegiance = {a.id(): a for a in allegianceMapper.listAllegiances()}
-    return multiverse.mergeBorders(borders=sectorPosToDbBorders, allegiances=idToAllegiance)
+    return multiverse.mergeBorders(borders=sectorPosToDbBorders, allegianceMapper=allegianceMapper)

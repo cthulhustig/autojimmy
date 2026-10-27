@@ -7,6 +7,22 @@ import sys
 import math
 import typing
 
+# TODO: Traveller Map has updated the Mongoose render style so that worlds
+# are drawn as images rather than circles
+# https://github.com/inexorabletash/travellermap/commit/6b2981f27f26ea38c36788da21acc8b7384918a8
+# TODO: Traveller Map has updated how dimming unofficial sectors works
+# https://github.com/inexorabletash/travellermap/commit/e41999d3ac57aa180c5a4edf18626958e9d5d8de
+# TODO: Traveller Map has made some updates to vectors. There are style
+# changes _AND_ I'll need to update the vectors manually in the data repo
+# as they aren't synced by the action script
+# https://github.com/inexorabletash/travellermap/commit/791b844c7c16cdd59678742611821984c92161b7
+# TODO: Traveller Map has made some updates to text rendering
+# https://github.com/inexorabletash/travellermap/commit/c9851941fb69da17e94c0402be86a7d48e98ee9c
+# TODO: Traveller Map has made some updates to border rendering
+# https://github.com/inexorabletash/travellermap/commit/a02b96eb94ee2257468665cd77b73eab3e90e319
+# TODO: Traveller Mpa has made some changes to light style
+# https://github.com/inexorabletash/travellermap/commit/e012a493ad929dd1bc192f6968c39d929d640a3b
+
 # This calculates the bounds of a subsector without the sector offset
 # (i.e. the bounds for the subsectors in the sector located at the
 # universe origin)

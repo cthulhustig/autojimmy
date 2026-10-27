@@ -1,3 +1,4 @@
+import common
 import itertools
 import multiverse
 import typing
@@ -381,13 +382,59 @@ def _mergeLayerHoles(
             wrapLabel=border.wrapLabel()))
     return result
 
+def _selectAllegiance(
+        segmentAllegiances: typing.Set[multiverse.DbAllegiance],
+        allegianceMapper: multiverse.AllegianceMapper
+        ) -> typing.Optional[multiverse.DbAllegiance]:
+        count = len(segmentAllegiances)
+
+        if count == 0:
+            return None
+        if count == 1:
+            return next(iter(segmentAllegiances))
+
+        allegianceUsages = common.InstanceCounter()
+        for allegiance in segmentAllegiances:
+            baseCode = allegiance.base()
+            if baseCode is None:
+                continue
+
+            baseAllegiance = allegianceMapper.lookupAllegiance(code=baseCode)
+            if baseAllegiance is None:
+                # TODO: This should log and continue
+                print(f'No allegiance for base code {baseCode}')
+                continue
+
+            allegianceUsages.add(baseAllegiance)
+
+        mostCommon = allegianceUsages.max()
+        if len(mostCommon) == 1:
+            # The allegiances all have the same base allegiance so use it
+            return next(iter(allegianceUsages))
+
+        for allegiance in segmentAllegiances:
+            isPartialName = True
+            for otherAllegiance in segmentAllegiances:
+                if allegiance is otherAllegiance:
+                    continue
+
+                if not otherAllegiance.name().startswith(allegiance.name()):
+                    isPartialName = False
+                    break
+            if isPartialName:
+                # All the allegiance names start with the current allegiance name
+                # so use it. This is working on the assumption this name is
+                # something like "Comsentient Alliance" and the other names are
+                # something like "Comsentient Alliance, Eslyat Magistracy"
+                return allegiance
+
+        return None
+
 def mergeBorders(
         borders: typing.Mapping[
             typing.Tuple[int, int], # Sector position
             typing.Collection[multiverse.DbBorder]],
-        allegiances: typing.Mapping[
-            str,
-            multiverse.DbAllegiance]
+        allegianceMapper: multiverse.AllegianceMapper
         ) -> typing.List[multiverse.DbBorder]:
     merged: typing.List[multiverse.DbBorder] = []
 
@@ -461,7 +508,7 @@ def mergeBorders(
                 merged.append(border)
                 continue
 
-            # Add the outstanding segment if there is one
+            # Complete the outstanding segment
             if segment:
                 # NOTE: Add the start hex at the end of the path. The merging algorithm
                 # expects the last hex in the segment to be the start hex of the next
@@ -472,11 +519,10 @@ def mergeBorders(
             style = border.style()
             colour = border.colour()
             allegiance = None
-            allegianceCode = None
 
             allegianceId = border.allegianceId()
             if allegianceId is not None:
-                allegiance = allegiances.get(allegianceId)
+                allegiance = allegianceMapper.allegianceById(allegianceId)
                 if allegiance is None:
                     raise RuntimeError(f'Unknown allegiance {allegianceId}')
                 if style is None:
@@ -484,10 +530,7 @@ def mergeBorders(
                 if colour is None:
                     colour = allegiance.borderColour()
 
-                #allegianceCode = allegiance.legacy() if allegiance.legacy() else allegiance.code()
-                allegianceCode = None # TODO: remove debug code
-
-            layer = (style, colour, allegianceCode)
+            layer = (style, colour)
             layerData = layerDataMap.get(layer)
             if layerData is None:
                 layerData = (list(), set())
@@ -500,7 +543,7 @@ def mergeBorders(
                 for segment in segments:
                     segmentAllegianceMap[segment[0]] = allegiance
 
-    for (style, colour, _), (segments, oobHexes) in layerDataMap.items():
+    for (style, colour), (segments, oobHexes) in layerDataMap.items():
         layerMerged: typing.List[multiverse.DbBorder] = []
 
         # Generate mapping of start position to segment. It's rare but
@@ -546,7 +589,7 @@ def mergeBorders(
                     del startHexToSegmentMap[startHex]
 
                 # TODO: Remove this if it ends up not being used
-                usedAllegiances: typing.Set[typing.Optional[multiverse.DbAllegiance]] = set()
+                usedAllegiances: typing.Set[multiverse.DbAllegiance] = set()
 
                 borderPath: typing.List[typing.Tuple[int, int]] = []
                 segment = startSegment
@@ -568,8 +611,9 @@ def mergeBorders(
                     # border spanning Lishun and Antares in M1120
                     oobHexes.difference_update(itertools.islice(segment, 0, len(segment) - 1))
 
-                    # TODO: Remove this if it ends up not being used
-                    usedAllegiances.add(segmentAllegianceMap.get(segment[0]))
+                    segmentAllegiance = segmentAllegianceMap.get(segment[0])
+                    if segmentAllegiance is not None:
+                        usedAllegiances.add(segmentAllegiance)
 
                     # If there is no segment starting at the current hex we need
                     # to perform a path search in the oob hexes to try and find
@@ -635,26 +679,15 @@ def mergeBorders(
                 # Loop the path
                 borderPath.append(borderPath[0])
 
-                # TODO: Remove debug code
-                if len(usedAllegiances) > 1:
-                    print('!!!!!!!!!!!!!!!!!!!!Conflict')
-                    for allegiance in usedAllegiances:
-                        print(f'- {borderPath[0]} {allegiance.name() if allegiance else None} {allegiance.base() if allegiance else None}')
+                allegiance = _selectAllegiance(
+                    segmentAllegiances=usedAllegiances,
+                    allegianceMapper=allegianceMapper)
 
-                allegiance = None
-                if len(usedAllegiances) == 1:
-                    allegiance = next(iter(usedAllegiances))
-                elif len(usedAllegiances) > 0:
-                    # TODO: Need to decide which allegiance to use. I'm not sure
-                    # I want to use any of the used set. I think I want to use
-                    # which ever allegiance code was used in the key for layerDataMap
-                    # and look it up in the allegiance mapper. The idea being that
-                    # the code might be for the base allegiance rather than one of
-                    # the allegiances in the set.
-                    # TODO: I think the way I'm using allegiances in the key won't
-                    # work as it won't allow segments with no allegiance to be merged
-                    # to segments with allegiances
-                    pass
+                # TODO: Remove debug code
+                if usedAllegiances and allegiance is None:
+                    print(f'No Merged Allegiance {borderPath[0]}')
+                    for allegiance in usedAllegiances:
+                        print(f'- {allegiance.name() if allegiance else None} {allegiance.base() if allegiance else None}')
 
                 layerMerged.append(multiverse.DbBorder(
                     hexes=borderPath,

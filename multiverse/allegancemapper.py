@@ -117,15 +117,18 @@ class AllegianceMapper(object):
 
     def lookupAllegiance(
             self,
-            rawMetadata: survey.RawMetadata,
-            code: str
+            code: str,
+            rawMetadata: typing.Optional[survey.RawMetadata] = None
             ) -> typing.Optional[multiverse.DbAllegiance]:
-        # First check if there is a sector specific allegiance for this code
-        codeMap = self._metadataToCodeMap.get(rawMetadata)
-        if codeMap is not None:
-            dbAllegiance = codeMap.get(code)
-            if dbAllegiance is not None:
-                return dbAllegiance
+        code = _LegacyAllegianceToT5Overrides.get(code, code)
+
+        if rawMetadata is not None:
+            # First check if there is a sector specific allegiance for this code
+            codeMap = self._metadataToCodeMap.get(rawMetadata)
+            if codeMap is not None:
+                dbAllegiance = codeMap.get(code)
+                if dbAllegiance is not None:
+                    return dbAllegiance
 
         # No sector specific allegiance so check if there is a global one
         codeMap = self._metadataToCodeMap.get(None)
@@ -192,35 +195,42 @@ class AllegianceMapper(object):
 
         for rawAllegiance in rawStockAllegiances:
             code = rawAllegiance.code()
+
+            # Always create a global allegiance, even if a location is specified. This
+            # is consistent with Traveller Map which also ignores them. This is
+            # important as the sectors specified in location strings isn't always an
+            # exhaustive list, for example Julian Protectorate is used in way more than
+            # the 3 sectors listed in the location. I think what _might_ be going on is
+            # the location only specifies official sectors (i.e. the ones not shaded when
+            # the overlay is selected)
+            routeColour, routeStyle, routeWidth = self._styleMapper.lookupRouteStyle(
+                rawMetadata=None,
+                tag=code)
+            borderColour, borderStyle = self._styleMapper.lookupBorderStyle(
+                rawMetadata=None,
+                tag=code)
+            dbAllegiance = multiverse.DbAllegiance(
+                name=rawAllegiance.name(),
+                code=code,
+                legacy=rawAllegiance.legacy(),
+                base=rawAllegiance.base(),
+                routeColour=routeColour,
+                routeStyle=routeStyle,
+                routeWidth=routeWidth,
+                borderColour=borderColour,
+                borderStyle=borderStyle)
+
+            dbAllegiances = metadataToDbAllegiances.get(None)
+            if dbAllegiances is None:
+                dbAllegiances = []
+                metadataToDbAllegiances[None] = dbAllegiances
+            dbAllegiances.append(dbAllegiance)
+            seenCodes.add(rawMetadata=None, code=dbAllegiance.code())
+
+            # Create an allegiance for each location. This needs done as the
+            # style may be different from the global one.
             location = rawAllegiance.location()
-
-            if location is None or location == 'various':
-                # Create a global allegiance
-                routeColour, routeStyle, routeWidth = self._styleMapper.lookupRouteStyle(
-                    rawMetadata=rawMetadata,
-                    tag=code)
-                borderColour, borderStyle = self._styleMapper.lookupBorderStyle(
-                    rawMetadata=rawMetadata,
-                    tag=code)
-                dbAllegiance = multiverse.DbAllegiance(
-                    name=rawAllegiance.name(),
-                    code=code,
-                    legacy=rawAllegiance.legacy(),
-                    base=rawAllegiance.base(),
-                    routeColour=routeColour,
-                    routeStyle=routeStyle,
-                    routeWidth=routeWidth,
-                    borderColour=borderColour,
-                    borderStyle=borderStyle)
-
-                dbAllegiances = metadataToDbAllegiances.get(None)
-                if dbAllegiances is None:
-                    dbAllegiances = []
-                    metadataToDbAllegiances[None] = dbAllegiances
-                dbAllegiances.append(dbAllegiance)
-                seenCodes.add(rawMetadata=None, code=dbAllegiance.code())
-            else:
-                # Create a sector allegiance for each location
+            if location and location != 'various':
                 for sectorAbbreviation in location.split('/'):
                     rawMetadata = sectorAbbreviationToMetadata.get(sectorAbbreviation)
                     if rawMetadata is None:
@@ -397,12 +407,15 @@ class AllegianceMapper(object):
                 self._metadataToCodeMap[None] = codeMap
 
             for dbAllegiance in globalDbAllegiances:
+                code = dbAllegiance.code()
+                code = _LegacyAllegianceToT5Overrides.get(code, code)
+
                 routeColour, routeStyle, routeWidth, borderColour, borderStyle = \
                     nameToStyleData.get(dbAllegiance.name(), (None, None, None, None, None))
 
                 dbAllegiance = multiverse.DbAllegiance(
+                    code=code,
                     name=dbAllegiance.name(),
-                    code=dbAllegiance.code(),
                     legacy=dbAllegiance.legacy(),
                     base=dbAllegiance.base(),
                     routeColour=routeColour,
@@ -482,11 +495,14 @@ class AllegianceMapper(object):
                 # for the allegiance and its actual code to the DbAllegiance for this
                 # allegiance name. These codes may be different as the sector may have
                 # had its code overridden though a local allegiance definition
+                code = dbAllegiance.code()
+                code = _LegacyAllegianceToT5Overrides.get(code, code)
+
                 codeMap = self._metadataToCodeMap.get(rawMetadata)
                 if codeMap is None:
                     codeMap = {}
                     self._metadataToCodeMap[rawMetadata] = codeMap
-                codeMap[dbAllegiance.code()] = dbAllegianceForName
+                codeMap[code] = dbAllegianceForName
 
     def _collectUsedCodes(
             self,
