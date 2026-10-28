@@ -29,9 +29,17 @@ _T5UnofficialM112xAllegiances = [
     survey.RawStockAllegiance(code='CRSu', legacy='CS', base=None, name='Suerrat Cultural Region' ),
     survey.RawStockAllegiance(code='CRAk', legacy='CA', base=None, name='Anakudnu Cultural Region' )
     ]
+_T5UnofficialM1248Allegiances = [
+    # This is added to allow this border to be merged correctly. It works with
+    # a change I'm going to propose be made to the Traveller Map data to make
+    # the borders use a base FL code consistently across the sectors that
+    # contain the border.
+    survey.RawStockAllegiance(code='FrLg', legacy='FL', base=None, name='Freedom League' )
+]
 _T5UnofficialAllegiancesMap = {
     'M1120': _T5UnofficialM112xAllegiances,
     'M1121': _T5UnofficialM112xAllegiances,
+    'M1248': _T5UnofficialM1248Allegiances
     }
 
 # These allegiances are take from Traveller Map (SecondSurvey.cs)
@@ -329,12 +337,23 @@ class AllegianceMapper(object):
 
         return metadataToDbAllegiances
 
+    # This function takes per-sector allegiances where there could be
+    # multiple instances of of DbAllegiance that define the same
+    # allegiance just from different sectors, and populates the classes
+    # internal mapping structures used by lookupAllegiance etc so that
+    # references to the same allegiance in different sectors map to a
+    # single DbAllegiance object.
+    # IMPORTANT: This is not a perfect process, some information may
+    # be lost. For example, if a sector uses a non-standard code to
+    # refer to an allegiance, it may be converted to use the standard
+    # code.
     def _processDbAllegiances(
             self,
             metadataToDbAllegiances: typing.Mapping[
                 typing.Optional[survey.RawMetadata], # None = global
                 typing.List[multiverse.DbAllegiance]]
             ) -> None:
+        # Group all allegiances that use the same name string
         nameToAllegianceData: typing.Dict[
             str, # Allegiance Name
             typing.List[typing.Tuple[
@@ -349,6 +368,11 @@ class AllegianceMapper(object):
                     nameToAllegianceData[name] = allegianceData
                 allegianceData.append((dbAllegiance, rawMetadata))
 
+        # Process the allegiances that use each name looking for cases where
+        # they all use the same style information. In cases where the styles
+        # data is consistent across all allegiances, that style information
+        # can be used as the style information for the DbAllegiance that will
+        # be created for that allegiance name.
         nameToStyleData: typing.Dict[
             str,
             typing.Tuple[
@@ -428,9 +452,36 @@ class AllegianceMapper(object):
                 self._nameToDbAllegiance[dbAllegiance.name()] = dbAllegiance
                 codeMap[dbAllegiance.code()] = dbAllegiance
 
+            # Add mappings for global allegiance legacy codes. Only legacy codes
+            # that are used by a single global allegiance are added, codes that
+            # are used by multiple global allegiances are ignored as any mapping
+            # would be ambiguous. Doing this is important to make the hack for
+            # Freedom League in M1248 work (see _T5UnofficialM1248Allegiances)
+            legacyCodeToAllegiances: typing.Dict[
+                str,
+                typing.List[multiverse.DbAllegiance]
+                ] = {}
+            # NOTE: When iterating use the global DbAllegiances created above, not
+            # the ones that are being processed (i.e. the ones in codeMap rather
+            # than the ones in globalDbAllegiances)
+            for dbAllegiance in codeMap.values():
+                legacyCode = dbAllegiance.legacy()
+                allegiances = legacyCodeToAllegiances.get(legacyCode)
+                if allegiances is None:
+                    allegiances = []
+                    legacyCodeToAllegiances[legacyCode] = allegiances
+                allegiances.append(dbAllegiance)
+
+            for legacyCode, allegiances in legacyCodeToAllegiances.items():
+                if len(allegiances) == 1:
+                    codeMap[legacyCode] = allegiances[0]
+
+        # Update the internal mappings with the allegiances for each name
         for name, allegianceData in nameToAllegianceData.items():
             dbAllegianceForName = self._nameToDbAllegiance.get(name)
+
             if dbAllegianceForName is None:
+                # There is no global allegiance for this name so create one
                 routeColour, routeStyle, routeWidth, borderColour, borderStyle = \
                     nameToStyleData.get(dbAllegiance.name(), (None, None, None, None, None))
 
@@ -490,11 +541,10 @@ class AllegianceMapper(object):
                 self._idToDbAllegiance[dbAllegianceForName.id()] = dbAllegianceForName
                 self._nameToDbAllegiance[dbAllegianceForName.name()] = dbAllegianceForName
 
+            # Create mappings for each sector that map the code used by that sector
+            # to the allegiance object. These codes can be different from any canonical
+            # code used for the allegiance as the sector may have overriden it.
             for dbAllegiance, rawMetadata in allegianceData:
-                # Create mappings for this sector that map the code used by the sector
-                # for the allegiance and its actual code to the DbAllegiance for this
-                # allegiance name. These codes may be different as the sector may have
-                # had its code overridden though a local allegiance definition
                 code = dbAllegiance.code()
                 code = _LegacyAllegianceToT5Overrides.get(code, code)
 
