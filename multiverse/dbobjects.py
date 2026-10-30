@@ -484,15 +484,15 @@ class DbWorld(DbBody):
         survey.validateStrangeness(name='strangeness', value=strangeness, allowNone=True)
         survey.validateSymbols(name='symbols', value=symbols, allowNone=True)
         survey.validatePopulationMultiplier(name='populationMultiplier', value=populationMultiplier, allowNone=True)
-        DbWorld._validateNobilities(name='nobilities', value=nobilities, worldId=id)
-        DbWorld._validateBases(name='bases', value=bases, worldId=id)
-        DbWorld._validateTradeCodes(name='tradeCodes', value=tradeCodes, worldId=id)
-        DbWorld._validateSophontPopulations(name='sophontPopulations', value=sophontPopulations, worldId=id)
-        DbWorld._validateRulingAllegiances(name='rulingAllegiances', value=rulingAllegiances, worldId=id)
-        DbWorld._validateOwningSystems(name='owningSystems', value=owningSystems, worldId=id)
-        DbWorld._validateColonySystems(name='colonySystems', value=colonySystems, worldId=id)
-        DbWorld._validateResearchStations(name='researchStations', value=researchStations, worldId=id)
-        DbWorld._validateCustomRemarks(name='customRemarks', value=customRemarks, worldId=id)
+        DbWorld._validateNobilities(name='nobilities', value=nobilities, worldId=self._id)
+        DbWorld._validateBases(name='bases', value=bases, worldId=self._id)
+        DbWorld._validateTradeCodes(name='tradeCodes', value=tradeCodes, worldId=self._id)
+        DbWorld._validateSophontPopulations(name='sophontPopulations', value=sophontPopulations, worldId=self._id)
+        DbWorld._validateRulingAllegiances(name='rulingAllegiances', value=rulingAllegiances, worldId=self._id)
+        DbWorld._validateOwningSystems(name='owningSystems', value=owningSystems, worldId=self._id)
+        DbWorld._validateColonySystems(name='colonySystems', value=colonySystems, worldId=self._id)
+        DbWorld._validateResearchStations(name='researchStations', value=researchStations, worldId=self._id)
+        DbWorld._validateCustomRemarks(name='customRemarks', value=customRemarks, worldId=self._id)
 
         self._isMainWorld = isMainWorld
         self._starport = starport
@@ -985,8 +985,8 @@ class DbSystem(DbSectorObject):
         common.validateInt(name='worldCount', value=worldCount, allowNone=True, min=0)
         survey.validateZone(name='zone', value=zone, allowNone=True)
         common.validateStr(name='allegianceId', value=allegianceId, allowNone=True, allowEmpty=False)
-        DbSystem._validateStars(name='stars', value=stars, systemId=id)
-        DbSystem._validateBodies(name='bodies', value=bodies, systemId=id)
+        DbSystem._validateStars(name='stars', value=stars, systemId=self._id)
+        DbSystem._validateBodies(name='bodies', value=bodies, systemId=self._id)
         common.validateStr(name='notes', value=notes, allowNone=True)
 
         self._hexX = hexX
@@ -1202,6 +1202,78 @@ class DbRoute(DbUniverseObject):
     def allegianceId(self) -> typing.Optional[str]:
         return self._allegianceId
 
+class DbBorderLabel(DbObject):
+    def __init__(
+            self,
+            worldX: float,
+            worldY: float,
+            text: typing.Optional[str] = None,
+            allegianceId: typing.Optional[str] = None,
+            show: bool = True,
+            wrap: bool = False,
+            id: typing.Optional[str] = None, # None means allocate an id
+            borderId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        common.validateStr(name='borderId', value=borderId, allowNone=True, allowEmpty=False)
+        common.validateFloat(name='worldX', value=worldX)
+        common.validateFloat(name='worldY', value=worldY)
+        common.validateStr(name='text', value=text, allowNone=True, allowEmpty=True)
+        common.validateStr(name='allegianceId', value=allegianceId, allowNone=True, allowEmpty=False)
+        common.validateBool(name='show', value=show)
+        common.validateBool(name='wrap', value=wrap)
+
+        self._borderId = borderId
+        self._worldX = worldX
+        self._worldY = worldY
+        self._text = text
+        self._allegianceId = allegianceId
+        self._show = show
+        self._wrap = wrap
+
+    def borderId(self) -> typing.Optional[str]:
+        return self._borderId
+
+    def worldX(self) -> float:
+        return self._worldX
+
+    def worldY(self) -> float:
+        return self._worldY
+
+    def text(self) -> typing.Optional[str]:
+        return self._text
+
+    def allegianceId(self) -> typing.Optional[str]:
+        return self._allegianceId
+
+    def show(self) -> bool:
+        return self._show
+
+    def wrap(self) -> bool:
+        return self._wrap
+
+    # NOTE: Setting the id back to None is intentionally disallowed as the only
+    # reason to do so would be to remove an object from its parent and it's not
+    # safe to do that as the object may hold references to other objects owned
+    # by the parent. If the object was removed from the parent and attached to
+    # another object, it would still refer to objects owned by its old parent.
+    # An example of this would be sophont populations. They're attached to a
+    # system but hold references to the sophont which is owned by the sector. If
+    # the system was removed from one sector and added to another, it would still
+    # reference the sophont from its old sector which would result in horrible
+    # bugs and the mangled data being written back to the database.
+    def setBorderId(self, borderId: str) -> None:
+        common.validateStr(name='borderId', value=borderId, allowEmpty=False)
+
+        if borderId == self._borderId:
+            return # Nothing to do
+
+        if self._borderId is not None:
+            raise RuntimeError(f'Object {self._id} of type {type(self)} is already attached to a border')
+
+        self._borderId = borderId
+
 class DbBorder(DbSectorObject):
     def __init__(
             self,
@@ -1209,11 +1281,7 @@ class DbBorder(DbSectorObject):
             allegianceId: typing.Optional[str] = None,
             style: typing.Optional[str] = None,
             colour: typing.Optional[str] = None,
-            label: typing.Optional[str] = None,
-            labelWorldX: typing.Optional[float] = None,
-            labelWorldY: typing.Optional[float] = None,
-            showLabel: bool = True,
-            wrapLabel: bool = False,
+            labels: typing.Optional[typing.Collection[DbBorderLabel]] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
@@ -1223,21 +1291,14 @@ class DbBorder(DbSectorObject):
         common.validateStr(name='allegianceId', value=allegianceId, allowNone=True, allowEmpty=False)
         survey.validateLineStyle(name='style', value=style, allowNone=True)
         survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
-        common.validateStr(name='label', value=label, allowNone=True, allowEmpty=False)
-        common.validateFloat(name='labelWorldX', value=labelWorldX, allowNone=True)
-        common.validateFloat(name='labelWorldY', value=labelWorldY, allowNone=True)
-        common.validateBool(name='showLabel', value=showLabel)
-        common.validateBool(name='wrapLabel', value=wrapLabel)
+        DbBorder._validateLabels(name='labels', value=labels, borderId=self._id)
 
         self._hexes = list(hexes)
         self._allegianceId = allegianceId
         self._style = style
         self._colour = colour
-        self._label = label
-        self._labelWorldX = labelWorldX
-        self._labelWorldY = labelWorldY
-        self._showLabel = showLabel
-        self._wrapLabel = wrapLabel
+        self._labels = list(labels) if labels is not None else None
+        self._attachLabels(self._labels)
 
     def hexes(self) -> typing.Sequence[typing.Tuple[int, int]]:
         return self._hexes
@@ -1251,20 +1312,33 @@ class DbBorder(DbSectorObject):
     def colour(self) -> typing.Optional[str]:
         return self._colour
 
-    def label(self) -> typing.Optional[str]:
-        return self._label
+    def labels(self) -> typing.Optional[typing.Collection[DbBorderLabel]]:
+        return self._labels
 
-    def labelWorldX(self) -> typing.Optional[float]:
-        return self._labelWorldX
+    def _attachLabels(
+            self,
+            labels: typing.Optional[typing.Iterable[DbBorderLabel]]
+            ) -> None:
+        if not labels:
+            return
+        for obj in labels:
+            obj.setBorderId(borderId=self._id)
 
-    def labelWorldY(self) -> typing.Optional[int]:
-        return self._labelWorldY
+    @staticmethod
+    def _validateLabels(
+            name: str,
+            value: typing.Optional[typing.Collection[DbBorderLabel]],
+            borderId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
 
-    def showLabel(self) -> bool:
-        return self._showLabel
+        common.validateCollection(name=name, value=value, elementType=DbBorderLabel, allowNone=True)
 
-    def wrapLabel(self) -> bool:
-        return self._wrapLabel
+        for label in value:
+            currentBorderId = label.borderId()
+            if currentBorderId is not None and currentBorderId != borderId:
+                raise ValueError(f'{name} contains border labels that are already attached to a border')
 
 class DbRegion(DbSectorObject):
     def __init__(
@@ -1426,7 +1500,6 @@ class DbSector(DbUniverseObject):
             selected: bool = False,
             alternateNames: typing.Optional[typing.Collection[DbAlternateName]] = None,
             subsectorNames: typing.Optional[typing.Collection[DbSubsectorName]] = None,
-            borders: typing.Optional[typing.Collection[DbBorder]] = None,
             regions: typing.Optional[typing.Collection[DbRegion]] = None,
             labels: typing.Optional[typing.Collection[DbSectorLabel]] = None,
             tags: typing.Optional[typing.Collection[DbTag]] = None,
@@ -1448,18 +1521,17 @@ class DbSector(DbUniverseObject):
         common.validateStr(name='abbreviation', value=abbreviation, allowNone=True, allowEmpty=False)
         common.validateStr(name='sectorLabel', value=sectorLabel, allowNone=True, allowEmpty=False)
         common.validateBool(name='selected', value=selected)
-        DbSector._validateAlternateNames(name='alternateNames', value=alternateNames, sectorId=id)
-        DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames, sectorId=id)
-        DbSector._validateBorders(name='borders', value=borders, sectorId=id)
-        DbSector._validateRegions(name='regions', value=regions, sectorId=id)
-        DbSector._validateLabels(name='labels', value=labels, sectorId=id)
-        DbSector._validateTags(name='tags', value=tags, sectorId=id)
+        DbSector._validateAlternateNames(name='alternateNames', value=alternateNames, sectorId=self._id)
+        DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames, sectorId=self._id)
+        DbSector._validateRegions(name='regions', value=regions, sectorId=self._id)
+        DbSector._validateLabels(name='labels', value=labels, sectorId=self._id)
+        DbSector._validateTags(name='tags', value=tags, sectorId=self._id)
         common.validateStr(name='credits', value=credits, allowNone=True, allowEmpty=False)
         common.validateStr(name='publication', value=publication, allowNone=True, allowEmpty=False)
         common.validateStr(name='author', value=author, allowNone=True, allowEmpty=False)
         common.validateStr(name='publisher', value=publisher, allowNone=True, allowEmpty=False)
         common.validateStr(name='reference', value=reference, allowNone=True, allowEmpty=False)
-        DbSector._validateProducts(name='products', value=products, sectorId=id)
+        DbSector._validateProducts(name='products', value=products, sectorId=self._id)
         common.validateStr(name='notes', value=notes, allowNone=True)
 
         self._sectorX = sectorX
@@ -1480,8 +1552,6 @@ class DbSector(DbUniverseObject):
         self._attachObjects(self._alternateNames)
         self._subsectorNames = list(subsectorNames) if subsectorNames else None
         self._attachObjects(self._subsectorNames)
-        self._borders = list(borders) if borders else None
-        self._attachObjects(self._borders)
         self._regions = list(regions) if regions else None
         self._attachObjects(self._regions)
         self._labels = list(labels) if labels else None
@@ -1517,9 +1587,6 @@ class DbSector(DbUniverseObject):
 
     def subsectorNames(self) -> typing.Optional[typing.Collection[DbSubsectorName]]:
         return self._subsectorNames
-
-    def borders(self) -> typing.Optional[typing.Collection[DbBorder]]:
-        return self._borders
 
     def regions(self) -> typing.Optional[typing.Collection[DbRegion]]:
         return self._regions

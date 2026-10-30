@@ -388,6 +388,9 @@ class UniverseDb(object):
     _BorderHexesTableName = 'border_hexes'
     _BorderHexesTableSchema = 1
 
+    _BorderLabelsTableName = 'border_labels'
+    _BorderLabelsTableSchema = 1
+
     _RegionsTableName = 'regions'
     _RegionsTableSchema = 1
 
@@ -1102,7 +1105,7 @@ class UniverseDb(object):
             self._createSystemTables(cursor=cursor)
             # TODO: These should be called from here rather than _createSystemTables as I move them to the universe
             self._createRouteTables(cursor=cursor)
-            #self._createBorderTables(cursor=cursor)
+            self._createBorderTables(cursor=cursor)
             #self._createRegionTables(cursor=cursor)
             self._createMapLabelTables(cursor=cursor)
             self._createMapVectorTables(cursor=cursor)
@@ -2094,7 +2097,6 @@ class UniverseDb(object):
                 database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
         # TODO: These should be called from _initTables as I move them to the universe
-        self._createBorderTables(cursor=cursor)
         self._createRegionTables(cursor=cursor)
 
         self._objectTypeToTableMapping[multiverse.DbAlternateName] = ObjectTableMapping(
@@ -2826,17 +2828,7 @@ class UniverseDb(object):
                             foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
                             foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
                 database.ColumnDef(columnName='style', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                # NOTE: The label position is stored as an offset in world space from the
-                # origin of the sector (top, left). An offset is used rather than storing
-                # world space coordinates to keep sector data relative to the sector. It
-                # will make it easier if we ever want to move a sector
-                # TODO: This should be converted to world space as part of the changes to move things to the universe label
-                database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
-                database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
         self._database.createTable(
             cursor=cursor,
@@ -2849,9 +2841,41 @@ class UniverseDb(object):
                 database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                 database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
 
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._BorderLabelsTableName,
+            requiredSchemaVersion=UniverseDb._BorderLabelsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='border_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._BordersTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='world_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='world_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='allegiance_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=True,
+                            foreignTableName=UniverseDb._AllegiancesTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.SetNull),
+                database.ColumnDef(columnName='show', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
+                database.ColumnDef(columnName='wrap', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+
         hexesMapping = RawTableMapping(
             tableName=UniverseDb._BorderHexesTableName,
             columnNames=['hex_x', 'hex_y'])
+
+        self._objectTypeToTableMapping[multiverse.DbBorderLabel] = ObjectTableMapping(
+            tableName=UniverseDb._BorderLabelsTableName,
+            objectType=multiverse.DbBorderLabel,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='border_id', paramType=ColumnParameterMapping.ParamType.String, paramName='borderId'),
+                ColumnParameterMapping(columnName='world_x', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldX'),
+                ColumnParameterMapping(columnName='world_y', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldY'),
+                ColumnParameterMapping(columnName='text', paramType=ColumnParameterMapping.ParamType.String, paramName='text'),
+                ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, paramName='allegianceId'),
+                ColumnParameterMapping(columnName='show', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='show'),
+                ColumnParameterMapping(columnName='wrap', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='wrap')])
+
         self._objectTypeToTableMapping[multiverse.DbBorder] = ObjectTableMapping(
             tableName=UniverseDb._BordersTableName,
             objectType=multiverse.DbBorder,
@@ -2861,11 +2885,7 @@ class UniverseDb(object):
                 ColumnParameterMapping(columnName='allegiance_id', paramType=ColumnParameterMapping.ParamType.String, paramName='allegianceId'),
                 ColumnParameterMapping(columnName='style', paramType=ColumnParameterMapping.ParamType.String, paramName='style'),
                 ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
-                ColumnParameterMapping(columnName='label', paramType=ColumnParameterMapping.ParamType.String, paramName='label'),
-                ColumnParameterMapping(columnName='label_x', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldX'),
-                ColumnParameterMapping(columnName='label_y', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldY'),
-                ColumnParameterMapping(columnName='show_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='showLabel'),
-                ColumnParameterMapping(columnName='wrap_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='wrapLabel')])
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbBorderLabel], parentColumnName='border_id', initParam='labels')])
 
     def _countBorders(
             self,

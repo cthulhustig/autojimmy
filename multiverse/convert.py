@@ -113,22 +113,36 @@ def _hexToSectorWorldOffset(
 
         return (worldX, worldY)
 
-def _sectorWorldOffsetToHex(
-        worldX: float,
-        worldY: float
-        ) -> typing.Tuple[int, int, typing.Optional[float], typing.Optional[float]]:
-    localX = worldX - _HexWidthOffset
-    localY = worldY + 0.5
+# TODO: These constants are a duplicate of what's in astronomer.astrometrics.
+# They should probably be shared
+_ReferenceSectorX = 0
+_ReferenceSectorY = 0
+_ReferenceHexX = 1
+_ReferenceHexY = 40
+_SectorWidth = 32
+_SectorHeight = 40
+def _sectorHexToWorldSpace(
+        pos: typing.Tuple[int, int, int, int],
+        offsetX: typing.Optional[float], # Offset from world space center of the hex
+        offsetY: typing.Optional[float]
+        ) -> typing.Tuple[float, float]:
+    absoluteX = (pos[0] - _ReferenceSectorX) * \
+        _SectorWidth + \
+        (pos[2] - _ReferenceHexX)
+    absoluteY = (pos[1] - _ReferenceSectorY) * \
+        _SectorHeight + \
+        (pos[3] - _ReferenceHexY)
 
-    hexX = int(localX + 0.5)
-    worldOffsetX = localX - (hexX - 0.5)
+    worldX = (absoluteX - 0.5)
+    worldX += _HexWidthOffset # Offset of sector origin
+    if offsetX is not None:
+        worldX += offsetX
 
-    yBase = localY - (0.0 if ((hexX % 2) != 0) else -0.5)
+    worldY = (absoluteY - (0.0 if ((absoluteX % 2) != 0) else 0.5))
+    if offsetY is not None:
+        worldY += offsetY
 
-    hexY = int(yBase)
-    worldOffsetY = yBase - hexY
-
-    return (hexX, hexY, worldOffsetX if worldOffsetX else None, worldOffsetY if worldOffsetY else None)
+    return (worldX, worldY)
 
 # TODO: This should probably do some additional checks
 # - Non-adjacent hexes in the path. Not sure what to do if it finds them, could
@@ -1204,15 +1218,14 @@ def _createDbBorders(
             if rawLabelHexX is not None and rawLabelHexY is not None:
                 rawLabelOffsetX = rawBorder.labelOffsetX()
                 rawLabelOffsetY = rawBorder.labelOffsetY()
-                dbLabelX, dbLabelY = _hexToSectorWorldOffset(
-                    hexX=rawLabelHexX,
-                    hexY=rawLabelHexY,
+                dbLabelX, dbLabelY = _sectorHexToWorldSpace(
+                    pos=(rawMetadata.x(), rawMetadata.y(), rawLabelHexX, rawLabelHexY),
                     # NOTE: The 0.7 multiplier is to mimic how Traveller Map
                     # scales the offset in DrawMicroLabels
-                    worldOffsetX=(rawLabelOffsetX * 0.7) if rawLabelOffsetX is not None else None,
+                    offsetX=(rawLabelOffsetX * 0.7) if rawLabelOffsetX is not None else None,
                     # NOTE: The coordinate space used for the offsets seems to
                     # have an inverted Y direction compared to world space
-                    worldOffsetY=(-rawLabelOffsetY * 0.7) if rawLabelOffsetY is not None else None)
+                    offsetY=(-rawLabelOffsetY * 0.7) if rawLabelOffsetY is not None else None)
 
             # Show label use the same defaults as the traveller map Border class
             rawShowLabel = rawBorder.showLabel()
@@ -1221,22 +1234,28 @@ def _createDbBorders(
             rawWrapLabel = rawBorder.wrapLabel()
             dbWrapLabel = rawWrapLabel if rawWrapLabel is not None else False
 
+            dbLabels = None
+            if rawLabelHexX is not None and rawLabelHexY is not None:
+                dbLabels = [multiverse.DbBorderLabel(
+                    worldX=dbLabelX,
+                    worldY=dbLabelY,
+                    text=dbLabel,
+                    allegianceId=dbAllegiance.id() if dbAllegiance else None,
+                    show=dbShowLabel,
+                    wrap=dbWrapLabel)]
+
             dbBorders.append(multiverse.DbBorder(
                 hexes=dbHexes,
                 allegianceId=dbAllegiance.id() if dbAllegiance else None,
                 style=dbStyle,
                 colour=dbColour,
-                label=dbLabel,
-                labelWorldX=dbLabelX,
-                labelWorldY=dbLabelY,
-                showLabel=dbShowLabel,
-                wrapLabel=dbWrapLabel))
+                labels=dbLabels))
 
     return dbBorders
 
 def _createDbRegions(
         rawMetadata: survey.RawMetadata,
-        ) -> typing.List[multiverse.DbBorder]:
+        ) -> typing.List[multiverse.DbRegion]:
     dbRegions = []
 
     if rawMetadata.regions():
@@ -1379,497 +1398,6 @@ def _createDbProducts(
                 reference=rawReference if rawReference else None))
 
     return dbProducts
-
-def _createRawAlternateNames(
-        dbSector: multiverse.DbSector
-        ) -> typing.Optional[typing.List[str]]:
-    rawAlternateNames = None
-    if dbSector.alternateNames():
-        rawAlternateNames = []
-        for dbName in dbSector.alternateNames():
-            rawAlternateNames.append(dbName.name())
-    return rawAlternateNames
-
-def _createRawNameLanguages(
-        dbSector: multiverse.DbSector
-        ) -> typing.Optional[typing.Dict[str, str]]:
-    rawNameLanguages = {} if dbSector.language() or dbSector.alternateNames() else None
-
-    if dbSector.language():
-        rawNameLanguages[dbSector.name()] = dbSector.language()
-
-    if dbSector.alternateNames():
-        for dbName in dbSector.alternateNames():
-            if dbName.language():
-                rawNameLanguages[dbName.name()] = dbName.language()
-
-    return rawNameLanguages
-
-def _createRawSubsectorNames(
-        dbSector: multiverse.DbSector
-        ) -> typing.Optional[typing.Dict[str, str]]:
-    rawSubsectorNames = None
-    if dbSector.subsectorNames():
-        rawSubsectorNames = {}
-        for dbName in dbSector.subsectorNames():
-            rawSubsectorNames[dbName.code()] = dbName.name()
-    return rawSubsectorNames
-
-def _createRawTags(
-        dbSector: multiverse.DbSector
-        ) -> typing.Optional[typing.List[str]]:
-    rawTags = None
-    if dbSector.tags():
-        rawTags = [dbTag.tag() for dbTag in dbSector.tags()]
-    return rawTags
-
-def _createRawAllegiances(
-        dbSector: multiverse.DbSector
-        ) -> typing.Optional[typing.List[survey.RawAllegiance]]:
-    rawAllegiances = None
-    if dbSector.allegiances():
-        rawAllegiances = []
-        for dbAllegiance in dbSector.allegiances():
-            rawAllegiances.append(survey.RawAllegiance(
-                code=dbAllegiance.code(),
-                name=dbAllegiance.name(),
-                base=dbAllegiance.base()))
-    return rawAllegiances
-
-def _createRawRoutes(
-        dbSector: multiverse.DbSector,
-        dbIdToAllegianceMap: typing.Mapping[str, multiverse.DbAllegiance]
-        ) -> typing.Optional[typing.List[survey.RawRoute]]:
-    rawRoutes = None
-    if dbSector.routes():
-        rawRoutes = []
-        for dbRoute in dbSector.routes():
-            dbAllegiance = None
-            if dbRoute.allegianceId():
-                dbAllegiance = dbIdToAllegianceMap.get(dbRoute.allegianceId())
-                if not dbAllegiance:
-                    # This should never happen, the sector should always have an entry for every
-                    # allegiance used
-                    logging.warning('Converter ignoring unknown allegiance {allegiance} for route {route} in {sector}'.format(
-                        allegiance=dbRoute.allegianceId(),
-                        route=dbRoute.id(),
-                        sector=dbSector.name()))
-
-            rawRoutes.append(survey.RawRoute(
-                startHexX=dbRoute.startHexX(),
-                startHexY=dbRoute.startHexY(),
-                endHexX=dbRoute.endHexX(),
-                endHexY=dbRoute.endHexY(),
-                startOffsetX=dbRoute.startOffsetX() if dbRoute.startOffsetX() else None,
-                startOffsetY=dbRoute.startOffsetY() if dbRoute.startOffsetY() else None,
-                endOffsetX=dbRoute.endOffsetX() if dbRoute.endOffsetX() else None,
-                endOffsetY=dbRoute.endOffsetY() if dbRoute.endOffsetY() else None,
-                allegianceCode=dbAllegiance.code() if dbAllegiance else None,
-                type=dbRoute.type(),
-                style=dbRoute.style(),
-                colour=dbRoute.colour(),
-                width=dbRoute.width()))
-
-    return rawRoutes
-
-def _createRawBorders(
-        dbSector: multiverse.DbSector,
-        dbIdToAllegianceMap: typing.Mapping[str, multiverse.DbAllegiance]
-        ) -> typing.Optional[typing.List[survey.RawBorder]]:
-    rawBorders = None
-    if dbSector.borders():
-        rawBorders = []
-        for dbBorder in dbSector.borders():
-            dbAllegiance = None
-            if dbBorder.allegianceId():
-                dbAllegiance = dbIdToAllegianceMap.get(dbBorder.allegianceId())
-                if not dbAllegiance:
-                    # This should never happen, the sector should always have an entry for every
-                    # allegiance used
-                    logging.warning('Converter ignoring unknown allegiance {allegiance} for border {border} in {sector}'.format(
-                        allegiance=dbBorder.allegianceId(),
-                        border=dbBorder.id(),
-                        sector=dbSector.name()))
-
-            labelHexX = labelHexY = labelOffsetX = labelOffsetY = None
-            if dbBorder.labelWorldX() is not None and dbBorder.labelWorldY() is not None:
-                labelHexX, labelHexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
-                    worldX=dbBorder.labelWorldX(),
-                    worldY=dbBorder.labelWorldY())
-
-                # NOTE: The 0.7 divisor is to mimic how Traveller Map scales the offset
-                # in DrawMicroLabels
-                if labelOffsetX is not None:
-                    labelOffsetX = labelOffsetX / 0.7
-                if labelOffsetY is not None:
-                    labelOffsetY = -labelOffsetY / 0.7
-
-            rawBorders.append(survey.RawBorder(
-                hexes=dbBorder.hexes(),
-                allegianceCode=dbAllegiance.code() if dbAllegiance else None,
-                showLabel=dbBorder.showLabel(),
-                wrapLabel=dbBorder.wrapLabel(),
-                labelHexX=labelHexX,
-                labelHexY=labelHexY,
-                labelOffsetX=labelOffsetX,
-                labelOffsetY=labelOffsetY,
-                label=dbBorder.label(),
-                style=dbBorder.style(),
-                colour=dbBorder.colour()))
-
-    return rawBorders
-
-def _createRawRegions(
-        dbSector: multiverse.DbSector
-        ) -> typing.Optional[typing.List[survey.RawRegion]]:
-    rawRegions = None
-    if dbSector.regions():
-        rawRegions = []
-        for dbRegion in dbSector.regions():
-            labelHexX = labelHexY = labelOffsetX = labelOffsetY = None
-            if dbRegion.labelWorldX() is not None and dbRegion.labelWorldY() is not None:
-                labelHexX, labelHexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
-                    worldX=dbRegion.labelWorldX(),
-                    worldY=dbRegion.labelWorldY())
-
-                # NOTE: The 0.7 divisor is to mimic how Traveller Map scales the offset
-                # in DrawMicroLabels
-                if labelOffsetX is not None:
-                    labelOffsetX = labelOffsetX / 0.7
-                if labelOffsetY is not None:
-                    labelOffsetY = -labelOffsetY / 0.7
-
-            rawRegions.append(survey.RawRegion(
-                hexes=dbRegion.hexes(),
-                showLabel=dbRegion.showLabel(),
-                wrapLabel=dbRegion.wrapLabel(),
-                labelHexX=labelHexX,
-                labelHexY=labelHexY,
-                labelOffsetX=labelOffsetX,
-                labelOffsetY=labelOffsetY,
-                label=dbRegion.label(),
-                colour=dbRegion.colour()))
-
-    return rawRegions
-
-def _createRawLabels(
-        dbSector: multiverse.DbSector
-        ) -> typing.Optional[typing.List[survey.RawSectorLabel]]:
-    rawLabels = None
-    if dbSector.labels():
-        rawLabels = []
-        for dbLabel in dbSector.labels():
-            labelHexX = labelHexY = labelOffsetX = labelOffsetY = None
-            if dbLabel.worldX() is not None and dbLabel.worldY() is not None:
-                labelHexX, labelHexY, labelOffsetX, labelOffsetY = _sectorWorldOffsetToHex(
-                    worldX=dbLabel.worldX(),
-                    worldY=dbLabel.worldY())
-
-                # NOTE: The 0.7 divisor is to mimic how Traveller Map scales the offset
-                # in DrawMicroLabels
-                if labelOffsetX is not None:
-                    labelOffsetX = labelOffsetX / 0.7
-                if labelOffsetY is not None:
-                    labelOffsetY = -labelOffsetY / 0.7
-
-            rawLabels.append(survey.RawSectorLabel(
-                text=dbLabel.text(),
-                hexX=labelHexX,
-                hexY=labelHexY,
-                offsetX=labelOffsetX,
-                offsetY=labelOffsetY,
-                colour=dbLabel.colour(),
-                size=dbLabel.size(),
-                wrap=dbLabel.wrap()))
-
-    return rawLabels
-
-def _createRawSources(
-        dbSector: multiverse.DbSector
-        ) -> typing.Optional[survey.RawSources]:
-    rawPrimarySource = None
-    if dbSector.publication() or dbSector.author() or dbSector.publisher() or dbSector.reference():
-        rawPrimarySource = survey.RawSource(
-            publication=dbSector.publication(),
-            author=dbSector.author(),
-            publisher=dbSector.publisher(),
-            reference=dbSector.reference())
-
-    rawProducts = None
-    if dbSector.products():
-        rawProducts = []
-        for dbProduct in dbSector.products():
-            rawProducts.append(survey.RawSource(
-                publication=dbProduct.publication(),
-                author=dbProduct.author(),
-                publisher=dbProduct.publisher(),
-                reference=dbProduct.reference()))
-
-    rawSources = None
-    if dbSector.credits() or rawPrimarySource or rawProducts:
-        rawSources = survey.RawSources(
-            credits=dbSector.credits(),
-            primary=rawPrimarySource,
-            products=rawProducts)
-
-    return rawSources
-
-def _createRawMetadata(
-        dbSector: multiverse.DbSector
-        ) -> survey.RawMetadata:
-    if dbSector.allegiances():
-        dbIdToAllegianceMap = {dbAllegiance.id(): dbAllegiance for dbAllegiance in dbSector.allegiances()}
-    else:
-        dbIdToAllegianceMap = {}
-
-    return survey.RawMetadata(
-        x=dbSector.sectorX(),
-        y=dbSector.sectorY(),
-        canonicalName=dbSector.name(),
-        alternateNames=_createRawAlternateNames(dbSector=dbSector),
-        nameLanguages=_createRawNameLanguages(dbSector=dbSector),
-        abbreviation=dbSector.abbreviation(),
-        sectorLabel=dbSector.sectorLabel(),
-        subsectorNames=_createRawSubsectorNames(dbSector=dbSector),
-        selected=dbSector.selected(),
-        tags=_createRawTags(dbSector=dbSector),
-        allegiances=_createRawAllegiances(dbSector=dbSector),
-        routes=_createRawRoutes(dbSector=dbSector, dbIdToAllegianceMap=dbIdToAllegianceMap),
-        borders=_createRawBorders(dbSector=dbSector, dbIdToAllegianceMap=dbIdToAllegianceMap),
-        regions=_createRawRegions(dbSector=dbSector),
-        labels=_createRawLabels(dbSector=dbSector),
-        sources=_createRawSources(dbSector=dbSector),
-        styleSheet=None)
-
-def _createRawWorlds(
-        dbSector: multiverse.DbSector
-        ) -> typing.List[survey.RawWorld]:
-    if dbSector.allegiances():
-        dbIdToAllegianceMap = {dbAllegiance.id(): dbAllegiance for dbAllegiance in dbSector.allegiances()}
-    else:
-        dbIdToAllegianceMap = {}
-
-    if dbSector.sophonts():
-        dbIdToSophontMap = {dbSophont.id(): dbSophont for dbSophont in dbSector.sophonts()}
-    else:
-        dbIdToSophontMap = {}
-
-    rawWorlds = []
-    if dbSector.systems():
-        for dbSystem in dbSector.systems():
-            dbMainWorld = None
-            for dbBody in dbSystem.bodies():
-                if isinstance(dbBody, multiverse.DbWorld) and dbBody.isMainWorld():
-                    dbMainWorld = dbBody
-                    break
-
-            dbSystemAllegiance = None
-            if dbSystem.allegianceId():
-                dbSystemAllegiance = dbIdToAllegianceMap.get(dbSystem.allegianceId())
-                if not dbSystemAllegiance:
-                    # This should never happen, the sector should always have an entry for every
-                    # allegiance used
-                    logging.warning('Converter ignoring unknown system allegiance {allegiance} in {sector}'.format(
-                        allegiance=dbSystem.allegianceId(),
-                        sector=dbSector.name()))
-
-            rawUWP = survey.RawUWP(
-                starport=dbMainWorld.starport() if dbMainWorld else None,
-                worldSize=dbMainWorld.worldSize() if dbMainWorld else None,
-                atmosphere=dbMainWorld.atmosphere() if dbMainWorld else None,
-                hydrographics=dbMainWorld.hydrographics() if dbMainWorld else None,
-                population=dbMainWorld.population() if dbMainWorld else None,
-                government=dbMainWorld.government() if dbMainWorld else None,
-                lawLevel=dbMainWorld.lawLevel() if dbMainWorld else None,
-                techLevel=dbMainWorld.techLevel() if dbMainWorld else None)
-
-            rawEconomics = survey.RawEconomics(
-                resources=dbMainWorld.resources() if dbMainWorld else None,
-                labour=dbMainWorld.labour() if dbMainWorld else None,
-                infrastructure=dbMainWorld.infrastructure() if dbMainWorld else None,
-                # TODO: Check that generated tab & column files are valid
-                # when the efficiency is unknown. I think the fact it's
-                # 2 character string (with +/-) but it's only putting
-                # in a single ? might break things
-                efficiency=dbMainWorld.efficiency() if dbMainWorld else None)
-
-            rawCulture = survey.RawCulture(
-                heterogeneity=dbMainWorld.heterogeneity() if dbMainWorld else None,
-                acceptance=dbMainWorld.acceptance() if dbMainWorld else None,
-                strangeness=dbMainWorld.strangeness() if dbMainWorld else None,
-                symbols=dbMainWorld.symbols() if dbMainWorld else None)
-
-            rawPBG = survey.RawPBG(
-                populationMultiplier=dbMainWorld.populationMultiplier() if dbMainWorld else None,
-                planetoidBeltCount=survey.ehexFromInteger(value=dbSystem.planetoidBeltCount(), default=None),
-                gasGiantCount=survey.ehexFromInteger(value=dbSystem.gasGiantCount(), default=None))
-
-            numPlanetoidBelt = dbSystem.planetoidBeltCount()
-            numGasGiants = dbSystem.gasGiantCount()
-            numWorlds = dbSystem.worldCount()
-            rawSystemWorldCount = None
-            if numPlanetoidBelt is not None or numGasGiants is not None or numWorlds is not None:
-                rawSystemWorldCount = 0
-                if numPlanetoidBelt:
-                    rawSystemWorldCount += numPlanetoidBelt
-                if numGasGiants:
-                    rawSystemWorldCount += numGasGiants
-                if numWorlds:
-                    rawSystemWorldCount += numWorlds
-
-            rawNobilities = None
-            rawBases = None
-            rawTradeCodes = None
-            rawRemarks = None
-            if dbMainWorld:
-                if dbMainWorld.nobilities():
-                    rawNobilities = [dbNobility.code() for dbNobility in dbMainWorld.nobilities()]
-
-                if dbMainWorld.bases():
-                    rawBases = [dbBase.code() for dbBase in dbMainWorld.bases()]
-
-                if dbMainWorld.tradeCodes():
-                    rawTradeCodes = [dbTradeCode.code() for dbTradeCode in dbMainWorld.tradeCodes()]
-
-                rawMajorRaceHomeWorlds: typing.Optional[typing.List[survey.RawSophontPopulation]] = None
-                rawMinorRaceHomeWorlds: typing.Optional[typing.List[survey.RawSophontPopulation]] = None
-                rawSophontPopulations: typing.Optional[typing.List[survey.RawSophontPopulation]] = None
-                rawDiebackSophonts: typing.Optional[typing.List[str]] = None
-                if dbMainWorld.sophontPopulations():
-                    for dbSophontPopulation in dbMainWorld.sophontPopulations():
-                        dbSophont = dbIdToSophontMap.get(dbSophontPopulation.sophontId())
-                        if not dbSophont:
-                            # This should never happen, the sector should always have an entry for every
-                            # sophont used
-                            logging.warning('Converter ignoring sophont population {population} using unknown sophont {sophont} in {sector}'.format(
-                                population=dbSophontPopulation.id(),
-                                sophont=dbSophontPopulation.sophontId(),
-                                sector=dbSector.name()))
-                            continue
-
-                        if dbSophontPopulation.isHomeWorld():
-                            if dbSophont.isMajor():
-                                if rawMajorRaceHomeWorlds is None:
-                                    rawMajorRaceHomeWorlds = []
-                                rawMajorRaceHomeWorlds.append(survey.RawSophontPopulation(
-                                    sophont=dbSophont.name(),
-                                    percentage=dbSophontPopulation.percentage()))
-                            else:
-                                if rawMinorRaceHomeWorlds is None:
-                                    rawMinorRaceHomeWorlds = []
-                                rawMinorRaceHomeWorlds.append(survey.RawSophontPopulation(
-                                    sophont=dbSophont.name(),
-                                    percentage=dbSophontPopulation.percentage()))
-
-                        if dbSophontPopulation.isDieBack():
-                            if rawDiebackSophonts is None:
-                                rawDiebackSophonts = []
-                            rawDiebackSophonts.append(dbSophont.name())
-                        elif not dbSophontPopulation.isHomeWorld():
-                            if rawSophontPopulations is None:
-                                rawSophontPopulations = []
-                            rawSophontPopulations.append(survey.RawSophontPopulation(
-                                sophont=dbSophont.code(),
-                                percentage=dbSophontPopulation.percentage()))
-
-                rawOwningSystems: typing.Optional[typing.List[survey.RawHexRef]] = None
-                if dbMainWorld.owningSystems():
-                    rawOwningSystems = []
-                    for dbOwner in dbMainWorld.owningSystems():
-                        rawOwningSystems.append(survey.RawHexRef(
-                            x=dbOwner.hexX(),
-                            y=dbOwner.hexY(),
-                            sector=dbOwner.sectorAbbreviation()))
-
-                rawColonySystems: typing.Optional[typing.List[survey.RawHexRef]] = None
-                if dbMainWorld.colonySystems():
-                    rawColonySystems = []
-                    for dbColony in dbMainWorld.colonySystems():
-                        rawColonySystems.append(survey.RawHexRef(
-                            x=dbColony.hexX(),
-                            y=dbColony.hexY(),
-                            sector=dbColony.sectorAbbreviation()))
-
-                rawRulingAllegiances: typing.Optional[typing.List[str]] = None
-                if dbMainWorld.rulingAllegiances():
-                    rawRulingAllegiances = []
-                    for dbRuler in dbMainWorld.rulingAllegiances():
-                        dbRulingAllegiance = dbIdToAllegianceMap.get(dbRuler.allegianceId())
-                        if dbRulingAllegiance is None:
-                            # This should never happen, the sector should always have an entry for every
-                            # allegiance used
-                            logging.warning('Converter ignoring ruler {ruler} with unknown allegiance {allegiance} in {sector}'.format(
-                                ruler=dbRuler.id(),
-                                allegiance=dbRuler.allegianceId(),
-                                sector=dbSector.name()))
-                            continue
-                        rawRulingAllegiances.append(dbRulingAllegiance.code())
-
-                rawResearchStations: typing.Optional[typing.List[str]] = None
-                if dbMainWorld.researchStations():
-                    rawResearchStations = [dbStation.code() for dbStation in dbMainWorld.researchStations()]
-
-                rawCustomRemarks: typing.Optional[typing.List[str]] = None
-                if dbMainWorld.customRemarks():
-                    rawCustomRemarks = [dbRemark.remark() for dbRemark in dbMainWorld.customRemarks()]
-
-                hasRemarks = rawTradeCodes or rawMajorRaceHomeWorlds or rawMinorRaceHomeWorlds or \
-                    rawSophontPopulations or rawDiebackSophonts or rawOwningSystems or rawColonySystems or \
-                    rawRulingAllegiances or rawResearchStations or rawCustomRemarks
-                if hasRemarks:
-                    rawRemarks = survey.RawRemarks(
-                        tradeCodes=rawTradeCodes,
-                        majorRaceHomeWorlds=rawMajorRaceHomeWorlds,
-                        minorRaceHomeWorlds=rawMinorRaceHomeWorlds,
-                        sophontPopulations=rawSophontPopulations,
-                        dieBackSophonts=rawDiebackSophonts,
-                        owningSystems=rawOwningSystems,
-                        colonySystems=rawColonySystems,
-                        rulingAllegiances=rawRulingAllegiances,
-                        researchStations=rawResearchStations,
-                        customRemarks=rawCustomRemarks)
-
-            rawStars = None
-            if dbSystem.stars():
-                rawStars = []
-                for dbStar in dbSystem.stars():
-                    rawStars.append(survey.RawStar(
-                        luminosityClass=dbStar.luminosityClass(),
-                        spectralClass=dbStar.spectralClass(),
-                        spectralScale=dbStar.spectralScale()))
-
-            rawWorlds.append(survey.RawWorld(
-                x=dbSystem.hexX(),
-                y=dbSystem.hexY(),
-                name=dbSystem.name(),
-                allegianceCode=dbSystemAllegiance.code() if dbSystemAllegiance else None,
-                zone=dbSystem.zone(),
-                uwp=rawUWP,
-                economics=rawEconomics,
-                culture=rawCulture,
-                nobilities=rawNobilities,
-                bases=rawBases,
-                remarks=rawRemarks,
-                pbg=rawPBG,
-                systemWorlds=rawSystemWorldCount,
-                stars=rawStars,
-                # TODO: I'm not sure if I need to bother supporting these
-                importance=None))
-
-    return rawWorlds
-
-def convertDbSectorToRawSector(
-        dbSector: multiverse.DbSector
-        ) -> typing.Tuple[
-            survey.RawMetadata,
-            typing.List[survey.RawWorld]]:
-    rawMetadata = _createRawMetadata(
-        dbSector=dbSector)
-
-    rawWorlds = _createRawWorlds(
-        dbSector=dbSector)
-
-    return (rawMetadata, rawWorlds)
 
 def convertRawLabelsToDbMapLabels(
         rawMegaLabels: typing.Collection[survey.RawUniverseLabel],
@@ -2137,8 +1665,6 @@ def convertRawVectorsToDbMapLabels(
 
 def _convertRawSectorToDbSector(
         rawMetadata: survey.RawMetadata,
-        allegianceMapper: multiverse.AllegianceMapper,
-        styleMapper: multiverse.StyleMapper
         ) -> multiverse.DbSector:
     dbSectorX = rawMetadata.x()
     dbSectorY = rawMetadata.y()
@@ -2161,11 +1687,6 @@ def _convertRawSectorToDbSector(
 
     dbSubsectorNames = _createDbSubsectorNames(
         rawMetadata=rawMetadata)
-
-    dbBorders = _createDbBorders(
-        rawMetadata=rawMetadata,
-        allegianceMapper=allegianceMapper,
-        styleMapper=styleMapper)
 
     dbRegions = _createDbRegions(
         rawMetadata=rawMetadata)
@@ -2205,7 +1726,6 @@ def _convertRawSectorToDbSector(
         selected=dbSelected,
         alternateNames=dbAlternateNames,
         subsectorNames=dbSubsectorNames,
-        borders=dbBorders,
         regions=dbRegions,
         labels=dbLabels,
         tags=dbTags,
@@ -2217,16 +1737,11 @@ def _convertRawSectorToDbSector(
         products=dbProducts)
 
 def convertRawSectorsToDbSectors(
-        rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.Collection[survey.RawWorld]]],
-        allegianceMapper: multiverse.AllegianceMapper,
-        styleMapper: multiverse.StyleMapper
+        rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.Collection[survey.RawWorld]]]
         ) -> typing.List[multiverse.DbSector]:
     dbSectors: typing.List[multiverse.DbSector] = []
     for rawMetadata, _ in rawSectors:
-        dbSector = _convertRawSectorToDbSector(
-            rawMetadata=rawMetadata,
-            allegianceMapper=allegianceMapper,
-            styleMapper=styleMapper)
+        dbSector = _convertRawSectorToDbSector(rawMetadata=rawMetadata)
         dbSectors.append(dbSector)
 
     return dbSectors

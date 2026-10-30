@@ -292,3 +292,79 @@ def decomposeHexPath(
                     joints.append(newJoint)
 
     return (outline, holes)
+
+_AntiClockwiseOffsets = {
+    astronomer.HexEdge.Top: (-0.5 + astronomer.HexWidthOffset, -0.5), # Upper left
+    astronomer.HexEdge.TopRight: (+0.5 - astronomer.HexWidthOffset, -0.5), # Upper right
+    astronomer.HexEdge.BottomRight: (+0.5 + astronomer.HexWidthOffset, 0), # Center right
+    astronomer.HexEdge.Bottom: (+0.5 - astronomer.HexWidthOffset, +0.5), # Lower right
+    astronomer.HexEdge.BottomLeft: (-0.5 + astronomer.HexWidthOffset, +0.5), # Lower Left
+    astronomer.HexEdge.TopLeft: (-0.5 - astronomer.HexWidthOffset, 0), # Center left
+}
+_HexOutlineOffsets = [
+    (-0.5 - astronomer.HexWidthOffset, 0), # Center left
+    (-0.5 + astronomer.HexWidthOffset, -0.5), # Upper left
+    (+0.5 - astronomer.HexWidthOffset, -0.5), # Upper right
+    (+0.5 + astronomer.HexWidthOffset, 0), # Center right
+    (+0.5 - astronomer.HexWidthOffset, +0.5), # Lower right
+    (-0.5 + astronomer.HexWidthOffset, +0.5), # Lower Left
+]
+
+# Takes a single hex path representation of a region outline and
+# returns the path running around the outer edge of those hexes
+def regionHexPathToWorldSpaceOutline(
+    hexes: typing.Sequence[astronomer.HexPosition]
+    ) -> typing.List[typing.Tuple[float, float]]:
+    outline = []
+
+    hexCount = len(hexes)
+    if hexCount > 1 and hexes[0] == hexes[-1]:
+        # Ignore the last hex if it's just looping back to the original hex
+        # as the algorithm does that automatically
+        hexCount -= 1
+
+    if hexCount == 1:
+        # This is a single hex on it's own
+        centerX, centerY = hexes[0].worldCenter()
+        for offsetX, offsetY in _HexOutlineOffsets:
+            outline.append((centerX + offsetX, centerY + offsetY))
+        return outline
+
+    startHex = hexes[0]
+    finishHex = hexes[hexCount - 1]
+
+    startEdge = startHex.connectingEdge(finishHex)
+    if startEdge is None:
+        # TODO: Not sure what to do here. Probably need checks somewhere
+        # that stops invalid hex lists getting this far
+        # TODO: I don't think this should be happening any more with the
+        # new validation on import but it still is
+        raise RuntimeError('Route hex list doesn\'t loop')
+    startEdge = astronomer.clockwiseHexEdge(startEdge)
+
+    for index in range(hexCount):
+        currentHex = hexes[index]
+        nextHex = hexes[(index + 1) % hexCount]
+        if currentHex == nextHex:
+            continue # Skip runs of the same hex
+
+        connectingEdge = currentHex.connectingEdge(nextHex)
+        if connectingEdge is None:
+            # TODO Not sure what to do here
+            #raise RuntimeError('Route hex list is not contiguous')
+            continue
+
+        edge = startEdge
+        while True:
+            if edge == connectingEdge:
+                break
+
+            centerX, centerY = currentHex.worldCenter()
+            offsetX, offsetY = _AntiClockwiseOffsets[edge]
+            outline.append((centerX + offsetX, centerY + offsetY))
+            edge = astronomer.clockwiseHexEdge(edge=edge)
+
+        startEdge = astronomer.clockwiseHexEdge(
+            astronomer.oppositeHexEdge(connectingEdge))
+
+    return outline

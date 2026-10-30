@@ -13,6 +13,9 @@ import typing
 # TODO: Create a Traveller Map PR to update borders
 # - I need to update other milieu before doing this
 
+# TODO: Why is the border containing Reina in M1120 drawn as blue now when it used
+# to be grey
+
 def _pathWithoutClosingHex(
         path: typing.Sequence[typing.Tuple[int, int]]
         ) -> typing.List[typing.Tuple[int, int]]:
@@ -371,50 +374,64 @@ def _mergeLayerHoles(
             path.append(path[0])
         border = borders[pathIndex]
         result.append(multiverse.DbBorder(
+            # NOTE: Use the same id as the border the hole was merged into as it
+            # is effectively replacing the old border. This means we can re-use
+            # the labels from the old border rather than having to create copies.
+            # If we didn't use the same id we'd get an exception saying the labels
+            # were already attached to another border.
+            id=border.id(),
             hexes=path,
             allegianceId=border.allegianceId(),
             style=border.style(),
             colour=border.colour(),
-            label=border.label(),
-            labelWorldX=border.labelWorldX(),
-            labelWorldY=border.labelWorldY(),
-            showLabel=border.showLabel(),
-            wrapLabel=border.wrapLabel()))
+            labels=border.labels()))
     return result
 
-def _selectAllegiance(
-        segmentAllegiances: typing.Set[multiverse.DbAllegiance],
+def _mergeAllegiances(
+        usedBorders: typing.Collection[multiverse.DbBorder],
         allegianceMapper: multiverse.AllegianceMapper
         ) -> typing.Optional[multiverse.DbAllegiance]:
-        count = len(segmentAllegiances)
+    usedAllegiances: typing.Optional[typing.Set[multiverse.DbAllegiance]] = None
+    for border in usedBorders:
+        allegianceId = border.allegianceId()
+        if not allegianceId:
+            continue
 
-        if count == 0:
-            return None
-        if count == 1:
-            return next(iter(segmentAllegiances))
+        allegiance = allegianceMapper.allegianceById(allegianceId)
+        if allegiance:
+            if usedAllegiances is None:
+                usedAllegiances = set()
 
-        allegianceUsages = common.InstanceCounter()
-        for allegiance in segmentAllegiances:
-            baseCode = allegiance.base()
-            if baseCode is None:
-                continue
+            usedAllegiances.add(allegiance)
 
-            baseAllegiance = allegianceMapper.lookupAllegiance(code=baseCode)
-            if baseAllegiance is None:
-                # TODO: This should log and continue
-                print(f'No allegiance for base code {baseCode}')
-                continue
+    if not usedAllegiances:
+        return None
 
-            allegianceUsages.add(baseAllegiance)
+    if len(usedAllegiances) == 1:
+        return next(iter(usedAllegiances))
+
+    allegianceUsages = common.InstanceCounter()
+    for allegiance in usedAllegiances:
+        baseCode = allegiance.base()
+        if baseCode is None:
+            continue
+
+        baseAllegiance = allegianceMapper.lookupAllegiance(code=baseCode)
+        if baseAllegiance is None:
+            # TODO: This should log and continue
+            print(f'No allegiance for base code {baseCode}')
+            continue
+
+        allegianceUsages.add(baseAllegiance)
 
         mostCommon = allegianceUsages.max()
         if len(mostCommon) == 1:
             # The allegiances all have the same base allegiance so use it
             return next(iter(allegianceUsages))
 
-        for allegiance in segmentAllegiances:
+        for allegiance in usedAllegiances:
             isPartialName = True
-            for otherAllegiance in segmentAllegiances:
+            for otherAllegiance in usedAllegiances:
                 if allegiance is otherAllegiance:
                     continue
 
@@ -430,6 +447,29 @@ def _selectAllegiance(
 
         return None
 
+def _mergeLabels(
+        usedBorders: typing.Collection[multiverse.DbBorder],
+        ) -> typing.Optional[typing.List[multiverse.DbBorderLabel]]:
+    labels = None
+    for border in usedBorders:
+        borderLabels = border.labels()
+        if not borderLabels:
+            continue
+
+        if labels is None:
+            labels = []
+
+        for label in borderLabels:
+            labels.append(multiverse.DbBorderLabel(
+                worldX=label.worldX(),
+                worldY=label.worldY(),
+                text=label.text(),
+                allegianceId=label.allegianceId(),
+                show=label.show(),
+                wrap=label.wrap()))
+
+    return labels
+
 def mergeBorders(
         borders: typing.Mapping[
             typing.Tuple[int, int], # Sector position
@@ -438,9 +478,9 @@ def mergeBorders(
         ) -> typing.List[multiverse.DbBorder]:
     merged: typing.List[multiverse.DbBorder] = []
 
-    segmentAllegianceMap: typing.Dict[
+    segmentStartToBorderMap: typing.Dict[
         typing.Tuple[int, int],
-        multiverse.DbAllegiance
+        multiverse.DbBorder
         ] = {}
 
     # TODO: The fact I removed allegiance from the key is known to cause an issue for a
@@ -518,7 +558,6 @@ def mergeBorders(
 
             style = border.style()
             colour = border.colour()
-            allegiance = None
 
             allegianceId = border.allegianceId()
             if allegianceId is not None:
@@ -539,9 +578,8 @@ def mergeBorders(
             layerSegments.extend(segments)
             layerOOBHexes.update(oobHexes)
 
-            if allegiance is not None:
-                for segment in segments:
-                    segmentAllegianceMap[segment[0]] = allegiance
+            for segment in segments:
+                segmentStartToBorderMap[segment[0]] = border
 
     for (style, colour), (segments, oobHexes) in layerDataMap.items():
         layerMerged: typing.List[multiverse.DbBorder] = []
@@ -588,15 +626,13 @@ def mergeBorders(
                 if not segments:
                     del startHexToSegmentMap[startHex]
 
-                # TODO: Remove this if it ends up not being used
-                usedAllegiances: typing.Set[multiverse.DbAllegiance] = set()
-
-                borderPath: typing.List[typing.Tuple[int, int]] = []
+                mergedPath: typing.List[typing.Tuple[int, int]] = []
+                usedBorders: typing.Set[multiverse.DbBorder] = set()
                 segment = startSegment
                 while True:
                     # NOTE: The last hex in a segment is the starting hex of the next
                     # segment so don't include it when when generating the merged segment
-                    borderPath.extend(itertools.islice(segment, 0, len(segment) - 1))
+                    mergedPath.extend(itertools.islice(segment, 0, len(segment) - 1))
                     currentHex = segment[-1]
 
                     # Hexes that are in the segment we just added might also appear in
@@ -611,9 +647,9 @@ def mergeBorders(
                     # border spanning Lishun and Antares in M1120
                     oobHexes.difference_update(itertools.islice(segment, 0, len(segment) - 1))
 
-                    segmentAllegiance = segmentAllegianceMap.get(segment[0])
-                    if segmentAllegiance is not None:
-                        usedAllegiances.add(segmentAllegiance)
+                    segmentBorder = segmentStartToBorderMap.get(segment[0])
+                    if segmentBorder is not None:
+                        usedBorders.add(segmentBorder)
 
                     # If there is no segment starting at the current hex we need
                     # to perform a path search in the oob hexes to try and find
@@ -623,7 +659,7 @@ def mergeBorders(
                         if currentHex not in oobHexes:
                             raise RuntimeError(f'Next hex {currentHex} is not in oob hexes')
 
-                        pervHex = borderPath[-1]
+                        pervHex = mergedPath[-1]
                         enterEdge = multiverse.connectingEdge(currentHex, pervHex)
                         if enterEdge is None:
                             raise RuntimeError(f'Hexes ({pervHex}) ({currentHex}) are not adjacent')
@@ -634,7 +670,7 @@ def mergeBorders(
                             oobHexes=oobHexes,
                             finishHex=startHex,
                             startHexToSegmentMap=startHexToSegmentMap,
-                            borderPath=borderPath)
+                            borderPath=mergedPath)
 
                     # Check if we've looped back to the start. It's important to
                     # check there is no other segment remaining in the segment map
@@ -651,7 +687,7 @@ def mergeBorders(
                     if len(possibleSegments) == 1:
                         segment = possibleSegments.pop()
                     else:
-                        pervHex = borderPath[-1]
+                        pervHex = mergedPath[-1]
                         enterEdge = multiverse.connectingEdge(currentHex, pervHex)
                         if enterEdge is None:
                             raise RuntimeError(f'Hexes ({pervHex}) ({currentHex}) are not adjacent')
@@ -673,34 +709,29 @@ def mergeBorders(
                     if not possibleSegments:
                         del startHexToSegmentMap[currentHex]
 
-                if not borderPath:
+                if not mergedPath:
                     continue # No path so nothing to do
 
                 # Loop the path
-                borderPath.append(borderPath[0])
+                mergedPath.append(mergedPath[0])
 
-                allegiance = _selectAllegiance(
-                    segmentAllegiances=usedAllegiances,
+                # Determine which allegiance to use for the border
+                mergedAllegiance = _mergeAllegiances(
+                    usedBorders=usedBorders,
                     allegianceMapper=allegianceMapper)
 
-                # TODO: Remove debug code
-                if usedAllegiances and allegiance is None:
-                    print(f'No Merged Allegiance {borderPath[0]}')
-                    for allegiance in usedAllegiances:
-                        print(f'- {allegiance.name() if allegiance else None} {allegiance.base() if allegiance else None}')
+                # Create final border labels merged from all borders that were
+                # merged to create it
+                mergedLabels = _mergeLabels(
+                    usedBorders=usedBorders)
 
+                # Create the merged border
                 layerMerged.append(multiverse.DbBorder(
-                    hexes=borderPath,
-                    # TODO: Allegiance is being lost
-                    allegianceId=allegiance.id() if allegiance else None,
+                    hexes=mergedPath,
+                    allegianceId=mergedAllegiance.id() if mergedAllegiance else None,
                     style=style,
                     colour=colour,
-                    # TODO: Label information is being lost
-                    label=None,
-                    labelWorldX=None,
-                    labelWorldY=None,
-                    showLabel=False,
-                    wrapLabel=False))
+                    labels=mergedLabels))
             except Exception as ex:
                 # TODO: Better logging
                 print(str(ex))

@@ -1,12 +1,25 @@
 import astronomer
 import azathoth
 import cartographer
-import common
 import itertools
-import math
 import typing
 
 class BorderInfo(object):
+    class LabelInfo(object):
+        def __init__(
+                self,
+                text: str,
+                pos: cartographer.PointF
+                ) -> None:
+            self._text = text
+            self._pos = pos
+
+        def text(self) -> str:
+            return self._text
+
+        def pos(self) -> cartographer.PointF:
+            return self._pos
+
     def __init__(
             self,
             outlinePaths: typing.List[cartographer.AbstractPath],
@@ -14,7 +27,8 @@ class BorderInfo(object):
             fillPath: cartographer.AbstractPath,
             fillSpline: cartographer.AbstractSpline,
             colour: typing.Optional[str],
-            style: typing.Optional[cartographer.LineStyle]
+            style: typing.Optional[cartographer.LineStyle],
+            labelInfos: typing.Optional[typing.List[LabelInfo]]
             ) -> None:
         self._outlinePaths = outlinePaths
         self._outlineSplines = outlineSplines
@@ -22,6 +36,7 @@ class BorderInfo(object):
         self._fillSpline = fillSpline
         self._colour = colour
         self._style = style
+        self._labelInfos = labelInfos
 
     def outlinePaths(self) -> typing.Collection[cartographer.AbstractPath]:
         return self._outlinePaths
@@ -41,7 +56,10 @@ class BorderInfo(object):
     def style(self) -> typing.Optional[cartographer.LineStyle]:
         return self._style
 
-    def bounds(self) -> cartographer.RectangleF:
+    def labelInfos(self) -> typing.Optional[typing.Collection[LabelInfo]]:
+        return self._labelInfos
+
+    def pathBounds(self) -> cartographer.RectangleF:
         # TODO: Not sure what is best to do here as the spline and path can have
         # slightly different bounds. I think the spline bounds will always be the
         # larger of the two so I'm using that for now
@@ -96,7 +114,7 @@ class BorderCache(object):
 
             self._quadTree.add(
                 obj=borderInfo,
-                bounds=borderInfo.bounds())
+                bounds=borderInfo.pathBounds())
 
     def _handleUniversePreUpdate(
             self,
@@ -116,10 +134,11 @@ class BorderCache(object):
                 if borderInfo is None:
                     continue # Route hasn't been cached for some reason
                 del self._borderIdToInfoMap[obj.entityId()]
-                self._quadTree.remove(borderInfo, borderInfo.bounds())
+                self._quadTree.remove(borderInfo, borderInfo.pathBounds())
             elif isinstance(obj, astronomer.Allegiance):
-                # TODO: If the allegiance used by a route has changed then that route needs to
+                # TODO: If the allegiance used by a border has changed then that route needs to
                 # update as its width/colour/style may have changed
+                # IMPORTANT: Need to remember that border labels can have their own allegiance
                 pass
 
     def _handleUniversePostUpdate(
@@ -135,11 +154,11 @@ class BorderCache(object):
             return
 
         for obj in itertools.chain(changeEvent.added(), changeEvent.modified()):
-            if isinstance(obj, astronomer.Route):
+            if isinstance(obj, astronomer.Border):
                 borderInfo = self._createBorderInfo(border=obj)
                 if borderInfo is not None:
                     self._borderIdToInfoMap[obj.entityId()] = borderInfo
-                    self._quadTree.add(borderInfo, borderInfo.bounds())
+                    self._quadTree.add(borderInfo, borderInfo.pathBounds())
             elif isinstance(obj, astronomer.Allegiance):
                 # TODO: If the allegiance used by a route has changed then that route needs to
                 # update as its width/colour/style may have changed
@@ -205,13 +224,38 @@ class BorderCache(object):
                 tension=BorderCache._SplineTension,
                 closed=True)
 
+            labels = border.labels()
+            labelInfos = None
+            if labels:
+                for label in labels:
+                    if not label.show():
+                        continue
+
+                    text = label.text()
+                    if not text:
+                        allegiance = label.allegiance()
+                        if allegiance is None:
+                            allegiance = border.allegiance()
+
+                        if allegiance:
+                            text = allegiance.name()
+                    if text and label.wrap():
+                        text = cartographer.wrapLabelText(text)
+
+                    if labelInfos is None:
+                        labelInfos = []
+                    labelInfos.append(BorderInfo.LabelInfo(
+                        text=text,
+                        pos=cartographer.PointF(label.worldX(), label.worldY())))
+
             return BorderInfo(
                 outlinePaths=outlinePaths,
                 outlineSplines=outlineSplines,
                 fillPath=fillPath,
                 fillSpline=fillSpline,
                 colour=colour,
-                style=style)
+                style=style,
+                labelInfos=labelInfos)
         except Exception as ex:
             # TODO: Log something
             print(str(ex))

@@ -10,11 +10,7 @@ class EditableBorder(astronomer.Border):
             allegiance: typing.Optional[astronomer.Allegiance] = None,
             style: typing.Optional[astronomer.LineStyle] = None,
             colour: typing.Optional[str] = None,
-            label: typing.Optional[str] = None,
-            labelWorldX: typing.Optional[float] = None,
-            labelWorldY: typing.Optional[float] = None,
-            showLabel: bool = True,
-            wrapLabel: bool = False
+            labels: typing.Optional[typing.Collection[astronomer.BorderLabel]] = None
             ) -> None:
         super().__init__(
             entityId=entityId,
@@ -22,11 +18,7 @@ class EditableBorder(astronomer.Border):
             allegiance=allegiance,
             style=style,
             colour=colour,
-            label=label,
-            labelWorldX=labelWorldX,
-            labelWorldY=labelWorldY,
-            showLabel=showLabel,
-            wrapLabel=wrapLabel)
+            labels=labels)
         self._sectorId = None
 
     def sectorId(self) -> typing.Optional[str]:

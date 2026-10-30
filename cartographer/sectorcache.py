@@ -199,29 +199,9 @@ class SectorCache(object):
 
     def _createOutline(
             self,
-            source: typing.Union[astronomer.Region, astronomer.Border]
+            source: typing.Union[astronomer.Region]
             ) -> SectorPath:
         colour = source.colour()
-        style = None
-
-        if isinstance(source, astronomer.Border):
-            style = source.style()
-
-            allegiance = source.allegiance()
-            if allegiance:
-                if colour is None:
-                    colour = allegiance.borderColour()
-                if style is None:
-                    style = allegiance.borderStyle()
-
-            if style is astronomer.LineStyle.Solid:
-                style = cartographer.LineStyle.Solid
-            elif style is astronomer.LineStyle.Dashed:
-                style = cartographer.LineStyle.Dash
-            elif style is astronomer.LineStyle.Dotted:
-                style = cartographer.LineStyle.Dot
-            else:
-                style = None
 
         outline = source.legacyWorldOutline()
         drawPath = []
@@ -236,4 +216,4 @@ class SectorCache(object):
             tension=SectorCache._SplineTension,
             closed=True)
 
-        return SectorPath(path=path, spline=spline, colour=colour, style=style)
+        return SectorPath(path=path, spline=spline, colour=colour, style=None)

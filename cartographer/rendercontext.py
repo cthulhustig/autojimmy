@@ -805,42 +805,31 @@ class RenderContext(object):
                 cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
             brush = self._graphics.createBrush()
+
+            # TODO: The search area needs expanding to account for the fact
+            # label text can be outside of borders
+            borders = self._borderCache.bordersInArea(bounds=self._worldViewRect)
+            for border in borders:
+                brush.copyFrom(self._styleSheet.microBorders.textBrush)
+
+                labels = border.labelInfos()
+                if not labels:
+                    continue
+
+                for label in labels:
+                    self._drawLabel(
+                        text=label.text(),
+                        center=label.pos(),
+                        font=self._styleSheet.microBorders.font,
+                        brush=brush,
+                        labelStyle=self._styleSheet.microBorders.textStyle)
+
+
             for sector in self._selector.sectors():
                 brush.copyFrom(self._styleSheet.microBorders.textBrush)
 
                 sectorPos = sector.position()
                 sectorWorldOriginX, sectorWorldOriginY, _, _ = sectorPos.worldBounds()
-
-                # TODO: Update drawing border labels
-                """
-                for border in sector.borders():
-                    if not border.showLabel():
-                        continue
-
-                    label = border.label()
-                    if not label:
-                        allegiance = border.allegiance()
-                        if allegiance:
-                            label = allegiance.name()
-                    if label and border.wrapLabel():
-                        label = RenderContext._wrapLabelText(label)
-
-                    labelWorldX = border.labelWorldX()
-                    labelWorldY = border.labelWorldY()
-
-                    if not label or labelWorldX is None or labelWorldY is None:
-                        continue
-
-                    labelPos = cartographer.PointF(
-                        sectorWorldOriginX + labelWorldX,
-                        sectorWorldOriginY + labelWorldY)
-                    self._drawLabel(
-                        text=label,
-                        center=labelPos,
-                        font=self._styleSheet.microBorders.font,
-                        brush=brush,
-                        labelStyle=self._styleSheet.microBorders.textStyle)
-                """
 
                 for region in sector.regions():
                     if not region.showLabel():
@@ -848,7 +837,7 @@ class RenderContext(object):
 
                     label = region.label()
                     if label and region.wrapLabel():
-                        label = RenderContext._wrapLabelText(label)
+                        label = cartographer.wrapLabelText(label)
 
                     labelWorldX = region.labelWorldX()
                     labelWorldY = region.labelWorldY()
@@ -870,7 +859,7 @@ class RenderContext(object):
                 for label in sector.labels():
                     text = label.text()
                     if label.wrap():
-                        text = RenderContext._wrapLabelText(text)
+                        text = cartographer.wrapLabelText(text)
 
                     labelPos = cartographer.PointF(
                         sectorWorldOriginX + label.worldX(),
@@ -2366,14 +2355,3 @@ class RenderContext(object):
     def _hexToCenter(hex: astronomer.HexPosition) -> cartographer.PointF:
         centerX, centerY = hex.worldCenter()
         return cartographer.PointF(x=centerX, y=centerY)
-
-    # Pattern used by Traveller Map to replace white space with '\n' to do
-    # wrapping of basic labels and the labels used on borders and regions. It
-    # works by putting '\n' between words that start with upper case letters,
-    # e.g. "Hegemony of Lorean" becomes "Hegemony of\nLorean"
-    _TextWrapPattern = re.compile(r'\s+(?![a-z])')
-
-    @staticmethod
-    def _wrapLabelText(text: str) -> str:
-        return RenderContext._TextWrapPattern.sub('\n', text)
-

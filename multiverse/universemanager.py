@@ -485,9 +485,7 @@ class UniverseManager(object):
             rawStockSophonts=rawStockSophonts)
 
         dbSectors = multiverse.convertRawSectorsToDbSectors(
-            rawSectors=rawSectors,
-            allegianceMapper=allegianceMapper,
-            styleMapper=styleMapper)
+            rawSectors=rawSectors)
         if localProgress is not None:
             localProgress.advance()
 

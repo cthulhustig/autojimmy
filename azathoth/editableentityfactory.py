@@ -177,11 +177,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             allegiance: typing.Optional[astronomer.Allegiance] = None,
             style: typing.Optional[astronomer.LineStyle] = None,
             colour: typing.Optional[str] = None,
-            label: typing.Optional[str] = None,
-            labelWorldX: typing.Optional[float] = None,
-            labelWorldY: typing.Optional[float] = None,
-            showLabel: bool = True,
-            wrapLabel: bool = False
+            labels: typing.Optional[typing.Collection[astronomer.BorderLabel]] = None
             ) -> astronomer.Border:
         return azathoth.EditableBorder(
             entityId=entityId,
@@ -189,11 +185,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             allegiance=allegiance,
             style=style,
             colour=colour,
-            label=label,
-            labelWorldX=labelWorldX,
-            labelWorldY=labelWorldY,
-            showLabel=showLabel,
-            wrapLabel=wrapLabel)
+            labels=labels)
 
     def createRegion(
             self,
