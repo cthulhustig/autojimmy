@@ -16,13 +16,72 @@ import typing
 # TODO: Why is the border containing Reina in M1120 drawn as blue now when it used
 # to be grey
 
-def _pathWithoutClosingHex(
-        path: typing.Sequence[typing.Tuple[int, int]]
-        ) -> typing.List[typing.Tuple[int, int]]:
-    result = list(path)
-    if len(result) > 1 and result[0] == result[-1]:
-        result.pop()
-    return result
+class Segment(object):
+    def __init__(
+            self,
+            hexes: typing.List[typing.Tuple[int, int]]
+            ) -> None:
+        self._hexes = hexes
+
+    def hexes(self) -> typing.Sequence[typing.Tuple[int, int]]:
+        return self._hexes
+
+    def startHex(self) -> typing.Tuple[int, int]:
+        return self._hexes[0]
+
+    def finishHex(self) -> typing.Tuple[int, int]:
+        return self._hexes[-1]
+
+    def __iter__(self) -> typing.Iterator[typing.Tuple[int, int]]:
+        return self._hexes.__iter__()
+
+    def __next__(self) -> typing.Tuple[int, int]:
+        return self._hexes.__next__()
+
+    def __len__(self) -> int:
+        return self._hexes.__len__()
+
+    def __getitem__(self, key: int) -> typing.Tuple[int, int]:
+        return self._hexes.__getitem__(key)
+
+class Path(object):
+    def __init__(
+            self,
+            hexes: typing.Optional[typing.List[typing.Tuple[int, int]]] = None
+            ) -> None:
+        self._hexes = hexes if hexes is not None else []
+
+    def hexes(self) -> typing.Sequence[typing.Tuple[int, int]]:
+        return self._hexes
+
+    def stitchSegment(self, segment: Segment) -> typing.Tuple[int, int]:
+        # NOTE: The last hex in a segment is the starting hex of the next
+        # segment so don't include it when when generating the merged segment
+        self._hexes.extend(itertools.islice(segment, 0, len(segment) - 1))
+        return segment.finishHex()
+
+    def appendHexes(self, hexes: typing.Sequence[typing.Tuple[int, int]]) -> None:
+        self._hexes.extend(hexes)
+
+    def createLoop(self) -> None:
+        if self._hexes[0] != self._hexes[-1]:
+            self._hexes.append(self._hexes[0])
+
+    def removeLoop(self) -> None:
+        if len(self._hexes) > 1 and self._hexes[0] == self._hexes[-1]:
+            self._hexes.pop()
+
+    def __iter__(self) -> typing.Iterator[typing.Tuple[int, int]]:
+        return self._hexes.__iter__()
+
+    def __next__(self) -> typing.Tuple[int, int]:
+        return self._hexes.__next__()
+
+    def __len__(self) -> int:
+        return self._hexes.__len__()
+
+    def __getitem__(self, key: int) -> typing.Tuple[int, int]:
+        return self._hexes.__getitem__(key)
 
 def _pointOnSegment(
         point: typing.Tuple[float, float],
@@ -68,6 +127,161 @@ def _pathArea(path: typing.Sequence[typing.Tuple[int, int]]) -> int:
         path[(index + 1) % len(path)][0] * path[index][1]
         for index in range(len(path))))
 
+def _canonicalisePath(
+        path: typing.Sequence[typing.Tuple[int, int]]
+        ) -> typing.Sequence[typing.Tuple[int, int]]:
+    # For the hole insertion algorithm to work, border outlines need to have
+    # clockwise winding and holes need to have anti-clockwise winding. This
+    # is enforced by making sure the input borders have clockwise winding
+    if multiverse.calculatePathWinding(path) is multiverse.PathWinding.AntiClockwise:
+        path = list(path)
+
+    return path
+
+def _createPathSegments(
+        path: typing.Sequence[typing.Tuple[int, int]],
+        sectorMinX: int,
+        sectorMinY: int,
+        sectorMaxX: int,
+        sectorMaxY: int,
+        oobHexes: typing.Set[typing.Tuple[int, int]]
+        ) -> typing.Optional[typing.List[Segment]]:
+    count = len(path)
+    if count > 1 and path[0] == path[count - 1]:
+        count -= 1 # Ignore path looping
+
+    # If the border extends outside the sector, split the border path into segments
+    # that are inside the sector with just the last hex being outside the sector. The
+    # idea is this last point should be the start of a segment of the same border
+    # defined in another sector.
+    segments: typing.List[Segment] = []
+    hexes = []
+    isSimple = True
+    for index in range(count):
+        hex = path[index]
+        x, y = hex
+        if x >= sectorMinX and x <= sectorMaxX and y >= sectorMinY and y <= sectorMaxY:
+            hexes.append(hex)
+        else:
+            if hexes:
+                # NOTE: Include the first oob hex so we know which start hex to look
+                # for in the next segment (i.e. a segment from an adjacent sector).
+                hexes.append(hex)
+
+                segments.append(Segment(hexes=hexes))
+                hexes = []
+
+            oobHexes.add(hex)
+            isSimple = False
+
+    if isSimple:
+        # The border is completely contained within the sector so there is no need
+        # to merge it
+        return None
+
+    # Complete the outstanding segment
+    if hexes:
+        # NOTE: Add the start hex at the end of the path. The merging algorithm
+        # expects the last hex in the segment to be the start hex of the next
+        # segment.
+        hexes.append(path[0])
+        segments.append(Segment(hexes=hexes))
+
+    return segments
+
+def _createSegmentStartMap(
+        segments: typing.Iterable[Segment]
+        ) -> typing.Dict[
+            typing.Tuple[int, int],
+            typing.List[Segment]]:
+    startHexToSegmentMap: typing.Dict[
+        typing.Tuple[int, int],
+        typing.List[Segment]] = {}
+    for segment in segments:
+        startHex = segment.startHex()
+        hexSegments = startHexToSegmentMap.get(startHex)
+        if hexSegments is None:
+            hexSegments = []
+            startHexToSegmentMap[startHex] = hexSegments
+        hexSegments.append(segment)
+
+    return startHexToSegmentMap
+
+# Find the segment containing the hex with the lowest x value, if
+# there are multiple with the same x value, select the one with
+# the lowest y value. Doing this causes the algorithm to work from
+# top to bottom, left to right. This is important for some corner
+# cases when walking oob data such as the borders either side of
+# Mount in M1120.
+# NOTE: This assumes there is at least 1 segment in startHexToSegmentMap
+def _findStartSegment(
+        startHexToSegmentMap: typing.Dict[
+            typing.Tuple[int, int],
+            typing.List[Segment]],
+        ) -> Segment:
+    startSegment = None
+    minHex = None
+    for segments in startHexToSegmentMap.values():
+        for segment in segments:
+            for hex in segment:
+                if minHex is None or (hex[0] < minHex[0]) or (hex[0] == minHex[0] and hex[1] < minHex[1]):
+                    startSegment = segment
+                    minHex = hex
+    startHex = startSegment[0]
+
+    segments = startHexToSegmentMap[startHex]
+    segments.remove(startSegment)
+    if not segments:
+        del startHexToSegmentMap[startHex]
+
+    return startSegment
+
+# Find the segment(s) that start at the new current hex. It's rare
+# but there can be multiple segments that start at the same hex (see
+# (76, -79) in M1120). When walking, if there is more than one segment
+# with the same start hex, we want the one where the next hex after
+# the start hex is closest clockwise from the last hex on the merged
+# border
+def _findNextSegment(
+        prevHex: typing.Tuple[int, int],
+        currentHex: typing.Tuple[int, int],
+        startHexToSegmentMap: typing.Dict[
+            typing.Tuple[int, int],
+            typing.List[Segment]],
+        ) -> Segment:
+    possibleSegments = startHexToSegmentMap.get(currentHex)
+    if not possibleSegments:
+        raise RuntimeError(f'No segment was found starting at {currentHex}')
+
+    if len(possibleSegments) == 1:
+        # There is only one segment starting at the current hex so use it
+        nextSegment = possibleSegments.pop()
+    else:
+        # There are multiple segments starting at the current hex so find
+        # the one that is closest clockwise
+        enterEdge = multiverse.connectingEdge(currentHex, prevHex)
+        if enterEdge is None:
+            raise RuntimeError(f'Hexes ({prevHex}) ({currentHex}) are not adjacent')
+
+        nextEdge = multiverse.clockwiseHexEdge(enterEdge)
+        segmentIndex = None
+        while segmentIndex is None and nextEdge != enterEdge:
+            nextHex = multiverse.absoluteNeighbourHex(currentHex, nextEdge)
+            for index, segment in enumerate(possibleSegments):
+                if segment[1] == nextHex:
+                    segmentIndex = index
+                    break
+            nextEdge = multiverse.clockwiseHexEdge(nextEdge)
+
+        if segmentIndex is None:
+            raise RuntimeError(f'No valid next segment found for {currentHex}')
+        nextSegment = possibleSegments.pop(segmentIndex)
+
+    if not possibleSegments:
+        del startHexToSegmentMap[currentHex]
+
+    return nextSegment
+
 # This walks the OOB hexes to find the path to the next segment, adding hexes to
 # the border as it goes. If the walk finds the next segment, the starting hex for
 # that segment is returned. If the walk finds the finish hex, None is returned.
@@ -78,17 +292,17 @@ def _walkOutOfBoundsPath(
         finishHex: typing.Tuple[int, int],
         startHexToSegmentMap: typing.Dict[
             typing.Tuple[int, int],
-            typing.List[typing.Tuple[int, int]]],
-        borderPath: typing.List[typing.Tuple[int, int]],
+            typing.List[Segment]],
+        borderPath: Path,
         ) -> typing.Tuple[int, int]:
     startEdge = entryEdge
     currentHex = startHex
     currentEdge = startEdge
     reentryHex = None
-    walkPath = []
+    walkHexes = []
     seenHexes = set()
     while True:
-        walkPath.append(currentHex)
+        walkHexes.append(currentHex)
 
         # Start at the first edge clockwise from the edge we walked into the
         # current hex and loop round clockwise checking if the neighbour hex
@@ -149,7 +363,7 @@ def _walkOutOfBoundsPath(
             # touching has left small sections of oob data that don't go anywhere
             # (example merging the First Fleet of Dzo and Antares Pact borders from
             # Lishun and Antares in M1200)
-            walkPath.clear()
+            walkHexes.clear()
             startEdge = multiverse.clockwiseHexEdge(startEdge)
             currentHex = startHex
             currentEdge = startEdge
@@ -158,8 +372,137 @@ def _walkOutOfBoundsPath(
         currentHex = nextHex
         currentEdge = multiverse.oppositeHexEdge(checkEdge)
 
-    borderPath.extend(walkPath)
+    borderPath.appendHexes(walkHexes)
     return reentryHex
+
+def _stitchNextPath(
+        startHexToSegmentMap: typing.Dict[
+            typing.Tuple[int, int],
+            typing.List[Segment]],
+        oobHexes: typing.Set[typing.Tuple[int, int]],
+        usedSegments: typing.Optional[typing.List[Segment]]
+        ) -> Path:
+    segment = _findStartSegment(startHexToSegmentMap=startHexToSegmentMap)
+    startHex = segment.startHex()
+
+    stitchedPath = Path()
+    while True:
+        currentHex = stitchedPath.stitchSegment(segment)
+
+        # Hexes that are in the segment we just added might also appear in
+        # the oob hex path, for example, when a border spans multiple sectors,
+        # the start hex of the segment from one sector should always be in
+        # the oob hexes added for the sector it connects to. By removing the
+        # hexes after adding the segment it prevents oob path walks from
+        # connecting back oob hexes that have already been used by a segment.
+        # It's important not to remove the oob hex at the end of the segment
+        # as it needs to be present in order for the oob hex walk to work.
+        # This is needed to correctly merge cases like where the Antares Pact
+        # border spanning Lishun and Antares in M1120
+        oobHexes.difference_update(itertools.islice(segment, 0, len(segment) - 1))
+
+        # Take note of the border that was just used
+        if usedSegments is not None:
+            usedSegments.append(segment)
+
+        # If there is no segment starting at the current hex we need
+        # to perform a path search in the oob hexes to try and find
+        # the next segment. There is no need to do this if we've
+        # already looped back to the start hex
+        if currentHex not in startHexToSegmentMap and currentHex != startHex:
+            if currentHex not in oobHexes:
+                raise RuntimeError(f'Next hex {currentHex} is not in oob hexes')
+
+            pervHex = stitchedPath[-1]
+            enterEdge = multiverse.connectingEdge(currentHex, pervHex)
+            if enterEdge is None:
+                raise RuntimeError(f'Hexes ({pervHex}) ({currentHex}) are not adjacent')
+
+            currentHex = _walkOutOfBoundsPath(
+                startHex=currentHex,
+                entryEdge=enterEdge,
+                oobHexes=oobHexes,
+                finishHex=startHex,
+                startHexToSegmentMap=startHexToSegmentMap,
+                borderPath=stitchedPath)
+
+        # Check if we've looped back to the start. It's important to check
+        # there is no other segment remaining in the segment map as there
+        # could be multiple segments that start at the hex we started
+        # walking from and we we've only hit the finish if we've processed
+        # all of them
+        if currentHex == startHex and currentHex not in startHexToSegmentMap:
+            break
+
+        segment = _findNextSegment(
+            prevHex=stitchedPath[-1],
+            currentHex=currentHex,
+            startHexToSegmentMap=startHexToSegmentMap)
+
+    return stitchedPath
+
+def _findHoles(
+        paths: typing.Collection[Path]
+        ) -> typing.Dict[
+            Path, # Parent
+            typing.List[Path]]: # Holes
+    results: typing.Dict[Path, typing.List[Path]] = {}
+
+    # Hole paths have an anti-clockwise winding and are extremely rare.
+    # Check there are any before doing anything to expensive
+    windings = [multiverse.calculatePathWinding(path) for path in paths]
+    hasHoles = False
+    for winding in windings:
+        if winding == multiverse.PathWinding.AntiClockwise:
+            hasHoles = True
+            break
+    if not hasHoles:
+        return results
+
+    parents: typing.List[typing.Optional[int]] = [None] * len(paths)
+
+    areas = [_pathArea(path) for path in paths]
+    for childIndex, childPath in enumerate(paths):
+        if windings[childIndex] != multiverse.PathWinding.AntiClockwise:
+            continue
+
+        containing: typing.List[int] = []
+        for parentIndex, parentPath in enumerate(paths):
+            if childIndex == parentIndex or areas[parentIndex] <= areas[childIndex]:
+                continue
+            if windings[parentIndex] != multiverse.PathWinding.Clockwise:
+                continue
+            if _pathIsInside(childPath, parentPath):
+                containing.append(parentIndex)
+        if containing:
+            parents[childIndex] = min(containing, key=lambda index: areas[index])
+
+    depths: typing.List[int] = []
+    for parentIndex in range(len(paths)):
+        depth = 0
+        parentIndex = parents[parentIndex]
+        while parentIndex is not None:
+            depth += 1
+            parentIndex = parents[parentIndex]
+        depths.append(depth)
+
+    for parentIndex, parentPath in enumerate(paths):
+        if depths[parentIndex] % 2 != 0:
+            continue
+
+        holes = None
+        for holeIndex, holePath in enumerate(paths):
+            if parents[holeIndex] != parentIndex:
+                continue
+
+            if holes is None:
+                holes = []
+            holes.append(holePath)
+
+        if holes:
+            results[parentPath] = holes
+
+    return results
 
 # Holes are inserted by generating two vertical columns of parallel hexes
 # that run upwards from the upper most edge of the hole to the edge of the
@@ -173,11 +516,8 @@ def _walkOutOfBoundsPath(
 # holes define the hexes around the outer border of the hole. We know that
 # the hexes defining a hole always cover an area at least 3 hexes wide, 1
 # hex for a minimum width hole and one hex either side defining the outline.
-def _insertHole(
-        border: typing.Sequence[typing.Tuple[int, int]],
-        hole: typing.Sequence[typing.Tuple[int, int]]
-        ) -> typing.Tuple[int, int]:
-    borderLength = len(border)
+def _insertHole(path: Path, hole: Path) -> Path:
+    borderLength = len(path)
     holeLength = len(hole)
 
     def loopBorderIndex(index) -> typing.Tuple[int, int]:
@@ -232,7 +572,7 @@ def _insertHole(
     inBorderIndex = None
     inBorderHex = None
     closestDistance = None
-    for index, hex in enumerate(border):
+    for index, hex in enumerate(path):
         if hex[0] != inHoleHex[0] or hex[1] > inHoleHex[1]:
             # This border hex is not directly above the hole hex so ignore it
             continue
@@ -245,7 +585,7 @@ def _insertHole(
                 outWinding = multiverse.calculateTriangleWinding(
                     (inHoleHex[0] + 1, inHoleHex[1] + 1),
                     (inHoleHex[0] + 1, inHoleHex[1]),
-                    border[loopBorderIndex(index)])
+                    path[loopBorderIndex(index)])
                 if outWinding is multiverse.PathWinding.Clockwise:
                     # The current inward border hex would result in the outward
                     # join path winding clockwise into the border so use it rather
@@ -267,7 +607,7 @@ def _insertHole(
     outHoleIndex = loopHoleIndex(inHoleIndex - 1)
     outHoleHex = hole[outHoleIndex]
     outBorderIndex = loopBorderIndex(inBorderIndex + 1)
-    outBorderHex = border[outBorderIndex]
+    outBorderHex = path[outBorderIndex]
     avoidHexes = set(inJoinPath)
     outJoinPath = multiverse.pathSearch(
         start=outHoleHex,
@@ -277,15 +617,15 @@ def _insertHole(
     outJoinPath = outJoinPath[1:-1]
 
     # Generate the border path with the hole inserted. This is ordered
-    joinedPath = []
+    joinedPath: typing.List[typing.Tuple[int, int]] = []
     if inBorderIndex < outBorderIndex:
-        joinedPath.extend(border[:outBorderIndex])
+        joinedPath.extend(path[:outBorderIndex])
     else:
-        joinedPath.extend(border[inBorderIndex:])
+        joinedPath.extend(path[inBorderIndex:])
 
     if inJoinPath:
         joinedPath.extend(inJoinPath)
-    elif hole[inHoleIndex] == border[inBorderIndex]:
+    elif hole[inHoleIndex] == path[inBorderIndex]:
         # The inward hole and border hexes are coincident so remove
         # the inward border hex to avoid duplicates
         joinedPath.pop()
@@ -295,97 +635,17 @@ def _insertHole(
 
     if outJoinPath:
         joinedPath.extend(outJoinPath)
-    elif hole[outHoleIndex] == border[outBorderIndex]:
+    elif hole[outHoleIndex] == path[outBorderIndex]:
         # The outward hole and border hexes are coincident so remove
         # the outward hole hex to avoid duplicates
         joinedPath.pop()
 
     if inBorderIndex < outBorderIndex:
-        joinedPath.extend(border[outBorderIndex:])
+        joinedPath.extend(path[outBorderIndex:])
     else:
-        joinedPath.extend(border[:inBorderIndex])
+        joinedPath.extend(path[:inBorderIndex])
 
-    return joinedPath
-
-# TODO: This can probably be optimised a LOT
-# - I think there are a couple of additional assumptions I can make that may simplify things
-#   - As the hexes for define the hexes that surround the hole, they must define a polygon with
-#     an area, otherwise there would be no hole. This means holes always have an anti-clockwise
-#     winding, they can't have no winding
-#   - Borders with no winding can just be added to the output list with no further processing.
-#     as stated above, they can't be holes as holes must have a winding, they also can't be
-#     borders that will need holes inserted as they have no area so can't contain a hole
-# - Winding is calculated multiple times for each polygon
-# - The area of each border is calculated multiple times
-# - In the majority of cases we can take an early out if all borders have a
-# clockwise winding. We need to continue if they have an anti-clockwise winding
-# (as they are known holes) _OR_ if they have no winding (as they may be holes)
-# - When inserting a hole there is a check to see if the path needs to be
-# reversed but I don't think it ever will (or it always will). As borders always
-# have clockwise winding and holes always have anti-clockwise, I think holes
-# are naturally in the correct order to be inserted
-def _mergeLayerHoles(
-        borders: typing.Sequence[multiverse.DbBorder]
-        ) -> typing.List[multiverse.DbBorder]:
-    paths = [_pathWithoutClosingHex(border.hexes()) for border in borders]
-    parents: typing.List[typing.Optional[int]] = [None] * len(paths)
-
-    for childIndex, childPath in enumerate(paths):
-        containing = []
-        for parentIndex, parentPath in enumerate(paths):
-            if childIndex == parentIndex or _pathArea(parentPath) <= _pathArea(childPath):
-                continue
-            if multiverse.calculatePathWinding(parentPath) != multiverse.PathWinding.Clockwise or \
-                    multiverse.calculatePathWinding(childPath) != multiverse.PathWinding.AntiClockwise:
-                continue
-            if _pathIsInside(childPath, parentPath):
-                containing.append(parentIndex)
-        if containing:
-            parents[childIndex] = min(containing, key=lambda index: _pathArea(paths[index]))
-
-    depths: typing.List[int] = []
-    for pathIndex in range(len(paths)):
-        depth = 0
-        parentIndex = parents[pathIndex]
-        while parentIndex is not None:
-            depth += 1
-            parentIndex = parents[parentIndex]
-        depths.append(depth)
-
-    result = []
-    for pathIndex, path in enumerate(paths):
-        if depths[pathIndex] % 2 != 0:
-            continue
-
-        hasHole = False
-        for holeIndex, holePath in enumerate(paths):
-            if parents[holeIndex] != pathIndex:
-                continue
-
-            path = _insertHole(path, holePath)
-            hasHole = True
-
-        if not hasHole:
-            # No holes inserted so just use the original border
-            result.append(borders[pathIndex])
-            continue
-
-        if path[-1] != path[0]:
-            path.append(path[0])
-        border = borders[pathIndex]
-        result.append(multiverse.DbBorder(
-            # NOTE: Use the same id as the border the hole was merged into as it
-            # is effectively replacing the old border. This means we can re-use
-            # the labels from the old border rather than having to create copies.
-            # If we didn't use the same id we'd get an exception saying the labels
-            # were already attached to another border.
-            id=border.id(),
-            hexes=path,
-            allegianceId=border.allegianceId(),
-            style=border.style(),
-            colour=border.colour(),
-            labels=border.labels()))
-    return result
+    return Path(hexes=joinedPath)
 
 def _mergeAllegiances(
         usedBorders: typing.Collection[multiverse.DbBorder],
@@ -447,7 +707,7 @@ def _mergeAllegiances(
 
         return None
 
-def _mergeLabels(
+def _mergeBorderLabels(
         usedBorders: typing.Collection[multiverse.DbBorder],
         ) -> typing.Optional[typing.List[multiverse.DbBorderLabel]]:
     labels = None
@@ -476,28 +736,17 @@ def mergeBorders(
             typing.Collection[multiverse.DbBorder]],
         allegianceMapper: multiverse.AllegianceMapper
         ) -> typing.List[multiverse.DbBorder]:
-    merged: typing.List[multiverse.DbBorder] = []
+    outputBorders: typing.List[multiverse.DbBorder] = []
 
-    segmentStartToBorderMap: typing.Dict[
-        typing.Tuple[int, int],
-        multiverse.DbBorder
-        ] = {}
-
-    # TODO: The fact I removed allegiance from the key is known to cause an issue for a
-    # border in M1120. Bersha and Courage are different allegiances and should be under
-    # different borders (VIrM - Irrgh Manifest and VGoT - Glory of Taarskoerzn). I think
-    # it was a problem for the big Imperial border in M1105 as parts of that borders have
-    # different imperium based allegiances depending on which sector your in.I think the
-    # thing to do might be to add allegiance back in but if the allegiance has a base
-    # code, use it instead of the full code
     layerDataMap: typing.Dict[
         typing.Tuple[
             typing.Optional[str], # Style
             typing.Optional[str]], # Colour
         typing.Tuple[
-            typing.List[typing.List[typing.Tuple[int, int]]], # Path Segment Hexes
+            typing.List[Segment],
             typing.Set[typing.Tuple[int, int]] # OOB Hexes
         ]] = {}
+    segmentToBorderMap: typing.Dict[Segment, multiverse.DbBorder] = {}
 
     for (sectorX, sectorY), sectorBorders in borders.items():
         sectorMinX, sectorMinY = multiverse.relativeSpaceToAbsoluteSpace((sectorX, sectorY, 1, 1))
@@ -505,57 +754,6 @@ def mergeBorders(
         sectorMaxY = sectorMinY + (multiverse.SectorHeight - 1)
 
         for border in sectorBorders:
-            hexes = border.hexes()
-
-            # For the hole insertion algorithm to work, border outlines need to have
-            # clockwise winding and holes need to have anti-clockwise winding. This
-            # is enforced by making sure the input borders have clockwise winding
-            if multiverse.calculatePathWinding(hexes) is multiverse.PathWinding.AntiClockwise:
-                hexes = list(reversed(hexes))
-
-            count = len(hexes)
-            if count > 1 and hexes[0] == hexes[count - 1]:
-                count -= 1
-
-            # If the border extends outside the sector, split the border path into segments
-            # that are inside the sector with just the last hex being outside the sector. The
-            # idea is this last point should be the start of a segment of the same border
-            # defined in another sector.
-            segments = []
-            segment = []
-            oobHexes = set()
-            isSimple = True
-            for index in range(count):
-                hex = hexes[index]
-                x, y = hex
-                if x >= sectorMinX and x <= sectorMaxX and y >= sectorMinY and y <= sectorMaxY:
-                    segment.append(hex)
-                else:
-                    if segment:
-                        # NOTE: Include the first oob hex so we know which start hex to look
-                        # for in the next segment (i.e. a segment from an adjacent sector).
-                        segment.append(hex)
-
-                        segments.append(segment)
-                        segment = []
-
-                    oobHexes.add(hex)
-                    isSimple = False
-
-            if isSimple:
-                # The border is completely contained within the sector so there is no need
-                # to merge it
-                merged.append(border)
-                continue
-
-            # Complete the outstanding segment
-            if segment:
-                # NOTE: Add the start hex at the end of the path. The merging algorithm
-                # expects the last hex in the segment to be the start hex of the next
-                # segment.
-                segment.append(hexes[0])
-                segments.append(segment)
-
             style = border.style()
             colour = border.colour()
 
@@ -575,159 +773,83 @@ def mergeBorders(
                 layerData = (list(), set())
                 layerDataMap[layer] = layerData
             layerSegments, layerOOBHexes = layerData
-            layerSegments.extend(segments)
-            layerOOBHexes.update(oobHexes)
 
+            path = _canonicalisePath(path=border.hexes())
+            segments = _createPathSegments(
+                path=path,
+                sectorMinX=sectorMinX,
+                sectorMinY=sectorMinY,
+                sectorMaxX=sectorMaxX,
+                sectorMaxY=sectorMaxY,
+                oobHexes=layerOOBHexes)
+            if segments is None:
+                # Border doesn't need merging
+                outputBorders.append(border)
+                continue
+
+            layerSegments.extend(segments)
             for segment in segments:
-                segmentStartToBorderMap[segment[0]] = border
+                segmentToBorderMap[segment] = border
 
     for (style, colour), (segments, oobHexes) in layerDataMap.items():
-        layerMerged: typing.List[multiverse.DbBorder] = []
-
-        # Generate mapping of start position to segment. It's rare but
-        # there can be multiple segments that start at the same hex
-        # (see (76, -79) in M1120). When walking, if there is more than
-        # on segment with the same start hex, the one where the second
-        # hex in the segment is the closest clockwise to the hex that
-        # was walked pervious to the segment start hex should be used
-        # first. When choosing the start segment for the walk, if there
-        # are multiple segments at the chosen start hex, it doesn't
-        # mater which segment is used
-        startHexToSegmentMap: typing.Dict[
-            typing.Tuple[int, int],
-            typing.List[typing.List[typing.Tuple[int, int]]]
-            ] = {}
-        for segment in segments:
-            startHex = segment[0]
-
-            hexSegments = startHexToSegmentMap.get(startHex)
-            if hexSegments is None:
-                hexSegments = []
-                startHexToSegmentMap[startHex] = hexSegments
-            hexSegments.append(segment)
-
+        # Merge the segments on this layer until there are no more to merge
+        startHexToSegmentMap = _createSegmentStartMap(segments=segments)
+        pathToSegmentsMap: typing.Dict[Path, typing.List[Segment]] = {}
         while startHexToSegmentMap:
             try:
-                # Start with the segment that has the lowest x value, if there are
-                # multiple segments with the same x, choose the one with the lowest
-                # y value.
-                startSegment = None
-                minHex = None
-                for segments in startHexToSegmentMap.values():
-                    for segment in segments:
-                        for hex in segment:
-                            if minHex is None or (hex[0] < minHex[0]) or (hex[0] == minHex[0] and hex[1] < minHex[1]):
-                                startSegment = segment
-                                minHex = hex
-                startHex = startSegment[0]
+                usedSegments: typing.List[Segment] = []
+                stitchedPath = _stitchNextPath(
+                    startHexToSegmentMap=startHexToSegmentMap,
+                    oobHexes=oobHexes,
+                    usedSegments=usedSegments)
 
-                segments = startHexToSegmentMap[startHex]
-                segments.remove(startSegment)
-                if not segments:
-                    del startHexToSegmentMap[startHex]
+                pathToSegmentsMap[stitchedPath] = usedSegments
+            except Exception as ex:
+                # TODO: Better logging
+                print(str(ex))
 
-                mergedPath: typing.List[typing.Tuple[int, int]] = []
+        parentToHolesMap = _findHoles(pathToSegmentsMap.keys())
+        for path, holes in parentToHolesMap.items():
+            try:
+                holyPath = path
+                for hole in holes:
+                    holyPath = _insertHole(path=holyPath, hole=hole)
+
+                # Combine the segments for the path and holes into a master list of segments
+                # for the new path, removing the entries for the old path and the holes as
+                # we go.
+                segments = pathToSegmentsMap.pop(path)
+                for hole in holes:
+                    segments.extend(pathToSegmentsMap.pop(hole))
+                pathToSegmentsMap[holyPath] = segments
+            except Exception as ex:
+                # TODO: Better logging
+                print(str(ex))
+
+        for path, segments in pathToSegmentsMap.items():
+            try:
+                path.createLoop() # Loop the path
+
+                # Generate the list of sector borders that were merged to make
+                # this border.
                 usedBorders: typing.Set[multiverse.DbBorder] = set()
-                segment = startSegment
-                while True:
-                    # NOTE: The last hex in a segment is the starting hex of the next
-                    # segment so don't include it when when generating the merged segment
-                    mergedPath.extend(itertools.islice(segment, 0, len(segment) - 1))
-                    currentHex = segment[-1]
-
-                    # Hexes that are in the segment we just added might also appear in
-                    # the oob hex path, for example, when a border spans multiple sectors,
-                    # the start hex of the segment from one sector should always be in
-                    # the oob hexes added for the sector it connects to. By removing the
-                    # hexes after adding the segment it prevents oob path walks from
-                    # connecting back oob hexes that have already been used by a segment.
-                    # It's important not to remove the oob hex at the end of the segment
-                    # as it needs to be present in order for the oob hex walk to work.
-                    # This is needed to correctly merge cases like where the Antares Pact
-                    # border spanning Lishun and Antares in M1120
-                    oobHexes.difference_update(itertools.islice(segment, 0, len(segment) - 1))
-
-                    segmentBorder = segmentStartToBorderMap.get(segment[0])
-                    if segmentBorder is not None:
-                        usedBorders.add(segmentBorder)
-
-                    # If there is no segment starting at the current hex we need
-                    # to perform a path search in the oob hexes to try and find
-                    # the next segment. There is no need to do this if we've
-                    # already looped back to the start hex
-                    if currentHex not in startHexToSegmentMap and currentHex != startHex:
-                        if currentHex not in oobHexes:
-                            raise RuntimeError(f'Next hex {currentHex} is not in oob hexes')
-
-                        pervHex = mergedPath[-1]
-                        enterEdge = multiverse.connectingEdge(currentHex, pervHex)
-                        if enterEdge is None:
-                            raise RuntimeError(f'Hexes ({pervHex}) ({currentHex}) are not adjacent')
-
-                        currentHex = _walkOutOfBoundsPath(
-                            startHex=currentHex,
-                            entryEdge=enterEdge,
-                            oobHexes=oobHexes,
-                            finishHex=startHex,
-                            startHexToSegmentMap=startHexToSegmentMap,
-                            borderPath=mergedPath)
-
-                    # Check if we've looped back to the start. It's important to
-                    # check there is no other segment remaining in the segment map
-                    # as there could be multiple segments that start at the hex
-                    # we started walking from and we we've only hit the finish if
-                    # we've processed all of them
-                    if currentHex == startHex and currentHex not in startHexToSegmentMap:
-                        break
-
-                    possibleSegments = startHexToSegmentMap.get(currentHex)
-                    if not possibleSegments:
-                        raise RuntimeError(f'No segment was found starting at {currentHex}')
-
-                    if len(possibleSegments) == 1:
-                        segment = possibleSegments.pop()
-                    else:
-                        pervHex = mergedPath[-1]
-                        enterEdge = multiverse.connectingEdge(currentHex, pervHex)
-                        if enterEdge is None:
-                            raise RuntimeError(f'Hexes ({pervHex}) ({currentHex}) are not adjacent')
-
-                        nextEdge = multiverse.clockwiseHexEdge(enterEdge)
-                        segmentIndex = None
-                        while segmentIndex is None and nextEdge != enterEdge:
-                            nextHex = multiverse.absoluteNeighbourHex(currentHex, nextEdge)
-                            for index, segment in enumerate(possibleSegments):
-                                if segment[1] == nextHex:
-                                    segmentIndex = index
-                                    break
-                            nextEdge = multiverse.clockwiseHexEdge(nextEdge)
-
-                        if segmentIndex is None:
-                            raise RuntimeError(f'No valid next segment found for {currentHex}')
-                        segment = possibleSegments.pop(segmentIndex)
-
-                    if not possibleSegments:
-                        del startHexToSegmentMap[currentHex]
-
-                if not mergedPath:
-                    continue # No path so nothing to do
-
-                # Loop the path
-                mergedPath.append(mergedPath[0])
+                for segment in segments:
+                    border = segmentToBorderMap.get(segment)
+                    if border is not None:
+                        usedBorders.add(border)
 
                 # Determine which allegiance to use for the border
                 mergedAllegiance = _mergeAllegiances(
                     usedBorders=usedBorders,
                     allegianceMapper=allegianceMapper)
 
-                # Create final border labels merged from all borders that were
-                # merged to create it
-                mergedLabels = _mergeLabels(
+                # Generate list of labels from the used borders
+                mergedLabels = _mergeBorderLabels(
                     usedBorders=usedBorders)
 
                 # Create the merged border
-                layerMerged.append(multiverse.DbBorder(
-                    hexes=mergedPath,
+                outputBorders.append(multiverse.DbBorder(
+                    hexes=path.hexes(),
                     allegianceId=mergedAllegiance.id() if mergedAllegiance else None,
                     style=style,
                     colour=colour,
@@ -736,6 +858,4 @@ def mergeBorders(
                 # TODO: Better logging
                 print(str(ex))
 
-        merged.extend(_mergeLayerHoles(layerMerged))
-
-    return merged
+    return outputBorders
