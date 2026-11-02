@@ -1050,6 +1050,7 @@ class StyleSheet(object):
             # width Traveller Map would use. The other part is to disable the
             # oversizing of the sector bounding box done when rendering zoom
             # levels where the issue was seen.
+            # TODO: This hack can be removed when I've merged regions
             borderPenScale = 0.8
 
             # NOTE: See the comment where macroBorders.linePen is constructed

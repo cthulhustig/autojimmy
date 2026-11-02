@@ -806,9 +806,15 @@ class RenderContext(object):
 
             brush = self._graphics.createBrush()
 
-            # TODO: The search area needs expanding to account for the fact
-            # label text can be outside of borders
-            borders = self._borderCache.bordersInArea(bounds=self._worldViewRect)
+            # When selecting which borders should have their labels draw, increase
+            # view rect one sector in each direction. This is done because border
+            # labels can extend outside the border outline. Ideally the bordersInArea
+            # check would take the bounds of labels into account but that's complicated
+            # by the fact a labels bounds can change when scale or style changes.
+            selectRect = cartographer.RectangleF(self._worldViewRect)
+            selectRect.inflate(astronomer.SubsectorWidth, astronomer.SubsectorHeight)
+
+            borders = self._borderCache.bordersInArea(bounds=selectRect)
             for border in borders:
                 brush.copyFrom(self._styleSheet.microBorders.textBrush)
 
