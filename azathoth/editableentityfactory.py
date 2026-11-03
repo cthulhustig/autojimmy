@@ -14,6 +14,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             worlds: typing.Collection[astronomer.World],
             routes: typing.Collection[astronomer.Route],
             borders: typing.Collection[astronomer.Border],
+            regions: typing.Collection[astronomer.Region],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.MapVector]
             ) -> astronomer.Universe:
@@ -26,6 +27,7 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             worlds=worlds,
             routes=routes,
             borders=borders,
+            regions=regions,
             labels=labels,
             vectors=vectors)
 
@@ -77,7 +79,6 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
-            regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
             labels: typing.Optional[typing.Iterable[astronomer.SectorLabel]] = None,
             selected: bool = False,
             tagging: typing.Optional[astronomer.SectorTagging] = None,
@@ -94,7 +95,6 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             abbreviation=abbreviation,
             sectorLabel=sectorLabel,
             subsectorNames=subsectorNames,
-            regions=regions,
             labels=labels,
             selected=selected,
             tagging=tagging,
@@ -192,21 +192,13 @@ class EditableEntityFactory(astronomer.EntityFactoryInterface):
             entityId: str,
             hexes: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
-            label: typing.Optional[str] = None,
-            labelWorldX: typing.Optional[float] = None,
-            labelWorldY: typing.Optional[float] = None,
-            showLabel: bool = True,
-            wrapLabel: bool = False
+            labels: typing.Optional[typing.Collection[astronomer.BorderLabel]] = None
             ) -> astronomer.Region:
         return azathoth.EditableRegion(
             entityId=entityId,
             hexes=hexes,
             colour=colour,
-            label=label,
-            labelWorldX=labelWorldX,
-            labelWorldY=labelWorldY,
-            showLabel=showLabel,
-            wrapLabel=wrapLabel)
+            labels=labels)
 
     def createSectorLabel(
             self,

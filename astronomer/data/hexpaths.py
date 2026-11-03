@@ -248,6 +248,7 @@ def decomposeHexPath(
             # want the edge relative to the current hex
             exitEdge = currentHex.connectingEdge(path[nextIndex])
             if exitEdge is None:
+                # TODO: Do something better
                 print(f'No hole connecting edge found {path}')
                 return (path, None)
 

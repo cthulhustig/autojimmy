@@ -708,19 +708,19 @@ def _mergeAllegiances(
         return None
 
 def _mergeBorderLabels(
-        usedBorders: typing.Collection[multiverse.DbBorder],
+        borders: typing.Collection[multiverse.DbBorder],
         ) -> typing.Optional[typing.List[multiverse.DbBorderLabel]]:
-    labels = None
-    for border in usedBorders:
-        borderLabels = border.labels()
-        if not borderLabels:
+    mergedLabels = None
+    for border in borders:
+        labels = border.labels()
+        if not labels:
             continue
 
-        if labels is None:
-            labels = []
+        if mergedLabels is None:
+            mergedLabels = []
 
-        for label in borderLabels:
-            labels.append(multiverse.DbBorderLabel(
+        for label in labels:
+            mergedLabels.append(multiverse.DbBorderLabel(
                 worldX=label.worldX(),
                 worldY=label.worldY(),
                 text=label.text(),
@@ -728,7 +728,29 @@ def _mergeBorderLabels(
                 show=label.show(),
                 wrap=label.wrap()))
 
-    return labels
+    return mergedLabels
+
+def _mergeRegionLabels(
+        regions: typing.Collection[multiverse.DbRegion],
+        ) -> typing.Optional[typing.List[multiverse.DbRegionLabel]]:
+    mergedLabels = None
+    for region in regions:
+        labels = region.labels()
+        if not labels:
+            continue
+
+        if mergedLabels is None:
+            mergedLabels = []
+
+        for label in labels:
+            mergedLabels.append(multiverse.DbRegionLabel(
+                worldX=label.worldX(),
+                worldY=label.worldY(),
+                text=label.text(),
+                show=label.show(),
+                wrap=label.wrap()))
+
+    return mergedLabels
 
 def mergeBorders(
         borders: typing.Mapping[
@@ -845,7 +867,7 @@ def mergeBorders(
 
                 # Generate list of labels from the used borders
                 mergedLabels = _mergeBorderLabels(
-                    usedBorders=usedBorders)
+                    borders=usedBorders)
 
                 # Create the merged border
                 outputBorders.append(multiverse.DbBorder(
@@ -859,3 +881,112 @@ def mergeBorders(
                 print(str(ex))
 
     return outputBorders
+
+def mergeRegions(
+        regions: typing.Mapping[
+            typing.Tuple[int, int], # Sector position
+            typing.Collection[multiverse.DbRegion]],
+        ) -> typing.List[multiverse.DbRegion]:
+    outputRegions: typing.List[multiverse.DbRegion] = []
+
+    layerDataMap: typing.Dict[
+        typing.Optional[str], # Colour
+        typing.Tuple[
+            typing.List[Segment],
+            typing.Set[typing.Tuple[int, int]] # OOB Hexes
+        ]] = {}
+
+    segmentToRegionMap: typing.Dict[Segment, multiverse.DbRegion] = {}
+
+    for (sectorX, sectorY), sectorRegions in regions.items():
+        sectorMinX, sectorMinY = multiverse.relativeSpaceToAbsoluteSpace((sectorX, sectorY, 1, 1))
+        sectorMaxX = sectorMinX + (multiverse.SectorWidth - 1)
+        sectorMaxY = sectorMinY + (multiverse.SectorHeight - 1)
+
+        for region in sectorRegions:
+            colour = region.colour()
+
+            layerData = layerDataMap.get(colour)
+            if layerData is None:
+                layerData = (list(), set())
+                layerDataMap[colour] = layerData
+            layerSegments, layerOOBHexes = layerData
+
+            path = _canonicalisePath(path=region.hexes())
+            segments = _createPathSegments(
+                path=path,
+                sectorMinX=sectorMinX,
+                sectorMinY=sectorMinY,
+                sectorMaxX=sectorMaxX,
+                sectorMaxY=sectorMaxY,
+                oobHexes=layerOOBHexes)
+            if segments is None:
+                # Border doesn't need merging
+                outputRegions.append(region)
+                continue
+
+            layerSegments.extend(segments)
+            for segment in segments:
+                segmentToRegionMap[segment] = region
+
+    for colour, (segments, oobHexes) in layerDataMap.items():
+        # Merge the segments on this layer until there are no more to merge
+        startHexToSegmentMap = _createSegmentStartMap(segments=segments)
+        pathToSegmentsMap: typing.Dict[Path, typing.List[Segment]] = {}
+        while startHexToSegmentMap:
+            try:
+                usedSegments: typing.List[Segment] = []
+                stitchedPath = _stitchNextPath(
+                    startHexToSegmentMap=startHexToSegmentMap,
+                    oobHexes=oobHexes,
+                    usedSegments=usedSegments)
+
+                pathToSegmentsMap[stitchedPath] = usedSegments
+            except Exception as ex:
+                # TODO: Better logging
+                print(str(ex))
+
+        parentToHolesMap = _findHoles(pathToSegmentsMap.keys())
+        for path, holes in parentToHolesMap.items():
+            try:
+                holyPath = path
+                for hole in holes:
+                    holyPath = _insertHole(path=holyPath, hole=hole)
+
+                # Combine the segments for the path and holes into a master list of segments
+                # for the new path, removing the entries for the old path and the holes as
+                # we go.
+                segments = pathToSegmentsMap.pop(path)
+                for hole in holes:
+                    segments.extend(pathToSegmentsMap.pop(hole))
+                pathToSegmentsMap[holyPath] = segments
+            except Exception as ex:
+                # TODO: Better logging
+                print(str(ex))
+
+        for path, segments in pathToSegmentsMap.items():
+            try:
+                path.createLoop() # Loop the path
+
+                # Generate the list of sector borders that were merged to make
+                # this border.
+                usedRegions: typing.Set[multiverse.DbRegion] = set()
+                for segment in segments:
+                    region = segmentToRegionMap.get(segment)
+                    if region is not None:
+                        usedRegions.add(region)
+
+                # Generate list of labels from the used borders
+                mergedLabels = _mergeRegionLabels(
+                    regions=usedRegions)
+
+                # Create the merged border
+                outputRegions.append(multiverse.DbRegion(
+                    hexes=path.hexes(),
+                    colour=colour,
+                    labels=mergedLabels))
+            except Exception as ex:
+                # TODO: Better logging
+                print(str(ex))
+
+    return outputRegions

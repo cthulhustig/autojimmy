@@ -151,6 +151,9 @@ class RenderContext(object):
         self._borderCache = cartographer.BorderCache(
             universe=self._universe,
             graphics=self._graphics)
+        self._regionCache = cartographer.RegionCache(
+            universe=self._universe,
+            graphics=self._graphics)
         self._vectorCache = cartographer.VectorCache(
             universe=self._universe,
             graphics=self._graphics)
@@ -830,37 +833,27 @@ class RenderContext(object):
                         brush=brush,
                         labelStyle=self._styleSheet.microBorders.textStyle)
 
+            regions = self._regionCache.regionsInArea(bounds=selectRect)
+            for region in regions:
+                brush.copyFrom(self._styleSheet.microBorders.textBrush)
+
+                labels = region.labelInfos()
+                if not labels:
+                    continue
+
+                for label in labels:
+                    self._drawLabel(
+                        text=label.text(),
+                        center=label.pos(),
+                        font=self._styleSheet.microBorders.font,
+                        brush=brush,
+                        labelStyle=self._styleSheet.microBorders.textStyle)
 
             for sector in self._selector.sectors():
                 brush.copyFrom(self._styleSheet.microBorders.textBrush)
 
                 sectorPos = sector.position()
                 sectorWorldOriginX, sectorWorldOriginY, _, _ = sectorPos.worldBounds()
-
-                for region in sector.regions():
-                    if not region.showLabel():
-                        continue
-
-                    label = region.label()
-                    if label and region.wrapLabel():
-                        label = cartographer.wrapLabelText(label)
-
-                    labelWorldX = region.labelWorldX()
-                    labelWorldY = region.labelWorldY()
-
-                    if not label or labelWorldX is None or labelWorldY is None:
-                        continue
-
-                    labelPos = cartographer.PointF(
-                        sectorWorldOriginX + labelWorldX,
-                        sectorWorldOriginY + labelWorldY)
-
-                    self._drawLabel(
-                        text=label,
-                        center=labelPos,
-                        font=self._styleSheet.microBorders.font,
-                        brush=brush,
-                        labelStyle=self._styleSheet.microBorders.textStyle)
 
                 for label in sector.labels():
                     text = label.text()
@@ -1850,8 +1843,12 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
+        drawBorders = drawRegions = False
         brush = pen = None
         if layer is RenderContext.MicroBorderLayer.Background:
+            drawBorders = self._styleSheet.fillMicroBorders or self._styleSheet.shadeMicroBorders
+            drawRegions = True
+
             brush = self._graphics.createBrush()
 
             if self._styleSheet.shadeMicroBorders:
@@ -1859,28 +1856,22 @@ class RenderContext(object):
                     width=self._styleSheet.microBorders.linePen.width() * 2.5,
                     style=cartographer.LineStyle.Solid)
         else:
+            drawBorders = True
+            drawRegions = False
+
             pen = self._graphics.createPen(
                 width=self._styleSheet.microBorders.linePen.width())
 
-        drawCurvedBorders = self._styleSheet.microBorderStyle is cartographer.MicroBorderStyle.Curve
-        drawRegions = drawBorders = False
-        if layer is RenderContext.MicroBorderLayer.Background:
-            drawRegions = True
-            drawBorders = self._styleSheet.fillMicroBorders or self._styleSheet.shadeMicroBorders
-        else:
-            drawRegions = False
-            drawBorders = True
-
-        if drawBorders:
-            borders = self._borderCache.bordersInArea(bounds=self._worldViewRect)
-            with self._graphics.save():
+        with self._graphics.save():
+            if drawBorders:
+                borders = self._borderCache.bordersInArea(bounds=self._worldViewRect)
                 useBrush = layer is RenderContext.MicroBorderLayer.Background and \
                     self._styleSheet.fillMicroBorders
                 usePen = pen is not None
 
                 if useBrush or usePen:
                     for border in borders:
-                        colour = self._calculateBorderColour(border)
+                        colour = self._calculateBorderColour(border.colour())
 
                         if useBrush:
                             brush.setColour(cartographer.makeAlphaColour(
@@ -1902,96 +1893,23 @@ class RenderContext(object):
                                         style = cartographer.LineStyle.Solid
                                 pen.setStyle(style)
 
-                        self._drawMicroBorder2(
+                        self._drawMicroBorder(
                             border=border,
                             brush=brush if useBrush else None,
                             pen=pen if usePen else None)
 
-        for sector in self._selector.sectors():
-            sectorClipPath = self._sectorCache.clipPath(
-                sectorPos=sector.position())
-            sectorClipRect = sectorClipPath.bounds()
-            if drawCurvedBorders and self._scale >= 16:
-                # HACK: Inflate the sector clip bounds slightly when drawing
-                # curved borders to account for the fact the borders can extend
-                # out slightly past the hexes they enclose.
-                # If I'm ever looking to tweak the bloat value then Juro in
-                # Mavuzog is a good test as it is inside a border that touches
-                # the edge of the sector and will be clipped if this value is to
-                # low. Note that the fill is expected to be clipped but the
-                # outline is not. This is consistent with Traveller Map and is
-                # down to the fact the fill isn't drawn as a curve.
-                # HACK: The fact this is only done as scale value >= 16 is a
-                # hack to workaround a draw issue with candy style. Micro
-                # borders are rendered as closed polygons so that when border
-                # filling is enabled they can be filled. When a logical border
-                # covers multiple sectors, each sector has it's own closed
-                # polygons representing the area of that sector that is within
-                # the border with edges of that polygons running along the edges
-                # of the sector where it abuts other sectors in the same logical
-                # boundary. When drawing the outline of borders we don't want
-                # the polygon edges at the junction between sectors in the same
-                # logical border to be shown as the are just a graphical
-                # necessity rather than part of the logical boundary. When
-                # rendering non-candy styles, not showing these edges is handled
-                # by clipping to the sector outline when drawing borders for
-                # that sector. I found this doesn't work reliably for candy due
-                # a combination of the line width used for borders and the fact
-                # it uses curved borders so the border outlines extend outside
-                # the hexes they contain. The end result was at some scales
-                # (generally < linear 16) there would be noticeable dotted lines
-                # running along the boundaries of sectors inside the same
-                # border. Part of the solution to this issue is to slightly
-                # reduce the width of the border outline compared to the width
-                # Traveller Map would use. The other part is to disable the
-                # oversizing of the sector bounding box done when rendering zoom
-                # levels where the issue was seen. This oversizing is done to
-                # prevent the outlines of borders contained completely within
-                # the sector from being incorrectly clipped when if they touch
-                # the edge of the sector due to the curved outline extending
-                # outside the boundary of the hexes they contain. Disabling this
-                # oversizing at lower scale values isn't an issue as it's past
-                # the point where incorrect clipping of these internal borders
-                # is that noticeable.
-                sectorClipRect.inflate(
-                    astronomer.ParsecScaleX * 0.1,
-                    astronomer.ParsecScaleY * 0.1)
-            if not self._worldViewRect.intersects(sectorClipRect):
-                continue
-
-            sectorRegions = self._sectorCache.regionPaths(
-                sectorPos=sector.position())
-            regionOutlines: typing.List[cartographer.SectorPath] = []
-            if sectorRegions and drawRegions:
-                for outline in sectorRegions:
-                    outlineBounds = \
-                        outline.spline().bounds() \
-                        if drawCurvedBorders else \
-                        outline.path().bounds()
-                    if self._worldViewRect.intersects(outlineBounds):
-                        regionOutlines.append(outline)
-
-            if not regionOutlines:
-                continue
-
-            with self._graphics.save():
-                useBrush = layer is RenderContext.MicroBorderLayer.Background and \
-                    self._styleSheet.fillMicroBorders and not drawCurvedBorders
-                usePen = pen is not None
-
-                for outline in regionOutlines:
-                    colour = self._calculateBorderColour(outline)
+            if drawRegions:
+                regions = self._regionCache.regionsInArea(bounds=self._worldViewRect)
+                for region in regions:
+                    colour = self._calculateBorderColour(region.colour())
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=RenderContext._MicroBorderFillAlpha,
                         colour=colour))
-
-                    self._drawMicroBorder(
-                        outline=outline,
+                    self._drawMicroRegion(
+                        region=region,
                         brush=brush)
 
-
-    def _calculateBorderColour(self, border: cartographer.BorderInfo) -> str:
-        colour = border.colour()
+    def _calculateBorderColour(self, colour: typing.Optional[str]) -> str:
         if not colour:
             colour = self._styleSheet.microRoutes.linePen.colour()
 
@@ -2001,9 +1919,7 @@ class RenderContext(object):
 
         return colour
 
-    # TODO: This should be renamed and the old version deleted when I've moved
-    # regions over to the universe
-    def _drawMicroBorder2(
+    def _drawMicroBorder(
             self,
             border: typing.Union[cartographer.BorderInfo],
             brush: typing.Optional[cartographer.AbstractBrush] = None,
@@ -2028,31 +1944,15 @@ class RenderContext(object):
                     for path in border.outlinePaths():
                         self._graphics.drawPath(path=path, pen=pen)
 
-    def _drawMicroBorder(
+    def _drawMicroRegion(
             self,
-            # TODO: The fact this can be one of two different types is a bodge that shouldn't be
-            # needed by the time I've moved regions to the universe level
-            outline: typing.Union[cartographer.SectorPath],
-            brush: typing.Optional[cartographer.AbstractBrush] = None,
-            pen: typing.Optional[cartographer.AbstractPen] = None
+            region: typing.Union[cartographer.RegionInfo],
+            brush: cartographer.AbstractBrush = None
             ) -> None:
         if self._styleSheet.microBorderStyle is cartographer.MicroBorderStyle.Curve:
-            self._graphics.drawCurve(
-                spline=outline.spline(),
-                pen=pen,
-                brush=brush)
-        elif pen:
-            with self._graphics.save():
-                # Clip to the path itself - this means adjacent borders don't clash
-                self._graphics.intersectClipPath(path=outline.path())
-                self._graphics.drawPath(
-                    path=outline.path(),
-                    pen=pen,
-                    brush=brush)
+            self._graphics.drawCurve(spline=region.fillSpline(), brush=brush)
         else:
-            self._graphics.drawPath(
-                path=outline.path(),
-                brush=brush)
+            self._graphics.drawPath(path=region.fillPath(), brush=brush)
 
     def _drawMapLabel(
             self,

@@ -30,6 +30,7 @@ class Universe(object):
             worlds: typing.Collection[astronomer.World],
             routes: typing.Collection[astronomer.Route],
             borders: typing.Collection[astronomer.Border],
+            regions: typing.Collection[astronomer.Region],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.MapVector]
             ) -> None:
@@ -41,6 +42,7 @@ class Universe(object):
         common.validateCollection(name='worlds', value=worlds, elementType=astronomer.World)
         common.validateCollection(name='routes', value=routes, elementType=astronomer.Route)
         common.validateCollection(name='borders', value=borders, elementType=astronomer.Border)
+        common.validateCollection(name='regions', value=regions, elementType=astronomer.Region)
         common.validateCollection(name='labels', value=labels, elementType=astronomer.MapLabel)
         common.validateCollection(name='vectors', value=vectors, elementType=astronomer.MapVector)
 
@@ -79,6 +81,10 @@ class Universe(object):
         self._borders: typing.Set[astronomer.Border] = set()
         for border in borders:
             self._addBorder(border=border)
+
+        self._regions: typing.Set[astronomer.Border] = set()
+        for region in regions:
+            self._addRegion(region=region)
 
         self._labels: typing.List[astronomer.MapLabel] = []
         for label in labels:
@@ -553,6 +559,9 @@ class Universe(object):
     def borders(self) -> typing.Collection[astronomer.Border]:
         return common.ConstCollectionRef(self._borders)
 
+    def regions(self) -> typing.Collection[astronomer.Region]:
+        return common.ConstCollectionRef(self._regions)
+
     def labels(self) -> typing.Collection[astronomer.MapLabel]:
         return common.ConstCollectionRef(self._labels)
 
@@ -726,16 +735,17 @@ class Universe(object):
         self._borders.add(border)
         self._idToEntityMap[border.entityId()] = border
 
-    def _removeRoute(self, route: astronomer.Route) -> None:
-        self._routes.discard(route)
-        self._idToEntityMap.pop(route.entityId(), None)
+    def _removeBorder(self, border: astronomer.Border) -> None:
+        self._borders.discard(border)
+        self._idToEntityMap.pop(border.entityId(), None)
 
-        for hex in [route.startHex(), route.endHex()]:
-            endpoints = self._hexPositionToRoutesMap.get(hex.absolute())
-            if endpoints:
-                endpoints.discard(route)
-                if not endpoints:
-                    del self._hexPositionToRoutesMap[hex.absolute()]
+    def _addRegion(self, region: astronomer.Region) -> None:
+        self._regions.add(region)
+        self._idToEntityMap[region.entityId()] = region
+
+    def _removeRegion(self, region: astronomer.Region) -> None:
+        self._regions.discard(region)
+        self._idToEntityMap.pop(region.entityId(), None)
 
     def _addLabel(self, label: astronomer.MapLabel) -> None:
         self._idToEntityMap[label.entityId()] = label

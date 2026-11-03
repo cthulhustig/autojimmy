@@ -1254,16 +1254,29 @@ def _createDbBorders(
     return dbBorders
 
 def _createDbRegions(
-        rawMetadata: survey.RawMetadata,
+        rawMetadata: survey.RawMetadata
         ) -> typing.List[multiverse.DbRegion]:
     dbRegions = []
 
     if rawMetadata.regions():
         for rawRegion in rawMetadata.regions():
-            dbHexes = rawRegion.hexes()
-            if not dbHexes:
-                logging.warning(f'Converter ignoring region with empty hex list in {rawMetadata.canonicalName()}')
+            rawHexes = rawRegion.hexes()
+            if not rawHexes:
+                logging.warning(f'Converter ignoring border with empty hex list in {rawMetadata.canonicalName()}')
                 continue
+
+            dbHexes = []
+            for offsetX, offsetY in rawHexes:
+                dbHexes.append(multiverse.relativeSpaceToAbsoluteSpace((rawMetadata.x(), rawMetadata.y(), offsetX, offsetY)))
+            dbHexes = _sanitizeHexPath(dbHexes)
+
+            dbColour = rawRegion.colour()
+            if dbColour is not None:
+                try:
+                    dbColour = common.canonicalHtmlColour(dbColour)
+                except:
+                    logging.warning(f'Converter ignoring invalid border colour {dbColour} in {rawMetadata.canonicalName()}')
+                    dbColour = None
 
             rawLabel = rawRegion.label()
             dbLabel = rawLabel if rawLabel else None
@@ -1275,39 +1288,35 @@ def _createDbRegions(
             if rawLabelHexX is not None and rawLabelHexY is not None:
                 rawLabelOffsetX = rawRegion.labelOffsetX()
                 rawLabelOffsetY = rawRegion.labelOffsetY()
-                dbLabelX, dbLabelY = _hexToSectorWorldOffset(
-                    hexX=rawLabelHexX,
-                    hexY=rawLabelHexY,
+                dbLabelX, dbLabelY = _sectorHexToWorldSpace(
+                    pos=(rawMetadata.x(), rawMetadata.y(), rawLabelHexX, rawLabelHexY),
                     # NOTE: The 0.7 multiplier is to mimic how Traveller Map
                     # scales the offset in DrawMicroLabels
-                    worldOffsetX=(rawLabelOffsetX * 0.7) if rawLabelOffsetX is not None else None,
+                    offsetX=(rawLabelOffsetX * 0.7) if rawLabelOffsetX is not None else None,
                     # NOTE: The coordinate space used for the offsets seems to
                     # have an inverted Y direction compared to world space
-                    worldOffsetY=(-rawLabelOffsetY * 0.7) if rawLabelOffsetY is not None else None)
+                    offsetY=(-rawLabelOffsetY * 0.7) if rawLabelOffsetY is not None else None)
 
-            dbColour = rawRegion.colour()
-            if dbColour is not None:
-                try:
-                    dbColour = common.canonicalHtmlColour(dbColour)
-                except:
-                    logging.warning(f'Converter ignoring invalid region colour {dbColour} in {rawMetadata.canonicalName()}')
-                    dbColour = None
-
-            # Show label use the same defaults as the Traveller Map Border class
+            # Show label use the same defaults as the traveller map Border class
             rawShowLabel = rawRegion.showLabel()
             dbShowLabel = rawShowLabel if rawShowLabel is not None else True
 
             rawWrapLabel = rawRegion.wrapLabel()
             dbWrapLabel = rawWrapLabel if rawWrapLabel is not None else False
 
+            dbLabels = None
+            if rawLabelHexX is not None and rawLabelHexY is not None:
+                dbLabels = [multiverse.DbRegionLabel(
+                    worldX=dbLabelX,
+                    worldY=dbLabelY,
+                    text=dbLabel,
+                    show=dbShowLabel,
+                    wrap=dbWrapLabel)]
+
             dbRegions.append(multiverse.DbRegion(
                 hexes=dbHexes,
                 colour=dbColour,
-                label=dbLabel,
-                labelWorldX=dbLabelX,
-                labelWorldY=dbLabelY,
-                showLabel=dbShowLabel,
-                wrapLabel=dbWrapLabel))
+                labels=dbLabels))
 
     return dbRegions
 
@@ -1688,9 +1697,6 @@ def _convertRawSectorToDbSector(
     dbSubsectorNames = _createDbSubsectorNames(
         rawMetadata=rawMetadata)
 
-    dbRegions = _createDbRegions(
-        rawMetadata=rawMetadata)
-
     dbLabels = _createDbLabels(
         rawMetadata=rawMetadata)
 
@@ -1726,7 +1732,6 @@ def _convertRawSectorToDbSector(
         selected=dbSelected,
         alternateNames=dbAlternateNames,
         subsectorNames=dbSubsectorNames,
-        regions=dbRegions,
         labels=dbLabels,
         tags=dbTags,
         credits=dbCredits,
@@ -1795,3 +1800,20 @@ def convertRawBordersToDbBorders(
             styleMapper=styleMapper)
 
     return multiverse.mergeBorders(borders=sectorPosToDbBorders, allegianceMapper=allegianceMapper)
+
+def convertRawRegionsToDbRegions(
+        rawSectors: typing.List[typing.Tuple[survey.RawMetadata, typing.Collection[survey.RawWorld]]]
+        ) -> typing.List[multiverse.DbRegion]:
+    sectorPosToDbRegions: typing.Dict[
+        typing.Tuple[int, int],
+        typing.List[multiverse.DbRegion]
+        ] = {}
+    for rawMetadata, _ in rawSectors:
+        rawRegions = rawMetadata.regions()
+        if not rawRegions:
+            continue
+
+        sectorPosToDbRegions[(rawMetadata.x(), rawMetadata.y())] = _createDbRegions(
+            rawMetadata=rawMetadata)
+
+    return multiverse.mergeRegions(regions=sectorPosToDbRegions)

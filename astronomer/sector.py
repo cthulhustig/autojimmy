@@ -14,7 +14,6 @@ class Sector(astronomer.Entity):
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
-            regions: typing.Optional[typing.Collection[astronomer.Region]] = None,
             labels: typing.Optional[typing.Collection[astronomer.SectorLabel]] = None,
             selected: bool = False,
             tagging: typing.Optional[astronomer.SectorTagging] = None,
@@ -31,7 +30,6 @@ class Sector(astronomer.Entity):
         common.validateStr(name='abbreviation', value=abbreviation, allowEmpty=False, allowNone=True)
         common.validateStr(name='sectorLabel', value=sectorLabel, allowEmpty=False, allowNone=True)
         common.validateStrMapping(name='subsectorNames', value=subsectorNames, allowNone=True, allowEmptyKeys=False, allowEmptyValues=False, validationFn=Sector._validateSubsectorCode)
-        common.validateCollection(name='regions', value=regions, elementType=astronomer.Region, allowNone=True)
         common.validateCollection(name='labels', value=labels, elementType=astronomer.SectorLabel, allowNone=True)
         common.validateBool(name='selected', value=selected)
         common.validateObject(name='tagging', value=tagging, objectType=astronomer.SectorTagging, allowNone=True)
@@ -45,7 +43,6 @@ class Sector(astronomer.Entity):
         self._nameLanguages = dict(nameLanguages) if nameLanguages else {}
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
-        self._regions = list(regions) if regions else []
         self._labels = list(labels) if labels else []
         self._selected = selected
         self._tagging = tagging
@@ -56,7 +53,7 @@ class Sector(astronomer.Entity):
         self._subsectorCodeToNameMap = dict(subsectorNames) if subsectorNames else {}
 
         self._idToEntityMap: typing.Dict[str, astronomer.Entity] = {}
-        for entity in itertools.chain(self._regions, self._labels):
+        for entity in self._labels:
             self._idToEntityMap[entity.entityId()] = entity
 
     def position(self) -> astronomer.SectorPosition:
@@ -79,9 +76,6 @@ class Sector(astronomer.Entity):
 
     def subsectorName(self, code: str) -> typing.Optional[str]:
         return self._subsectorCodeToNameMap.get(code)
-
-    def regions(self) -> typing.Collection[astronomer.Region]:
-        return common.ConstCollectionRef(self._regions)
 
     def labels(self) -> typing.Collection[astronomer.SectorLabel]:
         return common.ConstCollectionRef(self._labels)

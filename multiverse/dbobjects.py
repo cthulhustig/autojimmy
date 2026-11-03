@@ -1340,36 +1340,91 @@ class DbBorder(DbSectorObject):
             if currentBorderId is not None and currentBorderId != borderId:
                 raise ValueError(f'{name} contains border labels that are already attached to a border')
 
+class DbRegionLabel(DbObject):
+    def __init__(
+            self,
+            worldX: float,
+            worldY: float,
+            text: typing.Optional[str] = None,
+            show: bool = True,
+            wrap: bool = False,
+            id: typing.Optional[str] = None, # None means allocate an id
+            regionId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        common.validateStr(name='borderId', value=regionId, allowNone=True, allowEmpty=False)
+        common.validateFloat(name='worldX', value=worldX)
+        common.validateFloat(name='worldY', value=worldY)
+        common.validateStr(name='text', value=text, allowNone=True, allowEmpty=True)
+        common.validateBool(name='show', value=show)
+        common.validateBool(name='wrap', value=wrap)
+
+        self._regionId = regionId
+        self._worldX = worldX
+        self._worldY = worldY
+        self._text = text
+        self._show = show
+        self._wrap = wrap
+
+    def regionId(self) -> typing.Optional[str]:
+        return self._regionId
+
+    def worldX(self) -> float:
+        return self._worldX
+
+    def worldY(self) -> float:
+        return self._worldY
+
+    def text(self) -> typing.Optional[str]:
+        return self._text
+
+    def show(self) -> bool:
+        return self._show
+
+    def wrap(self) -> bool:
+        return self._wrap
+
+    # NOTE: Setting the id back to None is intentionally disallowed as the only
+    # reason to do so would be to remove an object from its parent and it's not
+    # safe to do that as the object may hold references to other objects owned
+    # by the parent. If the object was removed from the parent and attached to
+    # another object, it would still refer to objects owned by its old parent.
+    # An example of this would be sophont populations. They're attached to a
+    # system but hold references to the sophont which is owned by the sector. If
+    # the system was removed from one sector and added to another, it would still
+    # reference the sophont from its old sector which would result in horrible
+    # bugs and the mangled data being written back to the database.
+    def setRegionId(self, regionId: str) -> None:
+        common.validateStr(name='borderId', value=regionId, allowEmpty=False)
+
+        if regionId == self._regionId:
+            return # Nothing to do
+
+        if self._regionId is not None:
+            raise RuntimeError(f'Object {self._id} of type {type(self)} is already attached to a region')
+
+        self._regionId = regionId
+
 class DbRegion(DbSectorObject):
     def __init__(
             self,
             hexes: typing.Sequence[typing.Tuple[int, int]],
             colour: typing.Optional[str] = None,
-            label: typing.Optional[str] = None,
-            labelWorldX: typing.Optional[float] = None,
-            labelWorldY: typing.Optional[float] = None,
-            showLabel: bool = True,
-            wrapLabel: bool = False,
+            labels: typing.Optional[typing.Collection[DbRegionLabel]] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
         super().__init__(id=id, sectorId=sectorId)
 
-        survey.validateHexSequence(name='hexes', value=hexes, allowInvalid=True, allowEmpty=False)
+        _validateAbsoluteHexPath(name='hexes', value=hexes)
         survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
-        common.validateStr(name='label', value=label, allowNone=True, allowEmpty=False)
-        common.validateFloat(name='labelWorldX', value=labelWorldX, allowNone=True)
-        common.validateFloat(name='labelWorldY', value=labelWorldY, allowNone=True)
-        common.validateBool(name='showLabel', value=showLabel)
-        common.validateBool(name='wrapLabel', value=wrapLabel)
+        DbRegion._validateLabels(name='labels', value=labels, regionId=self._id)
 
         self._hexes = list(hexes)
         self._colour = colour
-        self._label = label
-        self._labelWorldX = labelWorldX
-        self._labelWorldY = labelWorldY
-        self._showLabel = showLabel
-        self._wrapLabel = wrapLabel
+        self._labels = list(labels) if labels is not None else None
+        self._attachLabels(self._labels)
 
     def hexes(self) -> typing.Sequence[typing.Tuple[int, int]]:
         return self._hexes
@@ -1377,20 +1432,33 @@ class DbRegion(DbSectorObject):
     def colour(self) -> typing.Optional[str]:
         return self._colour
 
-    def label(self) -> typing.Optional[str]:
-        return self._label
+    def labels(self) -> typing.Optional[typing.Collection[DbRegionLabel]]:
+        return self._labels
 
-    def labelWorldX(self) -> typing.Optional[float]:
-        return self._labelWorldX
+    def _attachLabels(
+            self,
+            labels: typing.Optional[typing.Iterable[DbRegionLabel]]
+            ) -> None:
+        if not labels:
+            return
+        for obj in labels:
+            obj.setRegionId(regionId=self._id)
 
-    def labelWorldY(self) -> typing.Optional[float]:
-        return self._labelWorldY
+    @staticmethod
+    def _validateLabels(
+            name: str,
+            value: typing.Optional[typing.Collection[DbRegionLabel]],
+            regionId: typing.Optional[str]
+            ) -> None:
+        if value is None:
+            return
 
-    def showLabel(self) -> bool:
-        return self._showLabel
+        common.validateCollection(name=name, value=value, elementType=DbRegionLabel, allowNone=True)
 
-    def wrapLabel(self) -> bool:
-        return self._wrapLabel
+        for label in value:
+            currentRegionId = label.regionId()
+            if currentRegionId is not None and currentRegionId != regionId:
+                raise ValueError(f'{name} contains region labels that are already attached to a region')
 
 class DbSectorLabel(DbSectorObject):
     def __init__(
@@ -1500,7 +1568,6 @@ class DbSector(DbUniverseObject):
             selected: bool = False,
             alternateNames: typing.Optional[typing.Collection[DbAlternateName]] = None,
             subsectorNames: typing.Optional[typing.Collection[DbSubsectorName]] = None,
-            regions: typing.Optional[typing.Collection[DbRegion]] = None,
             labels: typing.Optional[typing.Collection[DbSectorLabel]] = None,
             tags: typing.Optional[typing.Collection[DbTag]] = None,
             credits: typing.Optional[str] = None,
@@ -1523,7 +1590,6 @@ class DbSector(DbUniverseObject):
         common.validateBool(name='selected', value=selected)
         DbSector._validateAlternateNames(name='alternateNames', value=alternateNames, sectorId=self._id)
         DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames, sectorId=self._id)
-        DbSector._validateRegions(name='regions', value=regions, sectorId=self._id)
         DbSector._validateLabels(name='labels', value=labels, sectorId=self._id)
         DbSector._validateTags(name='tags', value=tags, sectorId=self._id)
         common.validateStr(name='credits', value=credits, allowNone=True, allowEmpty=False)
@@ -1552,8 +1618,6 @@ class DbSector(DbUniverseObject):
         self._attachObjects(self._alternateNames)
         self._subsectorNames = list(subsectorNames) if subsectorNames else None
         self._attachObjects(self._subsectorNames)
-        self._regions = list(regions) if regions else None
-        self._attachObjects(self._regions)
         self._labels = list(labels) if labels else None
         self._attachObjects(self._labels)
         self._tags = list(tags) if tags else None
@@ -1587,9 +1651,6 @@ class DbSector(DbUniverseObject):
 
     def subsectorNames(self) -> typing.Optional[typing.Collection[DbSubsectorName]]:
         return self._subsectorNames
-
-    def regions(self) -> typing.Optional[typing.Collection[DbRegion]]:
-        return self._regions
 
     def labels(self) -> typing.Optional[typing.Collection[DbSectorLabel]]:
         return self._labels
@@ -1664,38 +1725,6 @@ class DbSector(DbUniverseObject):
             if code in seen:
                 raise ValueError(f'{name} contains multiple names for the same subsector')
             seen.add(code)
-
-    @staticmethod
-    def _validateBorders(
-            name: str,
-            value: typing.Optional[typing.Collection[DbBorder]],
-            sectorId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateCollection(name=name, value=value, elementType=DbBorder, allowNone=True)
-
-        for border in value:
-            currentSectorId = border.sectorId()
-            if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError(f'{name} contains borders that are already attached to a sector')
-
-    @staticmethod
-    def _validateRegions(
-            name: str,
-            value: typing.Optional[typing.Collection[DbRegion]],
-            sectorId: typing.Optional[str]
-            ) -> None:
-        if value is None:
-            return
-
-        common.validateCollection(name=name, value=value, elementType=DbRegion, allowNone=True)
-
-        for region in value:
-            currentSectorId = region.sectorId()
-            if currentSectorId is not None and currentSectorId != sectorId:
-                raise ValueError(f'{name} contains regions that are already attached to a sector')
 
     @staticmethod
     def _validateLabels(

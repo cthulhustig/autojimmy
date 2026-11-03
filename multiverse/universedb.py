@@ -397,6 +397,9 @@ class UniverseDb(object):
     _RegionHexesTableName = 'region_hexes'
     _RegionHexesTableSchema = 1
 
+    _RegionLabelsTableName = 'region_labels'
+    _RegionLabelsTableSchema = 1
+
     _SectorLabelsTableName = 'sector_labels'
     _SectorLabelsTableSchema = 1
 
@@ -958,6 +961,72 @@ class UniverseDb(object):
                     cursor=connection.cursor(),
                     routeIds=borderIds)
 
+    def countRegions(
+            self,
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> int:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._countRegions(cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._countRegions(cursor=connection.cursor())
+
+    def loadRegions(
+            self,
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> typing.List[multiverse.DbRegion]:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._loadRegions(
+                cursor=connection.cursor(),
+                progress=progress)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._loadRegions(
+                    cursor=connection.cursor(),
+                    progress=progress)
+
+    def saveRegions(
+            self,
+            regions: typing.Collection[multiverse.DbRegion],
+            transaction: typing.Optional[database.Transaction] = None,
+            progress: typing.Optional[common.ProgressTracker] = None
+            ) -> None:
+        if transaction != None:
+            connection = transaction.connection()
+            self._saveRegions(
+                cursor=connection.cursor(),
+                regions=regions,
+                progress=progress)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                self._saveRegions(
+                    cursor=connection.cursor(),
+                    regions=regions,
+                    progress=progress)
+
+    def deleteRegions(
+            self,
+            RegionIds: typing.Collection[str],
+            transaction: typing.Optional[database.Transaction] = None
+            ) -> None:
+        if transaction != None:
+            connection = transaction.connection()
+            self._deleteRegions(
+                cursor=connection.cursor(),
+                routeIds=RegionIds)
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                self._deleteRegions(
+                    cursor=connection.cursor(),
+                    routeIds=RegionIds)
+
     def countMapLabels(
             self,
             transaction: typing.Optional[database.Transaction] = None
@@ -1103,10 +1172,9 @@ class UniverseDb(object):
             self._createSophontTables(cursor=cursor)
             self._createSectorTables(cursor=cursor)
             self._createSystemTables(cursor=cursor)
-            # TODO: These should be called from here rather than _createSystemTables as I move them to the universe
             self._createRouteTables(cursor=cursor)
             self._createBorderTables(cursor=cursor)
-            #self._createRegionTables(cursor=cursor)
+            self._createRegionTables(cursor=cursor)
             self._createMapLabelTables(cursor=cursor)
             self._createMapVectorTables(cursor=cursor)
 
@@ -2052,6 +2120,7 @@ class UniverseDb(object):
             uniqueConstraints=[
                 database.UniqueConstraintDef(columnNames=['sector_id', 'code'])])
 
+        # TODO: Sector labels should be moved to the universe level
         self._database.createTable(
             cursor=cursor,
             tableName=UniverseDb._SectorLabelsTableName,
@@ -2095,9 +2164,6 @@ class UniverseDb(object):
                 database.ColumnDef(columnName='author', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                 database.ColumnDef(columnName='publisher', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                 database.ColumnDef(columnName='reference', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
-
-        # TODO: These should be called from _initTables as I move them to the universe
-        self._createRegionTables(cursor=cursor)
 
         self._objectTypeToTableMapping[multiverse.DbAlternateName] = ObjectTableMapping(
             tableName=UniverseDb._AlternateNamesTableName,
@@ -2171,8 +2237,7 @@ class UniverseDb(object):
                 SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSubsectorName], parentColumnName='sector_id', initParam='subsectorNames'),
                 SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbSectorLabel], parentColumnName='sector_id', initParam='labels'),
                 SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbTag], parentColumnName='sector_id', initParam='tags'),
-                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbProduct], parentColumnName='sector_id', initParam='products'),
-                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbRegion], parentColumnName='sector_id', initParam='regions')])
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbProduct], parentColumnName='sector_id', initParam='products')])
 
     def _countSectors(
             self,
@@ -2973,17 +3038,7 @@ class UniverseDb(object):
             requiredSchemaVersion=UniverseDb._RegionsTableSchema,
             columns=[
                 database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
-                database.ColumnDef(columnName='sector_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
-                            foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
-                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
-                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                database.ColumnDef(columnName='label', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
-                # NOTE: See note on borders about coordinate space used for world x/y
-                # TODO: This should be converted to world space as part of the changes to move things to the universe label
-                database.ColumnDef(columnName='label_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                database.ColumnDef(columnName='label_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
-                database.ColumnDef(columnName='show_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
-                database.ColumnDef(columnName='wrap_label', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+                database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True)])
 
         self._database.createTable(
             cursor=cursor,
@@ -2997,22 +3052,45 @@ class UniverseDb(object):
                 database.ColumnDef(columnName='hex_x', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False),
                 database.ColumnDef(columnName='hex_y', columnType=database.ColumnDef.ColumnType.Integer, isNullable=False)])
 
+        self._database.createTable(
+            cursor=cursor,
+            tableName=UniverseDb._RegionLabelsTableName,
+            requiredSchemaVersion=UniverseDb._RegionLabelsTableSchema,
+            columns=[
+                database.ColumnDef(columnName='id', columnType=database.ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                database.ColumnDef(columnName='region_id', columnType=database.ColumnDef.ColumnType.Text, isNullable=False,
+                            foreignTableName=UniverseDb._RegionsTableName, foreignColumnName='id',
+                            foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
+                database.ColumnDef(columnName='world_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='world_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=True),
+                database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
+                database.ColumnDef(columnName='show', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False),
+                database.ColumnDef(columnName='wrap', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
+
         hexesMapping = RawTableMapping(
             tableName=UniverseDb._RegionHexesTableName,
             columnNames=['hex_x', 'hex_y'])
+
+        self._objectTypeToTableMapping[multiverse.DbRegionLabel] = ObjectTableMapping(
+            tableName=UniverseDb._RegionLabelsTableName,
+            objectType=multiverse.DbRegionLabel,
+            parameters=[
+                ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
+                ColumnParameterMapping(columnName='region_id', paramType=ColumnParameterMapping.ParamType.String, paramName='regionId'),
+                ColumnParameterMapping(columnName='world_x', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldX'),
+                ColumnParameterMapping(columnName='world_y', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldY'),
+                ColumnParameterMapping(columnName='text', paramType=ColumnParameterMapping.ParamType.String, paramName='text'),
+                ColumnParameterMapping(columnName='show', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='show'),
+                ColumnParameterMapping(columnName='wrap', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='wrap')])
+
         self._objectTypeToTableMapping[multiverse.DbRegion] = ObjectTableMapping(
             tableName=UniverseDb._RegionsTableName,
             objectType=multiverse.DbRegion,
             parameters=[
                 ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
-                ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
                 SubTableParameterMapping(table=hexesMapping, parentColumnName='region_id', initParam='hexes'),
                 ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
-                ColumnParameterMapping(columnName='label', paramType=ColumnParameterMapping.ParamType.String, paramName='label'),
-                ColumnParameterMapping(columnName='label_x', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldX'),
-                ColumnParameterMapping(columnName='label_y', paramType=ColumnParameterMapping.ParamType.Float, paramName='labelWorldY'),
-                ColumnParameterMapping(columnName='show_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='showLabel'),
-                ColumnParameterMapping(columnName='wrap_label', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='wrapLabel')])
+                SubTableParameterMapping(table=self._objectTypeToTableMapping[multiverse.DbRegionLabel], parentColumnName='region_id', initParam='labels')])
 
     def _countRegions(
             self,
@@ -3034,7 +3112,7 @@ class UniverseDb(object):
             tableMapping=self._objectTypeToTableMapping[multiverse.DbRegion],
             progress=progress)
 
-    def _insertRegions(
+    def _saveRegions(
             self,
             cursor: sqlite3.Cursor,
             regions: typing.Collection[multiverse.DbRegion],
@@ -3046,7 +3124,7 @@ class UniverseDb(object):
         for region in regions:
             logging.debug(f'UniverseDb saving region {region.id()!r} to universe {self._universePath!r}')
 
-        # Any existing region with the same id as a region being saved should
+        # Any existing regions with the same id as a region being saved should
         # be deleted before the new regions are inserted. This is needed so any
         # points associated with the existing region will be deleted before adding
         # the points for the new region
@@ -3054,12 +3132,12 @@ class UniverseDb(object):
             cursor=cursor,
             tableName=UniverseDb._RegionsTableName,
             where='id == ?',
-            parameters=((r.id(),) for r in region))
+            parameters=((r.id(),) for r in regions))
 
         self._saveTableObjects(
             cursor=cursor,
             tableMapping=self._objectTypeToTableMapping[multiverse.DbRegion],
-            objects=region,
+            objects=regions,
             progress=progress)
 
     def _deleteRegions(

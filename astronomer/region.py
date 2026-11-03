@@ -1,63 +1,64 @@
 import astronomer
 import common
-import multiverse
 import survey
 import typing
 
-class Region(astronomer.Entity):
-    _AntiClockwiseOffsets = {
-        astronomer.HexEdge.Top: (-0.5 + astronomer.HexWidthOffset, -0.5), # Upper left
-        astronomer.HexEdge.TopRight: (+0.5 - astronomer.HexWidthOffset, -0.5), # Upper right
-        astronomer.HexEdge.BottomRight: (+0.5 + astronomer.HexWidthOffset, 0), # Center right
-        astronomer.HexEdge.Bottom: (+0.5 - astronomer.HexWidthOffset, +0.5), # Lower right
-        astronomer.HexEdge.BottomLeft: (-0.5 + astronomer.HexWidthOffset, +0.5), # Lower Left
-        astronomer.HexEdge.TopLeft: (-0.5 - astronomer.HexWidthOffset, 0), # Center left
-    }
-    _AdjacentTransitionMap = {
-        astronomer.HexEdge.Top: astronomer.HexEdge.BottomLeft,
-        astronomer.HexEdge.TopRight: astronomer.HexEdge.TopLeft,
-        astronomer.HexEdge.BottomRight: astronomer.HexEdge.Top,
-        astronomer.HexEdge.Bottom: astronomer.HexEdge.TopRight,
-        astronomer.HexEdge.BottomLeft: astronomer.HexEdge.BottomRight,
-        astronomer.HexEdge.TopLeft: astronomer.HexEdge.Bottom
-    }
-    _HexOutlineOffsets = [
-        (-0.5 - astronomer.HexWidthOffset, 0), # Center left
-        (-0.5 + astronomer.HexWidthOffset, -0.5), # Upper left
-        (+0.5 - astronomer.HexWidthOffset, -0.5), # Upper right
-        (+0.5 + astronomer.HexWidthOffset, 0), # Center right
-        (+0.5 - astronomer.HexWidthOffset, +0.5), # Lower right
-        (-0.5 + astronomer.HexWidthOffset, +0.5), # Lower Left
-    ]
+class RegionLabel(astronomer.Entity):
+    def __init__(
+            self,
+            entityId: str,
+            worldX: float,
+            worldY: float,
+            text: typing.Optional[str] = None,
+            show: bool = True,
+            wrap: bool = False
+            ) -> None:
+        super().__init__(entityId=entityId)
 
+        common.validateFloat(name='worldX', value=worldX)
+        common.validateFloat(name='worldY', value=worldY)
+        common.validateStr(name='text', value=text, allowEmpty=True, allowNone=True)
+        common.validateBool(name='show', value=show)
+        common.validateBool(name='wrap', value=wrap)
+
+        self._worldX = worldX
+        self._worldY = worldY
+        self._text = text
+        self._show = show
+        self._wrap = wrap
+
+    def worldX(self) -> float:
+        return self._worldX
+
+    def worldY(self) -> float:
+        return self._worldY
+
+    def text(self) -> typing.Optional[str]:
+        return self._text
+
+    def show(self) -> bool:
+        return self._show
+
+    def wrap(self) -> bool:
+        return self._wrap
+
+class Region(astronomer.Entity):
     def __init__(
             self,
             entityId: str,
             hexes: typing.Sequence[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
-            label: typing.Optional[str] = None,
-            labelWorldX: typing.Optional[float] = None,
-            labelWorldY: typing.Optional[float] = None,
-            showLabel: bool = True,
-            wrapLabel: bool = False
+            labels: typing.Optional[typing.Collection[RegionLabel]] = None,
             ) -> None:
         super().__init__(entityId=entityId)
 
         common.validateSequence(name='hexes', value=hexes, elementType=astronomer.HexPosition, allowEmpty=False)
         survey.validateHtmlColour(name='colour', value=colour, allowNone=True)
-        common.validateStr(name='label', value=label, allowEmpty=False, allowNone=True)
-        common.validateFloat(name='labelWorldX', value=labelWorldX, allowNone=True)
-        common.validateFloat(name='labelWorldY', value=labelWorldY, allowNone=True)
-        common.validateBool(name='showLabel', value=showLabel)
-        common.validateBool(name='wrapLabel', value=wrapLabel)
+        common.validateCollection(name='labels', value=labels, elementType=RegionLabel, allowEmpty=True, allowNone=True)
 
         self._hexes = list(hexes)
         self._colour = colour
-        self._label = label
-        self._labelWorldX = labelWorldX
-        self._labelWorldY = labelWorldY
-        self._showLabel = showLabel
-        self._wrapLabel = wrapLabel
+        self._labels = list(labels) if labels is not None else None
         self._outline: typing.Optional[typing.List[typing.Tuple[float, float]]] = None
         self._outlines: typing.Optional[typing.List[typing.Tuple[float, float]]] = None
 
@@ -67,21 +68,8 @@ class Region(astronomer.Entity):
     def colour(self) -> typing.Optional[str]:
         return self._colour
 
-    def label(self) -> typing.Optional[str]:
-        return self._label
-
-    # Offset from top left of sector in world coordinates
-    def labelWorldX(self) -> typing.Optional[float]:
-        return self._labelWorldX
-
-    def labelWorldY(self) -> typing.Optional[float]:
-        return self._labelWorldY
-
-    def showLabel(self) -> bool:
-        return self._showLabel
-
-    def wrapLabel(self) -> bool:
-        return self._wrapLabel
+    def labels(self) -> typing.Optional[typing.Collection[RegionLabel]]:
+        return common.ConstCollectionRef(self._labels) if self._labels is not None else None
 
     def worldPath(self) -> typing.Iterable[typing.Tuple[float, float]]:
         if self._outline is not None:
@@ -115,86 +103,3 @@ class Region(astronomer.Entity):
                 self._outlines.append(astronomer.regionHexPathToWorldSpaceOutline(hole))
 
         return self._outlines
-
-    # TODO: This shouldn't be needed (replaced by worldPath calls) when I've moved regions
-    # to the universe
-    def legacyWorldOutline(self) -> typing.Iterable[typing.Tuple[float, float]]:
-        if self._outline is not None:
-            return self._outline
-
-        self._outline = []
-
-        hexes = set(self._hexes)
-        startHex, startEdge = Region._findOutlineStart(hexes=hexes)
-        if not startEdge:
-            # This is a single hex on it's own
-            centerX, centerY = startHex.worldCenter()
-            for offsetX, offsetY in Region._HexOutlineOffsets:
-                self._outline.append((centerX + offsetX, centerY + offsetY))
-            return common.ConstSequenceRef(self._outline)
-
-        hex = startHex
-        edge = startEdge
-        while True:
-            adjacentHex = hex.neighbour(edge=edge)
-            if adjacentHex in hexes:
-                # There is an adjacent hex so transition to it
-                hex = adjacentHex
-                edge = Region._AdjacentTransitionMap[edge]
-            else:
-                # There is no adjacent hex so add the most anti-clockwise
-                # point on the current edge and transition to the next
-                # edge
-                self._outline.append(Region._mostAntiClockwisePoint(
-                    hex=hex,
-                    edge=edge))
-                edge = astronomer.clockwiseHexEdge(edge)
-
-            if adjacentHex == startHex and edge == startEdge:
-                # Finished this outline
-                break
-
-        return common.ConstSequenceRef(self._outline)
-
-    @staticmethod
-    def _findOutlineStart(hexes: typing.Collection[astronomer.HexPosition]) -> typing.Tuple[
-            astronomer.HexPosition,
-            typing.Optional[astronomer.HexEdge]]:
-        # Find the hex with the lowest x value, if there are multiple with the
-        # same x value, find the one with the largest y value. This finds a hex
-        # that is guaranteed to be on the edge of a group of hexes. Visually
-        # this will be the lowest hex on the left most row of hexes
-        bestHex = None
-        for hex in hexes:
-            if bestHex == None:
-                bestHex = hex
-            elif hex.absoluteX() < bestHex.absoluteX():
-                bestHex = hex
-            elif hex.absoluteX() == bestHex.absoluteX() and hex.absoluteY() > bestHex.absoluteY():
-                bestHex = hex
-
-        # Find the edge to start processing on. This is the most anticlockwise
-        # edge that doesn't have an adjacent hex. Due to the way the code above
-        # works we know that there can only be adjacent hexes along the upper,
-        # upper right and lower right edges. If this wasn't true then this
-        # wouldn't be the hex with the lowest x value and largest y value.
-        hex = bestHex.neighbour(edge=astronomer.HexEdge.BottomRight)
-        if hex in hexes:
-            return (bestHex, astronomer.HexEdge.Bottom)
-        hex = bestHex.neighbour(edge=astronomer.HexEdge.TopRight)
-        if hex in hexes:
-            return (bestHex, astronomer.HexEdge.BottomRight)
-        hex = bestHex.neighbour(edge=astronomer.HexEdge.Top)
-        if hex in hexes:
-            return (bestHex, astronomer.HexEdge.TopRight)
-        return (bestHex, None) # This hex has no adjacent hexes so it's outline is the outline
-
-    # Return the most anticlockwise point on the given edge
-    @staticmethod
-    def _mostAntiClockwisePoint(
-            hex: astronomer.HexPosition,
-            edge: astronomer.HexEdge
-            ) -> typing.Tuple[float, float]:
-        centerX, centerY = hex.worldCenter()
-        offsetX, offsetY = Region._AntiClockwiseOffsets[edge]
-        return (centerX + offsetX, centerY + offsetY)

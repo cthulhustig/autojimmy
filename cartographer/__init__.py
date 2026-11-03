@@ -9,6 +9,7 @@ from .sectorcache import *
 from .worldcache import *
 from .routecache import *
 from .bordercache import *
+from .regioncache import *
 from .vectorcache import *
 from .gridcache import *
 from .starfieldcache import *

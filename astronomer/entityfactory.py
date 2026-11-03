@@ -13,6 +13,7 @@ class EntityFactoryInterface(object):
             worlds: typing.Collection[astronomer.World],
             routes: typing.Collection[astronomer.Route],
             borders: typing.Collection[astronomer.Border],
+            regions: typing.Collection[astronomer.Region],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.VectorLayer]
             ) -> astronomer.Universe:
@@ -52,7 +53,6 @@ class EntityFactoryInterface(object):
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
-            regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
             labels: typing.Optional[typing.Iterable[astronomer.SectorLabel]] = None,
             selected: bool = False,
             tagging: typing.Optional[astronomer.SectorTagging] = None,
@@ -117,11 +117,7 @@ class EntityFactoryInterface(object):
             entityId: str,
             hexes: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
-            label: typing.Optional[str] = None,
-            labelWorldX: typing.Optional[float] = None,
-            labelWorldY: typing.Optional[float] = None,
-            showLabel: bool = True,
-            wrapLabel: bool = False
+            labels: typing.Optional[typing.Collection[astronomer.BorderLabel]] = None
             ) -> astronomer.Region:
         raise NotImplementedError(f'{type(self)} is derived from EntityFactoryInterface so must implement createRegion')
 
@@ -171,6 +167,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             worlds: typing.Collection[astronomer.World],
             routes: typing.Collection[astronomer.Route],
             borders: typing.Collection[astronomer.Border],
+            regions: typing.Collection[astronomer.Region],
             labels: typing.Collection[astronomer.MapLabel],
             vectors: typing.Collection[astronomer.MapVector]
             ) -> astronomer.Universe:
@@ -183,6 +180,7 @@ class DefaultEntityFactory(EntityFactoryInterface):
             worlds=worlds,
             routes=routes,
             borders=borders,
+            regions=regions,
             labels=labels,
             vectors=vectors)
 
@@ -234,7 +232,6 @@ class DefaultEntityFactory(EntityFactoryInterface):
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Mapping[str, str]] = None,
-            regions: typing.Optional[typing.Iterable[astronomer.Region]] = None,
             labels: typing.Optional[typing.Iterable[astronomer.SectorLabel]] = None,
             selected: bool = False,
             tagging: typing.Optional[astronomer.SectorTagging] = None,
@@ -251,7 +248,6 @@ class DefaultEntityFactory(EntityFactoryInterface):
             abbreviation=abbreviation,
             sectorLabel=sectorLabel,
             subsectorNames=subsectorNames,
-            regions=regions,
             labels=labels,
             selected=selected,
             tagging=tagging,
@@ -349,21 +345,13 @@ class DefaultEntityFactory(EntityFactoryInterface):
             entityId: str,
             hexes: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
-            label: typing.Optional[str] = None,
-            labelWorldX: typing.Optional[float] = None,
-            labelWorldY: typing.Optional[float] = None,
-            showLabel: bool = True,
-            wrapLabel: bool = False
+            labels: typing.Optional[typing.Collection[astronomer.BorderLabel]] = None
             ) -> astronomer.Region:
         return astronomer.Region(
             entityId=entityId,
             hexes=hexes,
             colour=colour,
-            label=label,
-            labelWorldX=labelWorldX,
-            labelWorldY=labelWorldY,
-            showLabel=showLabel,
-            wrapLabel=wrapLabel)
+            labels=labels)
 
     def createSectorLabel(
             self,

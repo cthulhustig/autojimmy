@@ -139,9 +139,9 @@ class UniverseManager(object):
             taskCount = 2 # Load & Save
             taskWeight = 1 / taskCount
 
-        dbAllegiances = dbSophonts = dbSectors = dbSystems = dbRoutes = dbBorders = dbMapLabels = dbMapVectors = None
+        dbAllegiances = dbSophonts = dbSectors = dbSystems = dbRoutes = dbBorders = dbRegions = dbMapLabels = dbMapVectors = None
         if importTravellerMap:
-            dbAllegiances, dbSophonts, dbSectors, dbSystems, dbRoutes, dbBorders, dbMapLabels, dbMapVectors = \
+            dbAllegiances, dbSophonts, dbSectors, dbSystems, dbRoutes, dbBorders, dbRegions, dbMapLabels, dbMapVectors = \
                 self._loadStockUniverse(
                     milieu=milieu,
                     progress=progress.createChild(weight=taskWeight) if progress is not None else None,
@@ -168,6 +168,7 @@ class UniverseManager(object):
                 dbSystems=dbSystems,
                 dbRoutes=dbRoutes,
                 dbBorders=dbBorders,
+                dbRegions=dbRegions,
                 dbMapLabels=dbMapLabels,
                 dbMapVectors=dbMapVectors,
                 progress=progress.createChild(weight=taskWeight) if progress is not None else None)
@@ -350,6 +351,7 @@ class UniverseManager(object):
                 typing.List[multiverse.DbSystem],
                 typing.List[multiverse.DbRoute],
                 typing.List[multiverse.DbBorder],
+                typing.List[multiverse.DbRegion],
                 typing.List[multiverse.DbMapLabel],
                 typing.List[multiverse.DbMapVector]]:
         if reporter:
@@ -510,6 +512,11 @@ class UniverseManager(object):
         if localProgress is not None:
             localProgress.advance()
 
+        dbRegions = multiverse.convertRawRegionsToDbRegions(
+            rawSectors=rawSectors)
+        if localProgress is not None:
+            localProgress.advance()
+
         dbMapLabels: typing.List[multiverse.DbMapLabel] = []
         dbMapLabels.extend(multiverse.convertRawLabelsToDbMapLabels(
             rawMegaLabels=rawMegaLabels,
@@ -541,6 +548,7 @@ class UniverseManager(object):
             dbSystems,
             dbRoutes,
             dbBorders,
+            dbRegions,
             dbMapLabels,
             dbMapVectors)
 
@@ -555,6 +563,7 @@ class UniverseManager(object):
             dbSystems: typing.Optional[typing.Collection[multiverse.DbSystem]],
             dbRoutes: typing.Optional[typing.Collection[multiverse.DbRoute]],
             dbBorders: typing.Optional[typing.Collection[multiverse.DbBorder]],
+            dbRegions: typing.Optional[typing.Collection[multiverse.DbRegion]],
             dbMapLabels: typing.Optional[typing.Collection[multiverse.DbMapLabel]],
             dbMapVectors: typing.Optional[typing.Collection[multiverse.DbMapVector]],
             progress: typing.Optional[common.ProgressTracker] = None
@@ -573,6 +582,8 @@ class UniverseManager(object):
             objectCount += len(dbRoutes)
         if dbBorders:
             objectCount += len(dbBorders)
+        if dbRegions:
+            objectCount += len(dbRegions)
         if dbMapLabels:
             objectCount += len(dbMapLabels)
         if dbMapVectors:
@@ -591,6 +602,8 @@ class UniverseManager(object):
             saveTasks.append((dbRoutes, universeDb.saveRoutes, len(dbRoutes) / objectCount))
         if dbBorders:
             saveTasks.append((dbBorders, universeDb.saveBorders, len(dbBorders) / objectCount))
+        if dbRegions:
+            saveTasks.append((dbRegions, universeDb.saveRegions, len(dbRegions) / objectCount))
         if dbMapLabels:
             saveTasks.append((dbMapLabels, universeDb.saveMapLabels, len(dbMapLabels) / objectCount))
         if dbMapVectors:

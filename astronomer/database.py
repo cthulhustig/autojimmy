@@ -26,6 +26,7 @@ class _Loader(object):
         self._worlds = []
         self._routes = []
         self._borders = []
+        self._regions = []
         self._mapLabels = []
         self._mapVectors = []
 
@@ -111,6 +112,19 @@ class _Loader(object):
             entityFactory=self._entityFactory,
             progress=progress.createChild(weight=0.5))
 
+    def loadRegions(
+            self,
+            transaction: database.Transaction,
+            progress: typing.Optional[common.ProgressTracker]
+            ) -> None:
+        dbRegions = self._universeDb.loadRegions(
+            transaction=transaction,
+            progress=progress.createChild(weight=0.5))
+        self._regions = astronomer.convertDbRegionsToAstronomerRegions(
+            dbRegions=dbRegions,
+            entityFactory=self._entityFactory,
+            progress=progress.createChild(weight=0.5))
+
     def loadMapLabels(
             self,
             transaction: database.Transaction,
@@ -147,6 +161,7 @@ class _Loader(object):
         logging.debug('Systems: {count}'.format(count=len(self._worlds)))
         logging.debug('Routes: {count}'.format(count=len(self._routes)))
         logging.debug('Borders: {count}'.format(count=len(self._borders)))
+        logging.debug('Regions: {count}'.format(count=len(self._regions)))
         logging.debug('Map Labels: {count}'.format(count=len(self._mapLabels)))
         logging.debug('Map Vectors: {count}'.format(count=len(self._mapVectors)))
 
@@ -159,6 +174,7 @@ class _Loader(object):
             worlds=self._worlds,
             routes=self._routes,
             borders=self._borders,
+            regions=self._regions,
             labels=self._mapLabels,
             vectors=self._mapVectors)
 
@@ -195,9 +211,11 @@ def loadUniverseFromDatabase(
         systemCount = universeDb.countSystems(transaction=transaction)
         routeCount = universeDb.countRoutes(transaction=transaction)
         borderCount = universeDb.countBorders(transaction=transaction)
+        regionCount = universeDb.countRegions(transaction=transaction)
         mapLabelCount = universeDb.countMapLabels(transaction=transaction)
         mapVectorCount = universeDb.countMapVectors(transaction=transaction)
-        objectCount = allegianceCount + sophontCount + sectorCount + systemCount + routeCount + borderCount + mapLabelCount + mapVectorCount
+        objectCount = allegianceCount + sophontCount + sectorCount + systemCount + routeCount + \
+            borderCount + regionCount + mapLabelCount + mapVectorCount
 
         loader = _Loader(
             universeId=universeId,
@@ -219,6 +237,8 @@ def loadUniverseFromDatabase(
                 tasks.append((loader.loadRoutes, routeCount / objectCount))
             if borderCount:
                 tasks.append((loader.loadBorders, borderCount / objectCount))
+            if regionCount:
+                tasks.append((loader.loadRegions, regionCount / objectCount))
             if mapLabelCount:
                 tasks.append((loader.loadMapLabels, mapLabelCount / objectCount))
             if mapVectorCount:

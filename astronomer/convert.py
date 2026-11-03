@@ -616,56 +616,6 @@ def convertDbSystemsToAstronomerWorlds(
 
     return astroWorlds
 
-def _createAstronomerRegions(
-        dbSector: multiverse.DbSector,
-        entityFactory: astronomer.EntityFactoryInterface,
-        sectorLogName: str
-        ) -> typing.Optional[typing.List[astronomer.Region]]:
-    dbRegions = dbSector.regions()
-    if not dbRegions:
-        return None
-
-    astroRegions = []
-    for dbRegion in dbRegions:
-        try:
-            hexes = []
-            for hexX, hexY in dbRegion.hexes():
-                hexes.append(astronomer.HexPosition(
-                    sectorX=dbSector.sectorX(),
-                    sectorY=dbSector.sectorY(),
-                    offsetX=hexX,
-                    offsetY=hexY))
-
-            colour = dbRegion.colour()
-            if colour is not None:
-                try:
-                    colour = common.canonicalHtmlColour(colour)
-                except:
-                    logging.warning('Ignoring invalid colour "{colour}" for region {objectId} when loading sector {sectorId} ({name})'.format(
-                        colour=colour,
-                        objectId=dbRegion.id(),
-                        sectorId=dbSector.id(),
-                        name=sectorLogName))
-                    colour = None
-
-            astroRegions.append(entityFactory.createRegion(
-                entityId=dbRegion.id(),
-                hexes=hexes,
-                colour=colour,
-                label=dbRegion.label(),
-                labelWorldX=dbRegion.labelWorldX(),
-                labelWorldY=dbRegion.labelWorldY(),
-                showLabel=dbRegion.showLabel(),
-                wrapLabel=dbRegion.wrapLabel()))
-        except Exception as ex:
-            logging.warning('Failed to create region {objectId} when loading sector {sectorId} ({name})'.format(
-                    objectId=dbRegion.id(),
-                    sectorId=dbSector.id(),
-                    name=sectorLogName),
-                exc_info=ex)
-
-    return astroRegions
-
 def _createAstronomerLabels(
         dbSector: multiverse.DbSector,
         entityFactory: astronomer.EntityFactoryInterface,
@@ -824,11 +774,6 @@ def convertDbSectorsToAstronomerSectors(
 
                 astroSubsectorNames = _createAstronomerSubsectorNames(dbSector=dbSector)
 
-                astroRegions = _createAstronomerRegions(
-                    dbSector=dbSector,
-                    entityFactory=entityFactory,
-                    sectorLogName=sectorLogName)
-
                 astroLabels = _createAstronomerLabels(
                     dbSector=dbSector,
                     entityFactory=entityFactory,
@@ -855,7 +800,6 @@ def convertDbSectorsToAstronomerSectors(
                     abbreviation=dbSector.abbreviation(),
                     sectorLabel=dbSector.sectorLabel(),
                     subsectorNames=astroSubsectorNames,
-                    regions=astroRegions,
                     labels=astroLabels,
                     selected=dbSector.selected(),
                     tagging=astroTagging,
@@ -1001,6 +945,63 @@ def convertDbBordersToAstronomerBorders(
             localProgress.advance()
 
     return astroBorders
+
+def _createAstronomerRegionLabels(
+        dbRegion: multiverse.DbRegion
+        ) -> typing.Optional[typing.List[astronomer.RegionLabel]]:
+    dbLabels = dbRegion.labels()
+    if dbLabels is None:
+        return None
+
+    astroLabels: typing.List[astronomer.Allegiance] = []
+    for dbLabel in dbLabels:
+        astroLabels.append(astronomer.RegionLabel(
+            entityId=dbLabel.id(),
+            worldX=dbLabel.worldX(),
+            worldY=dbLabel.worldY(),
+            text=dbLabel.text(),
+            show=dbLabel.show(),
+            wrap=dbLabel.wrap()))
+
+    return astroLabels
+
+def convertDbRegionsToAstronomerRegions(
+        dbRegions: typing.Collection[multiverse.DbRegion],
+        entityFactory: astronomer.EntityFactoryInterface,
+        progress: typing.Optional[common.ProgressTracker] = None
+        ) -> typing.List[astronomer.Border]:
+    if not dbRegions:
+        if progress is not None:
+            progress.complete()
+        return []
+
+    objectCount = len(dbRegions)
+    chunkSize = objectCount
+    localProgress = None
+    if progress is not None:
+        chunkSize = _ProgressChunkSize
+        localProgress = progress.createChild(
+            weight=1,
+            steps=math.ceil(objectCount / chunkSize))
+
+    astroRegions = []
+    for chunkStart in range(0, objectCount, chunkSize):
+        for dbRegion in itertools.islice(dbRegions, chunkStart, chunkStart + chunkSize):
+            try:
+                astroRegions.append(entityFactory.createRegion(
+                    entityId=dbRegion.id(),
+                    hexes=[astronomer.HexPosition(absoluteX=x, absoluteY=y) for x, y in dbRegion.hexes()],
+                    colour=dbRegion.colour(),
+                    labels=_createAstronomerRegionLabels(dbRegion=dbRegion)))
+            except Exception as ex:
+                logging.warning('Failed to convert database region {id!r} to astro region'.format(
+                        id=dbRegion.id()),
+                    exc_info=ex)
+
+        if localProgress is not None:
+            localProgress.advance()
+
+    return astroRegions
 
 def convertDbMapLabelsToAstronomerMapLabels(
         dbLabels: typing.Collection[multiverse.DbMapLabel],

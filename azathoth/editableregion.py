@@ -8,21 +8,13 @@ class EditableRegion(astronomer.Region):
             entityId: str,
             hexes: typing.Iterable[astronomer.HexPosition],
             colour: typing.Optional[str] = None,
-            label: typing.Optional[str] = None,
-            labelWorldX: typing.Optional[float] = None,
-            labelWorldY: typing.Optional[float] = None,
-            showLabel: bool = True,
-            wrapLabel: bool = False
+            labels: typing.Optional[typing.Collection[astronomer.BorderLabel]] = None
             ) -> None:
         super().__init__(
             entityId=entityId,
             hexes=hexes,
             colour=colour,
-            label=label,
-            labelWorldX=labelWorldX,
-            labelWorldY=labelWorldY,
-            showLabel=showLabel,
-            wrapLabel=wrapLabel)
+            labels=labels)
         self._sectorId = None
 
     def sectorId(self) -> typing.Optional[str]:
