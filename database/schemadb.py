@@ -493,11 +493,11 @@ class SchemaDb(object):
             columns: typing.Optional[typing.Collection[str]] = None,
             where: typing.Optional[str] = None,
             parameters: typing.Optional[typing.Union[
-                typing.Mapping[str, typing.Optional[typing.Union[str, int, float, bool]]],
-                typing.Collection[typing.Optional[typing.Union[str, int, float, bool]]]]] = None,
+                typing.Mapping[str, typing.Union[str, int, float, bool, None]],
+                typing.Collection[typing.Union[str, int, float, bool, None]]]] = None,
             limit: typing.Optional[int] = None,
             offset: typing.Optional[int] = None
-            ) -> typing.List[typing.Dict[str, typing.Optional[typing.Union[str, int, float, bool]]]]:
+            ) -> typing.List[typing.Dict[str, typing.Union[str, int, float, bool, None]]]:
         columnNameToColumnDef = self._tableNameToColumns.get(tableName)
         if columnNameToColumnDef is None:
             raise ValueError(f'Unknown table {tableName!r}')
@@ -533,51 +533,142 @@ class SchemaDb(object):
 
         return rows
 
+    @typing.overload
+    def insert(
+        self,
+        cursor: sqlite3.Cursor,
+        tableName: str,
+        values: typing.Mapping[str, typing.Optional[typing.Union[str, int, float, bool]]],
+        replaceIfExists: bool = True
+        ) -> None: ...
+    @typing.overload
+    def insert(
+        self,
+        cursor: sqlite3.Cursor,
+        tableName: str,
+        values: typing.Sequence[typing.Optional[typing.Union[str, int, float, bool]]],
+        columnOrder: typing.Sequence[str],
+        replaceIfExists: bool = True
+        ) -> None: ...
+
     def insert(
             self,
             cursor: sqlite3.Cursor,
             tableName: str,
             values: typing.Union[
                 typing.Mapping[str, typing.Optional[typing.Union[str, int, float, bool]]],
-                typing.Collection[typing.Optional[typing.Union[str, int, float, bool]]]],
+                typing.Sequence[typing.Optional[typing.Union[str, int, float, bool]]]],
+            columnOrder: typing.Optional[typing.Sequence[str]] = None,
             replaceIfExists: bool = True
             ) -> None:
         columnNameToColumnDef = self._tableNameToColumns.get(tableName)
         if columnNameToColumnDef is None:
             raise ValueError(f'Unknown table {tableName!r}')
 
+        if columnOrder is not None:
+            if len(columnOrder) != len(columnNameToColumnDef):
+                raise ValueError(f'Column order for table {tableName!r} has length {len(columnOrder)} when it should be {len(columnNameToColumnDef)}')
+            for columnName in columnOrder:
+                if columnName not in columnNameToColumnDef:
+                    raise ValueError(f'Column order for table {tableName!r} contains unknown column {columnName!r}')
+
         sql = self._formatInsertSql(
             tableName=tableName,
             columnDefs=columnNameToColumnDef.values(),
+            columnOrder=columnOrder,
             replaceIfExists=replaceIfExists)
         cursor.execute(sql, values)
 
-    # TODO: It might be possible to make this a lot more efficient by batching the requests
-    # into a smaller number of insert queries rather than using executemany which I believe
-    # just executes the full query for each row. I think you can do it with insert, the
-    # problem is just that there is a limit to the number of rows that can be inserted with
-    # a single query so it would need chunked
+    @typing.overload
+    def insertMany(
+        self,
+        cursor: sqlite3.Cursor,
+        tableName: str,
+        rows: typing.Collection[typing.Mapping[str, typing.Union[str, int, float, bool, None]]],
+        replaceIfExists: bool = True
+        ) -> None: ...
+    @typing.overload
+    def insertMany(
+        self,
+        cursor: sqlite3.Cursor,
+        tableName: str,
+        rows: typing.Collection[typing.Sequence[typing.Union[str, int, float, bool, None]]],
+        columnOrder: typing.Sequence[str],
+        replaceIfExists: bool = True
+        ) -> None: ...
+
     def insertMany(
             self,
             cursor: sqlite3.Cursor,
             tableName: str,
             rows: typing.Union[
-                typing.Collection[typing.Mapping[str, typing.Optional[typing.Union[str, int, float, bool]]]],
-                typing.Collection[typing.Collection[typing.Optional[typing.Union[str, int, float, bool]]]]],
+                typing.Collection[typing.Mapping[str, typing.Union[str, int, float, bool, None]]],
+                typing.Collection[typing.Sequence[typing.Union[str, int, float, bool, None]]]],
+            columnOrder: typing.Optional[typing.Sequence[str]] = None,
             replaceIfExists: bool = True
             ) -> None:
         columnNameToColumnDef = self._tableNameToColumns.get(tableName)
         if columnNameToColumnDef is None:
             raise ValueError(f'Unknown table {tableName!r}')
 
+        if columnOrder is not None:
+            if len(columnOrder) != len(columnNameToColumnDef):
+                raise ValueError(f'Column order for table {tableName!r} has length {len(columnOrder)} when it should be {len(columnNameToColumnDef)}')
+            for columnName in columnOrder:
+                if columnName not in columnNameToColumnDef:
+                    raise ValueError(f'Column order for table {tableName!r} contains unknown column {columnName!r}')
+
         if not rows:
             return
 
-        sql = self._formatInsertSql(
-            tableName=tableName,
-            columnDefs=columnNameToColumnDef.values(),
-            replaceIfExists=replaceIfExists)
-        cursor.executemany(sql, rows)
+        columnCount = len(columnNameToColumnDef)
+        maxRowsPerBlock = self.insertManyBlockRowCount(cursor=cursor, tableName=tableName)
+        maxValuesPerBlock = maxRowsPerBlock * columnCount
+
+        blockValues = []
+        blocks = [blockValues]
+        for index, row in enumerate(rows):
+            if len(blockValues) >= maxValuesPerBlock:
+                blockValues = []
+                blocks.append(blockValues)
+
+            if columnOrder is None:
+                if not isinstance(row, collections.abc.Mapping):
+                    raise ValueError(f'Row {index} is not a mapping')
+                blockValues.extend(row.get(columnName) for columnName in columnNameToColumnDef.keys())
+            else:
+                rowValueCount = len(row)
+                if rowValueCount != columnCount:
+                    raise ValueError(f'Row {index} contains {rowValueCount} values for {columnCount} columns')
+
+                if not isinstance(row, collections.abc.Sequence):
+                    raise ValueError(f'Row {index} is not a sequence')
+
+                blockValues.extend(row)
+
+        for block in blocks:
+            rowCount = len(block) // columnCount
+
+            sql = self._formatBlockInsertSql(
+                tableName=tableName,
+                columnDefs=columnNameToColumnDef.values(),
+                rowCount=rowCount,
+                replaceIfExists=replaceIfExists,
+                columnOrder=columnOrder)
+            cursor.execute(sql, block)
+
+    def insertManyBlockRowCount(
+            self,
+            cursor: sqlite3.Cursor,
+            tableName: str
+            ) -> int:
+        columnNameToColumnDef = self._tableNameToColumns.get(tableName)
+        if columnNameToColumnDef is None:
+            raise ValueError(f'Unknown table {tableName!r}')
+
+        columnCount = len(columnNameToColumnDef)
+        maxVariables = cursor.connection.getlimit(sqlite3.SQLITE_LIMIT_VARIABLE_NUMBER)
+        return maxVariables // columnCount
 
     def delete(
             self,
@@ -585,8 +676,8 @@ class SchemaDb(object):
             tableName: str,
             where: typing.Optional[str] = None,
             parameters: typing.Optional[typing.Union[
-                typing.Mapping[str, typing.Optional[typing.Union[str, int, float, bool]]],
-                typing.Collection[typing.Optional[typing.Union[str, int, float, bool]]]]] = None
+                typing.Mapping[str, typing.Union[str, int, float, bool, None]],
+                typing.Sequence[typing.Union[str, int, float, bool, None]]]] = None
             ) -> None:
         columnNameToColumnDef = self._tableNameToColumns.get(tableName)
         if columnNameToColumnDef is None:
@@ -604,8 +695,8 @@ class SchemaDb(object):
             tableName: str,
             where: typing.Optional[str] = None,
             parameters: typing.Optional[typing.Union[
-                typing.Collection[typing.Mapping[str, typing.Optional[typing.Union[str, int, float, bool]]]],
-                typing.Collection[typing.Collection[typing.Optional[typing.Union[str, int, float, bool]]]]]] = None,
+                typing.Collection[typing.Mapping[str, typing.Union[str, int, float, bool, None]]],
+                typing.Collection[typing.Sequence[typing.Union[str, int, float, bool, None]]]]] = None,
             ) -> None:
         columnNameToColumnDef = self._tableNameToColumns.get(tableName)
         if columnNameToColumnDef is None:
@@ -690,31 +781,80 @@ class SchemaDb(object):
         sql += ';'
         return sql
 
+    # TODO: Check this stuff is working properly once I've implemented
+    # saving after modifying the universe
+    def _formatInsertOnConflict(
+            self,
+            columnDefs: typing.Iterable[ColumnDef]
+            ) -> typing.Optional[str]:
+        sql = ''
+        primaryKeyDef = None
+        for columnDef in columnDefs:
+            if columnDef.isPrimaryKey():
+                primaryKeyDef = columnDef
+                break
+        if primaryKeyDef is None:
+            return None
+
+        sql = 'ON CONFLICT({column}) DO UPDATE SET'.format(column=primaryKeyDef.columnName())
+        for columnDef in columnDefs:
+            if columnDef != primaryKeyDef:
+                sql += '\n  {column} = excluded.{column},'.format(column=columnDef.columnName())
+        sql = sql.strip(',')
+
+        return sql
+
     def _formatInsertSql(
             self,
             tableName: str,
             columnDefs: typing.Iterable[ColumnDef],
-            replaceIfExists: bool
+            replaceIfExists: bool,
+            columnOrder: typing.Optional[typing.Sequence[str]] = None,
             ) -> str:
+        if columnOrder:
+            columns = ', '.join(columnOrder)
+        else:
+            columns = ', '.join([c.columnName() for c in columnDefs])
+
         sql = 'INSERT INTO {table} ({columns}) VALUES ({values})' .format(
                 table=tableName,
-                columns=', '.join([c.columnName() for c in columnDefs]),
+                columns=columns,
                 values=', '.join([':' + c.columnName() for c in columnDefs]))
+
+        if replaceIfExists:
+            onConflict = self._formatInsertOnConflict(columnDefs)
+            if onConflict is not None:
+                sql += '\n' + onConflict
+
+        sql += ';'
+        return sql
+
+    def _formatBlockInsertSql(
+            self,
+            tableName: str,
+            columnDefs: typing.Iterable[ColumnDef],
+            rowCount: int,
+            replaceIfExists: bool,
+            columnOrder: typing.Optional[typing.Sequence[str]] = None,
+            ) -> str:
+        if columnOrder:
+            columns = ', '.join(columnOrder)
+        else:
+            columns = ', '.join([c.columnName() for c in columnDefs])
+
+        placeholders = '(' + ', '.join(['?'] * len(columnDefs)) + ')'
+
+        sql = 'INSERT INTO {table} ({columns}) VALUES {placeholders}' .format(
+            table=tableName,
+            columns=columns,
+            placeholders=', '.join([placeholders] * rowCount))
 
         # TODO: Check this stuff is working properly once I've implemented
         # saving after modifying the universe
         if replaceIfExists:
-            primaryKeyDef = None
-            for columnDef in columnDefs:
-                if columnDef.isPrimaryKey():
-                    primaryKeyDef = columnDef
-                    break
-            if primaryKeyDef:
-                sql += '\nON CONFLICT({column}) DO UPDATE SET'.format(column=primaryKeyDef.columnName())
-                for columnDef in columnDefs:
-                    if columnDef != primaryKeyDef:
-                        sql += '\n  {column} = excluded.{column},'.format(column=columnDef.columnName())
-                sql = sql.strip(',')
+            onConflict = self._formatInsertOnConflict(columnDefs)
+            if onConflict is not None:
+                sql += '\n' + onConflict
 
         sql += ';'
         return sql

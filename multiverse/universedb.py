@@ -231,6 +231,26 @@ class DerivedObjectMapping(ObjectTableMapping):
     def baseColumnName(self) -> str:
         return self._baseColumnName
 
+class TableRows(object):
+    def __init__(
+            self,
+            columns: typing.Sequence[str]
+            ) -> None:
+        self._columns = list(columns)
+        self._rows: typing.List[typing.Union[str, int, float, bool, None]] = list()
+
+    def columns(self) -> typing.Sequence[str]:
+        return self._columns
+
+    def rows(self) -> typing.Sequence[typing.Sequence[typing.Union[str, int, float, bool, None]]]:
+        return common.ConstSequenceRef(self._rows)
+
+    def append(self, row: typing.Sequence[typing.Union[str, int, float, bool, None]]) -> None:
+        self._rows.append(row)
+
+    def extend(self, rows: typing.Iterable[typing.Sequence[typing.Union[str, int, float, bool, None]]]) -> None:
+        self._rows.extend(rows)
+
 # TODO: I'm not sure this existing will make logical sense once I've
 # finished moving stuff to the universe
 class SectorInfo(object):
@@ -1667,32 +1687,81 @@ class UniverseDb(object):
             self,
             tableMapping: ObjectTableMapping,
             objects: typing.Collection[multiverse.DbObject],
-            tableNameToRows: typing.OrderedDict[
-                str,
-                typing.List[typing.Dict[
-                    str, # Column Name
-                    typing.Any]]], # Column value
-            parentColumnName: typing.Optional[str] = None,
-            parentColumnValue: typing.Optional[str] = None
+            tableNameToRows: typing.OrderedDict[str, TableRows],
             ) -> None:
-        if not objects:
-            return
+        isDerivedObject = isinstance(tableMapping, DerivedObjectMapping)
 
         # NOTE: Add the rows to the table mapping before mapping any sub tables
-        # as we want the the tables to be added to tableNameToRows so parents
-        # are before children.
-        objectRows = tableNameToRows.get(tableMapping.tableName())
-        if objectRows is None:
-            objectRows = []
-            tableNameToRows[tableMapping.tableName()] = objectRows
+        # as, for a given table, we need the tables it is dependent on to written
+        # to the database before it is to avoid issues with foreign key constraints
+        tableRows = tableNameToRows.get(tableMapping.tableName())
+        if tableRows is None:
+            # NOTE: It's vital that the column order defined here matches the
+            # order order the columns are added to individual rows below
+            columns = []
+            if isDerivedObject:
+                columns.append(tableMapping.baseColumnName())
+            for paramMapping in tableMapping.parameters():
+                if isinstance(paramMapping, ColumnParameterMapping):
+                    columns.append(paramMapping.columnName())
 
+            tableRows = TableRows(columns=columns)
+            tableNameToRows[tableMapping.tableName()] = tableRows
+
+        # Generate a list of rows
+        if isDerivedObject:
+            rows = [[obj.id()] for obj in objects]
+        else:
+            rows = [[] for _ in objects]
+        for paramMapping in tableMapping.parameters():
+            accessor = getattr(tableMapping.objectType(), paramMapping.paramName(), None)
+            if accessor is None:
+                raise RuntimeError(f'Table object type {tableMapping.objectType()!r} has no accessor named {paramMapping.paramName()}')
+
+            if isinstance(paramMapping, ColumnParameterMapping):
+                isBoolean = paramMapping.paramType() is ColumnParameterMapping.ParamType.Boolean
+                for index, obj in enumerate(objects):
+                    value = accessor(obj)
+                    if value is not None and isBoolean:
+                        value = 1 if value else 0
+                    rows[index].append(value)
+            elif isinstance(paramMapping, SubTableParameterMapping):
+                subTableMapping = paramMapping.table()
+                if isinstance(subTableMapping, ObjectTableMapping):
+                    subTableObjects = []
+                    for obj in objects:
+                        value = accessor(obj)
+                        if value is not None:
+                            subTableObjects.extend(value)
+
+                    self._mapObjectsToTable(
+                        tableMapping=subTableMapping,
+                        objects=subTableObjects,
+                        tableNameToRows=tableNameToRows)
+                elif isinstance(subTableMapping, RawTableMapping):
+                    for obj in objects:
+                        value = accessor(obj)
+                        if value is not None:
+                            self._mapRawToTable(
+                                tableMapping=subTableMapping,
+                                objects=value,
+                                tableNameToRows=tableNameToRows,
+                                parentColumnName=paramMapping.parentColumnName(),
+                                parentColumnValue=obj.id())
+                else:
+                    # TODO: Better exception message
+                    raise RuntimeError('Unknown sub table mapping type')
+
+        tableRows.extend(rows)
+
+        # Map derived objects if there are any
         derivedObjectMappings = tableMapping.deriveObjects()
-        derivedObjectTypeToObjects: typing.Dict[
-            typing.Type[multiverse.DbObject],
-            typing.List[multiverse.DbObject]
-            ] = {}
-        for obj in objects:
-            if derivedObjectMappings:
+        if derivedObjectMappings:
+            derivedObjectTypeToObjects: typing.Optional[typing.Dict[
+                typing.Type[multiverse.DbObject],
+                typing.List[multiverse.DbObject]
+                ]] = {}
+            for obj in objects:
                 objectType = type(obj)
                 derivedObjects = derivedObjectTypeToObjects.get(objectType)
                 if derivedObjects is None:
@@ -1700,44 +1769,6 @@ class UniverseDb(object):
                     derivedObjectTypeToObjects[objectType] = derivedObjects
                 derivedObjects.append(obj)
 
-        isDerivedObject = isinstance(tableMapping, DerivedObjectMapping)
-        for obj in objects:
-            row = {}
-            if isDerivedObject:
-                row[tableMapping.baseColumnName()] = obj.id()
-            if parentColumnName is not None:
-                row[parentColumnName] = parentColumnValue
-            for paramMapping in tableMapping.parameters():
-                function = getattr(obj, paramMapping.paramName())
-                value = function()
-
-                if isinstance(paramMapping, ColumnParameterMapping):
-                    if value is not None and paramMapping.paramType() is ColumnParameterMapping.ParamType.Boolean:
-                        value = 1 if value else 0
-                    row[paramMapping.columnName()] = value
-                elif isinstance(paramMapping, SubTableParameterMapping):
-                    subTableMapping = paramMapping.table()
-                    if isinstance(subTableMapping, ObjectTableMapping):
-                        self._mapObjectsToTable(
-                            tableMapping=subTableMapping,
-                            objects=value,
-                            tableNameToRows=tableNameToRows,
-                            parentColumnName=paramMapping.parentColumnName(),
-                            parentColumnValue=obj.id())
-                    elif isinstance(subTableMapping, RawTableMapping):
-                        self._mapRawToTable(
-                            tableMapping=subTableMapping,
-                            objects=value,
-                            tableNameToRows=tableNameToRows,
-                            parentColumnName=paramMapping.parentColumnName(),
-                            parentColumnValue=obj.id())
-                    else:
-                        # TODO: Better exception message
-                        raise RuntimeError('Unknown sub table mapping type')
-
-            objectRows.append(row)
-
-        if derivedObjectTypeToObjects:
             objectTypeToDerivedMapping = {m.objectType(): m for m in derivedObjectMappings}
             for objectType, derivedObjects in derivedObjectTypeToObjects.items():
                 derivedMapping = objectTypeToDerivedMapping[objectType]
@@ -1749,64 +1780,66 @@ class UniverseDb(object):
     def _mapRawToTable(
             self,
             tableMapping: RawTableMapping,
-            objects: typing.Collection[multiverse.DbObject],
-            tableNameToRows: typing.OrderedDict[
-                str,
-                typing.List[typing.Dict[
-                    str, # Column Name
-                    typing.Any]]], # Column value
+            objects: typing.Collection[typing.Sequence[typing.Union[str, int, float, bool, None]]],
+            tableNameToRows: typing.OrderedDict[str, TableRows],
             parentColumnName: typing.Optional[str] = None,
             parentColumnValue: typing.Optional[str] = None
             ) -> None:
-        if not objects:
-            return
-
-        # NOTE: Add the rows to the table mapping before mapping any sub tables
-        # as we want the the tables to be added to tableNameToRows so parents
-        # are before children.
-        tableRows = tableNameToRows.get(tableMapping.tableName())
-        if tableRows is None:
-            tableRows = []
-            tableNameToRows[tableMapping.tableName()] = tableRows
-
-        for obj in objects:
-            row = {}
+        rows = tableNameToRows.get(tableMapping.tableName())
+        if rows is None:
+            # NOTE: It's vital that the column order defined here matches the
+            # order order the columns are added to individual rows below
+            columns = []
             if parentColumnName is not None:
-                row[parentColumnName] = parentColumnValue
-            for index, columnName in enumerate(tableMapping.columnNames()):
-                row[columnName] = obj[index]
-            tableRows.append(row)
+                columns.append(parentColumnName)
+            columns.extend(tableMapping.columnNames())
+
+            rows = TableRows(columns=columns)
+            tableNameToRows[tableMapping.tableName()] = rows
+
+        # NOTE: It's vital that the order params are added to the row matches the
+        # order columns are defined above when creating the TableRows object
+        if parentColumnName is not None:
+            rows.extend((parentColumnValue, *obj) for obj in objects)
+        else:
+            rows.extend((*obj, ) for obj in objects)
 
     def _saveTableRows(
             self,
             cursor: sqlite3.Cursor,
             tableName: str,
-            rows: typing.Collection[typing.Mapping[
-                str, # Column Name
-                typing.Any]], # Column Value
+            tableRows: TableRows,
             progress: typing.Optional[common.ProgressTracker] = None
             ) -> None:
-        if not rows:
+        if not tableRows:
             if progress is not None:
                 progress.complete()
             return
 
-        rowCount = len(rows)
+        rowData = tableRows.rows()
+        rowCount = len(rowData)
         chunkSize = rowCount
+        localProgress = None
         if progress is not None:
-            chunkSize = 50000
+            insertBlockRowCount = self._database.insertManyBlockRowCount(
+                cursor=cursor,
+                tableName=tableName)
+            chunkSize = ((50000 // insertBlockRowCount) + 1) * insertBlockRowCount
             localProgress = progress.createChild(
                 weight=1,
                 steps=math.ceil(rowCount / chunkSize))
 
+        columnOrder = tableRows.columns()
         for chunkStart in range(0, rowCount, chunkSize):
-            chunkRows = itertools.islice(rows, chunkStart, chunkStart + chunkSize)
+            chunkRows = itertools.islice(rowData, chunkStart, chunkStart + chunkSize)
             self._database.insertMany(
                 cursor=cursor,
                 tableName=tableName,
                 rows=chunkRows,
+                columnOrder=columnOrder,
                 replaceIfExists=True)
-            localProgress.advance()
+            if localProgress is not None:
+                localProgress.advance()
 
     def _saveTableObjects(
             self,
@@ -1814,7 +1847,7 @@ class UniverseDb(object):
             tableMapping: TableMapping,
             objects: typing.Union[
                 typing.Collection[multiverse.DbObject],
-                typing.Collection[typing.Tuple[typing.Any, ...]]],
+                typing.Collection[typing.Sequence[typing.Union[str, int, float, bool, None]]]],
             progress: typing.Optional[common.ProgressTracker] = None
             ) -> None:
         if not objects:
@@ -1830,7 +1863,7 @@ class UniverseDb(object):
         chunkSize = objectCount
         localProgress = None
         if progress is not None:
-            chunkSize = 10000
+            chunkSize = 50000
             localProgress = progress.createChild(
                 weight=taskWeight,
                 steps=math.ceil(objectCount / chunkSize))
@@ -1839,11 +1872,7 @@ class UniverseDb(object):
         # the tables in dependency order (parents before children) so rows can be
         # added to parent tables before rows that may depend on them are added to child
         # tables
-        tableNameToRows: typing.OrderedDict[
-            TableMapping,
-            typing.List[typing.Dict[
-                str, # Column Name
-                typing.Any]]] = collections.OrderedDict()
+        tableNameToRows: typing.OrderedDict[str, TableRows] = collections.OrderedDict()
 
         for chunkStart in range(0, objectCount, chunkSize):
             chunkObjects = objects[chunkStart:chunkStart + chunkSize]
@@ -1864,11 +1893,11 @@ class UniverseDb(object):
             if localProgress is not None:
                 localProgress.advance()
 
-        for tableName, rows in tableNameToRows.items():
+        for tableName, tableRows in tableNameToRows.items():
             self._saveTableRows(
                 cursor=cursor,
                 tableName=tableName,
-                rows=rows,
+                tableRows=tableRows,
                 progress=progress.createChild(weight=taskWeight) if progress is not None else None)
 
     #      █████████   ████  ████                     ███
