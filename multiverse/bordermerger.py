@@ -13,9 +13,6 @@ import typing
 # TODO: Create a Traveller Map PR to update borders
 # - I need to update other milieu before doing this
 
-# TODO: Why is the border containing Reina in M1120 drawn as blue now when it used
-# to be grey
-
 class Segment(object):
     def __init__(
             self,

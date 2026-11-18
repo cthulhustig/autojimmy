@@ -483,7 +483,7 @@ class AllegianceMapper(object):
             if dbAllegianceForName is None:
                 # There is no global allegiance for this name so create one
                 routeColour, routeStyle, routeWidth, borderColour, borderStyle = \
-                    nameToStyleData.get(dbAllegiance.name(), (None, None, None, None, None))
+                    nameToStyleData.get(name, (None, None, None, None, None))
 
                 # Determine which code to use for the allegiance
                 # 1. If there is just one code then use that
