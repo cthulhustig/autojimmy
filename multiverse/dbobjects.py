@@ -3,6 +3,16 @@ import survey
 import typing
 import uuid
 
+# Use uuid7 when generating object ids if it's available or fallback to
+# using uuid4 if it's not. Using uuid7 ids can result in a significant
+# performance boost when inserting large numbers of objects into the
+# sqlite database as they're less random (but still globally unique) so
+# they play better with sqlite's internal data structures. Unfortunately
+# support for uuid7 was only added in Python 3.14.
+# https://andersmurphy.com/2026/06/05/the-perils-of-uuid-primary-keys-in-sqlite.html
+# TODO: Upgrade python install and build machines to Python 3.15
+_UuidGenerator = getattr(uuid, 'uuid7', uuid.uuid4)
+
 _ValidSubsectorCodes = set(map(chr, range(ord('A'), ord('P') + 1)))
 
 _ValidLabelLayer = set(['mega', 'minor', 'world', 'border', 'rift', 'route'])
@@ -78,18 +88,7 @@ class DbObject(object):
 
         common.validateStr(name='id', value=id, allowNone=True, allowEmpty=False)
 
-        # TODO: Some testing showed that switching to uuid7 is 10% faster when
-        # importing the custom universe (2 seconds less). Unfortunately it's
-        # only part of the standard library in Python 3.14+.
-        # - Add some code that checks Python version and uses uuid7 if available.
-        #   It should be something that gets run once when the py file is loaded
-        #   rather than something is checked every time an object is constructed.
-        #   Store the function as a global variable or something like that.
-        # - I should upgrade my install to Python 3.14+ before I do any serious
-        #   testing of the db/editor changes
-        # - I should also update the build machine to Python 3.14+
-        # https://andersmurphy.com/2026/06/05/the-perils-of-uuid-primary-keys-in-sqlite.html
-        self._id = id if id is not None else str(uuid.uuid4())
+        self._id = id if id is not None else str(_UuidGenerator())
 
     def id(self) -> str:
         return self._id
