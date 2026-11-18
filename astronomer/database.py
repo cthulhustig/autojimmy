@@ -37,11 +37,11 @@ class _Loader(object):
             ) -> None:
         dbAllegiances = self._universeDb.loadAllegiances(
             transaction=transaction,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
         self._allegiances = astronomer.convertDbAllegiancesToAstronomerAllegiances(
             dbAllegiances=dbAllegiances,
             entityFactory=self._entityFactory,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
 
     def loadSophonts(
             self,
@@ -50,11 +50,11 @@ class _Loader(object):
             ) -> None:
         dbSophonts = self._universeDb.loadSophonts(
             transaction=transaction,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
         self._sophonts = astronomer.convertDbSophontsToAstronomerSophonts(
             dbSophonts=dbSophonts,
             entityFactory=self._entityFactory,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
 
     def loadSectors(
             self,
@@ -63,11 +63,11 @@ class _Loader(object):
             ) -> None:
         dbSectors = self._universeDb.loadSectors(
             transaction=transaction,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
         self._sectors = astronomer.convertDbSectorsToAstronomerSectors(
             dbSectors=dbSectors,
             entityFactory=self._entityFactory,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
 
     def loadWorlds(
             self,
@@ -76,13 +76,13 @@ class _Loader(object):
             ) -> None:
         dbSystems = self._universeDb.loadSystems(
             transaction=transaction,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
         self._worlds = astronomer.convertDbSystemsToAstronomerWorlds(
             dbSystems=dbSystems,
             astroAllegiances=self._allegiances,
             astroSophonts=self._sophonts,
             entityFactory=self._entityFactory,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
 
     def loadRoutes(
             self,
@@ -91,12 +91,12 @@ class _Loader(object):
             ) -> None:
         dbRoutes = self._universeDb.loadRoutes(
             transaction=transaction,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
         self._routes = astronomer.convertDbRoutesToAstronomerRoutes(
             dbRoutes=dbRoutes,
             astroAllegiances=self._allegiances,
             entityFactory=self._entityFactory,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
 
     def loadBorders(
             self,
@@ -105,12 +105,12 @@ class _Loader(object):
             ) -> None:
         dbBorders = self._universeDb.loadBorders(
             transaction=transaction,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
         self._borders = astronomer.convertDbBordersToAstronomerBorders(
             dbBorders=dbBorders,
             astroAllegiances=self._allegiances,
             entityFactory=self._entityFactory,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
 
     def loadRegions(
             self,
@@ -119,11 +119,11 @@ class _Loader(object):
             ) -> None:
         dbRegions = self._universeDb.loadRegions(
             transaction=transaction,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
         self._regions = astronomer.convertDbRegionsToAstronomerRegions(
             dbRegions=dbRegions,
             entityFactory=self._entityFactory,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
 
     def loadMapLabels(
             self,
@@ -132,11 +132,11 @@ class _Loader(object):
             ) -> None:
         dbMapLabels = self._universeDb.loadMapLabels(
             transaction=transaction,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
         self._mapLabels = astronomer.convertDbMapLabelsToAstronomerMapLabels(
             dbLabels=dbMapLabels,
             entityFactory=self._entityFactory,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
 
     def loadMapVectors(
             self,
@@ -145,11 +145,11 @@ class _Loader(object):
             ) -> None:
         dbMapVectors = self._universeDb.loadMapVectors(
             transaction=transaction,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
         self._mapVectors = astronomer.convertDbMapVectorsToAstronomerMapVectors(
             dbVectors=dbMapVectors,
             entityFactory=self._entityFactory,
-            progress=progress.createChild(weight=0.5))
+            progress=progress.createChild(weight=0.5) if progress is not None else None)
 
     def createUniverse(self) -> astronomer.Universe:
         logging.debug('Universe {name!r} ({id}) contains:'.format(

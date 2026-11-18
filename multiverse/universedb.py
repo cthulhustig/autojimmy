@@ -1293,7 +1293,9 @@ class UniverseDb(object):
         chunkSize = 50000
         chunkCount = math.ceil(rowCount / chunkSize)
 
-        localProgress = progress.createChild(weight=1, steps=chunkCount)
+        localProgress = None
+        if progress is not None:
+            localProgress = progress.createChild(weight=1, steps=chunkCount)
 
         rows = []
         for chunkIndex in range(chunkCount):
@@ -1303,7 +1305,8 @@ class UniverseDb(object):
                 limit=chunkSize,
                 offset=chunkIndex * chunkSize))
 
-            localProgress.advance()
+            if localProgress is not None:
+                localProgress.advance()
 
         return rows
 
