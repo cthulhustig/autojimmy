@@ -361,6 +361,7 @@ class SchemaDb(object):
 
         sql = f'CREATE TABLE {tableName} (\n'
 
+        hasPrimaryKey = False
         for column in columns:
             sql += '  '
             sql += column.columnName()
@@ -379,7 +380,8 @@ class SchemaDb(object):
                     path=self._path))
 
             if column.isPrimaryKey():
-                sql += ' PRIMARY KEY'
+                sql += ' PRIMARY KEY NOT NULL'
+                hasPrimaryKey = True
             else:
                 if not column.isNullable():
                     sql += ' NOT NULL'
@@ -392,6 +394,7 @@ class SchemaDb(object):
         if primaryKeyDef:
             sql += 'PRIMARY KEY ({columns})\n,'.format(
                 columns=', '.join(primaryKeyDef.columnNames()))
+            hasPrimaryKey = True
 
         for column in columns:
             if column.hasForeignKey():
@@ -443,7 +446,21 @@ class SchemaDb(object):
                 sql += '  UNIQUE ({columns}),\n'.format(columns=', '.join(uniqueConstraint.columnNames()))
 
         sql = sql.rstrip(',\n')
-        sql += '\n);'
+        sql += '\n)'
+
+        if hasPrimaryKey:
+            # For better performance, don't give each row an integer rowId if a primary
+            # key has been specified. Tables that don't have a primary key specified
+            # need the rowId as it's used as the default primary key (even if no query
+            # ever accesses the data by the key)
+            # https://benjamincongdon.me/blog/2025/12/05/TIL-SQLites-WITHOUT-ROWID/
+            # NOTE: For this to work best, if the primary key has type TEXT, the strings
+            # used for they key shouldn't be excessively long otherwise it can cause
+            # performance issues and bloat of on disk size. My understanding is that
+            # UUIDs are not classed as excessively long.
+            sql += ' WITHOUT ROWID'
+
+        sql += ';'
 
         logging.info(f'SchemaDb creating table \'{tableName}\' in \'{self._path}\'')
         cursor.execute(sql)
