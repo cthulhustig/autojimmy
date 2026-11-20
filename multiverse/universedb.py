@@ -2163,9 +2163,8 @@ class UniverseDb(object):
                             foreignTableName=UniverseDb._SectorsTableName, foreignColumnName='id',
                             foreignDeleteOp=database.ColumnDef.ForeignKeyDeleteOp.Cascade),
                 database.ColumnDef(columnName='text', columnType=database.ColumnDef.ColumnType.Text, isNullable=False),
-                # TODO: This should be converted to world space as part of the changes to move things to the universe label
-                database.ColumnDef(columnName='x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
-                database.ColumnDef(columnName='y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                database.ColumnDef(columnName='world_x', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
+                database.ColumnDef(columnName='world_y', columnType=database.ColumnDef.ColumnType.Real, isNullable=False),
                 database.ColumnDef(columnName='colour', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                 database.ColumnDef(columnName='size', columnType=database.ColumnDef.ColumnType.Text, isNullable=True),
                 database.ColumnDef(columnName='wrap', columnType=database.ColumnDef.ColumnType.Integer, allowedValues=(0, 1), isNullable=False)])
@@ -2222,8 +2221,8 @@ class UniverseDb(object):
                 ColumnParameterMapping(columnName='id', paramType=ColumnParameterMapping.ParamType.String, paramName='id'),
                 ColumnParameterMapping(columnName='sector_id', paramType=ColumnParameterMapping.ParamType.String, paramName='sectorId'),
                 ColumnParameterMapping(columnName='text', paramType=ColumnParameterMapping.ParamType.String, paramName='text'),
-                ColumnParameterMapping(columnName='x', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldX'),
-                ColumnParameterMapping(columnName='y', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldY'),
+                ColumnParameterMapping(columnName='world_x', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldX'),
+                ColumnParameterMapping(columnName='world_y', paramType=ColumnParameterMapping.ParamType.Float, paramName='worldY'),
                 ColumnParameterMapping(columnName='colour', paramType=ColumnParameterMapping.ParamType.String, paramName='colour'),
                 ColumnParameterMapping(columnName='size', paramType=ColumnParameterMapping.ParamType.String, paramName='size'),
                 ColumnParameterMapping(columnName='wrap', paramType=ColumnParameterMapping.ParamType.Boolean, paramName='wrap')])

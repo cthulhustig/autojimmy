@@ -852,17 +852,12 @@ class RenderContext(object):
             for sector in self._selector.sectors():
                 brush.copyFrom(self._styleSheet.microBorders.textBrush)
 
-                sectorPos = sector.position()
-                sectorWorldOriginX, sectorWorldOriginY, _, _ = sectorPos.worldBounds()
-
                 for label in sector.labels():
                     text = label.text()
                     if label.wrap():
                         text = cartographer.wrapLabelText(text)
 
-                    labelPos = cartographer.PointF(
-                        sectorWorldOriginX + label.worldX(),
-                        sectorWorldOriginY + label.worldY())
+                    labelPos = cartographer.PointF(label.worldX(), label.worldY())
 
                     if label.size() is astronomer.LabelSize.Small:
                         font = self._styleSheet.microBorders.smallFont

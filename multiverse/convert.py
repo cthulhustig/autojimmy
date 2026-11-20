@@ -89,30 +89,6 @@ _ResearchStationTradeCode = 'Rs'
 _ValidLineStyles = set(['solid', 'dashed', 'dotted'])
 _ValidLabelSizes = set(['small', 'large'])
 
-# This is based on the sector world bounds and hex world center code in
-# astrometrics. It uses a coordinate space that has the same scale as
-# world space coordinates but is relative to the upper left corner of
-# the sector.
-_ParsecScaleX = math.cos(math.pi / 6) # = cosine 30° = 0.8660254037844387
-_HexWidthOffset = math.tan(math.pi / 6) / 4 / _ParsecScaleX # = 0.16666666666666666
-def _hexToSectorWorldOffset(
-        hexX: int,
-        hexY: int,
-        worldOffsetX: typing.Optional[float],
-        worldOffsetY: typing.Optional[float]
-        ) -> typing.Tuple[float, float]:
-        worldX = (hexX - 0.5)
-        worldX += _HexWidthOffset # Offset of sector origin
-        if worldOffsetX is not None:
-            worldX += worldOffsetX
-
-        worldY = (hexY - (0.0 if ((hexX % 2) != 0) else -0.5))
-        worldY -= 0.5 # Offset of sector origin
-        if worldOffsetY is not None:
-            worldY += worldOffsetY
-
-        return (worldX, worldY)
-
 # TODO: These constants are a duplicate of what's in astronomer.astrometrics.
 # They should probably be shared
 _ReferenceSectorX = 0
@@ -121,6 +97,8 @@ _ReferenceHexX = 1
 _ReferenceHexY = 40
 _SectorWidth = 32
 _SectorHeight = 40
+_ParsecScaleX = math.cos(math.pi / 6) # = cosine 30° = 0.8660254037844387
+_HexWidthOffset = math.tan(math.pi / 6) / 4 / _ParsecScaleX # = 0.16666666666666666
 def _sectorHexToWorldSpace(
         pos: typing.Tuple[int, int, int, int],
         offsetX: typing.Optional[float], # Offset from world space center of the hex
@@ -1320,7 +1298,7 @@ def _createDbRegions(
 
     return dbRegions
 
-def _createDbLabels(
+def _createDbSectorLabels(
         rawMetadata: survey.RawMetadata,
         ) -> typing.List[multiverse.DbSectorLabel]:
     dbLabels = []
@@ -1329,29 +1307,28 @@ def _createDbLabels(
         for rawLabel in rawMetadata.labels():
             dbLabel = rawLabel.text()
             if not dbLabel:
-                logging.warning(f'Converter ignoring empty label in {rawMetadata.canonicalName()}')
+                logging.warning(f'Converter ignoring empty sector label in {rawMetadata.canonicalName()}')
                 continue
 
             rawHexX = rawLabel.hexX()
             rawHexY = rawLabel.hexY()
             rawOffsetX = rawLabel.offsetX()
             rawOffsetY = rawLabel.offsetY()
-            dbX, dbY = _hexToSectorWorldOffset(
-                hexX=rawHexX,
-                hexY=rawHexY,
+            dbWorldX, dbWorldY = _sectorHexToWorldSpace(
+                pos=(rawMetadata.x(), rawMetadata.y(), rawHexX, rawHexY),
                 # NOTE: The 0.7 multiplier is to mimic how Traveller Map
                 # scales the offset in DrawMicroLabels
-                worldOffsetX=(rawOffsetX * 0.7) if rawOffsetX is not None else None,
+                offsetX=(rawOffsetX * 0.7) if rawOffsetX is not None else None,
                 # NOTE: The coordinate space used for the offsets seems to
                 # have an inverted Y direction compared to world space
-                worldOffsetY=(-rawOffsetY * 0.7) if rawOffsetY is not None else None)
+                offsetY=(-rawOffsetY * 0.7) if rawOffsetY is not None else None)
 
             dbColour = rawLabel.colour()
             if dbColour is not None:
                 try:
                     dbColour = common.canonicalHtmlColour(dbColour)
                 except:
-                    logging.warning(f'Converter ignoring invalid label colour {dbColour} in {rawMetadata.canonicalName()}')
+                    logging.warning(f'Converter ignoring invalid sector label colour {dbColour} in {rawMetadata.canonicalName()}')
                     dbColour = None
 
             dbSize = rawLabel.size()
@@ -1359,7 +1336,7 @@ def _createDbLabels(
                 if dbSize.lower() in _ValidLabelSizes:
                     dbSize = dbSize.lower()
                 else:
-                    logging.warning(f'Converter ignoring invalid label size {dbSize} in {rawMetadata.canonicalName()}')
+                    logging.warning(f'Converter ignoring invalid sector label size {dbSize} in {rawMetadata.canonicalName()}')
                     dbSize = None
 
             rawWrap = rawLabel.wrap()
@@ -1367,8 +1344,8 @@ def _createDbLabels(
 
             dbLabels.append(multiverse.DbSectorLabel(
                 text=dbLabel,
-                worldX=dbX,
-                worldY=dbY,
+                worldX=dbWorldX,
+                worldY=dbWorldY,
                 colour=dbColour,
                 size=dbSize,
                 wrap=dbWrap))
@@ -1697,7 +1674,7 @@ def _convertRawSectorToDbSector(
     dbSubsectorNames = _createDbSubsectorNames(
         rawMetadata=rawMetadata)
 
-    dbLabels = _createDbLabels(
+    dbLabels = _createDbSectorLabels(
         rawMetadata=rawMetadata)
 
     dbTags = _createDbTags(rawMetadata=rawMetadata)
