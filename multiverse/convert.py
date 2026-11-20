@@ -97,8 +97,6 @@ _ReferenceHexX = 1
 _ReferenceHexY = 40
 _SectorWidth = 32
 _SectorHeight = 40
-_ParsecScaleX = math.cos(math.pi / 6) # = cosine 30° = 0.8660254037844387
-_HexWidthOffset = math.tan(math.pi / 6) / 4 / _ParsecScaleX # = 0.16666666666666666
 def _sectorHexToWorldSpace(
         pos: typing.Tuple[int, int, int, int],
         offsetX: typing.Optional[float], # Offset from world space center of the hex
@@ -112,7 +110,6 @@ def _sectorHexToWorldSpace(
         (pos[3] - _ReferenceHexY)
 
     worldX = (absoluteX - 0.5)
-    worldX += _HexWidthOffset # Offset of sector origin
     if offsetX is not None:
         worldX += offsetX
 
