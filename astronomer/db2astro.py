@@ -25,12 +25,6 @@ def _mapDbLineStyleToAstronomerLineStyle(
         return None
     return mappedStyle
 
-_AstronomerToDbLineStyleMap = {v: k for k, v in _DbToAstronomerLineStyleMap.items()}
-def _mapAstronomerLineStyleToDbLineStyle(
-        style: typing.Optional[astronomer.LineStyle]
-        ) -> typing.Optional[str]:
-    return _AstronomerToDbLineStyleMap.get(style)
-
 _DbToAstronomerLabelLayerMap = {
     'mega': astronomer.LabelLayer.Mega,
     'minor': astronomer.LabelLayer.Minor,
@@ -49,12 +43,6 @@ def _mapDbLabelLayerToAstronomerLabelLayer(
         return None
     return mapped
 
-_AstronomerToDbLabelLayerMap = {v: k for k, v in _DbToAstronomerLabelLayerMap.items()}
-def _mapAstronomerLabelLayerToDbLabelLayer(
-        layer: astronomer.LabelLayer
-        ) -> typing.Optional[str]:
-    return _AstronomerToDbLabelLayerMap.get(layer)
-
 _DbToAstronomerVectorLayerMap = {
     'border': astronomer.VectorLayer.Border,
     'rift': astronomer.VectorLayer.Rift,
@@ -70,12 +58,6 @@ def _mapDbVectorLayerToAstronomerVectorLayer(
         return None
     return mapped
 
-_AstronomerToDbVectorLayerMap = {v: k for k, v in _DbToAstronomerVectorLayerMap.items()}
-def _mapAstronomerVectorLayerToDbVectorLayer(
-        layer: astronomer.LabelLayer
-        ) -> typing.Optional[str]:
-    return _AstronomerToDbVectorLayerMap.get(layer)
-
 _DbToAstronomerLabelSizeMap = {
     'small': astronomer.LabelSize.Small,
     'large': astronomer.LabelSize.Large}
@@ -89,12 +71,6 @@ def _mapDbLabelSizeToAstronomerLabelSize(
     if not mappedSize:
         return None
     return mappedSize
-
-_AstronomerToDbLabelSizeMap = {v: k for k, v in _DbToAstronomerLabelSizeMap.items()}
-def _mapAstronomerLabelSizeToDbLabelSize(
-        size: astronomer.LabelSize
-        ) -> typing.Optional[str]:
-    return _AstronomerToDbLabelSizeMap.get(size)
 
 _DbToAstronomerTextAlignmentMap = {
     'baseline': astronomer.TextAlignment.Baseline,
@@ -118,11 +94,18 @@ def _mapDbTextAlignmentToAstronomerTextAlignment(
         return None
     return mappedSize
 
-_AstronomerToDbTextAlignmentMap = {v: k for k, v in _DbToAstronomerTextAlignmentMap.items()}
-def _mapAstronomerTextAlignmentToDbTextAlignment(
-        alignment: typing.Optional[astronomer.TextAlignment]
-        ) -> typing.Optional[str]:
-    return _AstronomerToDbTextAlignmentMap.get(alignment)
+
+#    █████████   ████  ████                     ███
+#   ███░░░░░███ ░░███ ░░███                    ░░░
+#  ░███    ░███  ░███  ░███   ██████   ███████ ████   ██████   ████████    ██████   ██████   █████
+#  ░███████████  ░███  ░███  ███░░███ ███░░███░░███  ░░░░░███ ░░███░░███  ███░░███ ███░░███ ███░░
+#  ░███░░░░░███  ░███  ░███ ░███████ ░███ ░███ ░███   ███████  ░███ ░███ ░███ ░░░ ░███████ ░░█████
+#  ░███    ░███  ░███  ░███ ░███░░░  ░███ ░███ ░███  ███░░███  ░███ ░███ ░███  ███░███░░░   ░░░░███
+#  █████   █████ █████ █████░░██████ ░░███████ █████░░████████ ████ █████░░██████ ░░██████  ██████
+# ░░░░░   ░░░░░ ░░░░░ ░░░░░  ░░░░░░   ░░░░░███░░░░░  ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░   ░░░░░░  ░░░░░░
+#                                     ███ ░███
+#                                    ░░██████
+#                                     ░░░░░░
 
 def convertDbAllegiancesToAstronomerAllegiances(
         dbAllegiances: typing.Collection[multiverse.DbAllegiance],
@@ -169,6 +152,19 @@ def convertDbAllegiancesToAstronomerAllegiances(
 
     return astroAllegiances
 
+
+#   █████████                     █████                           █████
+#  ███░░░░░███                   ░░███                           ░░███
+# ░███    ░░░   ██████  ████████  ░███████    ██████  ████████   ███████    █████
+# ░░█████████  ███░░███░░███░░███ ░███░░███  ███░░███░░███░░███ ░░░███░    ███░░
+#  ░░░░░░░░███░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███   ░███    ░░█████
+#  ███    ░███░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███ ░███   ░███ ███ ░░░░███
+# ░░█████████ ░░██████  ░███████  ████ █████░░██████  ████ █████  ░░█████  ██████
+#  ░░░░░░░░░   ░░░░░░   ░███░░░  ░░░░ ░░░░░  ░░░░░░  ░░░░ ░░░░░    ░░░░░  ░░░░░░
+#                       ░███
+#                       █████
+#                      ░░░░░
+
 def convertDbSophontsToAstronomerSophonts(
         dbSophonts: typing.Collection[multiverse.DbSophont],
         entityFactory: astronomer.EntityFactoryInterface,
@@ -208,49 +204,15 @@ def convertDbSophontsToAstronomerSophonts(
 
     return astroSophonts
 
-def _createAstronomerAlternateNames(
-        dbSector: multiverse.DbSector
-        ) -> typing.Optional[typing.List[str]]:
-    dbAlternateNames = dbSector.alternateNames()
-    if not dbAlternateNames:
-        return None
 
-    return [dbAlternateName.name() for dbAlternateName in dbAlternateNames]
-
-def _createAstronomerNameLanguages(
-        dbSector: multiverse.DbSector
-        ) -> typing.Optional[typing.Dict[
-            str, # Sector name
-            str]]: # Language name is in
-    astroNameLanguages = None
-
-    language = dbSector.language()
-    if language is not None:
-        astroNameLanguages = {dbSector.name(): language}
-
-    dbAlternateNames = dbSector.alternateNames()
-    if dbAlternateNames:
-        for dbAlternateName in dbAlternateNames:
-            language = dbAlternateName.language()
-            if language is None:
-                continue
-
-            if astroNameLanguages is None:
-                astroNameLanguages = {}
-            astroNameLanguages[dbAlternateName.name()] = language
-
-    return astroNameLanguages
-
-def _createAstronomerSubsectorNames(
-        dbSector: multiverse.DbSector
-        ) -> typing.Optional[typing.Dict[
-            str, # Subsector code (A-P)
-            str]]: # Subsector name
-    dbSubsectorNames = dbSector.subsectorNames()
-    if not dbSubsectorNames:
-        return None
-
-    return {dbSubsectorName.code(): dbSubsectorName.name() for dbSubsectorName in dbSubsectorNames}
+#  █████   ███   █████                    ████      █████
+# ░░███   ░███  ░░███                    ░░███     ░░███
+#  ░███   ░███   ░███   ██████  ████████  ░███   ███████   █████
+#  ░███   ░███   ░███  ███░░███░░███░░███ ░███  ███░░███  ███░░
+#  ░░███  █████  ███  ░███ ░███ ░███ ░░░  ░███ ░███ ░███ ░░█████
+#   ░░░█████░█████░   ░███ ░███ ░███      ░███ ░███ ░███  ░░░░███
+#     ░░███ ░░███     ░░██████  █████     █████░░████████ ██████
+#      ░░░   ░░░       ░░░░░░  ░░░░░     ░░░░░  ░░░░░░░░ ░░░░░░
 
 def convertDbSystemsToAstronomerWorlds(
         dbSystems: typing.Collection[multiverse.DbSystem],
@@ -616,7 +578,61 @@ def convertDbSystemsToAstronomerWorlds(
 
     return astroWorlds
 
-def _createAstronomerLabels(
+
+#   █████████                     █████
+#  ███░░░░░███                   ░░███
+# ░███    ░░░   ██████   ██████  ███████    ██████  ████████   █████
+# ░░█████████  ███░░███ ███░░███░░░███░    ███░░███░░███░░███ ███░░
+#  ░░░░░░░░███░███████ ░███ ░░░   ░███    ░███ ░███ ░███ ░░░ ░░█████
+#  ███    ░███░███░░░  ░███  ███  ░███ ███░███ ░███ ░███      ░░░░███
+# ░░█████████ ░░██████ ░░██████   ░░█████ ░░██████  █████     ██████
+#  ░░░░░░░░░   ░░░░░░   ░░░░░░     ░░░░░   ░░░░░░  ░░░░░     ░░░░░░
+
+def _createAstronomerAlternateNames(
+        dbSector: multiverse.DbSector
+        ) -> typing.Optional[typing.List[str]]:
+    dbAlternateNames = dbSector.alternateNames()
+    if not dbAlternateNames:
+        return None
+
+    return [dbAlternateName.name() for dbAlternateName in dbAlternateNames]
+
+def _createAstronomerNameLanguages(
+        dbSector: multiverse.DbSector
+        ) -> typing.Optional[typing.Dict[
+            str, # Sector name
+            str]]: # Language name is in
+    astroNameLanguages = None
+
+    language = dbSector.language()
+    if language is not None:
+        astroNameLanguages = {dbSector.name(): language}
+
+    dbAlternateNames = dbSector.alternateNames()
+    if dbAlternateNames:
+        for dbAlternateName in dbAlternateNames:
+            language = dbAlternateName.language()
+            if language is None:
+                continue
+
+            if astroNameLanguages is None:
+                astroNameLanguages = {}
+            astroNameLanguages[dbAlternateName.name()] = language
+
+    return astroNameLanguages
+
+def _createAstronomerSubsectorNames(
+        dbSector: multiverse.DbSector
+        ) -> typing.Optional[typing.Dict[
+            str, # Subsector code (A-P)
+            str]]: # Subsector name
+    dbSubsectorNames = dbSector.subsectorNames()
+    if not dbSubsectorNames:
+        return None
+
+    return {dbSubsectorName.code(): dbSubsectorName.name() for dbSubsectorName in dbSubsectorNames}
+
+def _createAstronomerSectorLabels(
         dbSector: multiverse.DbSector,
         entityFactory: astronomer.EntityFactoryInterface,
         sectorLogName: str
@@ -774,7 +790,7 @@ def convertDbSectorsToAstronomerSectors(
 
                 astroSubsectorNames = _createAstronomerSubsectorNames(dbSector=dbSector)
 
-                astroLabels = _createAstronomerLabels(
+                astroLabels = _createAstronomerSectorLabels(
                     dbSector=dbSector,
                     entityFactory=entityFactory,
                     sectorLogName=sectorLogName)
@@ -817,27 +833,15 @@ def convertDbSectorsToAstronomerSectors(
 
     return astroSectors
 
-def convertRawSectorToAstronomerSector(
-        milieu: astronomer.Milieu,
-        rawMetadata: survey.RawMetadata,
-        rawSystems: typing.Collection[survey.RawWorld],
-        rawStockAllegiances: typing.Optional[typing.Collection[survey.RawStockAllegiance]] = None,
-        rawStockSophonts: typing.Optional[typing.Collection[survey.RawStockSophont]] = None,
-        rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
-        entityFactory: typing.Optional[astronomer.EntityFactoryInterface] = None,
-        sectorId: typing.Optional[str] = None
-        ) -> astronomer.Sector:
-    # TODO: Implement me
-    assert(False)
 
-def convertAstronomerSectorToRawSector(
-        astroUniverse: astronomer.Universe,
-        astroSectorPos: astronomer.SectorPosition
-        ) -> typing.Tuple[
-            survey.RawMetadata,
-            typing.List[survey.RawWorld]]:
-    # TODO: Reimplement me
-    assert(False)
+#  ███████████                        █████
+# ░░███░░░░░███                      ░░███
+#  ░███    ░███   ██████  █████ ████ ███████    ██████   █████
+#  ░██████████   ███░░███░░███ ░███ ░░░███░    ███░░███ ███░░
+#  ░███░░░░░███ ░███ ░███ ░███ ░███   ░███    ░███████ ░░█████
+#  ░███    ░███ ░███ ░███ ░███ ░███   ░███ ███░███░░░   ░░░░███
+#  █████   █████░░██████  ░░████████  ░░█████ ░░██████  ██████
+# ░░░░░   ░░░░░  ░░░░░░    ░░░░░░░░    ░░░░░   ░░░░░░  ░░░░░░
 
 def convertDbRoutesToAstronomerRoutes(
         dbRoutes: typing.Collection[multiverse.DbRoute],
@@ -882,6 +886,16 @@ def convertDbRoutesToAstronomerRoutes(
             localProgress.advance()
 
     return astroRoutes
+
+
+#  ███████████                         █████
+# ░░███░░░░░███                       ░░███
+#  ░███    ░███  ██████  ████████   ███████   ██████  ████████   █████
+#  ░██████████  ███░░███░░███░░███ ███░░███  ███░░███░░███░░███ ███░░
+#  ░███░░░░░███░███ ░███ ░███ ░░░ ░███ ░███ ░███████  ░███ ░░░ ░░█████
+#  ░███    ░███░███ ░███ ░███     ░███ ░███ ░███░░░   ░███      ░░░░███
+#  ███████████ ░░██████  █████    ░░████████░░██████  █████     ██████
+# ░░░░░░░░░░░   ░░░░░░  ░░░░░      ░░░░░░░░  ░░░░░░  ░░░░░     ░░░░░░
 
 def _createAstronomerBorderLabels(
         dbBorder: multiverse.DbBorder,
@@ -946,6 +960,19 @@ def convertDbBordersToAstronomerBorders(
 
     return astroBorders
 
+
+#  ███████████                      ███
+# ░░███░░░░░███                    ░░░
+#  ░███    ░███   ██████   ███████ ████   ██████  ████████    █████
+#  ░██████████   ███░░███ ███░░███░░███  ███░░███░░███░░███  ███░░
+#  ░███░░░░░███ ░███████ ░███ ░███ ░███ ░███ ░███ ░███ ░███ ░░█████
+#  ░███    ░███ ░███░░░  ░███ ░███ ░███ ░███ ░███ ░███ ░███  ░░░░███
+#  █████   █████░░██████ ░░███████ █████░░██████  ████ █████ ██████
+# ░░░░░   ░░░░░  ░░░░░░   ░░░░░███░░░░░  ░░░░░░  ░░░░ ░░░░░ ░░░░░░
+#                         ███ ░███
+#                        ░░██████
+#                         ░░░░░░
+
 def _createAstronomerRegionLabels(
         dbRegion: multiverse.DbRegion
         ) -> typing.Optional[typing.List[astronomer.RegionLabel]]:
@@ -1003,7 +1030,17 @@ def convertDbRegionsToAstronomerRegions(
 
     return astroRegions
 
-def convertDbMapLabelsToAstronomerMapLabels(
+
+#  █████                 █████              ████
+# ░░███                 ░░███              ░░███
+#  ░███         ██████   ░███████   ██████  ░███   █████
+#  ░███        ░░░░░███  ░███░░███ ███░░███ ░███  ███░░
+#  ░███         ███████  ░███ ░███░███████  ░███ ░░█████
+#  ░███      █ ███░░███  ░███ ░███░███░░░   ░███  ░░░░███
+#  ███████████░░████████ ████████ ░░██████  █████ ██████
+# ░░░░░░░░░░░  ░░░░░░░░ ░░░░░░░░   ░░░░░░  ░░░░░ ░░░░░░
+
+def convertDbMapLabelsToAstronomerLabels(
         dbLabels: typing.Collection[multiverse.DbMapLabel],
         entityFactory: astronomer.EntityFactoryInterface,
         progress: typing.Optional[common.ProgressTracker] = None
@@ -1046,21 +1083,17 @@ def convertDbMapLabelsToAstronomerMapLabels(
 
     return astroLabels
 
-def convertAstronomerMapLabelToDbMapLabel(
-        astroLabel: astronomer.MapLabel
-        ) -> multiverse.DbMapLabel:
-    return multiverse.DbMapLabel(
-        id=astroLabel.entityId(),
-        text=astroLabel.text(),
-        worldX=astroLabel.worldX(),
-        worldY=astroLabel.worldY(),
-        layer=_mapAstronomerLabelLayerToDbLabelLayer(astroLabel.layer()),
-        alignment=_mapAstronomerTextAlignmentToDbTextAlignment(astroLabel.alignment()),
-        colour=astroLabel.colour(),
-        size=_mapAstronomerLabelSizeToDbLabelSize(astroLabel.size()),
-        rotation=astroLabel.rotation())
 
-def convertDbMapVectorsToAstronomerMapVectors(
+#  █████   █████                    █████
+# ░░███   ░░███                    ░░███
+#  ░███    ░███   ██████   ██████  ███████    ██████  ████████   █████
+#  ░███    ░███  ███░░███ ███░░███░░░███░    ███░░███░░███░░███ ███░░
+#  ░░███   ███  ░███████ ░███ ░░░   ░███    ░███ ░███ ░███ ░░░ ░░█████
+#   ░░░█████░   ░███░░░  ░███  ███  ░███ ███░███ ░███ ░███      ░░░░███
+#     ░░███     ░░██████ ░░██████   ░░█████ ░░██████  █████     ██████
+#      ░░░       ░░░░░░   ░░░░░░     ░░░░░   ░░░░░░  ░░░░░     ░░░░░░
+
+def convertDbMapVectorsToAstronomerVectors(
         dbVectors: typing.Collection[multiverse.DbMapVector],
         entityFactory: astronomer.EntityFactoryInterface,
         progress: typing.Optional[common.ProgressTracker] = None
@@ -1097,12 +1130,3 @@ def convertDbMapVectorsToAstronomerMapVectors(
             localProgress.advance()
 
     return astroVectors
-
-def convertAstronomerMapVectorToDbMapVector(
-        astroVector: astronomer.MapVector
-        ) -> multiverse.DbMapVector:
-    return multiverse.DbMapVector(
-        id=astroVector.entityId(),
-        points=astroVector.points(),
-        layer=_mapAstronomerVectorLayerToDbVectorLayer(astroVector.layer()),
-        isClosed=astroVector.closed())

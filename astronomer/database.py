@@ -133,7 +133,7 @@ class _Loader(object):
         dbMapLabels = self._universeDb.loadMapLabels(
             transaction=transaction,
             progress=progress.createChild(weight=0.5) if progress is not None else None)
-        self._mapLabels = astronomer.convertDbMapLabelsToAstronomerMapLabels(
+        self._mapLabels = astronomer.convertDbMapLabelsToAstronomerLabels(
             dbLabels=dbMapLabels,
             entityFactory=self._entityFactory,
             progress=progress.createChild(weight=0.5) if progress is not None else None)
@@ -146,7 +146,7 @@ class _Loader(object):
         dbMapVectors = self._universeDb.loadMapVectors(
             transaction=transaction,
             progress=progress.createChild(weight=0.5) if progress is not None else None)
-        self._mapVectors = astronomer.convertDbMapVectorsToAstronomerMapVectors(
+        self._mapVectors = astronomer.convertDbMapVectorsToAstronomerVectors(
             dbVectors=dbMapVectors,
             entityFactory=self._entityFactory,
             progress=progress.createChild(weight=0.5) if progress is not None else None)

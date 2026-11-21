@@ -27,6 +27,6 @@ from .vector import *
 from .sector import *
 from .universe import *
 from .entityfactory import *
-from .convert import *
+from .db2astro import *
 from .database import *
 from .worldmanager import *
