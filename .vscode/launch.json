@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
@@ -16,7 +16,7 @@
         },
         {
             "name": "Python: Auto-Jimmy",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "autojimmy.py",
             "args": ["--no-singleton"],
