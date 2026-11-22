@@ -189,6 +189,8 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         subsectorData: typing.List[typing.Tuple[str, str]] = []
         for code in astronomer.SubsectorCodes:
             subsectorName = sector.subsectorName(code)
+            if subsectorName is None:
+                subsectorName = code
             subsectorData.append((subsectorName, code))
 
         subsectorData = sorted(
