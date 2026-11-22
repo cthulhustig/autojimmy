@@ -241,6 +241,7 @@ class WorldTradeScoreTable(gui.HexTable):
         if world is not None:
             tradeScore = logic.TradeScore(
                 rules=self._rules,
+                universe=self._universe,
                 world=world,
                 tradeGoods=self._tradeGoods)
 
