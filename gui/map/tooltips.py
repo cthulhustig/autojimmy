@@ -147,7 +147,7 @@ def createHexToolTip(
                 if len(ownerWorlds) == 1:
                     ownerWorld = ownerWorlds[0]
                     ownerString = '{world} ({hex})'.format(
-                        world=ownerWorld.name(),
+                        world=ownerWorld.name() if ownerWorld.name() else gui.UnnamedWorldString,
                         hex=universe.formatSectorHex(hex=ownerWorld.hex()))
                     tagLevel = worldTagging.calculateWorldTagLevel(world=ownerWorld) if worldTagging else None
                     ownerInfo.append((ownerString, tagLevel))
@@ -156,7 +156,7 @@ def createHexToolTip(
                     # so which world it is referring to is ambiguous
                     for ownerWorld in ownerWorlds:
                         ownerString = 'Ambiguous: {world} ({hex})'.format(
-                            world=ownerWorld.name(),
+                            world=ownerWorld.name() if ownerWorld.name() else gui.UnnamedWorldString,
                             hex=universe.formatSectorHex(hex=ownerWorld.hex()))
                         tagLevel = worldTagging.calculateWorldTagLevel(world=ownerWorld) if worldTagging else None
                         ownerInfo.append((ownerString, logic.TagLevel.Danger))
@@ -396,7 +396,7 @@ def createHexToolTip(
                 if len(colonyWorlds) == 1:
                     colonyWorld = colonyWorlds[0]
                     colonyString = '{world} ({hex})'.format(
-                        world=colonyWorld.name(),
+                        world=colonyWorld.name() if colonyWorld.name() else gui.UnnamedWorldString,
                         hex=universe.formatSectorHex(hex=colonyWorld.hex()))
                     tagLevel = worldTagging.calculateWorldTagLevel(world=colonyWorld) if worldTagging else None
                     colonyInfo.append((colonyString, tagLevel))
@@ -405,7 +405,7 @@ def createHexToolTip(
                     # so which world it is referring to is ambiguous
                     for colonyWorld in colonyWorlds:
                         colonyString = 'Ambiguous: {world} ({hex})'.format(
-                            world=colonyWorld.name(),
+                            world=colonyWorld.name() if colonyWorld.name() else gui.UnnamedWorldString,
                             hex=universe.formatSectorHex(hex=colonyWorld.hex()))
                         tagLevel = worldTagging.calculateWorldTagLevel(world=colonyWorld) if worldTagging else None
                         colonyInfo.append((colonyString, logic.TagLevel.Danger))
@@ -547,7 +547,7 @@ def createWorldRefListTooltip(
         if len(refWorlds) == 1:
             refWorld = refWorlds[0]
             lineString = '{world} ({hex})'.format(
-                world=refWorld.name(),
+                world=refWorld.name() if refWorld.name() else gui.UnnamedWorldString,
                 hex=universe.formatSectorHex(hex=refWorld.hex()))
             listStrings.append(lineString)
             if worldTagging and taggingColours:
@@ -559,7 +559,7 @@ def createWorldRefListTooltip(
             # so which world it is referring to is ambiguous
             for refWorld in refWorlds:
                 lineString = 'Ambiguous: {world} ({hex})'.format(
-                    world=refWorld.name(),
+                    world=refWorld.name() if refWorld.name() else gui.UnnamedWorldString,
                     hex=universe.formatSectorHex(hex=refWorld.hex()))
                 listStrings.append(lineString)
                 if taggingColours:

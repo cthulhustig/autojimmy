@@ -710,6 +710,7 @@ def worldCargoQuantityModifiers(
 
 def calculateWorldTradeGoodQuantity(
         ruleSystem: traveller.RuleSystem,
+        universe: astronomer.Universe,
         world: astronomer.World,
         tradeGood: TradeGood,
         diceRoller: typing.Optional[common.DiceRoller] = None
@@ -731,7 +732,7 @@ def calculateWorldTradeGoodQuantity(
     if worldModifiers:
         totalModifier = common.Calculator.sum(
             values=worldModifiers,
-            name=f'{world.name()} Quantity DM')
+            name=f'Quantity DM for {universe.canonicalHexName(world.hex())}')
         diceRoll = common.Calculator.max(
             lhs=common.Calculator.add(lhs=diceRoll, rhs=totalModifier),
             rhs=common.ScalarCalculation(value=0, name='Minimum Quantity'),

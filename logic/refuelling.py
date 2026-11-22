@@ -109,6 +109,7 @@ class PitStopCostCalculator(object):
 
     def berthingCost(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             mandatory: bool = False, # Is berthing mandatory rather than based
                                      # on the refuelling type for the world
@@ -123,6 +124,7 @@ class PitStopCostCalculator(object):
                 return None
 
         berthingCost = logic.starPortBerthingCost(
+            universe=universe,
             world=world,
             diceRoller=diceRoller)
         if berthingCost:
@@ -236,6 +238,7 @@ class PitStop(object):
     def __init__(
             self,
             routeIndex: int, # Intentionally not a calculation as it's not used to calculate values
+            universe: astronomer.Universe,
             world: astronomer.World,
             refuellingType: typing.Optional[RefuellingType],
             tonsOfFuel: typing.Optional[common.ScalarCalculation],
@@ -251,7 +254,7 @@ class PitStop(object):
 
         # Cache total so we don't have to repeatedly calculate it. This assumes that a pit stop
         # is immutable
-        calculationName = f'Pit Stop Cost on {self._world.name()}'
+        calculationName = f'Pit Stop Cost on {universe.canonicalHexName(self._world.hex())}'
         if self._fuelCost and  self._berthingCost:
             self._totalCost = common.Calculator.add(
                 lhs=self._fuelCost,
@@ -612,6 +615,7 @@ def calculateRefuellingPlan(
         return None
 
     return _createRefuellingPlan(
+        universe=universe,
         calculationContext=calculationContext,
         pitCostCalculator=pitCostCalculator,
         includeRefuellingCosts=includeRefuellingCosts,
@@ -674,7 +678,9 @@ def _processRoute(
 
             # NOTE: The worst case value to make the next world decision making
             # pessimistic
-            cost = pitCostCalculator.berthingCost(world=world)
+            cost = pitCostCalculator.berthingCost(
+                universe=universe,
+                world=world)
             berthingCost = cost.worstCaseValue() if cost else 0
 
             # NOTE: Mandatory berthing isn't applied in dead space
@@ -823,6 +829,7 @@ def _processNode(
     return bestFinalCost
 
 def _createRefuellingPlan(
+        universe: astronomer.Universe,
         calculationContext: _CalculationContext,
         pitCostCalculator: PitStopCostCalculator,
         includeRefuellingCosts: bool,
@@ -858,10 +865,10 @@ def _createRefuellingPlan(
 
             fuelCostPerTon = nodeContext.fuelCostPerTon()
             if fuelCostPerTon is not None:
-                worldString = world.name()
+                worldString = universe.canonicalHexName(world.hex())
                 fuelCostPerTon = common.ScalarCalculation(
                     value=fuelCostPerTon,
-                    name=f'{refuellingType.value} Fuel Cost Per Ton On {worldString}')
+                    name=f'{refuellingType.value} Fuel Cost Per Ton for {worldString}')
                 fuelCost = common.Calculator.multiply(
                     lhs=fuelCostPerTon,
                     rhs=fuelAmount,
@@ -872,13 +879,14 @@ def _createRefuellingPlan(
         if refuellingType or mandatoryBerthing:
             assert(world)
             berthingCost = pitCostCalculator.berthingCost(
+                universe=universe,
                 world=world,
                 mandatory=mandatoryBerthing,
                 diceRoller=diceRoller)
             if berthingCost:
                 berthingCost = common.Calculator.rename(
                     value=berthingCost,
-                    name=f'Berthing Cost For {world.name()}')
+                    name=f'Berthing Cost for {universe.canonicalHexName(world.hex())}')
 
         # Only create a pit stop if we're refuelling or berthing
         if refuellingType or berthingCost:
@@ -898,6 +906,7 @@ def _createRefuellingPlan(
 
             pitStops.append(PitStop(
                 routeIndex=nodeContext.index(),
+                universe=universe,
                 world=world,
                 refuellingType=refuellingType,
                 tonsOfFuel=fuelAmount,

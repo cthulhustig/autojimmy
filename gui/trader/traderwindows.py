@@ -1539,6 +1539,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._updateSaleWorldTradeScores()
 
     def _regenerateSpeculativeCargo(self):
+        universe = astronomer.WorldManager.instance().universe()
         world = self._purchaseWorldWidget.selectedWorld()
         if not world:
             self._removeAllSpeculativeCargo()
@@ -1549,6 +1550,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         for currentCargoRecord in self._speculativeCargoTable.cargoRecords():
             cargoRecords = logic.generateSpeculativePurchaseCargo(
                 rules=rules,
+                universe=universe,
                 world=world,
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
                 useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1712,6 +1714,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         cargoRecords = logic.generateSpeculativePurchaseCargo(
             rules=rules,
+            universe=astronomer.WorldManager.instance().universe(),
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1759,6 +1762,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
             rules=rules,
+            universe=astronomer.WorldManager.instance().universe(),
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1851,6 +1855,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Add Available Cargo',
+            universe=astronomer.WorldManager.instance().universe(),
             world=self._purchaseWorldWidget.selectedWorld(),
             rules=rules,
             selectableTradeGoods=tradeGoods)
@@ -1881,6 +1886,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Available Cargo',
+            universe=astronomer.WorldManager.instance().universe(),
             world=self._purchaseWorldWidget.selectedWorld(),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             editTradeGood=cargoRecord.tradeGood(),
@@ -1918,6 +1924,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         dlg = gui.PurchaseCargoDialog(
             parent=self,
+            universe=astronomer.WorldManager().instance().universe(),
             world=self._purchaseWorldWidget.selectedWorld(),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             availableCargo=affordableCargo,
@@ -2045,6 +2052,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Add Current Cargo',
+            universe=astronomer.WorldManager.instance().universe(),
             world=self._purchaseWorldWidget.selectedWorld(),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules))
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
@@ -2074,6 +2082,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Current Cargo',
+            universe=astronomer.WorldManager.instance().universe(),
             world=self._purchaseWorldWidget.selectedWorld(),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             editTradeGood=cargoRecord.tradeGood(),
@@ -2242,6 +2251,7 @@ class WorldTraderWindow(_BaseTraderWindow):
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
             jumpCostCalculator = logic.CheapestRouteCostCalculator(
+                universe=universe,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
@@ -2875,7 +2885,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             fuelIssueWorldStrings = []
             for world in self._purchaseWorldsWidget.worlds():
                 if not pitCostCalculator.refuellingType(world=world):
-                    fuelIssueWorldStrings.append(world.name())
+                    fuelIssueWorldStrings.append(universe.canonicalHexName(world.hex()))
 
             if fuelIssueWorldStrings:
                 worldListString = common.humanFriendlyListString(fuelIssueWorldStrings)
@@ -2903,6 +2913,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
             jumpCostCalculator = logic.CheapestRouteCostCalculator(
+                universe=universe,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),

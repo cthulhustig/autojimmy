@@ -145,7 +145,6 @@ class Trader(object):
         self._currentProgress = 0
 
         self._calculateTradeOptions(
-            universe=self._universe,
             purchaseWorld=purchaseWorld,
             saleWorlds=saleWorlds,
             currentCargo=currentCargo,
@@ -309,6 +308,7 @@ class Trader(object):
         for purchaseWorld in purchaseWorlds:
             possibleCargo = logic.generateSpeculativePurchaseCargo(
                 rules=self._rules,
+                universe=self._universe,
                 world=purchaseWorld,
                 playerBrokerDm=playerBrokerDm,
                 useLocalBroker=useLocalPurchaseBroker,
@@ -335,7 +335,6 @@ class Trader(object):
                 continue
 
             self._calculateTradeOptions(
-                universe=self._universe,
                 purchaseWorld=purchaseWorld,
                 saleWorlds=saleWorlds,
                 possibleCargo=possibleCargo,
@@ -362,7 +361,6 @@ class Trader(object):
 
     def _calculateTradeOptions(
             self,
-            universe: astronomer.Universe,
             purchaseWorld: astronomer.World,
             saleWorlds: typing.Iterable[astronomer.World],
             currentCargo: typing.Iterable[logic.CargoRecord],
@@ -392,7 +390,7 @@ class Trader(object):
         for saleWorld in saleWorlds:
             jumpRoute = routePlanner.calculateDirectRoute(
                 routingType=routingType,
-                universe=universe,
+                universe=self._universe,
                 startHex=purchaseWorld.hex(),
                 finishHex=saleWorld.hex(),
                 shipTonnage=shipTonnage,
@@ -416,16 +414,14 @@ class Trader(object):
                     (len(possibleCargo) if possibleCargo else 0))
 
                 if self._traderInfoCallback:
-                    worldString = '{world} ({hex})'.format(
-                        world=saleWorld.name(),
-                        hex=self._universe.formatSectorHex(hex=saleWorld.hex()))
+                    worldString = self._universe.canonicalHexName(saleWorld.hex())
                     self._traderInfoCallback(
                         f'Ignoring sale of all trade goods on {worldString}. ' +
                         f'There is no jump route to get there with jump-{shipJumpRating}')
                 continue
 
             routeLogistics = logic.calculateRouteLogistics(
-                universe=universe,
+                universe=self._universe,
                 jumpRoute=jumpRoute,
                 shipTonnage=shipTonnage,
                 shipFuelCapacity=shipFuelCapacity,
@@ -440,9 +436,7 @@ class Trader(object):
                     (len(possibleCargo) if possibleCargo else 0))
 
                 if self._traderInfoCallback:
-                    worldString = '{world} ({hex})'.format(
-                        world=saleWorld.name(),
-                        hex=self._universe.formatSectorHex(hex=saleWorld.hex()))
+                    worldString = self._universe.canonicalHexName(saleWorld.hex())
                     self._traderInfoCallback(
                         f'Ignoring sale of all goods on {worldString}. ' +
                         f'There is no way to reach it with the current fuel settings.')
@@ -466,9 +460,7 @@ class Trader(object):
                     (len(possibleCargo) if possibleCargo else 0))
 
                 if self._traderInfoCallback:
-                    worldString = '{world} ({hex})'.format(
-                        world=saleWorld.name(),
-                        hex=self._universe.formatSectorHex(hex=saleWorld.hex()))
+                    worldString = self._universe.canonicalHexName(saleWorld.hex())
                     self._traderInfoCallback(
                         f'Ignoring sale of all goods on {worldString}. ' +
                         f'The average logistics cost is Cr{common.formatNumber(logisticsCosts.averageCaseValue())} so ' +
@@ -563,9 +555,7 @@ class Trader(object):
 
             if not includeUnprofitableTrades and cargoQuantity.averageCaseValue() <= 0:
                 if self._traderInfoCallback:
-                    worldString = '{world} ({hex})'.format(
-                        world=purchaseWorld.name(),
-                        hex=self._universe.formatSectorHex(hex=purchaseWorld.hex()))
+                    worldString = self._universe.canonicalHexName(purchaseWorld.hex())
                     self._traderInfoCallback(
                         f'Ignoring purchase of {tradeGood.name()} on {worldString}. ' +
                         f'The average purchase price is Cr{common.formatNumber(purchasePricePerTon.averageCaseValue())} ' +
@@ -622,9 +612,7 @@ class Trader(object):
         netProfit = tradeOption.netProfit()
         if not includeUnprofitableTrades and netProfit.averageCaseValue() <= 0:
             if self._traderInfoCallback:
-                worldString = '{world} ({hex})'.format(
-                    world=saleWorld.name(),
-                    hex=self._universe.formatSectorHex(hex=saleWorld.hex()))
+                worldString = self._universe.canonicalHexName(saleWorld.hex())
                 self._traderInfoCallback(
                     f'Ignoring sale of {tradeGood.name()} on {worldString}. ' +
                     f'The average net profit is Cr{common.formatNumber(netProfit.averageCaseValue())} so ' +

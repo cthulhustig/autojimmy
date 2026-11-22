@@ -47,6 +47,7 @@ from .common.singletonapplication import *
 from .common.plotwidgetex import *
 from .common.tooltips import *
 from .common.progressjobdialog import *
+from .map.constants import *
 from .map.mapscale import *
 from .map.utils import *
 from .map.mapgraphics import *

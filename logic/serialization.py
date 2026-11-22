@@ -511,6 +511,7 @@ def _deserialiseLogistics(
 
             pitStops.append(logic.PitStop(
                 routeIndex=routeIndex,
+                universe=universe,
                 world=world,
                 refuellingType=refuellingType,
                 tonsOfFuel=fuelAmount,

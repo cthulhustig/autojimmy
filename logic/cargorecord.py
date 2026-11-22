@@ -34,6 +34,7 @@ class CargoRecord(object):
 
 def generateSpeculativePurchaseCargo(
         rules: traveller.Rules,
+        universe: astronomer.Universe,
         world: astronomer.World,
         playerBrokerDm: typing.Union[int, common.ScalarCalculation],
         minSellerDm: typing.Union[int, common.ScalarCalculation],
@@ -148,6 +149,7 @@ def generateSpeculativePurchaseCargo(
 
         availability = logic.calculateWorldTradeGoodQuantity(
             ruleSystem=rules.system(),
+            universe=universe,
             world=world,
             tradeGood=tradeGood)
 
@@ -160,6 +162,7 @@ def generateSpeculativePurchaseCargo(
 
 def generateRandomPurchaseCargo(
         rules: traveller.Rules,
+        universe: astronomer.Universe,
         world: astronomer.World,
         playerBrokerDm: typing.Union[int, common.ScalarCalculation],
         sellerDm: typing.Union[int, common.ScalarCalculation],
@@ -185,7 +188,7 @@ def generateRandomPurchaseCargo(
             value=survey.ehexToInteger(
                 value=world.uwp().code(astronomer.UWP.Element.Population),
                 default=0),
-            name=f'{world.name()} Population Code')
+            name=f'Population Code for {universe.canonicalHexName(world.hex())}')
         numberOfRandomTradeGoods = common.Calculator.equals(
             value=population,
             name='Random Item Count')
@@ -278,6 +281,7 @@ def generateRandomPurchaseCargo(
 
         availability = logic.calculateWorldTradeGoodQuantity(
             ruleSystem=rules.system(),
+            universe=universe,
             world=world,
             tradeGood=tradeGood,
             diceRoller=diceRoller)

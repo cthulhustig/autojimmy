@@ -820,6 +820,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Sale Details',
+            universe=astronomer.WorldManager.instance().universe(),
             world=saleWorld,
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             editTradeGood=salePrice.tradeGood(),

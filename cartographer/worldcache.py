@@ -45,7 +45,7 @@ class WorldInfo(object):
             world: astronomer.World,
             imageCache: cartographer.ImageStore
             ) -> None:
-        self.name = world.name() if not world.isNameGenerated() else ''
+        self.name = world.name() if world.name() else ''
         self.upperName = self.name.upper()
 
         hex = world.hex()

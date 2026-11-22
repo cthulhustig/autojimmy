@@ -11,6 +11,7 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
     def __init__(
             self,
             title: str,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             selectableTradeGoods: typing.Optional[typing.List[logic.TradeGood]] = None,
@@ -27,6 +28,7 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
             configSection='ScalarCargoDetailsDialog',
             parent=parent)
 
+        self._universe = universe
         self._world = world
         self._rules = traveller.Rules(rules)
         self._price = editPricePerTon if editPricePerTon != None else self._createCustomPricePerTon(0)
@@ -125,6 +127,7 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
         tradeGood: logic.TradeGood = self._tradeGoodCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
         baseAvailability = logic.calculateWorldTradeGoodQuantity(
             ruleSystem=self._rules.system(),
+            universe=self._universe,
             world=self._world,
             tradeGood=tradeGood)
         basePrice = tradeGood.basePrice()

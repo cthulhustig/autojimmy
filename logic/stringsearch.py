@@ -111,7 +111,7 @@ def _createWorldFilter(
         fnmatch.translate(searchString),
         re.IGNORECASE)
     worldFilter: typing.Callable[[astronomer.World], bool] = \
-        lambda world: (world not in seenWorlds) and expression.match(world.name())
+        lambda world: world.name() and world not in seenWorlds and expression.match(world.name())
     return worldFilter
 
 def _sortResults(

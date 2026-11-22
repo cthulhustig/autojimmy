@@ -153,6 +153,8 @@ class NameFiler(WorldFilter):
             ) -> bool:
         if self._operation == StringFilterOperation.ContainsString:
             if self._type == NameFiler.Type.WorldName:
+                if not world.name():
+                    return False
                 return self._regex.search(world.name()) != None
             elif self._type == NameFiler.Type.SectorName:
                 sector = universe.sectorByPosition(
@@ -173,6 +175,8 @@ class NameFiler(WorldFilter):
             raise ValueError('Invalid name filter type')
         elif self._operation == StringFilterOperation.MatchRegex:
             if self._type == NameFiler.Type.WorldName:
+                if not world.name():
+                    return False
                 return self._regex.match(world.name()) != None
             elif self._type == NameFiler.Type.SectorName:
                 sector = universe.sectorByPosition(

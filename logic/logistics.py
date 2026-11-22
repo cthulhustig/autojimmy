@@ -107,12 +107,13 @@ def calculateRouteLogistics(
                 startWorld = universe.worldByPosition(hex=startHex)
                 if startWorld:
                     berthingCost = pitCostCalculator.berthingCost(
+                        universe=universe,
                         world=startWorld,
                         mandatory=True)
                     if berthingCost:
                         berthingCost = common.Calculator.rename(
                             value=berthingCost,
-                            name=f'Berthing Cost For {startWorld.name()}')
+                            name=f'Berthing Cost For {universe.canonicalHexName(startWorld.hex())}')
 
                         if not includeLogisticsCosts:
                             berthingCost = common.Calculator.override(
@@ -122,6 +123,7 @@ def calculateRouteLogistics(
 
                     pitStop = logic.PitStop(
                         routeIndex=0,
+                        universe=universe,
                         world=startWorld,
                         refuellingType=None, # No refuelling
                         tonsOfFuel=None,

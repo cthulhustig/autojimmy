@@ -389,6 +389,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         cargoRecords, localBrokerIsInformant = logic.generateRandomPurchaseCargo(
             rules=rules,
+            universe=astronomer.WorldManager.instance().universe(),
             world=purchaseWorld,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localBrokerSpinBox.isChecked(),
@@ -475,6 +476,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Add Available Cargo',
+            universe=astronomer.WorldManager.instance().universe(),
             world=purchaseWorld,
             rules=rules,
             selectableTradeGoods=tradeGoods)
@@ -504,6 +506,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Available Cargo',
+            universe=astronomer.WorldManager.instance().universe(),
             world=purchaseWorld,
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             editTradeGood=cargoRecord.tradeGood(),

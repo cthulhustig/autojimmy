@@ -17,6 +17,7 @@ _StarPortBerthingCostScale = {
 # The MGT2 rules aren't clear on what time range the berthing costs on p225 of the rules are
 # over. For now I'm leaving it up to the consuming code to decide what it does with the value.
 def starPortBerthingCost(
+        universe: astronomer.Universe,
         world: astronomer.World,
         diceRoller: typing.Optional[common.DiceRoller] = None
         ) -> typing.Optional[typing.Union[
@@ -30,7 +31,7 @@ def starPortBerthingCost(
     if diceRoller:
         diceRoll = diceRoller.makeRoll(
             dieCount=1,
-            name=f'Start Port Berthing Cost Roll For {world.name()}')
+            name=f'Start Port Berthing Cost Roll For {universe.canonicalHexName(world.hex())}')
     else:
         # We're not rolling dice so use the probability range for the dice
         # roll. We round the value up to be pessimistic. Note that the worst

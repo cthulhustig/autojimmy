@@ -15,6 +15,7 @@ class PurchaseCargoDialog(gui.DialogEx):
 
     def __init__(
             self,
+            universe: astronomer.Universe,
             world: astronomer.World,
             rules: traveller.Rules,
             availableCargo: typing.Iterable[logic.CargoRecord],
@@ -28,6 +29,7 @@ class PurchaseCargoDialog(gui.DialogEx):
             configSection='PurchaseCargoDialog',
             parent=parent)
 
+        self._universe = universe
         self._world = world
         self._rules = traveller.Rules(rules)
 
@@ -199,6 +201,7 @@ class PurchaseCargoDialog(gui.DialogEx):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Cargo Quantity',
+            universe=self._universe,
             world=self._world,
             rules=self._rules,
             editTradeGood=originalCargoRecord.tradeGood(),

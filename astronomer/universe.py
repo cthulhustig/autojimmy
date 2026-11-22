@@ -364,8 +364,10 @@ class Universe(object):
 
     def formatSectorHex(
             self,
-            hex: astronomer.HexPosition
+            hex: typing.Union[astronomer.HexPosition, astronomer.World]
             ) -> str:
+        if isinstance(hex, astronomer.World):
+            hex = hex.hex()
         sectorX, sectorY, offsetX, offsetY = hex.relative()
         sectorPos = (sectorX, sectorY)
         sector = self._sectorPositionToSectorMap.get(sectorPos)
@@ -488,14 +490,15 @@ class Universe(object):
             hex: astronomer.HexPosition,
             ) -> str:
         world = self.worldByPosition(hex=hex)
-        name = world.name() if world else self.formatSectorHex(hex=hex)
+        hexString = world.name() if world and world.name() else f'{hex.offsetX():02d}{hex.offsetY():02d}'
 
         sector = self.sectorByPosition(position=hex)
+        sectorString = sector.name() if sector else '<Unnamed Sector>'
         if sector:
             subsectorName = sector.subsectorName(code=hex.subsectorCode())
             if subsectorName:
-                name += f' ({subsectorName})'
-        return name
+                sectorString += f'/{subsectorName}'
+        return f'{hexString} ({sectorString})'
 
     def mainByPosition(
             self,

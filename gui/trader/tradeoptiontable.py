@@ -550,7 +550,9 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'{tradeGood.id()}: {tradeGood.name()}')
                 elif columnType == self.ColumnType.PurchaseWorld:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, purchaseWorld.name())
+                    tableItem.setData(
+                        QtCore.Qt.ItemDataRole.DisplayRole,
+                        purchaseWorld.name() if purchaseWorld.name() else gui.UnnamedWorldString)
                     if purchaseWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
                 elif columnType == self.ColumnType.PurchaseSector:
@@ -559,7 +561,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                         position=purchaseWorld.hex())
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
-                        sector.name() if sector else '<Unnamed>')
+                        sector.name() if sector else gui.UnnamedSectorString)
                     if purchaseWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
                 elif columnType == self.ColumnType.PurchaseSubsector:
@@ -570,12 +572,14 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
-                        subsectorName if subsectorName else '<Unnamed>')
+                        subsectorName if subsectorName else gui.UnnamedSubsectorString)
                     if purchaseWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
                 elif columnType == self.ColumnType.SaleWorld:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, saleWorld.name())
+                    tableItem.setData(
+                        QtCore.Qt.ItemDataRole.DisplayRole,
+                        saleWorld.name() if saleWorld.name() else gui.UnnamedWorldString)
                     if saleWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
                 elif columnType == self.ColumnType.SaleSector:
@@ -584,7 +588,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                         position=saleWorld.hex())
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
-                        sector.name() if sector else '<Unnamed>')
+                        sector.name() if sector else gui.UnnamedSectorString)
                     if saleWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
                 elif columnType == self.ColumnType.SaleSubsector:
@@ -595,7 +599,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
                     tableItem.setData(
                         QtCore.Qt.ItemDataRole.DisplayRole,
-                        subsectorName if subsectorName else '<Unnamed>')
+                        subsectorName if subsectorName else gui.UnnamedSubsectorString)
                     if saleWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
                 elif columnType == self.ColumnType.Notes:

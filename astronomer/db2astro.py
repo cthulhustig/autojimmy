@@ -240,7 +240,6 @@ def convertDbSystemsToAstronomerWorlds(
     astroWorlds = []
     for chunkStart in range(0, objectCount, chunkSize):
         for dbSystem in itertools.islice(dbSystems, chunkStart, chunkStart + chunkSize):
-            systemName = dbSystem.name()
             logMessageContext = 'when converting database system {id!r} ({name}) astro world'.format(
                 id=dbSystem.id(),
                 name=dbSystem.name() if dbSystem.name() else '<Unnamed System>')
@@ -249,22 +248,6 @@ def convertDbSystemsToAstronomerWorlds(
                 worldHex = astronomer.HexPosition(
                     absoluteX=dbSystem.hexX(),
                     absoluteY=dbSystem.hexY())
-
-                isNameGenerated = False
-                if not systemName:
-                    # If the world doesn't have a name the sector combined with the hex. This format
-                    # is important as it's the same format as Traveller Map meaning searches will
-                    # work
-                    # TODO: I don't like the fact I do this. It's done so all "worlds" (aka systems)
-                    # have a name. I think the only reason to really do this is so, when they're
-                    # displayed in tables and other places there is always something to show to
-                    # the user (in tables name is generally the first column in the table).
-                    # - Need to look to see what Traveller Map displays on map and in the info
-                    # dialog for worlds that have no name (but have a non ? UWP).
-                    # TODO: This is EVEN WORSE now that it's just using the absolute hex rather than
-                    # a sector hex string with the sector name
-                    systemName = f'Hex {dbSystem.hexX():02d}, {dbSystem.hexY():02d}'
-                    isNameGenerated = True
 
                 allegianceId = dbSystem.allegianceId()
                 systemAllegiance = None
@@ -548,8 +531,7 @@ def convertDbSystemsToAstronomerWorlds(
                 astroWorlds.append(entityFactory.createWorld(
                     entityId=dbSystem.id(),
                     hex=worldHex,
-                    name=systemName,
-                    isNameGenerated=isNameGenerated,
+                    name=dbSystem.name(),
                     allegiance=systemAllegiance,
                     zone=zone,
                     uwp=uwp,

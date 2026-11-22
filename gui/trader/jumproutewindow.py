@@ -1684,7 +1684,7 @@ class JumpRouteWindow(gui.WindowWidget):
             for waypointHex in self._waypointsWidget.hexes():
                 waypointWorld = universe.worldByPosition(hex=waypointHex)
                 if waypointWorld and not pitCostCalculator.refuellingType(world=waypointWorld):
-                    fuelIssueWorldStrings.append(waypointWorld.name())
+                    fuelIssueWorldStrings.append(universe.canonicalHexName(waypointWorld.hex()))
 
             if fuelIssueWorldStrings:
                 worldListString = common.humanFriendlyListString(fuelIssueWorldStrings)
@@ -1727,6 +1727,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
             jumpCostCalculator = logic.CheapestRouteCostCalculator(
+                universe=universe,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),

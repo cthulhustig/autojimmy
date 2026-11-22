@@ -42,8 +42,7 @@ class World(astronomer.Entity):
             self,
             entityId: str,
             hex: astronomer.HexPosition,
-            name: str,
-            isNameGenerated: bool,
+            name: typing.Optional[str] = None,
             allegiance: typing.Optional[astronomer.Allegiance] = None,
             zone: typing.Optional[astronomer.ZoneType] = None,
             uwp: typing.Optional[astronomer.UWP] = None,
@@ -65,8 +64,7 @@ class World(astronomer.Entity):
         super().__init__(entityId=entityId)
 
         common.validateObject(name='hex', value=hex, objectType=astronomer.HexPosition)
-        common.validateStr(name='name', value=name, allowEmpty=False)
-        common.validateBool(name='isNameGenerated', value=isNameGenerated)
+        common.validateStr(name='name', value=name, allowEmpty=False, allowNone=True)
         common.validateObject(name='allegiance', value=allegiance, objectType=astronomer.Allegiance, allowNone=True)
         common.validateObject(name='zone', value=zone, objectType=astronomer.ZoneType, allowNone=True)
         common.validateObject(name='uwp', value=uwp, objectType=astronomer.UWP, allowNone=True)
@@ -87,7 +85,6 @@ class World(astronomer.Entity):
 
         self._hex = hex
         self._name = name
-        self._isNameGenerated = isNameGenerated
         self._allegiance = allegiance
         self._zone = zone
         self._uwp = uwp if uwp else astronomer.UWP()
@@ -114,11 +111,8 @@ class World(astronomer.Entity):
     def hex(self) -> astronomer.HexPosition:
         return self._hex
 
-    def name(self) -> str:
+    def name(self) -> typing.Optional[str]:
         return self._name
-
-    def isNameGenerated(self) -> bool:
-        return self._isNameGenerated
 
     def allegiance(self) -> typing.Optional[astronomer.Allegiance]:
         return self._allegiance

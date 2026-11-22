@@ -181,6 +181,7 @@ class Simulator(object):
                     diceRoller = common.DiceRoller(
                         randomGenerator=self._randomGenerator)
                     berthingCost = self._pitCostCalculator.berthingCost(
+                        universe=self._universe,
                         world=currentWorld,
                         mandatory=True,
                         diceRoller=diceRoller)
@@ -309,6 +310,7 @@ class Simulator(object):
         diceRoller = common.DiceRoller(randomGenerator=self._randomGenerator)
         cargoRecords, _ = logic.generateRandomPurchaseCargo(
             rules=self._rules,
+            universe=self._universe,
             world=world,
             playerBrokerDm=self._playerBrokerDm,
             sellerDm=sellerDm,
@@ -653,9 +655,7 @@ class Simulator(object):
             self,
             world: astronomer.World
             ) -> str:
-        return '{world} ({hex})'.format(
-            world=world.name(),
-            hex=self._universe.formatSectorHex(hex=world.hex()))
+        return self._universe.canonicalHexName(world.hex())
 
     @staticmethod
     def _sortCargoManifestsInPlace(cargoManifests: typing.List[logic.CargoManifest]) -> None:

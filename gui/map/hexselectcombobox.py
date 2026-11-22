@@ -13,19 +13,23 @@ def _formatWorldName(
         universe: astronomer.Universe,
         world: astronomer.World
         ) -> str:
+    worldName = world.name()
+    if not worldName:
+        worldName = gui.UnnamedWorldString
+
     worldHex = world.hex()
     sector = universe.sectorByPosition(position=worldHex)
     subsectorName = sector.subsectorName(code=worldHex.subsectorCode()) if sector else None
     if not subsectorName:
-        return world.name()
-    return f'{world.name()} ({subsectorName})'
+        return worldName
+    return f'{worldName} ({subsectorName})'
 
 def _formatHexName(
         universe: astronomer.Universe,
         hex: astronomer.HexPosition
         ) -> str:
     world = universe.worldByPosition(hex=hex)
-    if world:
+    if world and world.name():
         return _formatWorldName(universe=universe, world=world)
 
     sectorHex = universe.formatSectorHex(hex=hex)

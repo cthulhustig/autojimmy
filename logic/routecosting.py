@@ -128,6 +128,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
     def __init__(
             self,
+            universe: astronomer.Universe,
             shipTonnage: int,
             shipFuelCapacity: int,
             shipCurrentFuel: float,
@@ -136,6 +137,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None,
             shipFuelPerParsec: typing.Optional[float] = None
             ) -> None:
+        self._universe = universe
         self._shipTonnage = shipTonnage
         self._shipFuelCapacity = shipFuelCapacity
         self._shipCurrentFuel = shipCurrentFuel
@@ -165,7 +167,9 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         if startWorld:
             refuellingType = self._pitCostCalculator.refuellingType(world=startWorld)
             fuelCostPerTon = self._pitCostCalculator.fuelCost(world=startWorld)
-            berthingCost = self._pitCostCalculator.berthingCost(world=startWorld)
+            berthingCost = self._pitCostCalculator.berthingCost(
+                universe=self._universe,
+                world=startWorld)
 
         costContext = CheapestRouteCostCalculator._CostContext(
             currentFuel=self._shipCurrentFuel,
@@ -231,7 +235,9 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             assert(fuelCostPerTon != None)
             fuelCostPerTon = fuelCostPerTon.value()
 
-            berthingCost = self._pitCostCalculator.berthingCost(world=currentWorld)
+            berthingCost = self._pitCostCalculator.berthingCost(
+                universe=self._universe,
+                world=currentWorld)
             berthingCost = berthingCost.worstCaseValue() if berthingCost else 0
 
             lastFuelParsecs = 0

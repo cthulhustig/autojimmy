@@ -28,8 +28,9 @@ class TraderJobBase(QtCore.QThread):
             ) -> None:
         super().__init__(parent=parent)
 
+        self._universe = universe
         self._trader = logic.Trader(
-            universe=universe,
+            universe=self._universe,
             rules=rules,
             tradeOptionCallback=self._handleTradeOption,
             traderInfoCallback=self._handleTradeInfo,
@@ -287,6 +288,7 @@ class MultiWorldTraderJob(TraderJobBase):
     def run(self) -> None:
         try:
             self._trader.calculateTradeOptionsForMultipleWorlds(
+                universe=self._universe,
                 purchaseWorlds=self._purchaseWorlds,
                 saleWorlds=self._saleWorlds,
                 playerBrokerDm=self._playerBrokerDm,
